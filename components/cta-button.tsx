@@ -14,7 +14,7 @@ export function CtaButton({ children, className, style, ...props }: CtaButtonPro
       type="button"
       style={{
         backgroundImage:
-          'linear-gradient(140deg, oklch(0.72 0.18 6) 0%, oklch(0.62 0.25 8) 48%, oklch(0.48 0.22 18) 100%)',
+          'linear-gradient(90deg, oklch(0.76 0.14 16) 0%, oklch(0.67 0.19 11) 50%, oklch(0.59 0.21 8) 100%)',
         ...style,
       }}
       className={cn(
