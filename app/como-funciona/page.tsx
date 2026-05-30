@@ -34,7 +34,7 @@ export default function HowItWorksPage() {
     <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">
       <PageBackground />
 
-      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-10 pt-12">
+      <div className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col px-5 pb-6 pt-8">
         <header className="flex justify-center">
           <img
             src="/images/luna-prive-logo.png"
@@ -43,16 +43,16 @@ export default function HowItWorksPage() {
           />
         </header>
 
-        <section className="mt-8 text-center">
-          <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
+        <section className="mt-6 text-center">
+          <h1 className="text-balance font-sans text-[1.55rem] font-semibold leading-tight tracking-tight text-foreground">
             Como funciona o <span className="text-primary">Luna Privé</span>?
           </h1>
-          <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
             Simples, anônimo e direto pro seu PIX.
           </p>
         </section>
 
-        <section className="mt-8" aria-label="Etapas">
+        <section className="mt-6 flex flex-col gap-3" aria-label="Etapas">
           {steps.map((step, i) => (
             <HowItWorksStep
               key={step.number}
@@ -65,24 +65,24 @@ export default function HowItWorksPage() {
           ))}
         </section>
 
-        <section className="mt-3 grid grid-cols-2 gap-3" aria-label="Números">
+        <section className="mt-5 grid grid-cols-2 gap-3" aria-label="Números">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="rounded-2xl border border-primary/20 bg-card/70 px-4 py-5 text-center backdrop-blur-md"
+              className="rounded-2xl border border-primary/30 bg-card/70 px-3 py-4 text-center backdrop-blur-md"
             >
               <p className="text-2xl font-bold text-primary">{stat.value}</p>
-              <p className="mt-1 text-pretty text-xs leading-relaxed text-muted-foreground">
+              <p className="mt-1 text-pretty text-xs leading-snug text-muted-foreground">
                 {stat.label}
               </p>
             </div>
           ))}
         </section>
 
-        <div className="mt-8">
+        <div className="mt-auto pt-6">
           <Link
             href="/cadastro"
-            className="block w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.6_0.22_8)] py-4 text-center text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+            className="block w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.56_0.24_10)] py-4 text-center text-base font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
           >
             Continuar
           </Link>
