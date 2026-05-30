@@ -513,7 +513,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                 className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
               />
             <div className="flex-1">
-              <p key={tourStep} className="animate-item text-pretty text-sm leading-relaxed text-foreground">
+              <p key={tourStep} className="animate-item text-pretty text-base leading-relaxed text-foreground">
                 {tour[tourStep].text}
               </p>
               <button
@@ -571,7 +571,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                   alt="Camila"
                   className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
                 />
-                <p className="animate-item flex-1 text-pretty text-xs leading-relaxed text-foreground">
+                <p className="animate-item flex-1 text-pretty text-sm leading-relaxed text-foreground">
                   Já deixei tudo prontinho pra você ver! Dá uma olhada no{' '}
                   <span className="font-bold">nome</span>, no{' '}
                   <span className="font-bold">preço</span> e nas fotos. Quando estiver pronta, é só
@@ -900,7 +900,7 @@ function PacksScreen({
                 alt="Camila"
                 className="size-11 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
               />
-              <p className="animate-item flex-1 text-pretty text-sm leading-relaxed text-foreground">
+              <p className="animate-item flex-1 text-pretty text-base leading-relaxed text-foreground">
                 Aqui é a sua vitrine! No app real, você monta seus packs{' '}
                 <span className="font-bold">antes de começar a vender</span>. Toque em{' '}
                 <span className="font-bold text-primary">Criar Pack</span> que eu te mostro como é
@@ -1054,7 +1054,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
                     />
                   ))}
                 </div>
-                <p className="animate-item text-pretty text-sm leading-relaxed text-foreground">
+                <p className="animate-item text-pretty text-base leading-relaxed text-foreground">
                   Essa é a sua <span className="font-bold text-primary">carteira</span>: aqui você
                   acompanha seu saldo, seus ganhos e pode transferir tudo para sua conta via PIX a
                   qualquer momento.
