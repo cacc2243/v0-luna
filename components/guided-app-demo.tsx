@@ -1155,9 +1155,9 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
       {/* Coach — mentora explicando a carteira */}
       {showHint && !hideHint && (
         <>
-          {/* Scrim escuro que deixa o app mais opaco e dá destaque à mentora */}
+          {/* Degradê suave atrás do card — sem blur, só um fade pra destacar a fala */}
           <div
-            className="absolute inset-0 z-[50] bg-background/55 backdrop-blur-[1px]"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[50] h-72 bg-gradient-to-t from-background via-background/90 to-transparent"
             aria-hidden="true"
           />
           <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
