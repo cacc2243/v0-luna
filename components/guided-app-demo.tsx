@@ -25,6 +25,7 @@ import {
   ArrowDownLeft,
   ArrowDownRight,
   Receipt,
+  ChevronRight,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 import { SignupFlow } from '@/components/signup-flow'
@@ -701,26 +702,47 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             onClick={() => setShowSellModal(false)}
             aria-hidden="true"
           />
-          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-primary/40 bg-card p-6 text-center shadow-2xl shadow-primary/20">
-            <span className="luna-gradient mx-auto flex size-14 items-center justify-center rounded-full shadow-lg shadow-primary/40">
-              <Rocket className="size-7 text-primary-foreground" aria-hidden="true" />
-            </span>
-            <p className="mt-4 text-pretty text-xl font-bold leading-tight text-foreground">
-              Vamos agora vender de verdade?
-            </p>
-            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-              Você viu como é simples. Crie sua conta e comece a faturar com seus
-              packs de verdade — leva menos de 2 minutos.
-            </p>
-            <div className="mt-5">
-              <CtaButton
+          <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/40 bg-card shadow-2xl shadow-primary/25 ring-1 ring-primary/10">
+            {/* Topo com a logo da Luna */}
+            <div className="flex items-center justify-center border-b border-border/60 bg-secondary/40 px-6 py-5">
+              <img
+                src="/images/luna-prive-logo.png"
+                alt="Luna Privé"
+                className="h-8 w-auto"
+              />
+            </div>
+
+            <div className="px-6 pb-6 pt-5">
+              {/* Mentora falando */}
+              <div className="flex items-start gap-3">
+                <img
+                  src="/images/mentor.png"
+                  alt="Camila"
+                  className="size-12 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+                />
+                <div className="flex-1">
+                  <p className="text-pretty text-lg font-bold leading-tight text-foreground">
+                    Vamos agora vender de verdade?
+                  </p>
+                  <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                    Você viu como é simples. Crie sua conta na{' '}
+                    <span className="font-semibold text-foreground">Luna Privé</span> e comece a
+                    faturar com seus packs de verdade — leva menos de 2 minutos.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
                 onClick={() => {
                   setShowSellModal(false)
                   setPhase('signup')
                 }}
+                className="luna-gradient mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
               >
                 Criar minha conta
-              </CtaButton>
+                <ChevronRight className="size-5" aria-hidden="true" />
+              </button>
             </div>
           </div>
         </div>
