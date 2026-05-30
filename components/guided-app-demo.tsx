@@ -190,7 +190,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     if (saleIndex < sales.length - 1) {
       setTimeout(() => setSaleIndex((i) => i + 1), 1100)
     } else {
-      setTimeout(() => setPhase('done'), 900)
+      setTimeout(() => setPhase('packs'), 900)
     }
   }
 
@@ -520,33 +520,6 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             </div>
           </div>
         </>
-      )}
-
-      {/* Estado final — overlay dentro do app */}
-      {phase === 'done' && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center px-5">
-          <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
-          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-positive/40 bg-card p-6 text-center shadow-2xl">
-            <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-positive/15">
-              <Check className="size-7 text-positive" aria-hidden="true" />
-            </span>
-            <p className="mt-4 text-sm text-muted-foreground">Você acabou de faturar</p>
-            <p className="mt-1 text-4xl font-bold text-positive">{brl(balance)}</p>
-            <p className="mt-2 text-pretty text-xs text-muted-foreground">
-              em poucos cliques — e isso foi só uma simulação.
-            </p>
-            <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3 text-left">
-              <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-              <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
-                Antes de vender, você monta seus packs. Vamos te mostrar como é
-                rápido criar o seu primeiro.
-              </p>
-            </div>
-            <div className="mt-5">
-              <CtaButton onClick={() => setPhase('packs')}>Criar meu primeiro pack</CtaButton>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Modal — Criar Pack */}
