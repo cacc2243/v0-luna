@@ -504,18 +504,43 @@ function SuccessCard({
   onContinue: () => void
 }) {
   return (
-    <div className="animate-pop flex w-full max-w-sm flex-col items-center rounded-3xl border border-positive/40 bg-card px-6 py-9 text-center shadow-2xl shadow-positive/10">
-      <span className="flex size-16 items-center justify-center rounded-full bg-positive/15">
-        <Check className="size-8 text-positive" aria-hidden="true" />
-      </span>
-      <p className="mt-5 text-2xl font-bold text-foreground">Conta criada com sucesso!</p>
-      <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-        Seja bem-vinda ao Luna Privé,{' '}
-        <span className="font-semibold text-primary">@{username || 'sua_conta'}</span>. Falta só um
-        último passo.
-      </p>
-      <div className="mt-6 w-full">
-        <CtaButton onClick={onContinue}>Continuar</CtaButton>
+    <div className="animate-pop luna-border w-full max-w-md overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20 ring-1 ring-primary/10">
+      {/* Topo com a logo da Luna */}
+      <div className="flex items-center justify-center border-b border-border/60 bg-secondary/40 px-6 py-4">
+        <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
+      </div>
+
+      {/* Mentora falando */}
+      <div className="px-5 py-6">
+        <div className="flex items-start gap-3">
+          <div className="relative shrink-0">
+            <img
+              src="/images/mentor.png"
+              alt="Mentora do Luna Privé"
+              className="size-14 rounded-full border-2 border-primary/50 object-cover"
+            />
+            <span
+              className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border-2 border-card bg-positive"
+              aria-hidden="true"
+            >
+              <Check className="size-3 text-white" />
+            </span>
+          </div>
+          <div className="flex-1">
+            <p className="text-base font-bold leading-tight text-foreground">
+              Conta criada com sucesso!
+            </p>
+            <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
+              Seja bem-vinda ao <span className="font-semibold text-foreground">Luna Privé</span>,{' '}
+              <span className="font-semibold text-primary">@{username || 'sua_conta'}</span>! Falta
+              só um último passo e você já começa a faturar.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <CtaButton onClick={onContinue}>Continuar</CtaButton>
+        </div>
       </div>
     </div>
   )
