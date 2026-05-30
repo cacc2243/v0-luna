@@ -977,34 +977,46 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
         </div>
       </div>
 
-      {/* Tooltip — Sua carteira */}
+      {/* Coach — mentora explicando a carteira */}
       {showHint && !hideHint && (
-        <div className="absolute inset-x-0 bottom-0 z-[55]">
+        <>
+          {/* Scrim escuro que deixa o app mais opaco e dá destaque à mentora */}
           <div
-            className="absolute inset-0 -top-24 bg-gradient-to-t from-background via-background/90 to-transparent"
+            className="absolute inset-0 z-[50] bg-background/55 backdrop-blur-[1px]"
             aria-hidden="true"
           />
-          <div className="animate-pop relative m-3 rounded-3xl border border-primary/40 bg-card p-5 shadow-2xl shadow-primary/20">
-            <div className="mb-3 flex items-center gap-1.5">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <span
-                  key={i}
-                  className={`h-1.5 rounded-full ${i === 4 ? 'w-5 bg-primary' : 'w-3 bg-primary/30'}`}
-                />
-              ))}
-            </div>
-            <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-primary">
-              Sua carteira
-            </p>
-            <p className="mt-2 text-pretty text-sm leading-relaxed text-foreground">
-              Aqui você acompanha seu saldo, ganhos e pode transferir para sua conta
-              via PIX a qualquer momento.
-            </p>
-            <div className="mt-4">
-              <CtaButton onClick={onDone}>Entendi</CtaButton>
+          <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
+            <div className="luna-border animate-pop relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
+              <img
+                src="/images/mentor.png"
+                alt="Camila"
+                className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+              />
+              <div className="flex-1">
+                <div className="mb-2 flex items-center gap-1.5">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <span
+                      key={i}
+                      className={`h-1.5 rounded-full ${i === 4 ? 'w-5 bg-primary' : 'w-3 bg-primary/30'}`}
+                    />
+                  ))}
+                </div>
+                <p className="animate-item text-pretty text-sm leading-relaxed text-foreground">
+                  Essa é a sua <span className="font-bold text-primary">carteira</span>: aqui você
+                  acompanha seu saldo, seus ganhos e pode transferir tudo para sua conta via PIX a
+                  qualquer momento.
+                </p>
+                <button
+                  type="button"
+                  onClick={onDone}
+                  className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
+                >
+                  Entendi
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
