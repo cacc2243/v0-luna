@@ -28,7 +28,7 @@ const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatória']
 
 export function SignupFlow({ onComplete }: SignupFlowProps) {
   const [step, setStep] = useState(0)
-  const [status, setStatus] = useState<'form' | 'loading' | 'success'>('form')
+  const [status, setStatus] = useState<'form' | 'loading' | 'success' | 'invite'>('form')
 
   // Campos
   const [username, setUsername] = useState('')
@@ -77,8 +77,10 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       <div className="absolute inset-0 bg-background/88 backdrop-blur-[3px]" aria-hidden="true" />
 
       <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-6">
-        {status === 'success' ? (
-          <SuccessCard username={username} onComplete={onComplete} />
+        {status === 'invite' ? (
+          <InviteCard onAccept={onComplete} />
+        ) : status === 'success' ? (
+          <SuccessCard username={username} onContinue={() => setStatus('invite')} />
         ) : status === 'loading' ? (
           <LoadingCard />
         ) : (
@@ -496,10 +498,10 @@ function LoadingCard() {
 
 function SuccessCard({
   username,
-  onComplete,
+  onContinue,
 }: {
   username: string
-  onComplete: () => void
+  onContinue: () => void
 }) {
   return (
     <div className="animate-pop flex w-full max-w-sm flex-col items-center rounded-3xl border border-positive/40 bg-card px-6 py-9 text-center shadow-2xl shadow-positive/10">
@@ -509,11 +511,55 @@ function SuccessCard({
       <p className="mt-5 text-2xl font-bold text-foreground">Conta criada com sucesso!</p>
       <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
         Seja bem-vinda ao Luna Privé,{' '}
-        <span className="font-semibold text-primary">@{username || 'sua_conta'}</span>. Agora é só
-        montar seus packs e começar a faturar.
+        <span className="font-semibold text-primary">@{username || 'sua_conta'}</span>. Falta só um
+        último passo.
       </p>
       <div className="mt-6 w-full">
-        <CtaButton onClick={onComplete}>Acessar minha conta</CtaButton>
+        <CtaButton onClick={onContinue}>Continuar</CtaButton>
+      </div>
+    </div>
+  )
+}
+
+function InviteCard({ onAccept }: { onAccept: () => void }) {
+  return (
+    <div className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20">
+      {/* Mulher falando */}
+      <div className="flex flex-col items-center px-6 pt-8">
+        <div className="relative">
+          <span className="absolute -inset-1 rounded-full luna-gradient opacity-60 blur-md" aria-hidden="true" />
+          <img
+            src="/images/mentor.png"
+            alt="Mentora do Luna Privé"
+            className="relative size-24 rounded-full border-2 border-primary/50 object-cover"
+          />
+          <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
+        </div>
+        <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+          Meus parabéns!
+        </p>
+      </div>
+
+      {/* Balão de fala */}
+      <div className="px-6 pb-7 pt-4">
+        <div className="rounded-2xl border border-border bg-secondary/50 p-4 text-pretty text-sm leading-relaxed text-foreground">
+          <p>
+            Sua conta foi criada com{' '}
+            <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
+            <span className="font-semibold text-primary">Convite de Acesso ao Luna Privé</span>.
+          </p>
+          <p className="mt-3">
+            Ele garante que você é uma usuária <span className="font-semibold">real e comprometida</span> aqui dentro.
+          </p>
+          <p className="mt-3 text-muted-foreground">
+            Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
+            acesso está muito barato e confiável.
+          </p>
+        </div>
+
+        <div className="mt-5">
+          <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
+        </div>
       </div>
     </div>
   )
