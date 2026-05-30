@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ShieldCheck, Lock, Zap, UserPlus, Camera, Wallet } from 'lucide-react'
+import { ShieldCheck, Lock, Zap, UserPlus, Camera, Wallet, TrendingUp } from 'lucide-react'
 import { SaleNotification } from '@/components/sale-notification'
 import { HowItWorksStep } from '@/components/how-it-works-step'
-import { EarningsRank } from '@/components/earnings-rank'
+import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { CtaButton } from '@/components/cta-button'
 import { PageBackground } from '@/components/page-background'
 
@@ -41,16 +41,41 @@ const howStats = [
   { value: '+6.000', label: 'usuárias cadastradas no Luna' },
 ]
 
-const ranking = [
-  { rank: 1, handle: '@luna_***892', amount: 'R$ 48.720', growth: '+18% no mês' },
-  { rank: 2, handle: '@priv_***415', amount: 'R$ 39.450', growth: '+12% no mês' },
-  { rank: 3, handle: '@anon_***073', amount: 'R$ 31.280', growth: '+9% no mês' },
+const testimonials = [
   {
-    rank: 4,
-    handle: 'Você começa aqui',
-    amount: 'R$ 0',
-    growth: 'entre hoje',
-    highlight: true,
+    handle: '@pes_luxury',
+    city: 'Rio de Janeiro',
+    amount: 'R$ 62.870,00',
+    avatar: '/images/avatar-1.png',
+    tenure: 'há 6 meses na plataforma',
+  },
+  {
+    handle: '@secret_mg',
+    city: 'Belo Horizonte',
+    amount: 'R$ 27.590,00',
+    avatar: '/images/avatar-2.png',
+    tenure: 'há 3 meses na plataforma',
+  },
+  {
+    handle: '@anon_sp',
+    city: 'São Paulo',
+    amount: 'R$ 41.230,00',
+    avatar: '/images/avatar-3.png',
+    tenure: 'há 5 meses na plataforma',
+  },
+  {
+    handle: '@luna_rs',
+    city: 'Porto Alegre',
+    amount: 'R$ 33.910,00',
+    avatar: '/images/avatar-4.png',
+    tenure: 'há 4 meses na plataforma',
+  },
+  {
+    handle: '@priv_ba',
+    city: 'Salvador',
+    amount: 'R$ 29.480,00',
+    avatar: '/images/avatar-5.png',
+    tenure: 'há 2 meses na plataforma',
   },
 ]
 
@@ -218,50 +243,45 @@ export default function Page() {
         {/* STEP 3 — Resultados / prova social */}
         {step === 2 && (
           <div key="step-2" className="animate-screen flex flex-col">
-            {/* Hero com número gigante */}
             <section
               className="animate-item mt-7 text-center"
               style={{ animationDelay: '60ms' }}
             >
-              <h1 className="text-balance font-sans text-[1.55rem] font-semibold leading-tight tracking-tight text-foreground">
-                Junte-se a{' '}
-                <span className="font-semibold text-primary">
-                  <span className="text-[1.05em]">+1.200</span> usuárias
-                </span>{' '}
-                que já faturam{' '}
-                <span className="font-semibold text-primary">+R$ 10 mil</span> por mês.
+              <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
+                Quanto nossas <span className="text-primary">Lunas</span> faturam
               </h1>
-              <p className="mt-2.5 text-balance text-sm leading-relaxed text-muted-foreground">
-                Anônimas, no controle e ganhando de verdade no Luna Privé.
+              <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
+                Ganhos reais de usuárias ativas na plataforma
               </p>
+              <span className="luna-border mt-4 inline-flex items-center gap-1.5 rounded-full bg-card px-4 py-1.5 text-sm font-semibold text-primary">
+                <TrendingUp className="size-4" aria-hidden="true" />
+                Média acima de R$28.000/mês
+              </span>
             </section>
 
-            {/* Ranking de faturamento */}
+            {/* Carrossel de depoimentos em loop infinito */}
             <section
-              className="animate-item mt-6"
+              className="animate-item -mx-5 mt-6"
               style={{ animationDelay: '180ms' }}
-              aria-label="Ranking de faturamento"
+              aria-label="Depoimentos de usuárias"
             >
-              <div className="mb-2.5 flex items-center justify-between px-1">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Top faturamento do mês
-                </h2>
-                <span className="text-[0.7rem] font-medium text-muted-foreground">
-                  anônimo
-                </span>
-              </div>
-              <div className="flex flex-col gap-2">
-                {ranking.map((r) => (
-                  <EarningsRank key={r.rank} {...r} />
-                ))}
-              </div>
+              <TestimonialCarousel items={testimonials} />
             </section>
 
-            <div className="animate-item mt-7" style={{ animationDelay: '300ms' }}>
-              <CtaButton>Quero entrar pro ranking</CtaButton>
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                Sua posição começa hoje. Sem rosto, sem nome.
+            <section
+              className="animate-item mt-7 text-center"
+              style={{ animationDelay: '260ms' }}
+            >
+              <p className="text-balance text-base font-semibold text-foreground">
+                Esses resultados são <span className="text-primary">reais</span>.
               </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                E você pode começar hoje mesmo.
+              </p>
+            </section>
+
+            <div className="animate-item mt-5" style={{ animationDelay: '340ms' }}>
+              <CtaButton>Continuar</CtaButton>
             </div>
           </div>
         )}
