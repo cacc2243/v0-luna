@@ -21,7 +21,9 @@ export function SaleNotification({ title, time, amount }: SaleNotificationProps)
         <p className="text-xs text-muted-foreground">{time}</p>
       </div>
 
-      <p className="shrink-0 text-sm font-bold text-positive">{amount}</p>
+      <p className="shrink-0 rounded-lg bg-positive/10 px-2.5 py-1 text-sm font-bold text-positive">
+        {amount}
+      </p>
     </div>
   )
 }
