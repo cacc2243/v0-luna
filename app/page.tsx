@@ -5,6 +5,7 @@ import { ShieldCheck, Lock, Zap, UserPlus, Camera, Wallet } from 'lucide-react'
 import { SaleNotification } from '@/components/sale-notification'
 import { HowItWorksStep } from '@/components/how-it-works-step'
 import { EarningsRank } from '@/components/earnings-rank'
+import { CtaButton } from '@/components/cta-button'
 import { PageBackground } from '@/components/page-background'
 
 const notifications = [
@@ -133,13 +134,7 @@ export default function Page() {
             </section>
 
             <div className="animate-item mt-7" style={{ animationDelay: '260ms' }}>
-              <button
-                type="button"
-                onClick={next}
-                className="luna-gradient block w-full rounded-xl py-4 text-center text-base font-bold text-primary-foreground shadow-[0_8px_30px_-6px] shadow-primary/60 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
-              >
-                Entrar e ver como funciona
-              </button>
+              <CtaButton onClick={next}>Entrar e ver como funciona</CtaButton>
               <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <ShieldCheck className="size-3.5 text-positive" aria-hidden="true" />
@@ -215,13 +210,7 @@ export default function Page() {
             </section>
 
             <div className="animate-item mt-7" style={{ animationDelay: '360ms' }}>
-              <button
-                type="button"
-                onClick={next}
-                className="luna-gradient block w-full rounded-xl py-4 text-center text-base font-bold text-primary-foreground shadow-[0_8px_30px_-6px] shadow-primary/60 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
-              >
-                Continuar
-              </button>
+              <CtaButton onClick={next}>Continuar</CtaButton>
             </div>
           </div>
         )}
@@ -269,12 +258,7 @@ export default function Page() {
             </section>
 
             <div className="animate-item mt-7" style={{ animationDelay: '300ms' }}>
-              <button
-                type="button"
-                className="luna-gradient block w-full rounded-xl py-4 text-center text-base font-bold text-primary-foreground shadow-[0_8px_30px_-6px] shadow-primary/60 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
-              >
-                Quero entrar pro ranking
-              </button>
+              <CtaButton>Quero entrar pro ranking</CtaButton>
               <p className="mt-3 text-center text-xs text-muted-foreground">
                 Sua posição começa hoje. Sem rosto, sem nome.
               </p>
