@@ -26,6 +26,7 @@ import { HowItWorksStep } from '@/components/how-it-works-step'
 import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
 import { TrustCard } from '@/components/trust-card'
+import { PrivacyStep } from '@/components/privacy-step'
 import { PlatformWalkthrough } from '@/components/platform-walkthrough'
 import { GuidedAppDemo } from '@/components/guided-app-demo'
 import { CtaButton } from '@/components/cta-button'
@@ -213,7 +214,7 @@ const journey = [
   },
 ]
 
-const TOTAL_STEPS = 7
+const TOTAL_STEPS = 8
 
 export default function Page() {
   const [step, setStep] = useState(0)
@@ -499,9 +500,16 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 6 — Jornada gamificada dentro da plataforma */}
+        {/* STEP 6 — Privacidade total */}
         {step === 5 && (
           <div key="step-5" className="animate-screen flex flex-col">
+            <PrivacyStep onContinue={next} />
+          </div>
+        )}
+
+        {/* STEP 7 — Jornada gamificada dentro da plataforma */}
+        {step === 6 && (
+          <div key="step-6" className="animate-screen flex flex-col">
             <PlatformWalkthrough
               steps={journey}
               finalLabel="Quero meu convite de acesso"
@@ -510,8 +518,8 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 7 — Demonstração guiada do app (tela cheia) */}
-        {step === 6 && <GuidedAppDemo key="step-6" onComplete={next} />}
+        {/* STEP 8 — Demonstração guiada do app (tela cheia) */}
+        {step === 7 && <GuidedAppDemo key="step-7" onComplete={next} />}
       </div>
     </main>
   )
