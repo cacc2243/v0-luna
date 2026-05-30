@@ -663,8 +663,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       {createdPack && (
         <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
           <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
-          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-positive/40 bg-card p-6 text-center shadow-2xl">
-            <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-positive/15">
+          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-primary/40 bg-card p-6 text-center shadow-2xl shadow-primary/20 ring-1 ring-primary/10">
+            <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-positive/15 ring-4 ring-positive/10">
               <Check className="size-7 text-positive" aria-hidden="true" />
             </span>
             <p className="mt-4 text-lg font-bold text-foreground">Fotos publicadas com sucesso!</p>
