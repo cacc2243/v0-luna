@@ -139,7 +139,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={next}
-                className="block w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.56_0.24_10)] py-4 text-center text-base font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                className="luna-gradient block w-full rounded-xl py-4 text-center text-base font-bold text-primary-foreground shadow-[0_8px_30px_-6px] shadow-primary/60 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
               >
                 Entrar e ver como funciona
               </button>
@@ -196,7 +196,7 @@ export default function Page() {
             </section>
 
             <section
-              className="animate-item mt-5 flex items-stretch rounded-2xl border border-primary/30 bg-card/70 backdrop-blur-md"
+              className="luna-border animate-item mt-5 flex items-stretch rounded-2xl bg-card/70 backdrop-blur-md"
               style={{ animationDelay: '260ms' }}
               aria-label="Números"
             >
@@ -224,7 +224,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={next}
-                className="block w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.56_0.24_10)] py-4 text-center text-base font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                className="luna-gradient block w-full rounded-xl py-4 text-center text-base font-bold text-primary-foreground shadow-[0_8px_30px_-6px] shadow-primary/60 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
               >
                 Continuar
               </button>
@@ -240,7 +240,7 @@ export default function Page() {
               className="animate-item mt-7 text-center"
               style={{ animationDelay: '60ms' }}
             >
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary backdrop-blur-md">
+              <span className="luna-border inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary backdrop-blur-md">
                 <span className="relative flex size-2">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-70" />
                   <span className="relative inline-flex size-2 rounded-full bg-primary" />
@@ -250,7 +250,7 @@ export default function Page() {
 
               <div className="mt-5 flex items-end justify-center gap-1.5">
                 <span className="pb-2 text-2xl font-bold text-primary">+</span>
-                <span className="font-sans text-[5rem] font-extrabold leading-[0.8] tracking-tighter text-foreground drop-shadow-[0_0_30px_oklch(0.64_0.25_6_/_0.5)]">
+                <span className="font-sans text-[5rem] font-extrabold leading-[0.8] tracking-tighter text-foreground drop-shadow-[0_0_30px_oklch(0.64_0.25_6_/_0.6)]">
                   1.200
                 </span>
               </div>
@@ -288,7 +288,7 @@ export default function Page() {
             >
               <button
                 type="button"
-                className="block w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.56_0.24_10)] py-4 text-center text-base font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                className="luna-gradient block w-full rounded-xl py-4 text-center text-base font-bold text-primary-foreground shadow-[0_8px_30px_-6px] shadow-primary/60 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
               >
                 Quero entrar pro ranking
               </button>

@@ -19,9 +19,9 @@ export function HowItWorksStep({
     <div className="flex gap-3.5">
       {/* Icon column with connecting line */}
       <div className="relative flex flex-col items-center">
-        <div className="relative flex size-11 shrink-0 items-center justify-center rounded-full border border-primary/50 bg-primary/20 shadow-[0_0_20px_-2px] shadow-primary/70">
-          <Icon className="size-5 text-primary" aria-hidden="true" />
-          <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[0.65rem] font-bold text-primary-foreground shadow-[0_0_10px_-1px] shadow-primary">
+        <div className="luna-gradient-soft relative flex size-11 shrink-0 items-center justify-center rounded-full shadow-[0_0_20px_-2px] shadow-primary/70">
+          <Icon className="size-5 text-primary-foreground" aria-hidden="true" />
+          <span className="luna-gradient absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full text-[0.65rem] font-bold text-primary-foreground shadow-[0_0_10px_-1px] shadow-primary">
             {number}
           </span>
         </div>
@@ -34,7 +34,7 @@ export function HowItWorksStep({
       </div>
 
       {/* Card */}
-      <div className="flex-1 rounded-2xl border border-primary/25 bg-card/70 px-4 py-3 backdrop-blur-md">
+      <div className="luna-border flex-1 rounded-2xl bg-card/70 px-4 py-3 backdrop-blur-md">
         <h3 className="text-[0.95rem] font-semibold leading-snug text-foreground">
           {title}
         </h3>
