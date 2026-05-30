@@ -412,13 +412,23 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
       {/* Coach bar (tour) — flutua sobre o app, acima da nav */}
       {phase === 'tour' && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-20 px-4">
-          <div className="luna-border pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-card/95 px-4 py-3.5 shadow-2xl backdrop-blur">
-            <img
-              src="/images/mentor.png"
-              alt="Camila"
-              className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
-            />
+        <>
+          {/* Scrim escuro para dar destaque à barra da mentora */}
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[45] h-72"
+            style={{
+              background:
+                'linear-gradient(to top, oklch(0 0 0 / 0.7) 0%, oklch(0 0 0 / 0.45) 45%, transparent 100%)',
+            }}
+            aria-hidden="true"
+          />
+          <div className="pointer-events-none absolute inset-x-0 bottom-20 z-[46] px-4">
+            <div className="luna-border pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
+              <img
+                src="/images/mentor.png"
+                alt="Camila"
+                className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+              />
             <div className="flex-1">
               <p key={tourStep} className="animate-item text-pretty text-sm leading-relaxed text-foreground">
                 {tour[tourStep].text}
@@ -431,8 +441,9 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                 {tourStep < tour.length - 1 ? 'Entendi, próximo' : 'Ver meu primeiro pedido'}
               </button>
             </div>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Estado final — overlay dentro do app */}
