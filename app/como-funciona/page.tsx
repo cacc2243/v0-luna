@@ -88,7 +88,7 @@ export default function HowItWorksPage() {
 
         <div className="mt-auto pt-6">
           <Link
-            href="/cadastro"
+            href="/resultados"
             className="block w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.56_0.24_10)] py-4 text-center text-base font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
           >
             Continuar
