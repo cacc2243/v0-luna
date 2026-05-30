@@ -1,18 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  ShieldCheck,
-  Lock,
-  Zap,
-  UserPlus,
-  Camera,
-  Wallet,
-  TrendingUp,
-} from 'lucide-react'
+import { ShieldCheck, Lock, Zap, UserPlus, Camera, Wallet } from 'lucide-react'
 import { SaleNotification } from '@/components/sale-notification'
 import { HowItWorksStep } from '@/components/how-it-works-step'
-import { TestimonialCard } from '@/components/testimonial-card'
+import { EarningsRank } from '@/components/earnings-rank'
 import { PageBackground } from '@/components/page-background'
 
 const notifications = [
@@ -48,31 +40,18 @@ const howStats = [
   { value: '+6.000', label: 'usuárias cadastradas no Luna' },
 ]
 
-const testimonials = [
+const ranking = [
+  { rank: 1, handle: '@luna_***892', amount: 'R$ 24.380', growth: '+18% no mês' },
+  { rank: 2, handle: '@priv_***415', amount: 'R$ 19.120', growth: '+12% no mês' },
+  { rank: 3, handle: '@anon_***073', amount: 'R$ 15.640', growth: '+9% no mês' },
   {
-    initials: 'MA',
-    name: 'Marina A.',
-    location: 'São Paulo, SP',
-    quote: 'Em 3 meses larguei meu emprego. Hoje faturo bem mais, no meu tempo.',
-    amount: 'R$ 14.200/mês',
-  },
-  {
-    initials: 'JC',
-    name: 'Júlia C.',
-    location: 'Rio de Janeiro, RJ',
-    quote: 'Ninguém sabe que sou eu. Posto, vendo e recebo no PIX na hora.',
-    amount: 'R$ 11.800/mês',
-  },
-  {
-    initials: 'BL',
-    name: 'Bruna L.',
-    location: 'Belo Horizonte, MG',
-    quote: 'Comecei sem saber nada. Hoje tenho clientes fixos todo mês.',
-    amount: 'R$ 10.500/mês',
+    rank: 4,
+    handle: 'Você começa aqui',
+    amount: 'R$ 0',
+    growth: 'entre hoje',
+    highlight: true,
   },
 ]
-
-const avatars = ['LV', 'RS', 'TM', 'KP']
 
 const TOTAL_STEPS = 3
 
@@ -235,47 +214,44 @@ export default function Page() {
         {/* STEP 3 — Resultados / prova social */}
         {step === 2 && (
           <div className="flex flex-1 flex-col">
-            <section className="mt-6 text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-semibold text-primary backdrop-blur-md">
-                <TrendingUp className="size-3.5" aria-hidden="true" />
-                Resultados reais
+            {/* Hero com número gigante */}
+            <section className="mt-7 text-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary backdrop-blur-md">
+                <span className="relative flex size-2">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-70" />
+                  <span className="relative inline-flex size-2 rounded-full bg-primary" />
+                </span>
+                Faturamento ao vivo
               </span>
-              <h1 className="mt-4 text-balance font-sans text-[1.5rem] font-semibold leading-tight tracking-tight text-foreground">
-                Mais de <span className="text-primary">1.200 usuárias</span> já faturam{' '}
-                <span className="text-primary">+R$ 10 mil</span> todos os meses.
-              </h1>
-              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-                Anônimas, no controle e ganhando de verdade no Luna Privé.
-              </p>
-            </section>
 
-            <section className="mt-5 flex flex-col gap-3" aria-label="Depoimentos">
-              {testimonials.map((t) => (
-                <TestimonialCard key={t.name} {...t} />
-              ))}
-            </section>
-
-            <section
-              className="mt-5 flex items-center justify-center gap-3 rounded-2xl border border-primary/30 bg-card/70 px-4 py-3 backdrop-blur-md"
-              aria-label="Usuárias cadastradas"
-            >
-              <div className="flex -space-x-2.5">
-                {avatars.map((a) => (
-                  <span
-                    key={a}
-                    className="flex size-8 items-center justify-center rounded-full border-2 border-card bg-primary/25 text-[0.65rem] font-bold text-primary"
-                  >
-                    {a}
-                  </span>
-                ))}
-                <span className="flex size-8 items-center justify-center rounded-full border-2 border-card bg-primary text-[0.6rem] font-bold text-primary-foreground">
-                  +1k
+              <div className="mt-5 flex items-end justify-center gap-1.5">
+                <span className="pb-2 text-2xl font-bold text-primary">+</span>
+                <span className="font-sans text-[5rem] font-extrabold leading-[0.8] tracking-tighter text-foreground drop-shadow-[0_0_30px_oklch(0.64_0.25_6_/_0.5)]">
+                  1.200
                 </span>
               </div>
-              <p className="text-pretty text-xs leading-tight text-muted-foreground">
-                <span className="font-bold text-foreground">+1.200 usuárias</span>{' '}
-                cadastradas e faturando
+              <p className="mt-3 text-balance text-sm leading-relaxed text-muted-foreground">
+                usuárias anônimas já faturam{' '}
+                <span className="font-bold text-primary">+R$ 10 mil</span> todos os
+                meses no Luna Privé.
               </p>
+            </section>
+
+            {/* Ranking de faturamento */}
+            <section className="mt-6" aria-label="Ranking de faturamento">
+              <div className="mb-2.5 flex items-center justify-between px-1">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Top faturamento do mês
+                </h2>
+                <span className="text-[0.7rem] font-medium text-muted-foreground">
+                  anônimo
+                </span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {ranking.map((r) => (
+                  <EarningsRank key={r.rank} {...r} />
+                ))}
+              </div>
             </section>
 
             <div className="mt-auto pt-6">
@@ -283,8 +259,11 @@ export default function Page() {
                 type="button"
                 className="block w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.56_0.24_10)] py-4 text-center text-base font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
               >
-                Quero fazer parte
+                Quero entrar pro ranking
               </button>
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                Sua posição começa hoje. Sem rosto, sem nome.
+              </p>
             </div>
           </div>
         )}
