@@ -300,8 +300,14 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                 <div className="mt-3">
                   <BaseInput
                     value={pixKey}
-                    onChange={setPixKey}
-                    inputMode={pixType === 'CPF' || pixType === 'CNPJ' ? 'numeric' : 'text'}
+                    onChange={(v) => setPixKey(formatPixKey(pixType, v))}
+                    inputMode={
+                      pixType === 'CPF' || pixType === 'CNPJ' || pixType === 'Telefone'
+                        ? 'numeric'
+                        : pixType === 'Email'
+                          ? 'email'
+                          : 'text'
+                    }
                     placeholder={pixPlaceholder(pixType)}
                   />
                 </div>
@@ -568,6 +574,34 @@ function formatPhone(value: string) {
   if (digits.length <= 2) return digits.length ? `(${digits}` : ''
   if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+function formatPixKey(type: string, value: string) {
+  switch (type) {
+    case 'CPF': {
+      const d = value.replace(/\D/g, '').slice(0, 11)
+      if (d.length <= 3) return d
+      if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`
+      if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`
+      return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`
+    }
+    case 'CNPJ': {
+      const d = value.replace(/\D/g, '').slice(0, 14)
+      if (d.length <= 2) return d
+      if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`
+      if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`
+      if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`
+      return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`
+    }
+    case 'Telefone':
+      return formatPhone(value)
+    case 'Email':
+      // remove espaços, mantém o resto livre
+      return value.replace(/\s/g, '')
+    default:
+      // Chave aleatória — texto livre
+      return value
+  }
 }
 
 function pixPlaceholder(type: string) {
