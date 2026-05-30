@@ -893,12 +893,22 @@ function PacksScreen({
                 alt="Camila"
                 className="size-11 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
               />
-              <p className="animate-item flex-1 text-pretty text-base leading-relaxed text-foreground">
-                Aqui é a sua vitrine! No app real, você monta seus packs{' '}
-                <span className="font-bold">antes de começar a vender</span>. Toque em{' '}
-                <span className="font-bold text-primary">Criar Pack</span> que eu te mostro como é
-                rápido montar o seu primeiro.
-              </p>
+              <div className="flex-1">
+                <p className="animate-item text-pretty text-base leading-relaxed text-foreground">
+                  Aqui é a sua vitrine! No app real, você monta seus packs{' '}
+                  <span className="font-bold">antes de começar a vender</span>. Toque em{' '}
+                  <span className="font-bold text-primary">Criar Pack</span> que eu te mostro como é
+                  rápido montar o seu primeiro.
+                </p>
+                <button
+                  type="button"
+                  onClick={onCreate}
+                  className="luna-gradient mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-4 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                >
+                  <Plus className="size-4" aria-hidden="true" />
+                  Criar Pack
+                </button>
+              </div>
             </div>
           </div>
         </>
