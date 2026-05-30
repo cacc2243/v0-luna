@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { Check, ChevronLeft } from 'lucide-react'
+import { Check, ChevronLeft, BadgeCheck, Quote } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 
 interface WalkStep {
@@ -40,31 +40,49 @@ export function PlatformWalkthrough({
   }
 
   return (
-    <div className="mt-6 flex flex-col">
-      {/* Mentora */}
-      <div className="animate-item flex items-center gap-3" style={{ animationDelay: '60ms' }}>
-        <div className="relative">
-          <img
-            src="/images/mentor.png"
-            alt="Camila, sua mentora no Luna Privé"
-            className="size-12 rounded-full object-cover"
-          />
-          <span className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-background bg-positive" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold leading-tight text-foreground">Camila</p>
-          <p className="text-xs leading-tight text-muted-foreground">sua mentora no Luna Privé</p>
-        </div>
-      </div>
-
-      {/* Fala da mentora */}
+    <div className="mt-8 flex flex-col">
+      {/* Card da mentora */}
       <div
-        key={`speech-${index}`}
-        className="animate-item luna-border relative mt-3 rounded-2xl rounded-tl-md bg-card px-4 py-3.5"
+        className="animate-item luna-border overflow-hidden rounded-3xl bg-card"
+        style={{ animationDelay: '60ms' }}
       >
-        <p className="text-pretty text-[0.92rem] leading-relaxed text-foreground">
-          {current.speech}
-        </p>
+        {/* Cabeçalho da mentora */}
+        <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5">
+          <div className="relative shrink-0">
+            <img
+              src="/images/mentor.png"
+              alt="Camila, sua mentora no Luna Privé"
+              className="size-12 rounded-full object-cover ring-2 ring-primary/40"
+            />
+            <span className="absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full border-2 border-card bg-positive" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-semibold leading-tight text-foreground">
+                Camila
+              </p>
+              <BadgeCheck className="size-4 text-primary" aria-hidden="true" />
+            </div>
+            <p className="text-xs leading-tight text-muted-foreground">
+              Mentora oficial · Luna Privé
+            </p>
+          </div>
+          <span className="flex items-center gap-1.5 rounded-full bg-positive/10 px-2.5 py-1 text-[0.65rem] font-semibold text-positive">
+            <span className="size-1.5 rounded-full bg-positive" />
+            online agora
+          </span>
+        </div>
+
+        {/* Fala da mentora */}
+        <div key={`speech-${index}`} className="animate-item relative px-4 py-4">
+          <Quote
+            className="absolute left-3 top-3 size-7 text-primary/15"
+            aria-hidden="true"
+          />
+          <p className="relative text-pretty text-[0.95rem] leading-relaxed text-foreground">
+            {current.speech}
+          </p>
+        </div>
       </div>
 
       {/* Card do passo atual */}

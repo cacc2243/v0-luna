@@ -501,23 +501,6 @@ export default function Page() {
         {/* STEP 6 — Jornada gamificada dentro da plataforma */}
         {step === 5 && (
           <div key="step-5" className="animate-screen flex flex-col">
-            <section
-              className="animate-item mt-7 text-center"
-              style={{ animationDelay: '60ms' }}
-            >
-              <span className="inline-flex items-center rounded-full bg-primary/15 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary">
-                Sua jornada
-              </span>
-              <h1 className="mt-3 text-balance font-sans text-[1.6rem] font-bold leading-tight tracking-tight text-foreground">
-                Como o <span className="text-primary">Luna Privé</span> funciona
-                por dentro
-              </h1>
-              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-                Do convite ao PIX na conta — siga o caminho que já transformou a
-                vida de milhares de usuárias.
-              </p>
-            </section>
-
             <PlatformWalkthrough
               steps={journey}
               finalLabel="Quero meu convite de acesso"
