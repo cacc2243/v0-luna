@@ -19,8 +19,8 @@ export default function Page() {
           className="size-full object-cover"
         />
         {/* Readability overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/70 to-background/95" />
-        <div className="absolute inset-0 bg-background/30" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/35 to-background/85" />
+        <div className="absolute inset-0 bg-background/10" />
       </div>
 
       {/* Content */}
