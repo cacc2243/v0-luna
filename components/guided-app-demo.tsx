@@ -488,17 +488,17 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       {/* Coach bar (tour) — flutua sobre o app, acima da nav */}
       {phase === 'tour' && (
         <>
-          {/* Scrim escuro para dar destaque à barra da mentora */}
+          {/* Scrim escuro com degradê suave para dar destaque à barra da mentora */}
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[45] h-72"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[45] h-[26rem]"
             style={{
               background:
-                'linear-gradient(to top, oklch(0 0 0 / 0.7) 0%, oklch(0 0 0 / 0.45) 45%, transparent 100%)',
+                'linear-gradient(to top, oklch(0 0 0 / 0.6) 0%, oklch(0 0 0 / 0.5) 22%, oklch(0 0 0 / 0.35) 45%, oklch(0 0 0 / 0.16) 68%, transparent 100%)',
             }}
             aria-hidden="true"
           />
           <div className="pointer-events-none absolute inset-x-0 bottom-14 z-[46] px-4">
-            <div className="luna-border pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
+            <div className="luna-border pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_8px_40px_-16px_oklch(0_0_0/0.5)] ring-1 ring-primary/30">
               <img
                 src="/images/mentor.png"
                 alt="Camila"
