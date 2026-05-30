@@ -1,5 +1,3 @@
-import { Ghost } from 'lucide-react'
-
 interface SaleNotificationProps {
   title: string
   time: string
@@ -10,7 +8,12 @@ export function SaleNotification({ title, time, amount }: SaleNotificationProps)
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/70 px-4 py-3.5 backdrop-blur-md">
       <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/40 bg-primary/15">
-        <Ghost className="size-5 text-primary" aria-hidden="true" />
+        <img
+          src="/images/luna-icon.png"
+          alt=""
+          aria-hidden="true"
+          className="size-6 object-contain"
+        />
       </div>
 
       <div className="min-w-0 flex-1">
