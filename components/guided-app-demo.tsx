@@ -26,6 +26,7 @@ import {
   Receipt,
   ChevronRight,
 } from 'lucide-react'
+import confetti from 'canvas-confetti'
 import { CtaButton } from '@/components/cta-button'
 import { SignupFlow } from '@/components/signup-flow'
 
@@ -38,6 +39,15 @@ const sales = [
   { handle: '@serg10.tp', pack: 'Pack 07', amount: 129.9, purchases: '+28 compras realizadas' },
   { handle: '@lobo_solitario', pack: 'Pack 01', amount: 69.9, purchases: '+5 compras realizadas' },
   { handle: '@colecionador_x', pack: 'Pack 12', amount: 199.9, purchases: '+41 compras realizadas' },
+]
+
+// Segunda rodada de pedidos — após criar o pack
+const sales2 = [
+  { handle: '@admirador_vip', pack: 'Pés & Saltos', amount: 149.9, purchases: '+33 compras realizadas' },
+  { handle: '@cliente_fiel', pack: 'Pack 05', amount: 99.9, purchases: '+17 compras realizadas' },
+  { handle: '@noturno.br', pack: 'Pack 09', amount: 179.9, purchases: '+24 compras realizadas' },
+  { handle: '@secret_buyer', pack: 'Pés & Saltos', amount: 119.9, purchases: '+9 compras realizadas' },
+  { handle: '@premium_fan', pack: 'Pack 14', amount: 249.9, purchases: '+52 compras realizadas' },
 ]
 
 const tour = [
@@ -95,7 +105,7 @@ const examplePhotos = [
 
 export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [phase, setPhase] = useState<
-    'tour' | 'selling' | 'done' | 'packs' | 'wallet' | 'signup'
+    'tour' | 'selling' | 'done' | 'packs' | 'selling2' | 'celebrate' | 'wallet' | 'signup'
   >('tour')
   const [showSellModal, setShowSellModal] = useState(false)
   const [tourStep, setTourStep] = useState(0)
@@ -125,9 +135,12 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const animatedToday = useCountUp(today)
   const highlight = phase === 'tour' ? tour[tourStep].key : null
 
+  // Lista de pedidos da rodada atual (primeira venda ou segunda rodada após o pack)
+  const sellingList = phase === 'selling2' ? sales2 : sales
+
   // O saldo pendente só existe quando há um pedido pendente aparecendo na tela.
   const pendingCount = activeSale !== null ? 1 : 0
-  const pendingValue = activeSale !== null ? sales[activeSale].amount : 0
+  const pendingValue = activeSale !== null ? sellingList[activeSale].amount : 0
 
   // Visualizações sobem ao vivo durante o tour e as vendas
   useEffect(() => {
@@ -156,13 +169,37 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
   // Mostra o primeiro pedido ao entrar no modo de vendas + rola para o topo
   useEffect(() => {
-    if (phase !== 'selling') return
+    if (phase !== 'selling' && phase !== 'selling2') return
     const t = setTimeout(() => {
       setActiveSale(saleIndex)
       ordersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 500)
     return () => clearTimeout(t)
   }, [phase, saleIndex])
+
+  // Confetes na tela de parabéns
+  useEffect(() => {
+    if (phase !== 'celebrate') return
+    const colors = ['#ff3d77', '#ff7aa2', '#ffd1dc', '#ffffff']
+    const end = Date.now() + 2400
+    confetti({ particleCount: 130, spread: 100, startVelocity: 45, origin: { y: 0.35 }, colors, zIndex: 100 })
+    const frame = () => {
+      confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors, zIndex: 100 })
+      confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors, zIndex: 100 })
+      confetti({
+        particleCount: 6,
+        startVelocity: 0,
+        ticks: 220,
+        gravity: 0.7,
+        scalar: 0.9,
+        origin: { x: Math.random(), y: -0.05 },
+        colors,
+        zIndex: 100,
+      })
+      if (Date.now() < end) requestAnimationFrame(frame)
+    }
+    frame()
+  }, [phase])
 
   function advanceTour() {
     if (tourStep < tour.length - 1) {
@@ -173,7 +210,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   }
 
   function acceptSale() {
-    const sale = sales[saleIndex]
+    const list = phase === 'selling2' ? sales2 : sales
+    const sale = list[saleIndex]
     setActiveSale(null)
     setBalance((b) => b + sale.amount)
     setToday((t) => t + sale.amount)
@@ -187,8 +225,10 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     setToast({ id: toastId, amount: sale.amount })
     setTimeout(() => setToast((cur) => (cur?.id === toastId ? null : cur)), 3000)
 
-    if (saleIndex < sales.length - 1) {
+    if (saleIndex < list.length - 1) {
       setTimeout(() => setSaleIndex((i) => i + 1), 1100)
+    } else if (phase === 'selling2') {
+      setTimeout(() => setPhase('celebrate'), 900)
     } else {
       setTimeout(() => setPhase('packs'), 900)
     }
@@ -218,8 +258,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
         ? 'Carteira'
         : 'Início'
 
-  const currentSale = activeSale !== null ? sales[activeSale] : null
-  const saleActive = currentSale !== null && phase === 'selling'
+  const currentSale = activeSale !== null ? sellingList[activeSale] : null
+  const saleActive = currentSale !== null && (phase === 'selling' || phase === 'selling2')
 
   const dim = (key: string) =>
   phase === 'tour' && highlight !== key
@@ -365,7 +405,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           </div>
 
           {/* Pedido pendente ativo — compacto */}
-          {currentSale && phase === 'selling' && (
+          {currentSale && (phase === 'selling' || phase === 'selling2') && (
             <div
               key={`order-${activeSale}`}
               className={`luna-border relative z-10 mb-2 rounded-2xl bg-card px-3 py-3 ${ring('orders')} ${
@@ -427,7 +467,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             </div>
           ) : (
             <div className={`transition-all duration-300 ${saleActive ? 'opacity-25 blur-[1px] brightness-75' : 'opacity-100'}`}>
-              {sales.slice(0, vendas).map((s) => (
+              {[...sales, ...sales2].slice(0, vendas).map((s) => (
                 <div
                   key={s.handle}
                   className="luna-border mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5"
@@ -519,6 +559,24 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             </div>
           </div>
         </>
+      )}
+
+      {/* Barra da mentora — segunda rodada de pedidos */}
+      {phase === 'selling2' && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-16 z-[46] px-4">
+          <div className="luna-border mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-card px-3.5 py-3 shadow-[0_8px_40px_-16px_oklch(0_0_0/0.5)] ring-1 ring-primary/30">
+            <img
+              src="/images/mentor.png"
+              alt="Camila"
+              className="size-9 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+            />
+            <p className="flex-1 text-pretty text-sm leading-relaxed text-foreground">
+              Vamos aceitar mais alguns pedidos? Faltam{' '}
+              <span className="font-bold text-primary">{sales2.length - saleIndex}</span> pra
+              continuar.
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Modal — Criar Pack */}
@@ -685,17 +743,53 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             <p className="mt-5 text-xl font-bold text-foreground">Pack publicado!</p>
             <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
               <span className="font-semibold text-primary">{createdPack}</span> já está na sua
-              vitrine, pronto pra vender.
+              vitrine. Vamos aceitar mais alguns pedidos?
             </p>
             <div className="mt-6">
               <CtaButton
                 onClick={() => {
                   setCreatedPack(null)
-                  setPhase('wallet')
+                  setSaleIndex(0)
+                  setActiveSale(null)
+                  setPhase('selling2')
                 }}
               >
-                Ver minha carteira
+                Aceitar mais pedidos
               </CtaButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay — Parabéns (segunda rodada concluída) com confetes */}
+      {phase === 'celebrate' && (
+        <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
+          <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+          <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/40 bg-card text-center shadow-2xl shadow-primary/25 ring-1 ring-primary/10">
+            <div className="px-6 pb-6 pt-7">
+              <img
+                src="/images/mentor.png"
+                alt="Camila"
+                className="mx-auto size-16 rounded-full object-cover ring-2 ring-primary/50"
+              />
+              <p className="mt-4 text-xl font-bold text-foreground">Meus parabéns!</p>
+
+              <div className="luna-gradient mx-auto mt-4 w-fit rounded-2xl px-5 py-3 shadow-lg shadow-primary/30">
+                <p className="text-[0.7rem] font-medium uppercase tracking-wide text-primary-foreground/80">
+                  No app real você já teria ganho
+                </p>
+                <p className="text-2xl font-extrabold text-primary-foreground">{brl(balance)}</p>
+              </div>
+
+              <p className="mt-4 text-pretty text-sm leading-relaxed text-muted-foreground">
+                Neste ritmo, eu tenho certeza que a sua jornada aqui vai ser maravilhosa! Vamos
+                descobrir como você saca os seus ganhos aqui no{' '}
+                <span className="font-semibold text-foreground">Luna Privé</span>?
+              </p>
+
+              <div className="mt-6">
+                <CtaButton onClick={() => setPhase('wallet')}>Ver minha carteira</CtaButton>
+              </div>
             </div>
           </div>
         </div>
