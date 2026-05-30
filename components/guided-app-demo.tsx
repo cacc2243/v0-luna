@@ -39,14 +39,22 @@ const sales = [
   { handle: '@colecionador_x', pack: 'Pack 12', amount: 199.9, purchases: '+41 compras realizadas' },
 ]
 
-// Segunda rodada de pedidos — após criar o pack
-const sales2 = [
-  { handle: '@admirador_vip', pack: 'Pés & Saltos', amount: 149.9, purchases: '+33 compras realizadas' },
-  { handle: '@cliente_fiel', pack: 'Pack 05', amount: 99.9, purchases: '+17 compras realizadas' },
-  { handle: '@noturno.br', pack: 'Pack 09', amount: 179.9, purchases: '+24 compras realizadas' },
-  { handle: '@secret_buyer', pack: 'Pés & Saltos', amount: 119.9, purchases: '+9 compras realizadas' },
-  { handle: '@premium_fan', pack: 'Pack 14', amount: 249.9, purchases: '+52 compras realizadas' },
+// Segunda rodada de pedidos — após criar o pack.
+// Os pedidos sempre se referem ao pack que a usuária acabou de criar,
+// então pack/valor são preenchidos dinamicamente dentro do componente.
+const sales2Buyers = [
+  { handle: '@admirador_vip', purchases: '+33 compras realizadas' },
+  { handle: '@cliente_fiel', purchases: '+17 compras realizadas' },
+  { handle: '@noturno.br', purchases: '+24 compras realizadas' },
+  { handle: '@secret_buyer', purchases: '+9 compras realizadas' },
+  { handle: '@premium_fan', purchases: '+52 compras realizadas' },
 ]
+
+// "29,90" -> 29.9 (com proteção contra valores inválidos)
+function parsePrice(input: string) {
+  const n = Number.parseFloat(input.replace(/\./g, '').replace(',', '.'))
+  return Number.isFinite(n) && n > 0 ? n : 29.9
+}
 
 const tour = [
   {
@@ -133,6 +141,17 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const animatedToday = useCountUp(today)
   const highlight = phase === 'tour' ? tour[tourStep].key : null
 
+  // Nome/preço do pack criado pela usuária (refletem o que ela digitou)
+  const packLabel = packName.trim() || 'Pés & Saltos'
+  const packAmount = parsePrice(packPrice)
+
+  // Segunda rodada: todos os pedidos são do pack recém-criado, com o preço dela
+  const sales2 = sales2Buyers.map((b) => ({
+    ...b,
+    pack: packLabel,
+    amount: packAmount,
+  }))
+
   // Lista de pedidos da rodada atual (primeira venda ou segunda rodada após o pack)
   const sellingList = phase === 'selling2' ? sales2 : sales
 
@@ -217,7 +236,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     setFloats((f) => [...f, { id: floatId, amount: sale.amount }])
     setTimeout(() => setFloats((f) => f.filter((x) => x.id !== floatId)), 1400)
 
-    // Notificação push estilo celular
+    // Notificaç��o push estilo celular
     const toastId = floatId
     setToast({ id: toastId, amount: sale.amount })
     setTimeout(() => setToast((cur) => (cur?.id === toastId ? null : cur)), 3000)
@@ -295,11 +314,12 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           hideHint={phase === 'signup'}
         />
       ) : phase === 'packs' ? (
-        <PacksScreen
-          balance={balance}
-          createdPack={createdPack}
-          onCreate={() => setShowCreate(true)}
-        />
+  <PacksScreen
+  balance={balance}
+  createdPack={createdPack}
+  packPrice={packPrice}
+  onCreate={() => setShowCreate(true)}
+  />
       ) : (
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
         {/* Header */}
@@ -865,10 +885,12 @@ function StatCard({
 function PacksScreen({
   balance,
   createdPack,
+  packPrice,
   onCreate,
 }: {
   balance: number
   createdPack: string | null
+  packPrice: string
   onCreate: () => void
 }) {
   return (
@@ -929,7 +951,7 @@ function PacksScreen({
             </div>
             <div className="p-3">
               <p className="truncate text-sm font-semibold text-foreground">{createdPack}</p>
-              <p className="text-sm font-bold text-positive">R$ 29,90</p>
+              <p className="text-sm font-bold text-positive">R$ {packPrice}</p>
               <p className="mt-1 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
                 <Eye className="size-3" aria-hidden="true" />
                 0 views · 0 vendas
