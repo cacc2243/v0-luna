@@ -29,16 +29,12 @@ export default function Page() {
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
-            className="h-11 w-auto"
+            className="h-14 w-auto"
           />
         </header>
 
         <section className="mt-10 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-md">
-            <span className="size-1.5 rounded-full bg-positive" />
-            Renda 100% anônima
-          </span>
-          <h1 className="mt-5 text-balance font-sans text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground">
+          <h1 className="text-balance font-sans text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground">
             Mais de <span className="text-primary">R$ 18.000,00</span> todo mês
             apenas com seus <span className="text-primary">PÉS</span>.
           </h1>
