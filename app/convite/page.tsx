@@ -47,22 +47,34 @@ export default function ConvitePage() {
         </div>
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-md flex-col gap-8 px-5 pb-12 pt-7">
+      <div className="relative mx-auto flex w-full max-w-md flex-col gap-7 px-5 pb-12 pt-8">
         {/* Hero */}
-        <header className="flex flex-col items-center text-center">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
-          <h1 className="mt-5 text-balance text-3xl font-extrabold leading-tight tracking-tight text-foreground">
-            Conquiste seu convite
-          </h1>
-          <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-            Confirme seus dados abaixo e garanta seu Convite Exclusivo ao Luna Privé.
-          </p>
-
-          <div className="luna-border mt-5 flex items-center gap-2.5 rounded-2xl bg-card px-4 py-3">
-            <Mail className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            <p className="text-pretty text-xs font-medium leading-relaxed text-foreground">
-              Você receberá o acesso ao Luna Privé por e-mail.
+        <header className="relative overflow-hidden rounded-3xl border border-border/70 bg-card/80 px-6 py-7 backdrop-blur-sm">
+          <div
+            className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-primary/20 blur-3xl"
+            aria-hidden="true"
+          />
+          <div className="relative flex flex-col">
+            <img
+              src="/images/luna-prive-logo.png"
+              alt="Luna Privé"
+              className="h-7 w-auto self-start"
+            />
+            <h1 className="mt-5 text-balance text-3xl font-extrabold leading-tight tracking-tight text-foreground">
+              Conquiste seu convite
+            </h1>
+            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+              Confirme seus dados abaixo e garanta seu Convite Exclusivo ao Luna Privé.
             </p>
+
+            <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-border/60 bg-background/50 px-4 py-3">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+                <Mail className="size-4" aria-hidden="true" />
+              </span>
+              <p className="text-pretty text-xs font-medium leading-relaxed text-foreground">
+                Você receberá o acesso ao Luna Privé por e-mail.
+              </p>
+            </div>
           </div>
         </header>
 
