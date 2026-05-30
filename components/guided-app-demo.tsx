@@ -20,7 +20,6 @@ import {
   ImagePlus,
   Info,
   Loader2,
-  Lightbulb,
   ArrowUpRight,
   ArrowDownLeft,
   ArrowDownRight,
@@ -679,23 +678,16 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       {createdPack && (
         <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
           <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
-          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-primary/40 bg-card p-6 text-center shadow-2xl shadow-primary/20 ring-1 ring-primary/10">
-            <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-positive/15 ring-4 ring-positive/10">
-              <Check className="size-7 text-positive" aria-hidden="true" />
+          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-border bg-card p-7 text-center shadow-2xl">
+            <span className="luna-gradient mx-auto flex size-16 items-center justify-center rounded-full shadow-lg shadow-primary/40">
+              <Check className="size-8 text-primary-foreground" aria-hidden="true" />
             </span>
-            <p className="mt-4 text-lg font-bold text-foreground">Fotos publicadas com sucesso!</p>
-            <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-              Seu pack <span className="font-semibold text-primary">{createdPack}</span> foi
-              publicado com sucesso e já está na vitrine.
+            <p className="mt-5 text-xl font-bold text-foreground">Pack publicado!</p>
+            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+              <span className="font-semibold text-primary">{createdPack}</span> já está na sua
+              vitrine, pronto pra vender.
             </p>
-            <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3 text-left">
-              <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-              <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
-                No app real, você cria seus packs antes de começar a vender. Agora
-                veja onde o seu dinheiro cai.
-              </p>
-            </div>
-            <div className="mt-5">
+            <div className="mt-6">
               <CtaButton
                 onClick={() => {
                   setCreatedPack(null)
