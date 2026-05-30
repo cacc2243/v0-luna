@@ -78,9 +78,9 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist), 'Geist Fallback';
-  --font-serif: var(--font-cormorant), Georgia, serif;
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --color-positive: var(--positive);
   --color-background: var(--background);
   --color-foreground: var(--foreground);

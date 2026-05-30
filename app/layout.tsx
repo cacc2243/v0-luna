@@ -1,14 +1,12 @@
 import type { Metadata } from 'next'
-import { Geist, Cormorant_Garamond } from 'next/font/google'
+import { Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
-const cormorant = Cormorant_Garamond({
+const manrope = Manrope({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  style: ['normal', 'italic'],
-  variable: '--font-cormorant',
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-manrope',
 })
 
 export const metadata: Metadata = {
@@ -41,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={`dark bg-background ${geist.variable} ${cormorant.variable}`}>
+    <html lang="pt-BR" className={`dark bg-background ${manrope.variable}`}>
       <body className="font-sans antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
