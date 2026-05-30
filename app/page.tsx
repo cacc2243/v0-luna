@@ -11,11 +11,15 @@ import {
   TrendingUp,
   Footprints,
   Smartphone,
+  Headset,
+  ShieldCheck as ShieldCheckIcon,
+  EyeOff,
 } from 'lucide-react'
 import { SaleNotification } from '@/components/sale-notification'
 import { HowItWorksStep } from '@/components/how-it-works-step'
 import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
+import { TrustCard } from '@/components/trust-card'
 import { CtaButton } from '@/components/cta-button'
 import { PageBackground } from '@/components/page-background'
 
@@ -111,7 +115,36 @@ const myths = [
   },
 ]
 
-const TOTAL_STEPS = 4
+const trustCards = [
+  {
+    icon: Headset,
+    title: 'Suporte de verdade, 24 horas',
+    description:
+      'Você nunca fica sozinha. Tem gente pronta pra te ajudar a qualquer hora do dia ou da noite.',
+    items: [
+      'Gerente de conta exclusiva',
+      'WhatsApp exclusivo para dúvidas',
+      'Suporte direto na plataforma',
+      'Atendimento também por e-mail',
+    ],
+  },
+  {
+    icon: ShieldCheckIcon,
+    title: 'Anônimo, seguro e direto no PIX',
+    description:
+      'Todas as transações são anônimas e protegidas. Você vende e recebe direto no seu PIX, sem intermediários.',
+  },
+  {
+    icon: EyeOff,
+    title: 'Ninguém precisa saber que é você',
+    description:
+      'Você não precisa divulgar nada e ninguém descobre sua identidade. A vitrine é nossa.',
+    highlight:
+      '+120 mil compradores ativos todos os dias. É só postar e vender!',
+  },
+]
+
+const TOTAL_STEPS = 5
 
 export default function Page() {
   const [step, setStep] = useState(0)
@@ -351,9 +384,48 @@ export default function Page() {
             </section>
 
             <div className="animate-item mt-7" style={{ animationDelay: '300ms' }}>
-              <CtaButton>
+              <CtaButton onClick={next}>
                 Entendi, quero começar! <span aria-hidden="true">💪</span>
               </CtaButton>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 5 — Por que confiar */}
+        {step === 4 && (
+          <div key="step-4" className="animate-screen flex flex-col">
+            <section
+              className="animate-item mt-7 text-center"
+              style={{ animationDelay: '60ms' }}
+            >
+              <h1 className="text-balance font-sans text-[1.6rem] font-bold leading-tight tracking-tight text-foreground">
+                Por que confiar no <span className="text-primary">Luna Privé</span>?
+              </h1>
+              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                Estrutura profissional, segurança e total anonimato do começo ao
+                fim.
+              </p>
+            </section>
+
+            <section
+              className="animate-item mt-6 flex flex-col gap-3"
+              style={{ animationDelay: '160ms' }}
+              aria-label="Motivos para confiar no Luna Privé"
+            >
+              {trustCards.map((c) => (
+                <TrustCard
+                  key={c.title}
+                  icon={c.icon}
+                  title={c.title}
+                  description={c.description}
+                  items={c.items}
+                  highlight={c.highlight}
+                />
+              ))}
+            </section>
+
+            <div className="animate-item mt-7" style={{ animationDelay: '320ms' }}>
+              <CtaButton>Quero fazer parte</CtaButton>
             </div>
           </div>
         )}
