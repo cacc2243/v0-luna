@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   User,
   Mail,
@@ -27,6 +28,7 @@ const TOTAL = 6
 const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatória']
 
 export function SignupFlow({ onComplete }: SignupFlowProps) {
+  const router = useRouter()
   const [step, setStep] = useState(0)
   const [status, setStatus] = useState<'form' | 'loading' | 'success' | 'invite'>('form')
 
@@ -49,6 +51,19 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const finish = () => {
     setStatus('loading')
     setTimeout(() => setStatus('success'), 2200)
+  }
+
+  const goToConvite = () => {
+    try {
+      sessionStorage.setItem(
+        'luna_signup',
+        JSON.stringify({ username, email, pixType, pixKey }),
+      )
+    } catch {
+      // ignore storage errors
+    }
+    onComplete()
+    router.push('/convite')
   }
 
   // Validação por etapa
@@ -78,7 +93,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
       <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-6">
         {status === 'invite' ? (
-          <InviteCard onAccept={onComplete} />
+          <InviteCard onAccept={goToConvite} />
         ) : status === 'success' ? (
           <SuccessCard username={username} onContinue={() => setStatus('invite')} />
         ) : status === 'loading' ? (
