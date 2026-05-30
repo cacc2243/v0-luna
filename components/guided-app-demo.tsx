@@ -21,6 +21,10 @@ import {
   Info,
   Loader2,
   Lightbulb,
+  ArrowUpRight,
+  ArrowDownLeft,
+  ArrowDownRight,
+  Receipt,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 
@@ -89,7 +93,7 @@ const examplePhotos = [
 ]
 
 export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
-  const [phase, setPhase] = useState<'tour' | 'selling' | 'done' | 'packs'>('tour')
+  const [phase, setPhase] = useState<'tour' | 'selling' | 'done' | 'packs' | 'wallet'>('tour')
   const [tourStep, setTourStep] = useState(0)
   const [showCreate, setShowCreate] = useState(false)
   const [packName, setPackName] = useState('Pés & Saltos')
@@ -183,7 +187,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     }, 1300)
   }
 
-  const activeTab = phase === 'packs' ? 'Packs' : 'Início'
+  const activeTab = phase === 'packs' ? 'Packs' : phase === 'wallet' ? 'Carteira' : 'Início'
 
   const dim = (key: string) =>
     phase === 'tour' && highlight !== key ? 'opacity-40' : 'opacity-100'
@@ -216,7 +220,9 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       )}
 
       {/* Conteúdo rolável do app */}
-      {phase === 'packs' ? (
+      {phase === 'wallet' ? (
+        <WalletScreen onDone={onComplete} />
+      ) : phase === 'packs' ? (
         <PacksScreen
           balance={balance}
           createdPack={createdPack}
@@ -632,12 +638,19 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3 text-left">
               <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
               <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
-                No app real, você cria seus packs antes de começar a vender. Depois é
-                só esperar as vendas caírem.
+                No app real, você cria seus packs antes de começar a vender. Agora
+                veja onde o seu dinheiro cai.
               </p>
             </div>
             <div className="mt-5">
-              <CtaButton onClick={onComplete}>Quero vender de verdade</CtaButton>
+              <CtaButton
+                onClick={() => {
+                  setCreatedPack(null)
+                  setPhase('wallet')
+                }}
+              >
+                Ver minha carteira
+              </CtaButton>
             </div>
           </div>
         </div>
@@ -759,6 +772,155 @@ function PacksScreen({
           <p className="mt-1 text-pretty text-xs text-muted-foreground">
             Crie seu primeiro pack para aparecer na vitrine.
           </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const withdrawals = [
+  { label: 'Saque PIX', date: 'Hoje, 14:32', amount: 4280.0 },
+  { label: 'Saque PIX', date: 'Ontem, 09:10', amount: 2150.0 },
+  { label: 'Saque PIX', date: '12 mai, 18:47', amount: 3890.0 },
+]
+
+function WalletScreen({ onDone }: { onDone: () => void }) {
+  const [showHint, setShowHint] = useState(true)
+  const available = 18541.67
+
+  return (
+    <div className="relative flex-1 overflow-hidden">
+      <div className="h-full overflow-y-auto px-4 pb-6 pt-6">
+        {/* Header */}
+        <header className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
+            <div className="leading-tight">
+              <p className="text-sm font-semibold text-foreground">@voce</p>
+              <span className="flex items-center gap-1 text-xs text-positive">
+                <span className="size-1.5 rounded-full bg-positive" />
+                Online
+              </span>
+            </div>
+          </div>
+          <div className="luna-border flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
+            <Wallet className="size-5 text-primary" aria-hidden="true" />
+            <div className="leading-tight">
+              <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
+              <p className="text-base font-bold text-foreground">{brl(available)}</p>
+            </div>
+          </div>
+        </header>
+
+        {/* Título */}
+        <div className="mt-5 leading-tight">
+          <h1 className="text-xl font-bold text-foreground">Carteira</h1>
+          <p className="text-xs text-muted-foreground">Saldo, ganhos e transferências</p>
+        </div>
+
+        {/* Card saldo disponível */}
+        <div className="luna-border mt-4 rounded-3xl bg-card px-5 py-6 text-center shadow-lg shadow-primary/10">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
+            Saldo disponível
+          </p>
+          <p className="mt-1.5 text-4xl font-bold text-foreground">{brl(available)}</p>
+          <p className="mt-1.5 flex items-center justify-center gap-1 text-sm font-semibold text-positive">
+            <ArrowUpRight className="size-4" aria-hidden="true" />
+            {brl(1664.97)} hoje
+          </p>
+        </div>
+
+        {/* Ações */}
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            className="luna-gradient flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30"
+          >
+            <ArrowUpRight className="size-4" aria-hidden="true" />
+            Transferir PIX
+          </button>
+          <button
+            type="button"
+            className="luna-border flex items-center justify-center gap-2 rounded-2xl bg-card py-3.5 text-sm font-semibold text-foreground"
+          >
+            <Receipt className="size-4 text-primary" aria-hidden="true" />
+            Extrato
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="luna-border rounded-2xl bg-card p-3.5">
+            <p className="flex items-center gap-1 text-[0.6rem] font-semibold uppercase tracking-wider text-muted-foreground">
+              <ArrowUpRight className="size-3 text-positive" aria-hidden="true" />
+              Ganhos mês
+            </p>
+            <p className="mt-1 text-lg font-bold text-foreground">{brl(18541.67)}</p>
+          </div>
+          <div className="luna-border rounded-2xl bg-card p-3.5">
+            <p className="flex items-center gap-1 text-[0.6rem] font-semibold uppercase tracking-wider text-muted-foreground">
+              <ArrowDownRight className="size-3 text-primary" aria-hidden="true" />
+              Sacado
+            </p>
+            <p className="mt-1 text-lg font-bold text-foreground">{brl(94614.76)}</p>
+          </div>
+        </div>
+
+        {/* Saques realizados */}
+        <div className="mt-5">
+          <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <ArrowDownLeft className="size-4 text-primary" aria-hidden="true" />
+            Saques realizados
+          </p>
+          <div className="flex flex-col gap-2">
+            {withdrawals.map((w, i) => (
+              <div
+                key={i}
+                className="luna-border flex items-center justify-between rounded-2xl bg-card px-3.5 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex size-9 items-center justify-center rounded-full bg-primary/10">
+                    <ArrowDownLeft className="size-4 text-primary" aria-hidden="true" />
+                  </span>
+                  <div className="leading-tight">
+                    <p className="text-sm font-semibold text-foreground">{w.label}</p>
+                    <p className="text-[0.65rem] text-muted-foreground">{w.date}</p>
+                  </div>
+                </div>
+                <p className="text-sm font-bold text-foreground">-{brl(w.amount)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Tooltip — Sua carteira */}
+      {showHint && (
+        <div className="absolute inset-x-0 bottom-0 z-[55]">
+          <div
+            className="absolute inset-0 -top-24 bg-gradient-to-t from-background via-background/90 to-transparent"
+            aria-hidden="true"
+          />
+          <div className="animate-pop relative m-3 rounded-3xl border border-primary/40 bg-card p-5 shadow-2xl shadow-primary/20">
+            <div className="mb-3 flex items-center gap-1.5">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full ${i === 4 ? 'w-5 bg-primary' : 'w-3 bg-primary/30'}`}
+                />
+              ))}
+            </div>
+            <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-primary">
+              Sua carteira
+            </p>
+            <p className="mt-2 text-pretty text-sm leading-relaxed text-foreground">
+              Aqui você acompanha seu saldo, ganhos e pode transferir para sua conta
+              via PIX a qualquer momento.
+            </p>
+            <div className="mt-4">
+              <CtaButton onClick={onDone}>Entendi</CtaButton>
+            </div>
+          </div>
         </div>
       )}
     </div>
