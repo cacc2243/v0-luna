@@ -36,6 +36,7 @@ export default function ConvitePage() {
     <main className="relative min-h-[100dvh] w-full bg-background">
       <div className="fixed inset-0 z-0">
         <PageBackground />
+        <div className="absolute inset-0 bg-background/25" aria-hidden="true" />
       </div>
 
       {/* Top bar */}
