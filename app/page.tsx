@@ -33,7 +33,7 @@ export default function Page() {
         </header>
 
         <section className="mt-9 text-center">
-          <h1 className="text-balance font-sans text-[1.75rem] font-extrabold leading-tight tracking-tight text-foreground">
+          <h1 className="text-balance font-sans text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground">
             Mais de <span className="text-primary">R$ 18.000,00</span> todo mês
             apenas com seus <span className="text-primary">PÉS</span>.
           </h1>
