@@ -524,16 +524,15 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
       {/* Modal — Criar Pack */}
       {showCreate && !createdPack && (
-        <div className="absolute inset-0 z-[55] flex items-end justify-center">
+        <div className="absolute inset-0 z-[55] flex items-start justify-center px-4 pb-40 pt-6">
           <div
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => !publishing && setShowCreate(false)}
             aria-hidden="true"
           />
-          <div className="animate-sheet-up relative flex max-h-[92%] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl">
+          <div className="animate-pop relative flex max-h-full w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
             {/* Cabeçalho fixo */}
-            <div className="shrink-0 border-b border-border/60 px-5 pb-4 pt-3">
-              <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-muted-foreground/30" aria-hidden="true" />
+            <div className="shrink-0 border-b border-border/60 px-5 pb-4 pt-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
@@ -557,21 +556,6 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
             {/* Conteúdo rolável */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              {/* Mentora conduzindo */}
-              <div className="luna-border mb-5 flex items-start gap-3 rounded-2xl bg-card px-3.5 py-3 ring-1 ring-primary/30">
-                <img
-                  src="/images/mentor.png"
-                  alt="Camila"
-                  className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
-                />
-                <p className="animate-item flex-1 text-pretty text-sm leading-relaxed text-foreground">
-                  Já deixei tudo prontinho pra você ver! Dá uma olhada no{' '}
-                  <span className="font-bold">nome</span>, no{' '}
-                  <span className="font-bold">preço</span> e nas fotos. Quando estiver pronta, é só
-                  tocar em <span className="font-bold text-primary">Criar pack</span> aqui embaixo.
-                </p>
-              </div>
-
               <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3">
                 <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                 <p className="text-pretty text-xs leading-relaxed text-foreground">
@@ -669,6 +653,23 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+
+          {/* Fala da mentora — flutuante, na frente do card */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[56] px-4">
+            <div className="luna-border animate-sheet-up flex items-start gap-3 rounded-2xl bg-card px-3.5 py-3 shadow-2xl ring-1 ring-primary/30">
+              <img
+                src="/images/mentor.png"
+                alt="Camila"
+                className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+              />
+              <p className="flex-1 text-pretty text-sm leading-relaxed text-foreground">
+                Já deixei tudo prontinho pra você ver! Dá uma olhada no{' '}
+                <span className="font-bold">nome</span>, no{' '}
+                <span className="font-bold">preço</span> e nas fotos. Quando estiver pronta, é só
+                tocar em <span className="font-bold text-primary">Criar pack</span> aqui em cima.
+              </p>
             </div>
           </div>
         </div>
