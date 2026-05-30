@@ -39,8 +39,10 @@ export default function ConvitePage() {
   }, [])
 
   return (
-    <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">
-      <PageBackground />
+    <main className="relative min-h-[100dvh] w-full bg-background">
+      <div className="fixed inset-0 z-0">
+        <PageBackground />
+      </div>
 
       {/* Top bar */}
       <div className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-md">
