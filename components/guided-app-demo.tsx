@@ -15,6 +15,7 @@ import {
   Check,
   PiggyBank,
   X,
+  Ghost,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 
@@ -88,6 +89,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [floats, setFloats] = useState<{ id: number; amount: number }[]>([])
   const [shake, setShake] = useState(false)
   const [refuseHint, setRefuseHint] = useState(false)
+  const [toast, setToast] = useState<{ id: number; amount: number } | null>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const ordersRef = useRef<HTMLDivElement>(null)
@@ -135,6 +137,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     setFloats((f) => [...f, { id: floatId, amount: sale.amount }])
     setTimeout(() => setFloats((f) => f.filter((x) => x.id !== floatId)), 1400)
 
+    // Notificação push estilo celular
+    const toastId = floatId
+    setToast({ id: toastId, amount: sale.amount })
+    setTimeout(() => setToast((cur) => (cur?.id === toastId ? null : cur)), 3000)
+
     if (saleIndex < sales.length - 1) {
       setTimeout(() => setSaleIndex((i) => i + 1), 1100)
     } else {
@@ -160,6 +167,25 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-background">
+      {/* Notificação push estilo celular */}
+      {toast && (
+        <div
+          key={toast.id}
+          className="animate-notif pointer-events-none absolute inset-x-0 top-0 z-[60] px-3 pt-3"
+        >
+          <div className="mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-2xl backdrop-blur-md">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15">
+              <Ghost className="size-5 text-primary" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="text-sm font-bold text-foreground">Você vendeu um Pack!</p>
+              <p className="text-xs text-muted-foreground">agora</p>
+            </div>
+            <span className="text-sm font-bold text-positive">+{brl(toast.amount)}</span>
+          </div>
+        </div>
+      )}
+
       {/* Conteúdo rolável do app */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
         {/* Header */}

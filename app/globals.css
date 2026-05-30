@@ -274,6 +274,29 @@
   animation: shake-x 0.45s ease-in-out;
 }
 
+/* Mobile push notification: slide in from top, hold, slide back up */
+@keyframes notif-in-out {
+  0% {
+    opacity: 0;
+    transform: translateY(-120%);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  88% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120%);
+  }
+}
+.animate-notif {
+  animation: notif-in-out 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 /* Custom branded scrollbar */
 @supports (scrollbar-width: thin) {
   html {
