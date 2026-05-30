@@ -1,10 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { ShieldCheck, Lock, Zap, UserPlus, Camera, Wallet, TrendingUp } from 'lucide-react'
+import {
+  ShieldCheck,
+  Lock,
+  Zap,
+  UserPlus,
+  Camera,
+  Wallet,
+  TrendingUp,
+  Footprints,
+  Smartphone,
+} from 'lucide-react'
 import { SaleNotification } from '@/components/sale-notification'
 import { HowItWorksStep } from '@/components/how-it-works-step'
 import { TestimonialCarousel } from '@/components/testimonial-carousel'
+import { MythCard } from '@/components/myth-card'
 import { CtaButton } from '@/components/cta-button'
 import { PageBackground } from '@/components/page-background'
 
@@ -79,7 +90,28 @@ const testimonials = [
   },
 ]
 
-const TOTAL_STEPS = 3
+const myths = [
+  {
+    icon: Footprints,
+    title: 'Não precisa ter pé perfeito',
+    description:
+      'Existem clientes para TODOS os tipos de gostos. Pés grandes, pequenos, lisos, com marquinha de chinelo... todos vendem!',
+  },
+  {
+    icon: Camera,
+    title: 'Sem câmera profissional',
+    description:
+      'Fotos com celular comum funcionam perfeitamente. O que importa é a iluminação e o ângulo certo.',
+  },
+  {
+    icon: Smartphone,
+    title: 'Qualquer celular serve',
+    description:
+      'Não precisa do último iPhone. Celulares simples já tiram fotos com qualidade suficiente para vender.',
+  },
+]
+
+const TOTAL_STEPS = 4
 
 export default function Page() {
   const [step, setStep] = useState(0)
@@ -281,7 +313,47 @@ export default function Page() {
             </section>
 
             <div className="animate-item mt-5" style={{ animationDelay: '340ms' }}>
-              <CtaButton>Continuar</CtaButton>
+              <CtaButton onClick={next}>Continuar</CtaButton>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4 — Quebra de objeções / mitos */}
+        {step === 3 && (
+          <div key="step-3" className="animate-screen flex flex-col">
+            <section
+              className="animate-item mt-7 text-center"
+              style={{ animationDelay: '60ms' }}
+            >
+              <h1 className="flex items-center justify-center gap-2 text-balance font-sans text-[1.7rem] font-bold leading-tight tracking-tight text-foreground">
+                Pare de se limitar
+                <span aria-hidden="true">🚫</span>
+              </h1>
+              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                Esses mitos impedem muitas mulheres de começar. Mas a verdade é
+                outra:
+              </p>
+            </section>
+
+            <section
+              className="animate-item mt-6 flex flex-col gap-3"
+              style={{ animationDelay: '160ms' }}
+              aria-label="Mitos sobre vender no Luna Privé"
+            >
+              {myths.map((m) => (
+                <MythCard
+                  key={m.title}
+                  icon={m.icon}
+                  title={m.title}
+                  description={m.description}
+                />
+              ))}
+            </section>
+
+            <div className="animate-item mt-7" style={{ animationDelay: '300ms' }}>
+              <CtaButton>
+                Entendi, quero começar! <span aria-hidden="true">💪</span>
+              </CtaButton>
             </div>
           </div>
         )}
