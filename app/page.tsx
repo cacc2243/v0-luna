@@ -1,4 +1,3 @@
-import { LunaLogo } from '@/components/luna-logo'
 import { SaleNotification } from '@/components/sale-notification'
 
 const notifications = [
@@ -26,7 +25,11 @@ export default function Page() {
       {/* Content */}
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-8 pt-12">
         <header className="flex justify-center">
-          <LunaLogo />
+          <img
+            src="/images/luna-prive-logo.png"
+            alt="Luna Privé"
+            className="h-9 w-auto"
+          />
         </header>
 
         <section className="mt-9 text-center">
