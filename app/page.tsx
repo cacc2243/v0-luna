@@ -28,7 +28,7 @@ export default function Page() {
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
-            className="h-9 w-auto"
+            className="h-11 w-auto"
           />
         </header>
 
@@ -56,7 +56,7 @@ export default function Page() {
         <div className="mt-7">
           <button
             type="button"
-            className="w-full rounded-full bg-primary py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+            className="w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.6_0.22_8)] py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
           >
             Entrar e ver como funciona
           </button>
