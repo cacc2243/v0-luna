@@ -225,11 +225,11 @@ export default function Page() {
             >
               <h1 className="text-balance font-sans text-[1.55rem] font-semibold leading-tight tracking-tight text-foreground">
                 Junte-se a{' '}
-                <span className="font-extrabold text-primary">
+                <span className="font-semibold text-primary">
                   <span className="text-[1.05em]">+1.200</span> usuárias
                 </span>{' '}
                 que já faturam{' '}
-                <span className="font-extrabold text-primary">+R$ 10 mil</span> por mês.
+                <span className="font-semibold text-primary">+R$ 10 mil</span> por mês.
               </h1>
               <p className="mt-2.5 text-balance text-sm leading-relaxed text-muted-foreground">
                 Anônimas, no controle e ganhando de verdade no Luna Privé.
