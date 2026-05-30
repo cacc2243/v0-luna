@@ -36,22 +36,10 @@ export function AgeGate({ onConfirm }: { onConfirm: () => void }) {
           aria-hidden="true"
         />
 
-        {/* Selo +18 */}
-        <div className="relative mx-auto flex size-20 items-center justify-center">
-          <div className="absolute inset-0 rounded-full border-2 border-primary/40" />
-          <div className="absolute inset-1.5 rounded-full bg-primary/15" />
-          <div className="relative flex flex-col items-center leading-none">
-            <span className="text-2xl font-bold tracking-tight text-primary">18</span>
-            <span className="mt-0.5 text-[0.55rem] font-bold uppercase tracking-[0.2em] text-primary/80">
-              anos
-            </span>
-          </div>
-        </div>
-
         <img
           src="/images/luna-prive-logo.png"
           alt="Luna Privé"
-          className="relative mx-auto mt-5 h-7 w-auto"
+          className="relative mx-auto mt-2 h-11 w-auto"
         />
 
         <h2
