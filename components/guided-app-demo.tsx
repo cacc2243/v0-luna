@@ -796,7 +796,8 @@ function PacksScreen({
   onCreate: () => void
 }) {
   return (
-    <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
+    <div className="relative flex-1 overflow-hidden">
+      <div className="h-full overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
@@ -836,23 +837,6 @@ function PacksScreen({
         </button>
       </div>
 
-      {/* Mentora conduzindo */}
-      {!createdPack && (
-        <div className="luna-border mt-4 flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
-          <img
-            src="/images/mentor.png"
-            alt="Camila"
-            className="size-12 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
-          />
-          <p className="animate-item flex-1 text-pretty text-sm leading-relaxed text-foreground">
-            Aqui é a sua vitrine! No app real, você monta seus packs{' '}
-            <span className="font-bold">antes de começar a vender</span>. Toque em{' '}
-            <span className="font-bold text-primary">Criar Pack</span> que eu te mostro como é
-            rápido montar o seu primeiro.
-          </p>
-        </div>
-      )}
-
       {/* Vitrine */}
       {createdPack ? (
         <div className="mt-5 grid grid-cols-2 gap-3">
@@ -884,6 +868,32 @@ function PacksScreen({
             Crie seu primeiro pack para aparecer na vitrine.
           </p>
         </div>
+      )}
+      </div>
+
+      {/* Mentora conduzindo — popup na base */}
+      {!createdPack && (
+        <>
+          <div
+            className="absolute inset-x-0 bottom-0 z-[50] h-40 bg-gradient-to-t from-background via-background/80 to-transparent"
+            aria-hidden="true"
+          />
+          <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
+            <div className="luna-border animate-pop flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
+              <img
+                src="/images/mentor.png"
+                alt="Camila"
+                className="size-11 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+              />
+              <p className="animate-item flex-1 text-pretty text-sm leading-relaxed text-foreground">
+                Aqui é a sua vitrine! No app real, você monta seus packs{' '}
+                <span className="font-bold">antes de começar a vender</span>. Toque em{' '}
+                <span className="font-bold text-primary">Criar Pack</span> que eu te mostro como é
+                rápido montar o seu primeiro.
+              </p>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )
