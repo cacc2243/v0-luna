@@ -234,24 +234,16 @@ export default function Page() {
               className="animate-item mt-7 text-center"
               style={{ animationDelay: '60ms' }}
             >
-              <span className="luna-border inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary backdrop-blur-md">
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-70" />
-                  <span className="relative inline-flex size-2 rounded-full bg-primary" />
-                </span>
-                Faturamento ao vivo
-              </span>
-
-              <div className="mt-5 flex items-end justify-center gap-1.5">
-                <span className="pb-2 text-2xl font-bold text-primary">+</span>
-                <span className="font-sans text-[5rem] font-extrabold leading-[0.8] tracking-tighter text-foreground drop-shadow-[0_0_30px_oklch(0.64_0.25_6_/_0.6)]">
-                  1.200
-                </span>
-              </div>
-              <p className="mt-3 text-balance text-sm leading-relaxed text-muted-foreground">
-                usuárias anônimas já faturam{' '}
-                <span className="font-bold text-primary">+R$ 10 mil</span> todos os
-                meses no Luna Privé.
+              <h1 className="text-balance font-sans text-[1.55rem] font-semibold leading-tight tracking-tight text-foreground">
+                Junte-se a{' '}
+                <span className="font-extrabold text-primary">
+                  <span className="text-[1.05em]">+1.200</span> usuárias
+                </span>{' '}
+                que já faturam{' '}
+                <span className="font-extrabold text-primary">+R$ 10 mil</span> por mês.
+              </h1>
+              <p className="mt-2.5 text-balance text-sm leading-relaxed text-muted-foreground">
+                Anônimas, no controle e ganhando de verdade no Luna Privé.
               </p>
             </section>
 
