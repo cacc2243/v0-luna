@@ -35,8 +35,7 @@ export default function Page() {
         <section className="mt-9 text-center">
           <h1 className="text-balance font-sans text-[1.75rem] font-extrabold leading-tight tracking-tight text-foreground">
             Mais de <span className="text-primary">R$ 18.000,00</span> todo mês
-            apenas com seus{' '}
-            <span className="font-serif italic text-primary">PÉS</span>.
+            apenas com seus <span className="text-primary">PÉS</span>.
           </h1>
           <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
             100% anônimo, sem mostrar rostos ou identidade real.
@@ -63,7 +62,7 @@ export default function Page() {
           </p>
         </section>
 
-        <div className="mt-auto pt-8">
+        <div className="mt-8">
           <button
             type="button"
             className="w-full rounded-full bg-primary py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
