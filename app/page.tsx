@@ -14,12 +14,19 @@ import {
   Headset,
   ShieldCheck as ShieldCheckIcon,
   EyeOff,
+  Ticket,
+  ImagePlus,
+  Store,
+  ShoppingBag,
+  Banknote,
+  ArrowDownToLine,
 } from 'lucide-react'
 import { SaleNotification } from '@/components/sale-notification'
 import { HowItWorksStep } from '@/components/how-it-works-step'
 import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
 import { TrustCard } from '@/components/trust-card'
+import { JourneyStep } from '@/components/journey-step'
 import { CtaButton } from '@/components/cta-button'
 import { PageBackground } from '@/components/page-background'
 
@@ -144,7 +151,62 @@ const trustCards = [
   },
 ]
 
-const TOTAL_STEPS = 5
+const journey = [
+  {
+    number: 1,
+    icon: Ticket,
+    tag: 'Acesso',
+    title: 'Receba seu Convite de Acesso',
+    description:
+      'Toda usuária entra por convite — é o que mantém o Luna Privé exclusivo e seguro. O seu está a caminho.',
+    reward: 'Seu convite chega em breve',
+    highlight: true,
+  },
+  {
+    number: 2,
+    icon: ImagePlus,
+    tag: 'Criação',
+    title: 'Monte seus packs',
+    description:
+      'Dentro da plataforma você posta suas fotos e organiza seus packs. Você define o que vende e por quanto.',
+  },
+  {
+    number: 3,
+    icon: Store,
+    tag: 'Vitrine',
+    title: 'Apareça na vitrine',
+    description:
+      'Seus packs entram na vitrine e ficam visíveis para os amantes de pés — de forma 100% anônima.',
+  },
+  {
+    number: 4,
+    icon: ShoppingBag,
+    tag: 'Venda',
+    title: 'Eles compram seu conteúdo',
+    description:
+      'Para ver seu conteúdo, o comprador precisa adquirir o pack. Cada venda é uma nova entrada no seu caixa.',
+  },
+  {
+    number: 5,
+    icon: Banknote,
+    tag: 'Ganho',
+    title: 'Receba na hora',
+    description:
+      'O valor cai na sua conta Luna Privé no momento exato da compra. Sem espera, sem burocracia.',
+    reward: 'Saldo atualizado em tempo real',
+  },
+  {
+    number: 6,
+    icon: ArrowDownToLine,
+    tag: 'Saque',
+    title: 'Saque quando quiser no PIX',
+    description:
+      'Transfira seu saldo para sua chave PIX a qualquer momento. O dinheiro é seu, no seu tempo.',
+    reward: 'Direto na sua chave PIX',
+  },
+]
+
+const TOTAL_STEPS = 6
 
 export default function Page() {
   const [step, setStep] = useState(0)
@@ -425,7 +487,62 @@ export default function Page() {
             </section>
 
             <div className="animate-item mt-7" style={{ animationDelay: '320ms' }}>
-              <CtaButton>Quero fazer parte</CtaButton>
+              <CtaButton onClick={next}>Continuar</CtaButton>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 6 — Jornada gamificada dentro da plataforma */}
+        {step === 5 && (
+          <div key="step-5" className="animate-screen flex flex-col">
+            <section
+              className="animate-item mt-7 text-center"
+              style={{ animationDelay: '60ms' }}
+            >
+              <span className="inline-flex items-center rounded-full bg-primary/15 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary">
+                Sua jornada
+              </span>
+              <h1 className="mt-3 text-balance font-sans text-[1.6rem] font-bold leading-tight tracking-tight text-foreground">
+                Como o <span className="text-primary">Luna Privé</span> funciona
+                por dentro
+              </h1>
+              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                Do convite ao PIX na conta — siga o caminho que já transformou a
+                vida de milhares de usuárias.
+              </p>
+            </section>
+
+            <section
+              className="animate-item mt-7"
+              style={{ animationDelay: '160ms' }}
+              aria-label="Passos da jornada no Luna Privé"
+            >
+              {journey.map((j, i) => (
+                <JourneyStep
+                  key={j.number}
+                  number={j.number}
+                  icon={j.icon}
+                  tag={j.tag}
+                  title={j.title}
+                  description={j.description}
+                  reward={j.reward}
+                  highlight={j.highlight}
+                  isLast={i === journey.length - 1}
+                />
+              ))}
+            </section>
+
+            <div
+              className="luna-border animate-item mt-2 rounded-2xl bg-card px-4 py-3.5 text-center"
+              style={{ animationDelay: '260ms' }}
+            >
+              <p className="text-balance text-sm font-semibold text-foreground">
+                É só postar e vender. <span className="text-primary">Simples assim.</span>
+              </p>
+            </div>
+
+            <div className="animate-item mt-6" style={{ animationDelay: '340ms' }}>
+              <CtaButton>Quero meu convite de acesso</CtaButton>
             </div>
           </div>
         )}
