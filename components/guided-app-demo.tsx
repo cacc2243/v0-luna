@@ -14,7 +14,6 @@ import {
   Bell,
   Check,
   X,
-  Ghost,
   Plus,
   ImagePlus,
   Info,
@@ -278,7 +277,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
         >
           <div className="mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-2xl backdrop-blur-md">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15">
-              <Ghost className="size-5 text-primary" aria-hidden="true" />
+              <img src="/images/luna-icon.png" alt="Luna Privé" className="size-6 object-contain" />
             </span>
             <div className="min-w-0 flex-1 leading-tight">
               <p className="text-sm font-bold text-foreground">Você vendeu um Pack!</p>
