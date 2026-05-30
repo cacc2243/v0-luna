@@ -224,10 +224,10 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
   const dim = (key: string) =>
   phase === 'tour' && highlight !== key
-    ? 'opacity-40'
+    ? 'opacity-25 blur-[1px] brightness-75 transition-all duration-300'
     : saleActive && key !== 'orders'
-      ? 'opacity-30'
-      : 'opacity-100'
+      ? 'opacity-25 blur-[1px] brightness-75 transition-all duration-300'
+      : 'opacity-100 transition-all duration-300'
 
   const ring = (key: string) => (highlight === key ? 'animate-highlight' : '')
 
@@ -314,7 +314,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
         {/* Saldo pendente — só aparece quando há pedido pendente */}
         {pendingCount > 0 && (
-          <div className={`luna-border mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 transition-opacity duration-300 ${saleActive ? 'opacity-30' : 'opacity-100'}`}>
+          <div className={`luna-border mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 transition-all duration-300 ${saleActive ? 'opacity-25 blur-[1px] brightness-75' : 'opacity-100'}`}>
             <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
               <PiggyBank className="size-5 text-primary" aria-hidden="true" />
             </span>
@@ -360,7 +360,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
         {/* Pedidos recentes (pedido pendente + histórico de aceitas) */}
         <div ref={ordersRef} className={`mt-5 transition-all duration-300 ${dim('orders')}`}>
-          <div className={`mb-2 flex items-center justify-between transition-opacity duration-300 ${saleActive ? 'opacity-40' : 'opacity-100'}`}>
+          <div className={`mb-2 flex items-center justify-between transition-all duration-300 ${saleActive ? 'opacity-25 blur-[1px] brightness-75' : 'opacity-100'}`}>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <ShoppingBag className="size-4 text-primary" aria-hidden="true" />
               Pedidos recentes
@@ -434,7 +434,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               </p>
             </div>
           ) : (
-            <div className={`transition-opacity duration-300 ${saleActive ? 'opacity-30' : 'opacity-100'}`}>
+            <div className={`transition-all duration-300 ${saleActive ? 'opacity-25 blur-[1px] brightness-75' : 'opacity-100'}`}>
               {sales.slice(0, vendas).map((s) => (
                 <div
                   key={s.handle}
