@@ -219,11 +219,17 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
         ? 'Carteira'
         : 'Início'
 
-  const dim = (key: string) =>
-    phase === 'tour' && highlight !== key ? 'opacity-40' : 'opacity-100'
-  const ring = (key: string) => (highlight === key ? 'animate-highlight' : '')
-
   const currentSale = activeSale !== null ? sales[activeSale] : null
+  const saleActive = currentSale !== null && phase === 'selling'
+
+  const dim = (key: string) =>
+  phase === 'tour' && highlight !== key
+    ? 'opacity-40'
+    : saleActive && key !== 'orders'
+      ? 'opacity-30'
+      : 'opacity-100'
+
+  const ring = (key: string) => (highlight === key ? 'animate-highlight' : '')
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-background">
@@ -308,7 +314,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
         {/* Saldo pendente — só aparece quando há pedido pendente */}
         {pendingCount > 0 && (
-          <div className="luna-border mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3">
+          <div className={`luna-border mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 transition-opacity duration-300 ${saleActive ? 'opacity-30' : 'opacity-100'}`}>
             <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
               <PiggyBank className="size-5 text-primary" aria-hidden="true" />
             </span>
@@ -354,7 +360,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
         {/* Pedidos recentes (pedido pendente + histórico de aceitas) */}
         <div ref={ordersRef} className={`mt-5 transition-all duration-300 ${dim('orders')}`}>
-          <div className="mb-2 flex items-center justify-between">
+          <div className={`mb-2 flex items-center justify-between transition-opacity duration-300 ${saleActive ? 'opacity-40' : 'opacity-100'}`}>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <ShoppingBag className="size-4 text-primary" aria-hidden="true" />
               Pedidos recentes
@@ -370,8 +376,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           {currentSale && phase === 'selling' && (
             <div
               key={`order-${activeSale}`}
-              className={`luna-border animate-pop mb-2 rounded-2xl bg-card px-3 py-3 ${ring('orders')} ${
-                shake ? 'animate-shake' : ''
+              className={`luna-border relative z-10 mb-2 rounded-2xl bg-card px-3 py-3 ${ring('orders')} ${
+                shake ? 'animate-shake' : 'animate-soft-pulse'
               }`}
             >
               <div className="flex items-center gap-2.5">
@@ -428,7 +434,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               </p>
             </div>
           ) : (
-            <div>
+            <div className={`transition-opacity duration-300 ${saleActive ? 'opacity-30' : 'opacity-100'}`}>
               {sales.slice(0, vendas).map((s) => (
                 <div
                   key={s.handle}

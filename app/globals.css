@@ -332,6 +332,28 @@
   animation: sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Pedido pendente — pulso suave e lento para destaque */
+@keyframes soft-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 oklch(0.6 0.22 10 / 0);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 34px -4px oklch(0.6 0.22 10 / 0.6);
+  }
+}
+.animate-soft-pulse {
+  animation: soft-pulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-soft-pulse {
+    animation: none;
+  }
+}
+
 /* Custom branded scrollbar */
 @supports (scrollbar-width: thin) {
   html {
