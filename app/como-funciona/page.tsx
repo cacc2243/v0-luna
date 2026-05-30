@@ -65,14 +65,21 @@ export default function HowItWorksPage() {
           ))}
         </section>
 
-        <section className="mt-5 grid grid-cols-2 gap-3" aria-label="Números">
-          {stats.map((stat) => (
+        <section
+          className="mt-5 flex items-stretch rounded-2xl border border-primary/30 bg-card/70 backdrop-blur-md"
+          aria-label="Números"
+        >
+          {stats.map((stat, i) => (
             <div
               key={stat.label}
-              className="rounded-2xl border border-primary/30 bg-card/70 px-3 py-4 text-center backdrop-blur-md"
+              className={`flex flex-1 flex-col items-center justify-center px-3 py-3 text-center ${
+                i === 0 ? 'border-r border-primary/20' : ''
+              }`}
             >
-              <p className="text-2xl font-bold text-primary">{stat.value}</p>
-              <p className="mt-1 text-pretty text-xs leading-snug text-muted-foreground">
+              <p className="text-xl font-bold leading-none text-primary">
+                {stat.value}
+              </p>
+              <p className="mt-1.5 text-pretty text-[0.7rem] leading-tight text-muted-foreground">
                 {stat.label}
               </p>
             </div>
