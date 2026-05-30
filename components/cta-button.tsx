@@ -21,6 +21,7 @@ export function CtaButton({ children, className, style, ...props }: CtaButtonPro
         'group relative block w-full overflow-hidden rounded-2xl py-4 text-center text-base font-bold text-primary-foreground',
         'shadow-[0_10px_40px_-8px_oklch(0.55_0.22_9_/_0.7)]',
         'transition-all duration-200 hover:brightness-110 active:scale-[0.98]',
+        'disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none disabled:hover:brightness-100 disabled:active:scale-100',
         className,
       )}
       {...props}

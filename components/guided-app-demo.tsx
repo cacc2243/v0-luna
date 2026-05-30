@@ -27,6 +27,7 @@ import {
   Receipt,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
+import { SignupFlow } from '@/components/signup-flow'
 
 interface GuidedAppDemoProps {
   onComplete: () => void
@@ -93,7 +94,10 @@ const examplePhotos = [
 ]
 
 export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
-  const [phase, setPhase] = useState<'tour' | 'selling' | 'done' | 'packs' | 'wallet'>('tour')
+  const [phase, setPhase] = useState<
+    'tour' | 'selling' | 'done' | 'packs' | 'wallet' | 'signup'
+  >('tour')
+  const [showSellModal, setShowSellModal] = useState(false)
   const [tourStep, setTourStep] = useState(0)
   const [showCreate, setShowCreate] = useState(false)
   const [packName, setPackName] = useState('Pés & Saltos')
@@ -187,7 +191,12 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     }, 1300)
   }
 
-  const activeTab = phase === 'packs' ? 'Packs' : phase === 'wallet' ? 'Carteira' : 'Início'
+  const activeTab =
+    phase === 'packs'
+      ? 'Packs'
+      : phase === 'wallet' || phase === 'signup'
+        ? 'Carteira'
+        : 'Início'
 
   const dim = (key: string) =>
     phase === 'tour' && highlight !== key ? 'opacity-40' : 'opacity-100'
@@ -220,8 +229,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       )}
 
       {/* Conteúdo rolável do app */}
-      {phase === 'wallet' ? (
-        <WalletScreen onDone={onComplete} />
+      {phase === 'wallet' || phase === 'signup' ? (
+        <WalletScreen
+          onDone={() => setShowSellModal(true)}
+          hideHint={phase === 'signup'}
+        />
       ) : phase === 'packs' ? (
         <PacksScreen
           balance={balance}
@@ -655,6 +667,42 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           </div>
         </div>
       )}
+
+      {/* Modal — Vamos vender de verdade? */}
+      {showSellModal && phase !== 'signup' && (
+        <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
+          <div
+            className="absolute inset-0 bg-background/85 backdrop-blur-sm"
+            onClick={() => setShowSellModal(false)}
+            aria-hidden="true"
+          />
+          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-primary/40 bg-card p-6 text-center shadow-2xl shadow-primary/20">
+            <span className="luna-gradient mx-auto flex size-14 items-center justify-center rounded-full shadow-lg shadow-primary/40">
+              <Rocket className="size-7 text-primary-foreground" aria-hidden="true" />
+            </span>
+            <p className="mt-4 text-pretty text-xl font-bold leading-tight text-foreground">
+              Vamos agora vender de verdade?
+            </p>
+            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+              Você viu como é simples. Crie sua conta e comece a faturar com seus
+              packs de verdade — leva menos de 2 minutos.
+            </p>
+            <div className="mt-5">
+              <CtaButton
+                onClick={() => {
+                  setShowSellModal(false)
+                  setPhase('signup')
+                }}
+              >
+                Criar minha conta
+              </CtaButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay — Cadastro (app opaco ao fundo) */}
+      {phase === 'signup' && <SignupFlow onComplete={onComplete} />}
     </div>
   )
 }
@@ -784,7 +832,7 @@ const withdrawals = [
   { label: 'Saque PIX', date: '12 mai, 18:47', amount: 3890.0 },
 ]
 
-function WalletScreen({ onDone }: { onDone: () => void }) {
+function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boolean }) {
   const [showHint, setShowHint] = useState(true)
   const available = 18541.67
 
@@ -895,7 +943,7 @@ function WalletScreen({ onDone }: { onDone: () => void }) {
       </div>
 
       {/* Tooltip — Sua carteira */}
-      {showHint && (
+      {showHint && !hideHint && (
         <div className="absolute inset-x-0 bottom-0 z-[55]">
           <div
             className="absolute inset-0 -top-24 bg-gradient-to-t from-background via-background/90 to-transparent"
