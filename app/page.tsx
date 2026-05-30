@@ -63,7 +63,7 @@ export default function Page() {
     <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">
       <PageBackground />
 
-      <div className="relative mx-auto flex h-[100dvh] w-full max-w-md flex-col px-5 pb-6 pt-8">
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-10 pt-8">
         <header className="flex flex-col items-center gap-4">
           <img
             src="/images/luna-prive-logo.png"
@@ -89,7 +89,7 @@ export default function Page() {
 
         {/* STEP 1 — Prova de ganhos */}
         {step === 0 && (
-          <div key="step-0" className="animate-screen flex flex-1 flex-col">
+          <div key="step-0" className="animate-screen flex flex-col">
             <section
               className="animate-item mt-7 text-center"
               style={{ animationDelay: '60ms' }}
@@ -132,10 +132,7 @@ export default function Page() {
               </div>
             </section>
 
-            <div
-              className="animate-item mt-auto pt-6"
-              style={{ animationDelay: '260ms' }}
-            >
+            <div className="animate-item mt-7" style={{ animationDelay: '260ms' }}>
               <button
                 type="button"
                 onClick={next}
@@ -165,7 +162,7 @@ export default function Page() {
 
         {/* STEP 2 — Como funciona */}
         {step === 1 && (
-          <div key="step-1" className="animate-screen flex flex-1 flex-col">
+          <div key="step-1" className="animate-screen flex flex-col">
             <section
               className="animate-item mt-7 text-center"
               style={{ animationDelay: '60ms' }}
@@ -217,10 +214,7 @@ export default function Page() {
               ))}
             </section>
 
-            <div
-              className="animate-item mt-auto pt-6"
-              style={{ animationDelay: '360ms' }}
-            >
+            <div className="animate-item mt-7" style={{ animationDelay: '360ms' }}>
               <button
                 type="button"
                 onClick={next}
@@ -234,7 +228,7 @@ export default function Page() {
 
         {/* STEP 3 — Resultados / prova social */}
         {step === 2 && (
-          <div key="step-2" className="animate-screen flex flex-1 flex-col">
+          <div key="step-2" className="animate-screen flex flex-col">
             {/* Hero com número gigante */}
             <section
               className="animate-item mt-7 text-center"
@@ -282,10 +276,7 @@ export default function Page() {
               </div>
             </section>
 
-            <div
-              className="animate-item mt-auto pt-6"
-              style={{ animationDelay: '300ms' }}
-            >
+            <div className="animate-item mt-7" style={{ animationDelay: '300ms' }}>
               <button
                 type="button"
                 className="luna-gradient block w-full rounded-xl py-4 text-center text-base font-bold text-primary-foreground shadow-[0_8px_30px_-6px] shadow-primary/60 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
