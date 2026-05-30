@@ -26,7 +26,7 @@ import { HowItWorksStep } from '@/components/how-it-works-step'
 import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
 import { TrustCard } from '@/components/trust-card'
-import { JourneyStep } from '@/components/journey-step'
+import { PlatformWalkthrough } from '@/components/platform-walkthrough'
 import { CtaButton } from '@/components/cta-button'
 import { PageBackground } from '@/components/page-background'
 
@@ -153,55 +153,61 @@ const trustCards = [
 
 const journey = [
   {
-    number: 1,
     icon: Ticket,
     tag: 'Acesso',
     title: 'Receba seu Convite de Acesso',
     description:
-      'Toda usuária entra por convite — é o que mantém o Luna Privé exclusivo e seguro. O seu está a caminho.',
+      'Toda usuária entra por convite — é o que mantém o Luna Privé exclusivo e seguro.',
+    speech:
+      'Oi! Eu sou a Camila e vou te mostrar como tudo funciona por aqui. Primeiro: aqui é só por convite. Isso protege você e mantém a plataforma exclusiva. O seu convite está a caminho.',
     reward: 'Seu convite chega em breve',
     highlight: true,
   },
   {
-    number: 2,
     icon: ImagePlus,
     tag: 'Criação',
     title: 'Monte seus packs',
     description:
-      'Dentro da plataforma você posta suas fotos e organiza seus packs. Você define o que vende e por quanto.',
+      'Você posta suas fotos e organiza seus packs dentro da plataforma. Você define o que vende e por quanto.',
+    speech:
+      'Com o acesso liberado, você vai montar seus packs. É você quem escolhe as fotos, monta os conjuntos e define o preço de cada um. Tudo no seu ritmo.',
   },
   {
-    number: 3,
     icon: Store,
     tag: 'Vitrine',
     title: 'Apareça na vitrine',
     description:
       'Seus packs entram na vitrine e ficam visíveis para os amantes de pés — de forma 100% anônima.',
+    speech:
+      'Assim que você publica, seus packs entram na nossa vitrine. Milhares de compradores passam por ali todos os dias — e ninguém descobre quem você é.',
   },
   {
-    number: 4,
     icon: ShoppingBag,
     tag: 'Venda',
     title: 'Eles compram seu conteúdo',
     description:
-      'Para ver seu conteúdo, o comprador precisa adquirir o pack. Cada venda é uma nova entrada no seu caixa.',
+      'Para ver seu conteúdo, o comprador precisa adquirir o pack. Cada venda é uma entrada no seu caixa.',
+    speech:
+      'Para ver o que você postou, o comprador precisa pagar pelo pack. Cada clique de compra é dinheiro entrando pra você, sem precisar conversar com ninguém.',
   },
   {
-    number: 5,
     icon: Banknote,
     tag: 'Ganho',
     title: 'Receba na hora',
     description:
       'O valor cai na sua conta Luna Privé no momento exato da compra. Sem espera, sem burocracia.',
+    speech:
+      'O melhor: assim que vende, o valor cai na sua conta Luna Privé na mesma hora. Você vê seu saldo crescendo em tempo real.',
     reward: 'Saldo atualizado em tempo real',
   },
   {
-    number: 6,
     icon: ArrowDownToLine,
     tag: 'Saque',
     title: 'Saque quando quiser no PIX',
     description:
       'Transfira seu saldo para sua chave PIX a qualquer momento. O dinheiro é seu, no seu tempo.',
+    speech:
+      'E quando quiser, é só sacar. O valor vai direto pra sua chave PIX, a qualquer momento. É só postar e vender — o resto a gente cuida pra você.',
     reward: 'Direto na sua chave PIX',
   },
 ]
@@ -512,38 +518,11 @@ export default function Page() {
               </p>
             </section>
 
-            <section
-              className="animate-item mt-7"
-              style={{ animationDelay: '160ms' }}
-              aria-label="Passos da jornada no Luna Privé"
-            >
-              {journey.map((j, i) => (
-                <JourneyStep
-                  key={j.number}
-                  number={j.number}
-                  icon={j.icon}
-                  tag={j.tag}
-                  title={j.title}
-                  description={j.description}
-                  reward={j.reward}
-                  highlight={j.highlight}
-                  isLast={i === journey.length - 1}
-                />
-              ))}
-            </section>
-
-            <div
-              className="luna-border animate-item mt-2 rounded-2xl bg-card px-4 py-3.5 text-center"
-              style={{ animationDelay: '260ms' }}
-            >
-              <p className="text-balance text-sm font-semibold text-foreground">
-                É só postar e vender. <span className="text-primary">Simples assim.</span>
-              </p>
-            </div>
-
-            <div className="animate-item mt-6" style={{ animationDelay: '340ms' }}>
-              <CtaButton>Quero meu convite de acesso</CtaButton>
-            </div>
+            <PlatformWalkthrough
+              steps={journey}
+              finalLabel="Quero meu convite de acesso"
+              onComplete={next}
+            />
           </div>
         )}
       </div>
