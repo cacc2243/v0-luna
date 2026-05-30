@@ -27,6 +27,7 @@ import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
 import { TrustCard } from '@/components/trust-card'
 import { PlatformWalkthrough } from '@/components/platform-walkthrough'
+import { GuidedAppDemo } from '@/components/guided-app-demo'
 import { CtaButton } from '@/components/cta-button'
 import { PageBackground } from '@/components/page-background'
 
@@ -212,7 +213,7 @@ const journey = [
   },
 ]
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 7
 
 export default function Page() {
   const [step, setStep] = useState(0)
@@ -506,6 +507,25 @@ export default function Page() {
               finalLabel="Quero meu convite de acesso"
               onComplete={next}
             />
+          </div>
+        )}
+
+        {/* STEP 7 — Demonstração guiada do app */}
+        {step === 6 && (
+          <div key="step-6" className="animate-screen flex flex-col">
+            <section
+              className="animate-item mt-6 text-center"
+              style={{ animationDelay: '60ms' }}
+            >
+              <h1 className="text-balance font-sans text-[1.45rem] font-bold leading-tight tracking-tight text-foreground">
+                Veja o app por <span className="text-primary">dentro</span>
+              </h1>
+              <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
+                Acompanhe os pedidos chegando e aceite suas primeiras vendas.
+              </p>
+            </section>
+
+            <GuidedAppDemo onComplete={next} />
           </div>
         )}
       </div>
