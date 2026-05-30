@@ -36,7 +36,7 @@ export default function ConvitePage() {
     <main className="relative min-h-[100dvh] w-full bg-background">
       <div className="fixed inset-0 z-0">
         <PageBackground />
-        <div className="absolute inset-0 bg-background/25" aria-hidden="true" />
+        <div className="absolute inset-0 bg-background/70" aria-hidden="true" />
       </div>
 
       {/* Top bar */}
@@ -49,7 +49,7 @@ export default function ConvitePage() {
 
       <div className="relative mx-auto flex w-full max-w-md flex-col gap-7 px-5 pb-12 pt-8">
         {/* Hero */}
-        <header className="relative overflow-hidden rounded-3xl border border-border/70 bg-card/80 px-6 py-7 backdrop-blur-sm">
+        <header className="relative overflow-hidden rounded-3xl border border-border/40 bg-card/80 px-6 py-7 backdrop-blur-sm">
           <div
             className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-primary/20 blur-3xl"
             aria-hidden="true"

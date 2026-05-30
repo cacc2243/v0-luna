@@ -25,7 +25,7 @@ const items = [
 export function CompanyInfo() {
   return (
     <section aria-labelledby="empresa">
-      <div className="luna-border overflow-hidden rounded-2xl bg-card px-5 py-5">
+      <div className="luna-border-soft overflow-hidden rounded-2xl bg-card px-5 py-5">
         <h2
           id="empresa"
           className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground"
@@ -61,7 +61,7 @@ export function CompanyInfo() {
       </div>
 
       {/* Barra de confiança */}
-      <div className="luna-border mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
+      <div className="luna-border-soft mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-positive/15 text-positive">
           <ShieldCheck className="size-4" aria-hidden="true" />
         </span>

@@ -208,6 +208,29 @@
   pointer-events: none;
 }
 
+/* Subtle, dark border — softer than luna-border */
+.luna-border-soft {
+  position: relative;
+}
+.luna-border-soft::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    oklch(1 0 0 / 0.07) 0%,
+    oklch(1 0 0 / 0.02) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 /* Infinite horizontal marquee for testimonials */
 @keyframes marquee-x {
   from {

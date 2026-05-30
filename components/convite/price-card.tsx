@@ -1,9 +1,9 @@
 'use client'
 
-import { Check, ShieldCheck, ChevronRight, Sparkles } from 'lucide-react'
+import { Check, ChevronRight, Gift, ShieldCheck } from 'lucide-react'
 
 const benefits = [
-  'Acesso completo à plataforma',
+  'Código de convite Luna Privé',
   'Comece a vender imediatamente',
   'Receba seu código e acesso por e-mail',
   'Suporte anônimo 24h',
@@ -12,79 +12,67 @@ const benefits = [
 export function PriceCard({ onAcquire }: { onAcquire?: () => void }) {
   return (
     <section aria-labelledby="investimento">
-      <div className="luna-border relative overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20 ring-1 ring-primary/15">
-        {/* faixa superior com selo */}
-        <div className="relative flex items-center justify-between border-b border-border/60 bg-secondary/40 px-5 py-3">
-          <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            <Sparkles className="size-3.5 text-primary" aria-hidden="true" />
-            Convite exclusivo
+      <div className="luna-border-soft overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
+        {/* Preço centralizado */}
+        <div className="flex flex-col items-center text-center">
+          <span
+            id="investimento"
+            className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
+          >
+            Investimento único
           </span>
-          <span className="rounded-full bg-positive/15 px-2.5 py-1 text-[0.7rem] font-bold text-positive">
-            -40% hoje
-          </span>
-        </div>
 
-        {/* bloco de preço estruturado */}
-        <div className="flex items-end justify-between gap-4 px-5 pt-5">
-          <div className="flex flex-col">
-            <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
-              Investimento único
-            </span>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-base font-semibold text-muted-foreground">R$</span>
-              <span className="text-4xl font-extrabold leading-none tracking-tight text-foreground">
-                24,80
-              </span>
-            </div>
-            <span className="mt-1.5 text-xs text-muted-foreground">Pagamento único via PIX</span>
-          </div>
-
-          <div className="flex flex-col items-end pb-1">
-            <span className="text-xs font-medium text-muted-foreground line-through decoration-primary/70">
+          <div className="mt-3 flex items-center justify-center gap-2.5">
+            <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
               R$44,67
             </span>
-            <span className="mt-1 rounded-lg bg-primary/12 px-2 py-1 text-[0.7rem] font-bold text-primary">
-              Economize R$19,87
+            <span className="rounded-full bg-positive/15 px-2.5 py-0.5 text-xs font-bold text-positive">
+              -40%
             </span>
           </div>
+
+          <div className="mt-1 flex items-baseline justify-center gap-1">
+            <span className="text-2xl font-bold text-foreground">R$</span>
+            <span className="text-5xl font-extrabold leading-none tracking-tight text-foreground">
+              24,80
+            </span>
+          </div>
+
+          <span className="mt-2 text-sm text-muted-foreground">Pagamento único via PIX</span>
         </div>
 
-        {/* benefícios em grade */}
-        <ul className="mt-5 grid grid-cols-1 gap-2.5 px-5 sm:grid-cols-2">
+        {/* Benefícios — lista única */}
+        <ul className="mt-7 flex flex-col gap-3.5">
           {benefits.map((b) => (
-            <li
-              key={b}
-              className="flex items-center gap-2.5 rounded-xl bg-secondary/50 px-3 py-2.5"
-            >
+            <li key={b} className="flex items-center gap-3">
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15 text-positive">
                 <Check className="size-3.5" aria-hidden="true" />
               </span>
-              <span className="text-[0.8rem] font-medium leading-tight text-foreground">{b}</span>
+              <span className="text-sm font-medium text-foreground">{b}</span>
             </li>
           ))}
         </ul>
 
-        <div className="mt-5 px-5 pb-5">
-          <button
-            type="button"
-            onClick={onAcquire}
-            className="luna-gradient flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
-          >
-            <Sparkles className="size-5" aria-hidden="true" />
-            Adquirir meu Convite
-            <ChevronRight className="size-5" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
+        {/* CTA */}
+        <button
+          type="button"
+          onClick={onAcquire}
+          className="luna-gradient mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+        >
+          <Gift className="size-5" aria-hidden="true" />
+          Adquirir meu Convite!
+          <ChevronRight className="size-5" aria-hidden="true" />
+        </button>
 
-      {/* Garantia */}
-      <div className="luna-border mt-3 flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5">
-        <ShieldCheck className="mt-0.5 size-5 shrink-0 text-positive" aria-hidden="true" />
-        <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-          Experimente o <span className="font-semibold text-foreground">Luna Privé</span> por{' '}
-          <span className="font-semibold text-foreground">7 dias</span>. Se preferir, você pode
-          solicitar a <span className="font-semibold text-positive">devolução em até 7 dias</span>.
-        </p>
+        {/* Garantia integrada */}
+        <div className="luna-border-soft mt-5 flex items-start gap-3 rounded-2xl bg-background/40 px-4 py-3.5">
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+          <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+            Experimente o <span className="font-semibold text-foreground">Luna Privé</span> por{' '}
+            <span className="font-semibold text-foreground">7 dias</span>. Se você preferir, poderá
+            solicitar a <span className="font-semibold text-positive">devolução em até 7 dias</span>.
+          </p>
+        </div>
       </div>
     </section>
   )

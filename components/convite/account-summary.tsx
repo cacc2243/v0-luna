@@ -38,7 +38,7 @@ export function AccountSummary({ username, email, pixType, pixKey }: AccountSumm
         Sua conta
       </h2>
 
-      <div className="luna-border divide-y divide-border/60 overflow-hidden rounded-2xl bg-card">
+      <div className="luna-border-soft divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center gap-3 px-4 py-3.5">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
