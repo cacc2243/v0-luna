@@ -14,7 +14,6 @@ import {
   Bell,
   Check,
   PiggyBank,
-  Clock,
   X,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
@@ -83,7 +82,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [balance, setBalance] = useState(0)
   const [vendas, setVendas] = useState(0)
   const [today, setToday] = useState(0)
-  const [views, setViews] = useState(312)
+  const [views, setViews] = useState(0)
   const [saleIndex, setSaleIndex] = useState(0)
   const [activeSale, setActiveSale] = useState<number | null>(null)
   const [floats, setFloats] = useState<{ id: number; amount: number }[]>([])
@@ -91,6 +90,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [refuseHint, setRefuseHint] = useState(false)
 
   const scrollRef = useRef<HTMLDivElement>(null)
+  const ordersRef = useRef<HTMLDivElement>(null)
   const animatedBalance = useCountUp(balance)
   const animatedToday = useCountUp(today)
   const highlight = phase === 'tour' ? tour[tourStep].key : null
@@ -112,7 +112,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     if (phase !== 'selling') return
     const t = setTimeout(() => {
       setActiveSale(saleIndex)
-      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+      ordersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 500)
     return () => clearTimeout(t)
   }, [phase, saleIndex])
@@ -195,72 +195,6 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           </div>
         </header>
 
-        {/* Pedido pendente — DENTRO do app */}
-        {currentSale && phase === 'selling' && (
-          <div
-            key={`order-${activeSale}`}
-            className={`luna-border animate-pop mt-4 overflow-hidden rounded-2xl bg-card ${
-              shake ? 'animate-shake' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-              <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
-                <Clock className="size-4 text-primary" aria-hidden="true" />
-                Pedidos pendentes
-              </h3>
-              <span className="flex size-6 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                {pendingCount}
-              </span>
-            </div>
-            <div className="px-4 py-4">
-              <div className="flex items-start gap-3">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                  <Bell className="size-5 text-primary" aria-hidden="true" />
-                </span>
-                <div className="min-w-0 flex-1 leading-snug">
-                  <p className="text-sm font-semibold text-foreground">
-                    {currentSale.handle} quer comprar
-                  </p>
-                  <p className="text-sm font-semibold text-foreground">{currentSale.pack}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    agora · {currentSale.purchases}
-                  </p>
-                </div>
-                <span className="text-base font-bold text-positive">{brl(currentSale.amount)}</span>
-              </div>
-
-              {refuseHint && (
-                <p className="mt-3 rounded-lg bg-primary/10 px-3 py-2 text-center text-xs font-medium text-primary">
-                  Aceite a venda para continuar
-                </p>
-              )}
-
-              <div className="mt-4 flex gap-2.5">
-                <button
-                  type="button"
-                  onClick={tryRefuse}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary py-3 text-sm font-semibold text-muted-foreground transition active:scale-[0.98]"
-                >
-                  <X className="size-4" aria-hidden="true" />
-                  Recusar
-                </button>
-                <button
-                  type="button"
-                  onClick={acceptSale}
-                  style={{
-                    backgroundImage:
-                      'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
-                  }}
-                  className="flex flex-[1.4] items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98]"
-                >
-                  <Check className="size-4" aria-hidden="true" />
-                  Aceitar venda
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Stats */}
         <div
           className={`mt-4 grid grid-cols-3 gap-2.5 transition-all duration-300 ${dim('stats')} ${
@@ -316,18 +250,79 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           </div>
         </div>
 
-        {/* Pedidos recentes (histórico de aceitas) */}
-        <div className={`mt-5 transition-all duration-300 ${dim('orders')}`}>
+        {/* Pedidos recentes (pedido pendente + histórico de aceitas) */}
+        <div ref={ordersRef} className={`mt-5 transition-all duration-300 ${dim('orders')}`}>
           <div className="mb-2 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <ShoppingBag className="size-4 text-primary" aria-hidden="true" />
               Pedidos recentes
             </h3>
+            {pendingCount > 0 && (
+              <span className="rounded-full border border-primary/40 px-2 py-0.5 text-xs font-semibold text-primary">
+                {pendingCount} novos
+              </span>
+            )}
           </div>
-          {vendas === 0 ? (
+
+          {/* Pedido pendente ativo — compacto */}
+          {currentSale && phase === 'selling' && (
+            <div
+              key={`order-${activeSale}`}
+              className={`luna-border animate-pop mb-2 rounded-2xl bg-card px-3 py-3 ${ring('orders')} ${
+                shake ? 'animate-shake' : ''
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                  <Bell className="size-4 text-primary" aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1 leading-snug">
+                  <p className="truncate text-[0.8rem] font-semibold text-foreground">
+                    {currentSale.handle} quer {currentSale.pack}
+                  </p>
+                  <p className="text-[0.65rem] text-muted-foreground">
+                    agora · {currentSale.purchases}
+                  </p>
+                </div>
+                <span className="text-sm font-bold text-positive">{brl(currentSale.amount)}</span>
+              </div>
+
+              {refuseHint && (
+                <p className="mt-2 rounded-lg bg-primary/10 px-2.5 py-1.5 text-center text-[0.7rem] font-medium text-primary">
+                  Aceite a venda para continuar
+                </p>
+              )}
+
+              <div className="mt-2.5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={tryRefuse}
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98]"
+                >
+                  <X className="size-3.5" aria-hidden="true" />
+                  Recusar
+                </button>
+                <button
+                  type="button"
+                  onClick={acceptSale}
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
+                  }}
+                  className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98]"
+                >
+                  <Check className="size-3.5" aria-hidden="true" />
+                  Aceitar venda
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Histórico de aceitas / vazio */}
+          {vendas === 0 && !currentSale ? (
             <div className="rounded-2xl border border-border bg-card/60 px-4 py-6 text-center">
               <p className="text-xs text-muted-foreground">
-                Suas vendas aceitas aparecem aqui.
+                Seus pedidos aparecem aqui.
               </p>
             </div>
           ) : (
@@ -335,20 +330,20 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               {sales.slice(0, vendas).map((s) => (
                 <div
                   key={s.handle}
-                  className="luna-border mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-3"
+                  className="luna-border mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5"
                 >
-                  <span className="flex size-9 items-center justify-center rounded-full bg-muted">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-muted">
                     <User className="size-4 text-muted-foreground" aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex-1 leading-tight">
-                    <p className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                    <p className="flex items-center gap-1 text-[0.8rem] font-semibold text-foreground">
                       {s.handle}
                       <BadgeCheck className="size-3.5 text-positive" aria-hidden="true" />
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">comprou {s.pack}</p>
+                    <p className="truncate text-[0.7rem] text-muted-foreground">comprou {s.pack}</p>
                   </div>
-                  <span className="flex items-center gap-1 text-sm font-bold text-positive">
-                    <Check className="size-4" aria-hidden="true" />
+                  <span className="flex items-center gap-1 text-[0.8rem] font-bold text-positive">
+                    <Check className="size-3.5" aria-hidden="true" />
                     {brl(s.amount)}
                   </span>
                 </div>
