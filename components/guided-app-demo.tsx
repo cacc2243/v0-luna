@@ -16,6 +16,11 @@ import {
   PiggyBank,
   X,
   Ghost,
+  Plus,
+  ImagePlus,
+  Info,
+  Loader2,
+  Lightbulb,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 
@@ -77,9 +82,21 @@ function useCountUp(target: number, duration = 700) {
   return value
 }
 
+const examplePhotos = [
+  '/images/pack-photo-1.png',
+  '/images/pack-photo-2.png',
+  '/images/pack-photo-3.png',
+]
+
 export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
-  const [phase, setPhase] = useState<'tour' | 'selling' | 'done'>('tour')
+  const [phase, setPhase] = useState<'tour' | 'selling' | 'done' | 'packs'>('tour')
   const [tourStep, setTourStep] = useState(0)
+  const [showCreate, setShowCreate] = useState(false)
+  const [packName, setPackName] = useState('Pés & Saltos')
+  const [packPrice, setPackPrice] = useState('29,90')
+  const [packDesc, setPackDesc] = useState('')
+  const [publishing, setPublishing] = useState(false)
+  const [createdPack, setCreatedPack] = useState<string | null>(null)
   const [balance, setBalance] = useState(0)
   const [vendas, setVendas] = useState(0)
   const [today, setToday] = useState(0)
@@ -156,6 +173,18 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     setTimeout(() => setRefuseHint(false), 2400)
   }
 
+  function publishPack() {
+    if (publishing) return
+    setPublishing(true)
+    setTimeout(() => {
+      setPublishing(false)
+      setShowCreate(false)
+      setCreatedPack(packName.trim() || 'Pés & Saltos')
+    }, 1300)
+  }
+
+  const activeTab = phase === 'packs' ? 'Packs' : 'Início'
+
   const dim = (key: string) =>
     phase === 'tour' && highlight !== key ? 'opacity-40' : 'opacity-100'
   const ring = (key: string) =>
@@ -187,6 +216,13 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       )}
 
       {/* Conteúdo rolável do app */}
+      {phase === 'packs' ? (
+        <PacksScreen
+          balance={balance}
+          createdPack={createdPack}
+          onCreate={() => setShowCreate(true)}
+        />
+      ) : (
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
         {/* Header */}
         <header
@@ -378,11 +414,12 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           )}
         </div>
       </div>
+      )}
 
       {/* Bottom nav */}
       <nav className="flex items-center justify-around border-t border-border bg-card/80 px-2 pb-3 pt-2 backdrop-blur">
         {[
-          { icon: Home, label: 'Início', active: true },
+          { icon: Home, label: 'Início' },
           { icon: Package, label: 'Packs' },
           { icon: Rocket, label: 'Boost', center: true },
           { icon: Wallet, label: 'Carteira' },
@@ -395,13 +432,13 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               </span>
             ) : (
               <item.icon
-                className={`size-5 ${item.active ? 'text-primary' : 'text-muted-foreground'}`}
+                className={`size-5 ${item.label === activeTab ? 'text-primary' : 'text-muted-foreground'}`}
                 aria-hidden="true"
               />
             )}
             <span
               className={`text-[0.6rem] ${
-                item.active ? 'font-semibold text-primary' : 'text-muted-foreground'
+                item.label === activeTab ? 'font-semibold text-primary' : 'text-muted-foreground'
               }`}
             >
               {item.label}
@@ -459,7 +496,147 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             <p className="mt-2 text-pretty text-xs text-muted-foreground">
               em poucos cliques — e isso foi só uma simulação.
             </p>
-            <div className="mt-6">
+            <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3 text-left">
+              <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
+                Antes de vender, você monta seus packs. Vamos te mostrar como é
+                rápido criar o seu primeiro.
+              </p>
+            </div>
+            <div className="mt-5">
+              <CtaButton onClick={() => setPhase('packs')}>Criar meu primeiro pack</CtaButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal — Criar Pack */}
+      {showCreate && !createdPack && (
+        <div className="absolute inset-0 z-[55] flex items-end justify-center">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => !publishing && setShowCreate(false)}
+            aria-hidden="true"
+          />
+          <div className="animate-pop relative flex max-h-[88%] w-full max-w-md flex-col overflow-y-auto rounded-t-3xl border border-border bg-card px-5 pb-6 pt-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-foreground">Criar Pack</h2>
+              <button
+                type="button"
+                onClick={() => !publishing && setShowCreate(false)}
+                className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary"
+                aria-label="Fechar"
+              >
+                <X className="size-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3">
+              <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <p className="text-pretty text-xs leading-relaxed text-foreground">
+                O número ideal de fotos por pack é de 2 a 4 fotos.{' '}
+                <span className="font-bold">Mínimo de 2 fotos por pack.</span>
+              </p>
+            </div>
+
+            <label className="mb-1.5 block text-sm font-semibold text-foreground">Nome do pack</label>
+            <input
+              value={packName}
+              onChange={(e) => setPackName(e.target.value)}
+              placeholder="Ex: Ensaio Casual"
+              className="mb-4 w-full rounded-xl border border-border bg-secondary px-3.5 py-3 text-sm text-foreground outline-none transition focus:border-primary/60"
+            />
+
+            <label className="mb-1.5 block text-sm font-semibold text-foreground">Preço (R$)</label>
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3 focus-within:border-primary/60">
+              <span className="text-sm text-muted-foreground">R$</span>
+              <input
+                value={packPrice}
+                onChange={(e) => setPackPrice(e.target.value)}
+                className="w-full bg-transparent text-sm text-foreground outline-none"
+              />
+            </div>
+
+            <label className="mb-1.5 block text-sm font-semibold text-foreground">
+              Descrição <span className="font-normal text-muted-foreground">(opcional)</span>
+            </label>
+            <textarea
+              value={packDesc}
+              onChange={(e) => setPackDesc(e.target.value)}
+              rows={3}
+              placeholder="Descreva o conteúdo do pack..."
+              className="mb-4 w-full resize-none rounded-xl border border-border bg-secondary px-3.5 py-3 text-sm text-foreground outline-none transition focus:border-primary/60"
+            />
+
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-sm font-semibold text-foreground">Fotos</span>
+              <span className="text-xs text-muted-foreground">(já adicionadas para você)</span>
+            </div>
+            <div className="mb-3 grid grid-cols-3 gap-2">
+              {examplePhotos.map((src, i) => (
+                <div key={src} className="relative aspect-square overflow-hidden rounded-xl border border-border">
+                  <img
+                    src={src || "/placeholder.svg"}
+                    alt={`Foto de exemplo ${i + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                  <span className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full bg-positive">
+                    <Check className="size-3 text-white" aria-hidden="true" />
+                  </span>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 py-3 text-sm font-semibold text-primary"
+            >
+              <ImagePlus className="size-4" aria-hidden="true" />
+              Adicionar fotos ou vídeos
+            </button>
+
+            <button
+              type="button"
+              onClick={publishPack}
+              disabled={publishing}
+              className="luna-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
+            >
+              {publishing ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  Publicando...
+                </>
+              ) : (
+                <>
+                  <Check className="size-4" aria-hidden="true" />
+                  Criar pack
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay — Pack publicado com sucesso */}
+      {createdPack && (
+        <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
+          <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-positive/40 bg-card p-6 text-center shadow-2xl">
+            <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-positive/15">
+              <Check className="size-7 text-positive" aria-hidden="true" />
+            </span>
+            <p className="mt-4 text-lg font-bold text-foreground">Fotos publicadas com sucesso!</p>
+            <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
+              Seu pack <span className="font-semibold text-primary">{createdPack}</span> foi
+              publicado com sucesso e já está na vitrine.
+            </p>
+            <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3 text-left">
+              <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
+                No app real, você cria seus packs antes de começar a vender. Depois é
+                só esperar as vendas caírem.
+              </p>
+            </div>
+            <div className="mt-5">
               <CtaButton onClick={onComplete}>Quero vender de verdade</CtaButton>
             </div>
           </div>
@@ -491,6 +668,99 @@ function StatCard({
       </span>
       <span className="text-[0.65rem] text-muted-foreground">{label}</span>
       <span className="text-sm font-bold text-foreground">{value}</span>
+    </div>
+  )
+}
+
+function PacksScreen({
+  balance,
+  createdPack,
+  onCreate,
+}: {
+  balance: number
+  createdPack: string | null
+  onCreate: () => void
+}) {
+  return (
+    <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
+      {/* Header */}
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
+          <div className="leading-tight">
+            <p className="text-sm font-semibold text-foreground">@voce</p>
+            <span className="flex items-center gap-1 text-xs text-positive">
+              <span className="size-1.5 rounded-full bg-positive" />
+              Online
+            </span>
+          </div>
+        </div>
+        <div className="luna-border flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
+          <Wallet className="size-5 text-primary" aria-hidden="true" />
+          <div className="leading-tight">
+            <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
+            <p className="text-base font-bold text-foreground">{brl(balance)}</p>
+          </div>
+        </div>
+      </header>
+
+      {/* Título */}
+      <div className="mt-5 flex items-center justify-between gap-3">
+        <div className="leading-tight">
+          <h1 className="text-xl font-bold text-foreground">Meus Packs</h1>
+          <p className="text-xs text-muted-foreground">Sua vitrine de conteúdo</p>
+        </div>
+        <button
+          type="button"
+          onClick={onCreate}
+          className="luna-gradient flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+        >
+          <Plus className="size-4" aria-hidden="true" />
+          Criar Pack
+        </button>
+      </div>
+
+      {/* Aviso */}
+      <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3">
+        <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+        <p className="text-pretty text-xs leading-relaxed text-foreground">
+          No app real, você cria seus packs <span className="font-bold">antes de começar a vender</span>.
+          Toque em <span className="font-bold">Criar Pack</span> para montar o seu.
+        </p>
+      </div>
+
+      {/* Vitrine */}
+      {createdPack ? (
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <article className="luna-border overflow-hidden rounded-2xl bg-card">
+            <div className="aspect-square overflow-hidden">
+              <img
+                src="/images/pack-photo-1.png"
+                alt={createdPack}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="p-3">
+              <p className="truncate text-sm font-semibold text-foreground">{createdPack}</p>
+              <p className="text-sm font-bold text-positive">R$ 29,90</p>
+              <p className="mt-1 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
+                <Eye className="size-3" aria-hidden="true" />
+                0 views · 0 vendas
+              </p>
+            </div>
+          </article>
+        </div>
+      ) : (
+        <div className="mt-5 rounded-2xl border border-dashed border-border bg-card/40 px-4 py-10 text-center">
+          <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
+            <Package className="size-6 text-primary" aria-hidden="true" />
+          </span>
+          <p className="text-sm font-semibold text-foreground">Nenhum pack ainda</p>
+          <p className="mt-1 text-pretty text-xs text-muted-foreground">
+            Crie seu primeiro pack para aparecer na vitrine.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
