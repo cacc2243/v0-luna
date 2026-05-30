@@ -117,6 +117,9 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [toast, setToast] = useState<{ id: number; amount: number } | null>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const statsRef = useRef<HTMLDivElement>(null)
+  const viewsRef = useRef<HTMLDivElement>(null)
   const ordersRef = useRef<HTMLDivElement>(null)
   const animatedBalance = useCountUp(balance)
   const animatedToday = useCountUp(today)
@@ -134,6 +137,22 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     }, 900)
     return () => clearInterval(id)
   }, [phase])
+
+  // Durante o tour, rola até a seção destacada pela mentora
+  useEffect(() => {
+    if (phase !== 'tour') return
+    const map = {
+      balance: headerRef,
+      stats: statsRef,
+      views: viewsRef,
+      orders: ordersRef,
+    }
+    const key = tour[tourStep].key
+    const t = setTimeout(() => {
+      map[key]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 120)
+    return () => clearTimeout(t)
+  }, [phase, tourStep])
 
   // Mostra o primeiro pedido ao entrar no modo de vendas + rola para o topo
   useEffect(() => {
@@ -201,10 +220,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
   const dim = (key: string) =>
     phase === 'tour' && highlight !== key ? 'opacity-40' : 'opacity-100'
-  const ring = (key: string) =>
-    highlight === key
-      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-      : ''
+  const ring = (key: string) => (highlight === key ? 'animate-highlight' : '')
 
   const currentSale = activeSale !== null ? sales[activeSale] : null
 
@@ -245,6 +261,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
         {/* Header */}
         <header
+          ref={headerRef}
           className={`flex items-center justify-between gap-3 transition-opacity duration-300 ${dim('balance')}`}
         >
           <div className="flex items-center gap-2.5">
@@ -278,7 +295,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
         {/* Stats */}
         <div
-          className={`mt-4 grid grid-cols-3 gap-2.5 transition-all duration-300 ${dim('stats')} ${
+          ref={statsRef}
+          className={`mt-4 grid grid-cols-3 gap-2.5 rounded-2xl transition-all duration-300 ${dim('stats')} ${ring('stats')} ${
             highlight === 'stats' ? 'scale-[1.01]' : ''
           }`}
         >
@@ -304,7 +322,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
         )}
 
         {/* Visualizações recentes */}
-        <div className={`mt-5 transition-all duration-300 ${dim('views')}`}>
+        <div ref={viewsRef} className={`mt-5 transition-all duration-300 ${dim('views')}`}>
           <div className="mb-2 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Eye className="size-4 text-positive" aria-hidden="true" />
@@ -403,7 +421,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
           {/* Histórico de aceitas / vazio */}
           {vendas === 0 && !currentSale ? (
-            <div className="rounded-2xl border border-border bg-card/60 px-4 py-6 text-center">
+            <div className={`rounded-2xl border border-border bg-card/60 px-4 py-6 text-center transition-all duration-300 ${ring('orders')}`}>
               <p className="text-xs text-muted-foreground">
                 Seus pedidos aparecem aqui.
               </p>
