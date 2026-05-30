@@ -53,16 +53,7 @@ export default function Page() {
           ))}
         </section>
 
-        <section className="mt-7 text-center">
-          <p className="text-base font-semibold text-foreground">
-            Isso acontece todos os dias aqui.
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Sem rosto. Sem nome. Só PIX.
-          </p>
-        </section>
-
-        <div className="mt-8">
+        <div className="mt-7">
           <button
             type="button"
             className="w-full rounded-full bg-primary py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
