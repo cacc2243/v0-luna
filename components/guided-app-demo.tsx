@@ -564,6 +564,21 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
             {/* Conteúdo rolável */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
+              {/* Mentora conduzindo */}
+              <div className="luna-border mb-5 flex items-start gap-3 rounded-2xl bg-card px-3.5 py-3 ring-1 ring-primary/30">
+                <img
+                  src="/images/mentor.png"
+                  alt="Camila"
+                  className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+                />
+                <p className="animate-item flex-1 text-pretty text-xs leading-relaxed text-foreground">
+                  Já deixei tudo prontinho pra você ver! Dá uma olhada no{' '}
+                  <span className="font-bold">nome</span>, no{' '}
+                  <span className="font-bold">preço</span> e nas fotos. Quando estiver pronta, é só
+                  tocar em <span className="font-bold text-primary">Criar pack</span> aqui embaixo.
+                </p>
+              </div>
+
               <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3">
                 <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                 <p className="text-pretty text-xs leading-relaxed text-foreground">
