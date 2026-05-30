@@ -245,8 +245,8 @@ export default function Page() {
               style={{ animationDelay: '60ms' }}
             >
               <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
-                Aqui no Luna Privê você pode ganhar mais de{' '}
-                <span className="text-primary">R$15 mil</span> todos os meses.
+                Aqui, você pode ganhar mais de{' '}
+                <span className="text-primary">R$15 mil</span> com seus Pés
               </h1>
               <p className="mt-2.5 text-pretty text-sm leading-relaxed text-muted-foreground">
                 Aqui, você posta e vende na hora e recebe via PIX.
