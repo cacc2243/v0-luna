@@ -527,9 +527,9 @@ function InviteCard({ onAccept }: { onAccept: () => void }) {
           <img
             src="/images/mentor.png"
             alt="Mentora do Luna Privé"
-            className="relative size-40 rounded-full border-2 border-primary/60 object-cover"
+            className="relative size-28 rounded-full border-2 border-primary/60 object-cover"
           />
-          <span className="absolute bottom-2 right-2 size-5 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
+          <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
         </div>
         <p className="mt-5 text-sm font-bold uppercase tracking-[0.2em] text-primary">
           Meus parabéns!
