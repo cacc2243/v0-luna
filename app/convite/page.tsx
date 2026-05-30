@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Lock, Mail, BookOpen, Users, Images, ChevronRight } from 'lucide-react'
+import { Lock, Mail } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
@@ -14,12 +14,6 @@ interface SignupData {
   pixType: string
   pixKey: string
 }
-
-const bonusChips = [
-  { icon: BookOpen, label: 'Guia: Como faturar seus primeiros R$10 mil' },
-  { icon: Users, label: 'Acesso à Comunidade VIP' },
-  { icon: Images, label: 'Pack de Poses Profissionais' },
-]
 
 export default function ConvitePage() {
   const [data, setData] = useState<SignupData>({
@@ -78,31 +72,6 @@ export default function ConvitePage() {
           pixType={data.pixType}
           pixKey={data.pixKey}
         />
-
-        {/* Bônus inclusos (resumo) */}
-        <section aria-labelledby="bonus-inclusos">
-          <h2
-            id="bonus-inclusos"
-            className="mb-2.5 flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground"
-          >
-            <span className="size-1.5 rounded-full luna-gradient" aria-hidden="true" />
-            Bônus inclusos
-          </h2>
-          <div className="flex flex-col gap-2.5">
-            {bonusChips.map((b) => (
-              <div
-                key={b.label}
-                className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5"
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
-                  <b.icon className="size-4" aria-hidden="true" />
-                </span>
-                <span className="flex-1 text-sm font-medium text-foreground">{b.label}</span>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* Preço + garantia */}
         <PriceCard />
