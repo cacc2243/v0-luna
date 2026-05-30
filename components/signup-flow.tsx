@@ -101,23 +101,24 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         ) : (
           <div
             key={step}
-            className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card p-6 shadow-2xl shadow-primary/15"
+            className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
           >
             {/* Progresso */}
-            <div className="mb-6 flex items-center gap-1.5" aria-hidden="true">
-              {Array.from({ length: TOTAL }).map((_, i) => (
-                <span
-                  key={i}
-                  className={cn(
-                    'h-1 flex-1 rounded-full transition-all duration-300',
-                    i === step
-                      ? 'luna-gradient'
-                      : i < step
-                        ? 'bg-primary/50'
-                        : 'bg-muted',
-                  )}
+            <div className="mb-7">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[0.7rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                  Passo {step + 1} de {TOTAL}
+                </span>
+                <span className="text-[0.7rem] font-bold tabular-nums text-primary">
+                  {Math.round(((step + 1) / TOTAL) * 100)}%
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                <div
+                  className="h-full rounded-full luna-gradient transition-all duration-500 ease-out"
+                  style={{ width: `${((step + 1) / TOTAL) * 100}%` }}
                 />
-              ))}
+              </div>
             </div>
 
             {/* NOME DE USUÁRIO */}
@@ -345,24 +346,31 @@ function StepShell({
 }) {
   return (
     <div>
-      <span
-        className={cn(
-          'flex size-12 items-center justify-center rounded-2xl',
-          iconPositive ? 'bg-positive/15' : 'bg-primary/15',
-        )}
-      >
-        <Icon
-          className={cn('size-6', iconPositive ? 'text-positive' : 'text-primary')}
-          aria-hidden="true"
-        />
-      </span>
-      <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-primary">
-        {eyebrow}
-      </p>
-      <h2 className="mt-1.5 text-balance text-xl font-bold leading-tight text-foreground">
+      <div className="flex items-center gap-2.5">
+        <span
+          className={cn(
+            'flex size-9 items-center justify-center rounded-xl',
+            iconPositive ? 'bg-positive/15' : 'bg-primary/15',
+          )}
+        >
+          <Icon
+            className={cn('size-[1.1rem]', iconPositive ? 'text-positive' : 'text-primary')}
+            aria-hidden="true"
+          />
+        </span>
+        <p
+          className={cn(
+            'text-[0.7rem] font-bold uppercase tracking-[0.16em]',
+            iconPositive ? 'text-positive' : 'text-primary',
+          )}
+        >
+          {eyebrow}
+        </p>
+      </div>
+      <h2 className="mt-3.5 text-balance text-[1.35rem] font-bold leading-tight text-foreground">
         {title}
       </h2>
-      <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
+      <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
         {description}
       </p>
       <div className="mt-5">{children}</div>
