@@ -30,7 +30,7 @@ const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatória']
 export function SignupFlow({ onComplete }: SignupFlowProps) {
   const router = useRouter()
   const [step, setStep] = useState(0)
-  const [status, setStatus] = useState<'form' | 'loading' | 'success' | 'invite'>('form')
+  const [status, setStatus] = useState<'form' | 'loading' | 'invite'>('form')
 
   // Campos
   const [username, setUsername] = useState('')
@@ -50,7 +50,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
   const finish = () => {
     setStatus('loading')
-    setTimeout(() => setStatus('success'), 2200)
+    setTimeout(() => setStatus('invite'), 2200)
   }
 
   const goToConvite = () => {
@@ -92,11 +92,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       <div className="absolute inset-0 bg-background/88 backdrop-blur-[3px]" aria-hidden="true" />
 
       <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-6">
-        {status === 'invite' ? (
-          <InviteCard onAccept={goToConvite} />
-        ) : status === 'success' ? (
-          <SuccessCard username={username} onContinue={() => setStatus('invite')} />
-        ) : status === 'loading' ? (
+          {status === 'invite' ? (
+            <InviteCard onAccept={goToConvite} />
+          ) : status === 'loading' ? (
           <LoadingCard />
         ) : (
           <div
@@ -515,56 +513,6 @@ function LoadingCard() {
       <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
         Estamos preparando tudo para você começar a vender.
       </p>
-    </div>
-  )
-}
-
-function SuccessCard({
-  username,
-  onContinue,
-}: {
-  username: string
-  onContinue: () => void
-}) {
-  return (
-    <div className="animate-pop luna-border w-full max-w-md overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20 ring-1 ring-primary/10">
-      {/* Topo com a logo da Luna */}
-      <div className="flex items-center justify-center border-b border-border/60 bg-secondary/40 px-6 py-4">
-        <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
-      </div>
-
-      {/* Mentora falando */}
-      <div className="px-5 py-6">
-        <div className="flex items-start gap-3">
-          <div className="relative shrink-0">
-            <img
-              src="/images/mentor.png"
-              alt="Mentora do Luna Privé"
-              className="size-14 rounded-full border-2 border-primary/50 object-cover"
-            />
-            <span
-              className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border-2 border-card bg-positive"
-              aria-hidden="true"
-            >
-              <Check className="size-3 text-white" />
-            </span>
-          </div>
-          <div className="flex-1">
-            <p className="text-base font-bold leading-tight text-foreground">
-              Conta criada com sucesso!
-            </p>
-            <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-              Seja bem-vinda ao <span className="font-semibold text-foreground">Luna Privé</span>,{' '}
-              <span className="font-semibold text-primary">@{username || 'sua_conta'}</span>! Falta
-              só um último passo e você já começa a faturar.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5">
-          <CtaButton onClick={onContinue}>Continuar</CtaButton>
-        </div>
-      </div>
     </div>
   )
 }
