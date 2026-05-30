@@ -122,8 +122,9 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const animatedToday = useCountUp(today)
   const highlight = phase === 'tour' ? tour[tourStep].key : null
 
-  const pendingCount = sales.length - vendas
-  const pendingValue = sales.slice(vendas).reduce((sum, s) => sum + s.amount, 0)
+  // O saldo pendente só existe quando há um pedido pendente aparecendo na tela.
+  const pendingCount = activeSale !== null ? 1 : 0
+  const pendingValue = activeSale !== null ? sales[activeSale].amount : 0
 
   // Visualizações sobem ao vivo durante o tour e as vendas
   useEffect(() => {
@@ -286,19 +287,21 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} highlighted={highlight === 'stats'} />
         </div>
 
-        {/* Saldo pendente */}
-        <div className="luna-border mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
-            <PiggyBank className="size-5 text-primary" aria-hidden="true" />
-          </span>
-          <div className="flex-1 leading-tight">
-            <p className="text-xs text-muted-foreground">Saldo pendente</p>
-            <p className="text-xl font-bold text-primary">{brl(pendingValue)}</p>
+        {/* Saldo pendente — só aparece quando há pedido pendente */}
+        {pendingCount > 0 && (
+          <div className="luna-border mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
+              <PiggyBank className="size-5 text-primary" aria-hidden="true" />
+            </span>
+            <div className="flex-1 leading-tight">
+              <p className="text-xs text-muted-foreground">Saldo pendente</p>
+              <p className="text-xl font-bold text-primary">{brl(pendingValue)}</p>
+            </div>
+            <span className="rounded-full border border-primary/40 px-2.5 py-1 text-xs font-semibold text-primary">
+              {pendingCount} {pendingCount === 1 ? 'pedido' : 'pedidos'}
+            </span>
           </div>
-          <span className="rounded-full border border-primary/40 px-2.5 py-1 text-xs font-semibold text-primary">
-            {pendingCount} pedidos
-          </span>
-        </div>
+        )}
 
         {/* Visualizações recentes */}
         <div className={`mt-5 transition-all duration-300 ${dim('views')}`}>

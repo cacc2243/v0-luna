@@ -523,26 +523,26 @@ function SuccessCard({
 
 function InviteCard({ onAccept }: { onAccept: () => void }) {
   return (
-    <div className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20">
+    <div className="animate-pop luna-border w-full max-w-md overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20">
       {/* Mulher falando */}
       <div className="flex flex-col items-center px-6 pt-8">
         <div className="relative">
-          <span className="absolute -inset-1 rounded-full luna-gradient opacity-60 blur-md" aria-hidden="true" />
+          <span className="absolute -inset-1.5 rounded-full luna-gradient opacity-70 blur-lg" aria-hidden="true" />
           <img
             src="/images/mentor.png"
             alt="Mentora do Luna Privé"
-            className="relative size-24 rounded-full border-2 border-primary/50 object-cover"
+            className="relative size-40 rounded-full border-2 border-primary/60 object-cover"
           />
-          <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
+          <span className="absolute bottom-2 right-2 size-5 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
         </div>
-        <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+        <p className="mt-5 text-sm font-bold uppercase tracking-[0.2em] text-primary">
           Meus parabéns!
         </p>
       </div>
 
       {/* Balão de fala */}
-      <div className="px-6 pb-7 pt-4">
-        <div className="rounded-2xl border border-border bg-secondary/50 p-4 text-pretty text-sm leading-relaxed text-foreground">
+      <div className="px-6 pb-8 pt-5">
+        <div className="rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
           <p>
             Sua conta foi criada com{' '}
             <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
@@ -551,13 +551,13 @@ function InviteCard({ onAccept }: { onAccept: () => void }) {
           <p className="mt-3">
             Ele garante que você é uma usuária <span className="font-semibold">real e comprometida</span> aqui dentro.
           </p>
-          <p className="mt-3 text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
             acesso está muito barato e confiável.
           </p>
         </div>
 
-        <div className="mt-5">
+        <div className="mt-6">
           <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
         </div>
       </div>
