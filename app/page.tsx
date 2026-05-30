@@ -1,5 +1,7 @@
+import Link from 'next/link'
 import { ShieldCheck, Lock, Zap } from 'lucide-react'
 import { SaleNotification } from '@/components/sale-notification'
+import { PageBackground } from '@/components/page-background'
 
 const notifications = [
   { title: 'Você vendeu o Pack 03', time: 'agora', amount: '+R$249,00' },
@@ -12,16 +14,7 @@ export default function Page() {
   return (
     <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">
       {/* Background */}
-      <div className="absolute inset-0">
-        <img
-          src="/images/background.png"
-          alt=""
-          className="size-full object-cover"
-        />
-        {/* Readability overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/35 to-background/85" />
-        <div className="absolute inset-0 bg-background/10" />
-      </div>
+      <PageBackground />
 
       {/* Content */}
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-10 pt-12">
@@ -69,12 +62,12 @@ export default function Page() {
         </section>
 
         <div className="mt-8">
-          <button
-            type="button"
-            className="w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.6_0.22_8)] py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+          <Link
+            href="/como-funciona"
+            className="block w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.6_0.22_8)] py-4 text-center text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
           >
             Entrar e ver como funciona
-          </button>
+          </Link>
           <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <ShieldCheck className="size-3.5 text-positive" aria-hidden="true" />
