@@ -235,21 +235,6 @@ export default function Page() {
             alt="Luna Privé"
             className="h-11 w-auto"
           />
-          {/* Progress indicator */}
-          <div className="flex items-center gap-1.5" aria-hidden="true">
-            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <span
-                key={i}
-                className={`h-1 rounded-full transition-all duration-300 ${
-                  i === step
-                    ? 'w-6 bg-primary'
-                    : i < step
-                      ? 'w-2 bg-primary/60'
-                      : 'w-2 bg-muted'
-                }`}
-              />
-            ))}
-          </div>
         </header>
 
         {/* STEP 1 — Prova de ganhos */}
@@ -273,18 +258,6 @@ export default function Page() {
               style={{ animationDelay: '160ms' }}
               aria-label="Vendas recentes"
             >
-              <div className="mb-3 flex items-center justify-between px-1">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Vendas em tempo real
-                </h2>
-                <span className="flex items-center gap-1.5 text-xs font-medium text-positive">
-                  <span className="relative flex size-2">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-positive opacity-70" />
-                    <span className="relative inline-flex size-2 rounded-full bg-positive" />
-                  </span>
-                  ao vivo
-                </span>
-              </div>
               <div className="flex flex-col gap-2.5">
                 {notifications.map((n) => (
                   <SaleNotification
