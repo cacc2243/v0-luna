@@ -31,6 +31,7 @@ import { PlatformWalkthrough } from '@/components/platform-walkthrough'
 import { GuidedAppDemo } from '@/components/guided-app-demo'
 import { CtaButton } from '@/components/cta-button'
 import { PageBackground } from '@/components/page-background'
+import { AgeGate } from '@/components/age-gate'
 
 const notifications = [
   { title: 'Você vendeu o Pack 03', time: 'agora', amount: '+R$249,00' },
@@ -218,11 +219,14 @@ const TOTAL_STEPS = 8
 
 export default function Page() {
   const [step, setStep] = useState(0)
+  const [verified, setVerified] = useState(false)
   const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1))
 
   return (
     <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">
       <PageBackground />
+
+      {!verified && <AgeGate onConfirm={() => setVerified(true)} />}
 
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-10 pt-8">
         <header className="flex flex-col items-center gap-4">
