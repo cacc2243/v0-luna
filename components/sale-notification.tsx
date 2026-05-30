@@ -6,13 +6,13 @@ interface SaleNotificationProps {
 
 export function SaleNotification({ title, time, amount }: SaleNotificationProps) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/70 px-4 py-3.5 backdrop-blur-md">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/40 bg-primary/15">
+    <div className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-card/70 px-4 py-3.5 shadow-[0_0_20px_-6px] shadow-primary/40 backdrop-blur-md">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 shadow-[0_0_16px_-2px] shadow-primary/60">
         <img
           src="/images/luna-icon.png"
           alt=""
           aria-hidden="true"
-          className="size-6 object-contain"
+          className="size-7 object-contain"
         />
       </div>
 
@@ -21,9 +21,7 @@ export function SaleNotification({ title, time, amount }: SaleNotificationProps)
         <p className="text-xs text-muted-foreground">{time}</p>
       </div>
 
-      <p className="shrink-0 rounded-lg bg-positive/10 px-2.5 py-1 text-sm font-bold text-positive">
-        {amount}
-      </p>
+      <p className="shrink-0 text-sm font-bold text-primary">{amount}</p>
     </div>
   )
 }

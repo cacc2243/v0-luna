@@ -2,10 +2,10 @@ import { ShieldCheck, Lock, Zap } from 'lucide-react'
 import { SaleNotification } from '@/components/sale-notification'
 
 const notifications = [
-  { title: 'Você vendeu o Pack 03', time: 'agora', amount: '+R$197,00' },
-  { title: 'Você vendeu o Pack 07', time: '2 min atrás', amount: '+R$149,00' },
-  { title: 'Você vendeu o Pack 12', time: '5 min atrás', amount: '+R$249,00' },
-  { title: 'Presente Recebido', time: '8 min atrás', amount: '+R$1.300,00' },
+  { title: 'Você vendeu o Pack 03', time: 'agora', amount: '+R$249,00' },
+  { title: 'Você vendeu o Pack 07', time: 'agora', amount: '+R$189,00' },
+  { title: 'Você vendeu o Pack 12', time: 'agora', amount: '+R$369,00' },
+  { title: 'Presente recebido', time: 'agora', amount: '+R$600,00' },
 ]
 
 export default function Page() {
