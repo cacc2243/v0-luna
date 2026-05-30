@@ -315,7 +315,6 @@
 }
 .animate-highlight {
   animation: highlight-pulse 1.6s ease-in-out infinite;
-  border-radius: 1rem;
 }
 
 /* Custom branded scrollbar */

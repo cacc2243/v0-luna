@@ -795,21 +795,31 @@ function PacksScreen({
         <button
           type="button"
           onClick={onCreate}
-          className="luna-gradient flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+          className={`luna-gradient flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] ${
+            createdPack ? '' : 'animate-highlight'
+          }`}
         >
           <Plus className="size-4" aria-hidden="true" />
           Criar Pack
         </button>
       </div>
 
-      {/* Aviso */}
-      <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3">
-        <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-        <p className="text-pretty text-xs leading-relaxed text-foreground">
-          No app real, você cria seus packs <span className="font-bold">antes de começar a vender</span>.
-          Toque em <span className="font-bold">Criar Pack</span> para montar o seu.
-        </p>
-      </div>
+      {/* Mentora conduzindo */}
+      {!createdPack && (
+        <div className="luna-border mt-4 flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
+          <img
+            src="/images/mentor.png"
+            alt="Camila"
+            className="size-12 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+          />
+          <p className="animate-item flex-1 text-pretty text-sm leading-relaxed text-foreground">
+            Aqui é a sua vitrine! No app real, você monta seus packs{' '}
+            <span className="font-bold">antes de começar a vender</span>. Toque em{' '}
+            <span className="font-bold text-primary">Criar Pack</span> que eu te mostro como é
+            rápido montar o seu primeiro.
+          </p>
+        </div>
+      )}
 
       {/* Vitrine */}
       {createdPack ? (
