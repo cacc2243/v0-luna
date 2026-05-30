@@ -23,7 +23,7 @@ export function AgeGate({ onConfirm }: { onConfirm: () => void }) {
       aria-labelledby="age-gate-title"
     >
       {/* Overlay que escurece a tela inicial ao fundo */}
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-md" aria-hidden="true" />
+      <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" aria-hidden="true" />
 
       <div
         className={`animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/25 bg-card p-7 text-center shadow-2xl shadow-primary/20 transition-transform duration-300 ${
