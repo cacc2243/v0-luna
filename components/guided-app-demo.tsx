@@ -839,15 +839,18 @@ function PacksScreen({
       </div>
 
       {/* Vitrine */}
-      {createdPack ? (
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <article className="luna-border overflow-hidden rounded-2xl bg-card">
-            <div className="aspect-square overflow-hidden">
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        {createdPack && (
+          <article className="luna-border animate-pop overflow-hidden rounded-2xl bg-card ring-1 ring-primary/30">
+            <div className="relative aspect-square overflow-hidden">
               <img
                 src="/images/pack-photo-1.png"
                 alt={createdPack}
                 className="h-full w-full object-cover"
               />
+              <span className="luna-gradient absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
+                Novo
+              </span>
             </div>
             <div className="p-3">
               <p className="truncate text-sm font-semibold text-foreground">{createdPack}</p>
@@ -858,18 +861,27 @@ function PacksScreen({
               </p>
             </div>
           </article>
-        </div>
-      ) : (
-        <div className="mt-5 rounded-2xl border border-dashed border-border bg-card/40 px-4 py-10 text-center">
-          <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
-            <Package className="size-6 text-primary" aria-hidden="true" />
-          </span>
-          <p className="text-sm font-semibold text-foreground">Nenhum pack ainda</p>
-          <p className="mt-1 text-pretty text-xs text-muted-foreground">
-            Crie seu primeiro pack para aparecer na vitrine.
-          </p>
-        </div>
-      )}
+        )}
+        {examplePacks.map((pack) => (
+          <article key={pack.name} className="luna-border overflow-hidden rounded-2xl bg-card">
+            <div className="aspect-square overflow-hidden">
+              <img
+                src={pack.photo || "/placeholder.svg"}
+                alt={pack.name}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="p-3">
+              <p className="truncate text-sm font-semibold text-foreground">{pack.name}</p>
+              <p className="text-sm font-bold text-positive">{pack.price}</p>
+              <p className="mt-1 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
+                <Eye className="size-3" aria-hidden="true" />
+                {pack.views} · {pack.sales}
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
       </div>
 
       {/* Mentora conduzindo — popup na base */}
@@ -909,6 +921,30 @@ function PacksScreen({
     </div>
   )
 }
+
+const examplePacks = [
+  {
+    name: 'Pés & Saltos',
+    price: 'R$ 24,90',
+    photo: '/images/pack-photo-2.png',
+    views: '1.2k views',
+    sales: '84 vendas',
+  },
+  {
+    name: 'Ensaio Premium',
+    price: 'R$ 39,90',
+    photo: '/images/pack-photo-3.png',
+    views: '876 views',
+    sales: '52 vendas',
+  },
+  {
+    name: 'Coleção VIP',
+    price: 'R$ 59,90',
+    photo: '/images/pack-photo-1.png',
+    views: '2.4k views',
+    sales: '137 vendas',
+  },
+]
 
 const withdrawals = [
   { label: 'Saque PIX', date: 'Hoje, 14:32', amount: 4280.0 },

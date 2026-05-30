@@ -332,6 +332,26 @@
   animation: sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Notificações de venda entrando uma a uma */
+@keyframes notification-in {
+  from {
+    transform: translateY(14px) scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+.animate-notification-in {
+  animation: notification-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-notification-in {
+    animation: none;
+  }
+}
+
 /* Pedido pendente — pulso suave e lento para destaque */
 @keyframes soft-pulse {
   0%,

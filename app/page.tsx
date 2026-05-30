@@ -21,7 +21,7 @@ import {
   Banknote,
   ArrowDownToLine,
 } from 'lucide-react'
-import { SaleNotification } from '@/components/sale-notification'
+import { AnimatedSalesFeed } from '@/components/animated-sales-feed'
 import { HowItWorksStep } from '@/components/how-it-works-step'
 import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
@@ -253,42 +253,30 @@ export default function Page() {
               </p>
             </section>
 
-            <section
-              className="animate-item mt-6"
-              style={{ animationDelay: '160ms' }}
-              aria-label="Vendas recentes"
-            >
-              <div className="flex flex-col gap-2.5">
-                {notifications.map((n) => (
-                  <SaleNotification
-                    key={n.title + n.time}
-                    title={n.title}
-                    time={n.time}
-                    amount={n.amount}
-                  />
-                ))}
-              </div>
-            </section>
-
-            <div className="animate-item mt-7" style={{ animationDelay: '260ms' }}>
-              <CtaButton onClick={next}>Entrar e ver como funciona</CtaButton>
-              <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="size-3.5 text-positive" aria-hidden="true" />
-                  Sem rosto
-                </span>
-                <span className="size-1 rounded-full bg-muted-foreground/40" />
-                <span className="flex items-center gap-1.5">
-                  <Lock className="size-3.5 text-positive" aria-hidden="true" />
-                  Sem nome
-                </span>
-                <span className="size-1 rounded-full bg-muted-foreground/40" />
-                <span className="flex items-center gap-1.5">
-                  <Zap className="size-3.5 text-positive" aria-hidden="true" />
-                  Só PIX
-                </span>
-              </div>
-            </div>
+            <AnimatedSalesFeed
+              notifications={notifications}
+              footer={
+                <>
+                  <CtaButton onClick={next}>Entrar e ver como funciona</CtaButton>
+                  <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="size-3.5 text-positive" aria-hidden="true" />
+                      Sem rosto
+                    </span>
+                    <span className="size-1 rounded-full bg-muted-foreground/40" />
+                    <span className="flex items-center gap-1.5">
+                      <Lock className="size-3.5 text-positive" aria-hidden="true" />
+                      Sem nome
+                    </span>
+                    <span className="size-1 rounded-full bg-muted-foreground/40" />
+                    <span className="flex items-center gap-1.5">
+                      <Zap className="size-3.5 text-positive" aria-hidden="true" />
+                      Só PIX
+                    </span>
+                  </div>
+                </>
+              }
+            />
           </div>
         )}
 
