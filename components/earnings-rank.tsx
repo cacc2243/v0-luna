@@ -23,10 +23,10 @@ export function EarningsRank({
 }: EarningsRankProps) {
   return (
     <div
-      className={`luna-border flex items-center gap-3 rounded-xl px-3 py-2.5 backdrop-blur-md transition-colors ${
+      className={`luna-border flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
         highlight
           ? 'luna-gradient-soft shadow-[0_0_24px_-6px] shadow-primary/70'
-          : 'bg-card/60'
+          : 'bg-card'
       }`}
     >
       <span

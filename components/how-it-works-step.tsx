@@ -34,7 +34,7 @@ export function HowItWorksStep({
       </div>
 
       {/* Card */}
-      <div className="luna-border flex-1 rounded-2xl bg-card/70 px-4 py-3 backdrop-blur-md">
+      <div className="luna-border flex-1 rounded-2xl bg-card px-4 py-3">
         <h3 className="text-[0.95rem] font-semibold leading-snug text-foreground">
           {title}
         </h3>

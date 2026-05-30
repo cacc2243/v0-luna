@@ -188,7 +188,7 @@ export default function Page() {
             </section>
 
             <section
-              className="luna-border animate-item mt-5 flex items-stretch rounded-2xl bg-card/70 backdrop-blur-md"
+              className="luna-border animate-item mt-5 flex items-stretch rounded-2xl bg-card"
               style={{ animationDelay: '260ms' }}
               aria-label="Números"
             >
