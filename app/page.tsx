@@ -41,9 +41,9 @@ const howStats = [
 ]
 
 const ranking = [
-  { rank: 1, handle: '@luna_***892', amount: 'R$ 24.380', growth: '+18% no mês' },
-  { rank: 2, handle: '@priv_***415', amount: 'R$ 19.120', growth: '+12% no mês' },
-  { rank: 3, handle: '@anon_***073', amount: 'R$ 15.640', growth: '+9% no mês' },
+  { rank: 1, handle: '@luna_***892', amount: 'R$ 48.720', growth: '+18% no mês' },
+  { rank: 2, handle: '@priv_***415', amount: 'R$ 39.450', growth: '+12% no mês' },
+  { rank: 3, handle: '@anon_***073', amount: 'R$ 31.280', growth: '+9% no mês' },
   {
     rank: 4,
     handle: 'Você começa aqui',

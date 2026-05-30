@@ -38,7 +38,7 @@ export function EarningsRank({
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-mono text-sm font-semibold text-foreground">
+        <p className="truncate font-sans text-sm font-semibold text-foreground">
           {handle}
         </p>
         <span className="flex items-center gap-1 text-[0.7rem] font-medium text-positive">
