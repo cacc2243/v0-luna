@@ -224,9 +224,9 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
   const dim = (key: string) =>
   phase === 'tour' && highlight !== key
-    ? 'opacity-25 blur-[1px] brightness-75 transition-all duration-300'
+    ? 'opacity-55 brightness-90 transition-all duration-300'
     : saleActive && key !== 'orders'
-      ? 'opacity-25 blur-[1px] brightness-75 transition-all duration-300'
+      ? 'opacity-55 brightness-90 transition-all duration-300'
       : 'opacity-100 transition-all duration-300'
 
   const ring = (key: string) => (highlight === key ? 'animate-highlight' : '')
@@ -505,7 +505,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             }}
             aria-hidden="true"
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-20 z-[46] px-4">
+          <div className="pointer-events-none absolute inset-x-0 bottom-14 z-[46] px-4">
             <div className="luna-border pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
               <img
                 src="/images/mentor.png"
@@ -519,7 +519,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               <button
                 type="button"
                 onClick={advanceTour}
-                className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
+                className="mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
               >
                 {tourStep < tour.length - 1 ? 'Entendi, próximo' : 'Ver meu primeiro pedido'}
               </button>
@@ -1062,7 +1062,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
                 <button
                   type="button"
                   onClick={onDone}
-                  className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
+                className="mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
                 >
                   Entendi
                 </button>
