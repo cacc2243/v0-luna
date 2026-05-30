@@ -35,11 +35,11 @@ export default function Page() {
 
         <section className="mt-10 text-center">
           <h1 className="text-balance font-sans text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground">
-            Mais de <span className="text-primary">R$ 18.000,00</span> todo mês
-            apenas com seus <span className="text-primary">PÉS</span>.
+            Aqui no Luna Privê você pode ganhar mais de{' '}
+            <span className="text-primary">R$15 mil</span> todos os meses.
           </h1>
           <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
-            100% anônimo, sem mostrar rostos ou identidade real.
+            Aqui, você posta e vende na hora e recebe via PIX.
           </p>
         </section>
 
