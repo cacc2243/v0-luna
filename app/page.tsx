@@ -89,8 +89,11 @@ export default function Page() {
 
         {/* STEP 1 — Prova de ganhos */}
         {step === 0 && (
-          <div className="flex flex-1 flex-col">
-            <section className="mt-7 text-center">
+          <div key="step-0" className="animate-screen flex flex-1 flex-col">
+            <section
+              className="animate-item mt-7 text-center"
+              style={{ animationDelay: '60ms' }}
+            >
               <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
                 Aqui no Luna Privê você pode ganhar mais de{' '}
                 <span className="text-primary">R$15 mil</span> todos os meses.
@@ -100,7 +103,11 @@ export default function Page() {
               </p>
             </section>
 
-            <section className="mt-6" aria-label="Vendas recentes">
+            <section
+              className="animate-item mt-6"
+              style={{ animationDelay: '160ms' }}
+              aria-label="Vendas recentes"
+            >
               <div className="mb-3 flex items-center justify-between px-1">
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Vendas em tempo real
@@ -125,7 +132,10 @@ export default function Page() {
               </div>
             </section>
 
-            <div className="mt-auto pt-6">
+            <div
+              className="animate-item mt-auto pt-6"
+              style={{ animationDelay: '260ms' }}
+            >
               <button
                 type="button"
                 onClick={next}
@@ -155,8 +165,11 @@ export default function Page() {
 
         {/* STEP 2 — Como funciona */}
         {step === 1 && (
-          <div className="flex flex-1 flex-col">
-            <section className="mt-7 text-center">
+          <div key="step-1" className="animate-screen flex flex-1 flex-col">
+            <section
+              className="animate-item mt-7 text-center"
+              style={{ animationDelay: '60ms' }}
+            >
               <h1 className="text-balance font-sans text-[1.55rem] font-semibold leading-tight tracking-tight text-foreground">
                 Como funciona o <span className="text-primary">Luna Privé</span>?
               </h1>
@@ -165,7 +178,11 @@ export default function Page() {
               </p>
             </section>
 
-            <section className="mt-6 flex flex-col gap-3" aria-label="Etapas">
+            <section
+              className="animate-item mt-6 flex flex-col gap-3"
+              style={{ animationDelay: '160ms' }}
+              aria-label="Etapas"
+            >
               {steps.map((s, i) => (
                 <HowItWorksStep
                   key={s.number}
@@ -179,7 +196,8 @@ export default function Page() {
             </section>
 
             <section
-              className="mt-5 flex items-stretch rounded-2xl border border-primary/30 bg-card/70 backdrop-blur-md"
+              className="animate-item mt-5 flex items-stretch rounded-2xl border border-primary/30 bg-card/70 backdrop-blur-md"
+              style={{ animationDelay: '260ms' }}
               aria-label="Números"
             >
               {howStats.map((stat, i) => (
@@ -199,7 +217,10 @@ export default function Page() {
               ))}
             </section>
 
-            <div className="mt-auto pt-6">
+            <div
+              className="animate-item mt-auto pt-6"
+              style={{ animationDelay: '360ms' }}
+            >
               <button
                 type="button"
                 onClick={next}
@@ -213,9 +234,12 @@ export default function Page() {
 
         {/* STEP 3 — Resultados / prova social */}
         {step === 2 && (
-          <div className="flex flex-1 flex-col">
+          <div key="step-2" className="animate-screen flex flex-1 flex-col">
             {/* Hero com número gigante */}
-            <section className="mt-7 text-center">
+            <section
+              className="animate-item mt-7 text-center"
+              style={{ animationDelay: '60ms' }}
+            >
               <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary backdrop-blur-md">
                 <span className="relative flex size-2">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-70" />
@@ -238,7 +262,11 @@ export default function Page() {
             </section>
 
             {/* Ranking de faturamento */}
-            <section className="mt-6" aria-label="Ranking de faturamento">
+            <section
+              className="animate-item mt-6"
+              style={{ animationDelay: '180ms' }}
+              aria-label="Ranking de faturamento"
+            >
               <div className="mb-2.5 flex items-center justify-between px-1">
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Top faturamento do mês
@@ -254,7 +282,10 @@ export default function Page() {
               </div>
             </section>
 
-            <div className="mt-auto pt-6">
+            <div
+              className="animate-item mt-auto pt-6"
+              style={{ animationDelay: '300ms' }}
+            >
               <button
                 type="button"
                 className="block w-full rounded-xl bg-gradient-to-b from-primary to-[oklch(0.56_0.24_10)] py-4 text-center text-base font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
