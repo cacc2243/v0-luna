@@ -530,100 +530,131 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             onClick={() => !publishing && setShowCreate(false)}
             aria-hidden="true"
           />
-          <div className="animate-pop relative flex max-h-[88%] w-full max-w-md flex-col overflow-y-auto rounded-t-3xl border border-border bg-card px-5 pb-6 pt-5 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-foreground">Criar Pack</h2>
+          <div className="animate-sheet-up relative flex max-h-[92%] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl">
+            {/* Cabeçalho fixo */}
+            <div className="shrink-0 border-b border-border/60 px-5 pb-4 pt-3">
+              <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-muted-foreground/30" aria-hidden="true" />
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                    <Package className="size-4.5 text-primary" aria-hidden="true" />
+                  </span>
+                  <div className="leading-tight">
+                    <h2 className="text-base font-bold text-foreground">Criar Pack</h2>
+                    <p className="text-xs text-muted-foreground">Monte sua vitrine de conteúdo</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => !publishing && setShowCreate(false)}
+                  className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary active:scale-95"
+                  aria-label="Fechar"
+                >
+                  <X className="size-5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            {/* Conteúdo rolável */}
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3">
+                <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <p className="text-pretty text-xs leading-relaxed text-foreground">
+                  O número ideal de fotos por pack é de 2 a 4 fotos.{' '}
+                  <span className="font-bold">Mínimo de 2 fotos por pack.</span>
+                </p>
+              </div>
+
+              <label htmlFor="pack-name" className="mb-1.5 block text-sm font-semibold text-foreground">
+                Nome do pack
+              </label>
+              <input
+                id="pack-name"
+                value={packName}
+                onChange={(e) => setPackName(e.target.value)}
+                placeholder="Ex: Ensaio Casual"
+                className="mb-5 w-full rounded-xl border border-border bg-secondary px-3.5 py-3.5 text-base text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+              />
+
+              <label htmlFor="pack-price" className="mb-1.5 block text-sm font-semibold text-foreground">
+                Preço (R$)
+              </label>
+              <div className="mb-5 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+                <span className="text-base font-medium text-muted-foreground">R$</span>
+                <input
+                  id="pack-price"
+                  value={packPrice}
+                  onChange={(e) => setPackPrice(e.target.value)}
+                  inputMode="decimal"
+                  className="w-full bg-transparent text-base text-foreground outline-none"
+                />
+              </div>
+
+              <label htmlFor="pack-desc" className="mb-1.5 block text-sm font-semibold text-foreground">
+                Descrição <span className="font-normal text-muted-foreground">(opcional)</span>
+              </label>
+              <textarea
+                id="pack-desc"
+                value={packDesc}
+                onChange={(e) => setPackDesc(e.target.value)}
+                rows={3}
+                placeholder="Descreva o conteúdo do pack..."
+                className="mb-5 w-full resize-none rounded-xl border border-border bg-secondary px-3.5 py-3.5 text-base text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+              />
+
+              <div className="mb-2.5 flex items-center justify-between">
+                <span className="text-sm font-semibold text-foreground">Fotos</span>
+                <span className="rounded-full bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive">
+                  {examplePhotos.length} adicionadas
+                </span>
+              </div>
+              <div className="mb-3 grid grid-cols-3 gap-2.5">
+                {examplePhotos.map((src, i) => (
+                  <div
+                    key={src}
+                    className="relative aspect-square overflow-hidden rounded-xl border border-border"
+                  >
+                    <img
+                      src={src || '/placeholder.svg'}
+                      alt={`Foto de exemplo ${i + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <span className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-positive shadow">
+                      <Check className="size-3 text-white" aria-hidden="true" />
+                    </span>
+                  </div>
+                ))}
+              </div>
               <button
                 type="button"
-                onClick={() => !publishing && setShowCreate(false)}
-                className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary"
-                aria-label="Fechar"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 py-3.5 text-sm font-semibold text-primary transition active:scale-[0.99]"
               >
-                <X className="size-5" aria-hidden="true" />
+                <ImagePlus className="size-4" aria-hidden="true" />
+                Adicionar fotos ou vídeos
               </button>
             </div>
 
-            <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3">
-              <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-              <p className="text-pretty text-xs leading-relaxed text-foreground">
-                O número ideal de fotos por pack é de 2 a 4 fotos.{' '}
-                <span className="font-bold">Mínimo de 2 fotos por pack.</span>
-              </p>
+            {/* Rodapé fixo */}
+            <div className="shrink-0 border-t border-border/60 bg-card px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3.5">
+              <button
+                type="button"
+                onClick={publishPack}
+                disabled={publishing}
+                className="luna-gradient flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
+              >
+                {publishing ? (
+                  <>
+                    <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                    Publicando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="size-5" aria-hidden="true" />
+                    Criar pack
+                  </>
+                )}
+              </button>
             </div>
-
-            <label className="mb-1.5 block text-sm font-semibold text-foreground">Nome do pack</label>
-            <input
-              value={packName}
-              onChange={(e) => setPackName(e.target.value)}
-              placeholder="Ex: Ensaio Casual"
-              className="mb-4 w-full rounded-xl border border-border bg-secondary px-3.5 py-3 text-sm text-foreground outline-none transition focus:border-primary/60"
-            />
-
-            <label className="mb-1.5 block text-sm font-semibold text-foreground">Preço (R$)</label>
-            <div className="mb-4 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3 focus-within:border-primary/60">
-              <span className="text-sm text-muted-foreground">R$</span>
-              <input
-                value={packPrice}
-                onChange={(e) => setPackPrice(e.target.value)}
-                className="w-full bg-transparent text-sm text-foreground outline-none"
-              />
-            </div>
-
-            <label className="mb-1.5 block text-sm font-semibold text-foreground">
-              Descrição <span className="font-normal text-muted-foreground">(opcional)</span>
-            </label>
-            <textarea
-              value={packDesc}
-              onChange={(e) => setPackDesc(e.target.value)}
-              rows={3}
-              placeholder="Descreva o conteúdo do pack..."
-              className="mb-4 w-full resize-none rounded-xl border border-border bg-secondary px-3.5 py-3 text-sm text-foreground outline-none transition focus:border-primary/60"
-            />
-
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">Fotos</span>
-              <span className="text-xs text-muted-foreground">(já adicionadas para você)</span>
-            </div>
-            <div className="mb-3 grid grid-cols-3 gap-2">
-              {examplePhotos.map((src, i) => (
-                <div key={src} className="relative aspect-square overflow-hidden rounded-xl border border-border">
-                  <img
-                    src={src || "/placeholder.svg"}
-                    alt={`Foto de exemplo ${i + 1}`}
-                    className="h-full w-full object-cover"
-                  />
-                  <span className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full bg-positive">
-                    <Check className="size-3 text-white" aria-hidden="true" />
-                  </span>
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 py-3 text-sm font-semibold text-primary"
-            >
-              <ImagePlus className="size-4" aria-hidden="true" />
-              Adicionar fotos ou vídeos
-            </button>
-
-            <button
-              type="button"
-              onClick={publishPack}
-              disabled={publishing}
-              className="luna-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
-            >
-              {publishing ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                  Publicando...
-                </>
-              ) : (
-                <>
-                  <Check className="size-4" aria-hidden="true" />
-                  Criar pack
-                </>
-              )}
-            </button>
           </div>
         </div>
       )}
