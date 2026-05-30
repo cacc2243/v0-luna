@@ -510,24 +510,8 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 7 — Demonstração guiada do app */}
-        {step === 6 && (
-          <div key="step-6" className="animate-screen flex flex-col">
-            <section
-              className="animate-item mt-6 text-center"
-              style={{ animationDelay: '60ms' }}
-            >
-              <h1 className="text-balance font-sans text-[1.45rem] font-bold leading-tight tracking-tight text-foreground">
-                Veja o app por <span className="text-primary">dentro</span>
-              </h1>
-              <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-                Acompanhe os pedidos chegando e aceite suas primeiras vendas.
-              </p>
-            </section>
-
-            <GuidedAppDemo onComplete={next} />
-          </div>
-        )}
+        {/* STEP 7 — Demonstração guiada do app (tela cheia) */}
+        {step === 6 && <GuidedAppDemo key="step-6" onComplete={next} />}
       </div>
     </main>
   )

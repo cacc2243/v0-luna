@@ -14,6 +14,8 @@ import {
   Bell,
   Check,
   PiggyBank,
+  Clock,
+  X,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 
@@ -43,7 +45,7 @@ const tour = [
   },
   {
     key: 'orders' as const,
-    text: 'E quando alguém quer um pack, cai um pedido aqui. Bora? Vou te mostrar como aceitar sua primeira venda.',
+    text: 'E quando alguém quer um pack, cai um pedido bem aqui. Bora aceitar sua primeira venda?',
   },
 ]
 
@@ -82,16 +84,19 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [vendas, setVendas] = useState(0)
   const [today, setToday] = useState(0)
   const [views, setViews] = useState(312)
-  const [pendingCount, setPendingCount] = useState(sales.length)
   const [saleIndex, setSaleIndex] = useState(0)
   const [activeSale, setActiveSale] = useState<number | null>(null)
   const [floats, setFloats] = useState<{ id: number; amount: number }[]>([])
   const [shake, setShake] = useState(false)
   const [refuseHint, setRefuseHint] = useState(false)
 
+  const scrollRef = useRef<HTMLDivElement>(null)
   const animatedBalance = useCountUp(balance)
   const animatedToday = useCountUp(today)
   const highlight = phase === 'tour' ? tour[tourStep].key : null
+
+  const pendingCount = sales.length - vendas
+  const pendingValue = sales.slice(vendas).reduce((sum, s) => sum + s.amount, 0)
 
   // Visualizações sobem ao vivo durante o tour e as vendas
   useEffect(() => {
@@ -102,10 +107,13 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     return () => clearInterval(id)
   }, [phase])
 
-  // Mostra o primeiro pedido ao entrar no modo de vendas
+  // Mostra o primeiro pedido ao entrar no modo de vendas + rola para o topo
   useEffect(() => {
     if (phase !== 'selling') return
-    const t = setTimeout(() => setActiveSale(saleIndex), 700)
+    const t = setTimeout(() => {
+      setActiveSale(saleIndex)
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    }, 500)
     return () => clearTimeout(t)
   }, [phase, saleIndex])
 
@@ -123,17 +131,12 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     setBalance((b) => b + sale.amount)
     setToday((t) => t + sale.amount)
     setVendas((v) => v + 1)
-    setPendingCount((p) => p - 1)
     const floatId = Date.now()
     setFloats((f) => [...f, { id: floatId, amount: sale.amount }])
     setTimeout(() => setFloats((f) => f.filter((x) => x.id !== floatId)), 1400)
 
     if (saleIndex < sales.length - 1) {
-      const nextIndex = saleIndex + 1
-      setTimeout(() => {
-        setSaleIndex(nextIndex)
-        setActiveSale(nextIndex)
-      }, 1100)
+      setTimeout(() => setSaleIndex((i) => i + 1), 1100)
     } else {
       setTimeout(() => setPhase('done'), 900)
     }
@@ -143,7 +146,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     setShake(true)
     setRefuseHint(true)
     setTimeout(() => setShake(false), 450)
-    setTimeout(() => setRefuseHint(false), 2200)
+    setTimeout(() => setRefuseHint(false), 2400)
   }
 
   const dim = (key: string) =>
@@ -153,251 +156,82 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
       : ''
 
+  const currentSale = activeSale !== null ? sales[activeSale] : null
+
   return (
-    <div className="animate-screen relative mt-4 flex flex-col">
-      {/* Moldura do app */}
-      <div className="overflow-hidden rounded-[1.75rem] border border-border bg-background shadow-2xl">
-        <div className="relative max-h-[60dvh] overflow-y-auto px-4 pb-24 pt-5">
-          {/* Header */}
-          <header
-            className={`flex items-center justify-between gap-3 transition-opacity duration-300 ${dim('balance')}`}
-          >
-            <div className="flex items-center gap-2.5">
-              <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
-              <div className="leading-tight">
-                <p className="text-sm font-semibold text-foreground">@voce</p>
-                <span className="flex items-center gap-1 text-xs text-positive">
-                  <span className="size-1.5 rounded-full bg-positive" />
-                  Online
-                </span>
-              </div>
+    <div className="fixed inset-0 z-40 flex flex-col bg-background">
+      {/* Conteúdo rolável do app */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
+        {/* Header */}
+        <header
+          className={`flex items-center justify-between gap-3 transition-opacity duration-300 ${dim('balance')}`}
+        >
+          <div className="flex items-center gap-2.5">
+            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
+            <div className="leading-tight">
+              <p className="text-sm font-semibold text-foreground">@voce</p>
+              <span className="flex items-center gap-1 text-xs text-positive">
+                <span className="size-1.5 rounded-full bg-positive" />
+                Online
+              </span>
             </div>
-            <div
-              className={`luna-border relative flex items-center gap-2 rounded-2xl bg-card px-3 py-2 transition-all duration-300 ${ring('balance')}`}
-            >
-              <Wallet className="size-5 text-primary" aria-hidden="true" />
-              <div className="leading-tight">
-                <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
-                <p className="text-base font-bold text-foreground">{brl(animatedBalance)}</p>
-              </div>
-              {floats.map((f) => (
-                <span
-                  key={f.id}
-                  className="animate-float-up pointer-events-none absolute -top-1 right-2 text-sm font-bold text-positive"
-                >
-                  +{brl(f.amount)}
-                </span>
-              ))}
-            </div>
-          </header>
-
-          {/* Stats */}
+          </div>
           <div
-            className={`mt-4 grid grid-cols-3 gap-2.5 transition-all duration-300 ${dim('stats')} ${
-              highlight === 'stats' ? 'scale-[1.01]' : ''
-            }`}
+            className={`luna-border relative flex items-center gap-2 rounded-2xl bg-card px-3 py-2 transition-all duration-300 ${ring('balance')}`}
           >
-            <StatCard icon={CalendarDays} label="Hoje" value={brl(animatedToday)} highlighted={highlight === 'stats'} />
-            <StatCard icon={Eye} label="Views" value={String(views)} highlighted={highlight === 'stats'} />
-            <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} highlighted={highlight === 'stats'} />
-          </div>
-
-          {/* Saldo pendente */}
-          <div className="luna-border mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
-              <PiggyBank className="size-5 text-primary" aria-hidden="true" />
-            </span>
-            <div className="flex-1 leading-tight">
-              <p className="text-xs text-muted-foreground">Saldo pendente</p>
-              <p className="text-xl font-bold text-primary">{brl(pendingCount * 100)}</p>
+            <Wallet className="size-5 text-primary" aria-hidden="true" />
+            <div className="leading-tight">
+              <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
+              <p className="text-base font-bold text-foreground">{brl(animatedBalance)}</p>
             </div>
-            <span className="rounded-full border border-primary/40 px-2.5 py-1 text-xs font-semibold text-primary">
-              {pendingCount} pedidos
-            </span>
-          </div>
-
-          {/* Visualizações recentes */}
-          <div className={`mt-5 transition-all duration-300 ${dim('views')}`}>
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Eye className="size-4 text-positive" aria-hidden="true" />
-                Visualizações recentes
-              </h3>
-              <span className="rounded-full border border-positive/40 px-2 py-0.5 text-xs font-semibold text-positive">
-                {views}
-              </span>
-            </div>
-            <div
-              className={`rounded-2xl border border-border bg-card/60 px-4 py-3 transition-all duration-300 ${ring('views')}`}
-            >
-              {[
-                { tag: 'SP', text: 'alguém de São Paulo viu seu perfil', t: 'agora' },
-                { tag: 'RJ', text: 'um comprador do Rio abriu seus packs', t: '1 min' },
-                { tag: 'MG', text: 'visitante de BH favoritou seu perfil', t: '3 min' },
-              ].map((v) => (
-                <div key={v.text} className="flex items-center gap-3 border-b border-border/50 py-2 last:border-0">
-                  <span className="flex size-8 items-center justify-center rounded-full bg-positive/10 text-[0.65rem] font-bold text-positive">
-                    {v.tag}
-                  </span>
-                  <p className="flex-1 text-pretty text-xs text-muted-foreground">{v.text}</p>
-                  <span className="text-[0.65rem] text-muted-foreground/70">{v.t}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Pedidos recentes */}
-          <div className={`mt-5 transition-all duration-300 ${dim('orders')}`}>
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <ShoppingBag className="size-4 text-primary" aria-hidden="true" />
-                Pedidos recentes
-              </h3>
-              <span className="rounded-full border border-primary/40 px-2 py-0.5 text-xs font-semibold text-primary">
-                {pendingCount} novos
-              </span>
-            </div>
-            <div className={`rounded-2xl transition-all duration-300 ${ring('orders')}`}>
-              {sales.slice(0, saleIndex + (phase === 'done' ? 0 : 1)).map((s, i) => {
-                const accepted = i < saleIndex || phase === 'done'
-                return (
-                  <div
-                    key={s.handle}
-                    className="luna-border mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-3"
-                  >
-                    <span className="flex size-9 items-center justify-center rounded-full bg-muted">
-                      <User className="size-4 text-muted-foreground" aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0 flex-1 leading-tight">
-                      <p className="flex items-center gap-1 text-sm font-semibold text-foreground">
-                        {s.handle}
-                        <BadgeCheck className="size-3.5 text-positive" aria-hidden="true" />
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">quer comprar {s.pack}</p>
-                    </div>
-                    {accepted ? (
-                      <span className="flex items-center gap-1 text-sm font-bold text-positive">
-                        <Check className="size-4" aria-hidden="true" />
-                        {brl(s.amount)}
-                      </span>
-                    ) : (
-                      <span className="text-sm font-bold text-primary">{brl(s.amount)}</span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom nav */}
-        <nav className="flex items-center justify-around border-t border-border bg-card/80 px-2 pb-3 pt-2 backdrop-blur">
-          {[
-            { icon: Home, label: 'Início', active: true },
-            { icon: Package, label: 'Packs' },
-            { icon: Rocket, label: 'Boost', center: true },
-            { icon: Wallet, label: 'Carteira' },
-            { icon: User, label: 'Perfil' },
-          ].map((item) => (
-            <div key={item.label} className="flex flex-1 flex-col items-center gap-1">
-              {item.center ? (
-                <span className="luna-gradient -mt-6 flex size-12 items-center justify-center rounded-full shadow-lg shadow-primary/40">
-                  <item.icon className="size-5 text-primary-foreground" aria-hidden="true" />
-                </span>
-              ) : (
-                <item.icon
-                  className={`size-5 ${item.active ? 'text-primary' : 'text-muted-foreground'}`}
-                  aria-hidden="true"
-                />
-              )}
+            {floats.map((f) => (
               <span
-                className={`text-[0.6rem] ${
-                  item.active ? 'font-semibold text-primary' : 'text-muted-foreground'
-                }`}
+                key={f.id}
+                className="animate-float-up pointer-events-none absolute -top-1 right-2 text-sm font-bold text-positive"
               >
-                {item.label}
+                +{brl(f.amount)}
               </span>
-            </div>
-          ))}
-        </nav>
-      </div>
-
-      {/* Coach bar (tour) */}
-      {phase === 'tour' && (
-        <div className="luna-border mt-4 flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5">
-          <img
-            src="/images/mentor.png"
-            alt="Camila"
-            className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
-          />
-          <div className="flex-1">
-            <p key={tourStep} className="animate-item text-pretty text-sm leading-relaxed text-foreground">
-              {tour[tourStep].text}
-            </p>
-            <button
-              type="button"
-              onClick={advanceTour}
-              className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
-            >
-              {tourStep < tour.length - 1 ? 'Entendi, próximo' : 'Ver meu primeiro pedido'}
-            </button>
+            ))}
           </div>
-        </div>
-      )}
+        </header>
 
-      {/* Estado final */}
-      {phase === 'done' && (
-        <div className="animate-item mt-4 flex flex-col">
-          <div className="luna-border rounded-2xl bg-card px-4 py-4 text-center">
-            <p className="text-sm text-muted-foreground">Você acabou de faturar</p>
-            <p className="mt-1 text-3xl font-bold text-positive">{brl(balance)}</p>
-            <p className="mt-1 text-pretty text-xs text-muted-foreground">
-              em poucos cliques — e isso foi só uma simulação.
-            </p>
-          </div>
-          <div className="mt-4">
-            <CtaButton onClick={onComplete}>Quero vender de verdade</CtaButton>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de venda pendente */}
-      {activeSale !== null && phase === 'selling' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-5">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+        {/* Pedido pendente — DENTRO do app */}
+        {currentSale && phase === 'selling' && (
           <div
-            className={`animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/40 bg-card shadow-2xl ${
+            key={`order-${activeSale}`}
+            className={`luna-border animate-pop mt-4 overflow-hidden rounded-2xl bg-card ${
               shake ? 'animate-shake' : ''
             }`}
           >
-            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-              <span className="relative flex size-2.5">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-70" />
-                <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
-              </span>
-              <h4 className="text-sm font-bold text-foreground">Venda pendente!</h4>
-              <span className="ml-auto rounded-full border border-primary/40 px-2 py-0.5 text-xs font-semibold text-primary">
+            <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+              <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
+                <Clock className="size-4 text-primary" aria-hidden="true" />
+                Pedidos pendentes
+              </h3>
+              <span className="flex size-6 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
                 {pendingCount}
               </span>
             </div>
             <div className="px-4 py-4">
-              <div className="flex items-center gap-3">
-                <span className="flex size-11 items-center justify-center rounded-full bg-primary/15">
+              <div className="flex items-start gap-3">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
                   <Bell className="size-5 text-primary" aria-hidden="true" />
                 </span>
-                <div className="flex-1 leading-tight">
+                <div className="min-w-0 flex-1 leading-snug">
                   <p className="text-sm font-semibold text-foreground">
-                    {sales[saleIndex].handle} quer comprar
+                    {currentSale.handle} quer comprar
                   </p>
-                  <p className="text-sm font-semibold text-foreground">{sales[saleIndex].pack}</p>
-                  <p className="text-xs text-muted-foreground">agora · {sales[saleIndex].purchases}</p>
+                  <p className="text-sm font-semibold text-foreground">{currentSale.pack}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    agora · {currentSale.purchases}
+                  </p>
                 </div>
-                <span className="text-lg font-bold text-positive">{brl(sales[saleIndex].amount)}</span>
+                <span className="text-base font-bold text-positive">{brl(currentSale.amount)}</span>
               </div>
 
               {refuseHint && (
                 <p className="mt-3 rounded-lg bg-primary/10 px-3 py-2 text-center text-xs font-medium text-primary">
-                  Aceite a venda para continuar o tour
+                  Aceite a venda para continuar
                 </p>
               )}
 
@@ -405,8 +239,9 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                 <button
                   type="button"
                   onClick={tryRefuse}
-                  className="flex-1 rounded-xl border border-border bg-secondary py-3 text-sm font-semibold text-muted-foreground transition active:scale-[0.98]"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary py-3 text-sm font-semibold text-muted-foreground transition active:scale-[0.98]"
                 >
+                  <X className="size-4" aria-hidden="true" />
                   Recusar
                 </button>
                 <button
@@ -414,14 +249,186 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                   onClick={acceptSale}
                   style={{
                     backgroundImage:
-                      'linear-gradient(90deg, oklch(0.62 0.21 12) 0%, oklch(0.56 0.23 9) 50%, oklch(0.5 0.22 8) 100%)',
+                      'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
                   }}
-                  className="flex flex-[1.4] items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
+                  className="flex flex-[1.4] items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98]"
                 >
                   <Check className="size-4" aria-hidden="true" />
                   Aceitar venda
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div
+          className={`mt-4 grid grid-cols-3 gap-2.5 transition-all duration-300 ${dim('stats')} ${
+            highlight === 'stats' ? 'scale-[1.01]' : ''
+          }`}
+        >
+          <StatCard icon={CalendarDays} label="Hoje" value={brl(animatedToday)} highlighted={highlight === 'stats'} />
+          <StatCard icon={Eye} label="Views" value={String(views)} highlighted={highlight === 'stats'} />
+          <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} highlighted={highlight === 'stats'} />
+        </div>
+
+        {/* Saldo pendente */}
+        <div className="luna-border mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
+            <PiggyBank className="size-5 text-primary" aria-hidden="true" />
+          </span>
+          <div className="flex-1 leading-tight">
+            <p className="text-xs text-muted-foreground">Saldo pendente</p>
+            <p className="text-xl font-bold text-primary">{brl(pendingValue)}</p>
+          </div>
+          <span className="rounded-full border border-primary/40 px-2.5 py-1 text-xs font-semibold text-primary">
+            {pendingCount} pedidos
+          </span>
+        </div>
+
+        {/* Visualizações recentes */}
+        <div className={`mt-5 transition-all duration-300 ${dim('views')}`}>
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Eye className="size-4 text-positive" aria-hidden="true" />
+              Visualizações recentes
+            </h3>
+            <span className="rounded-full border border-positive/40 px-2 py-0.5 text-xs font-semibold text-positive">
+              {views}
+            </span>
+          </div>
+          <div
+            className={`rounded-2xl border border-border bg-card/60 px-4 py-3 transition-all duration-300 ${ring('views')}`}
+          >
+            {[
+              { tag: 'SP', text: 'alguém de São Paulo viu seu perfil', t: 'agora' },
+              { tag: 'RJ', text: 'um comprador do Rio abriu seus packs', t: '1 min' },
+              { tag: 'MG', text: 'visitante de BH favoritou seu perfil', t: '3 min' },
+            ].map((v) => (
+              <div key={v.text} className="flex items-center gap-3 border-b border-border/50 py-2 last:border-0">
+                <span className="flex size-8 items-center justify-center rounded-full bg-positive/10 text-[0.65rem] font-bold text-positive">
+                  {v.tag}
+                </span>
+                <p className="flex-1 text-pretty text-xs text-muted-foreground">{v.text}</p>
+                <span className="text-[0.65rem] text-muted-foreground/70">{v.t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pedidos recentes (histórico de aceitas) */}
+        <div className={`mt-5 transition-all duration-300 ${dim('orders')}`}>
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <ShoppingBag className="size-4 text-primary" aria-hidden="true" />
+              Pedidos recentes
+            </h3>
+          </div>
+          {vendas === 0 ? (
+            <div className="rounded-2xl border border-border bg-card/60 px-4 py-6 text-center">
+              <p className="text-xs text-muted-foreground">
+                Suas vendas aceitas aparecem aqui.
+              </p>
+            </div>
+          ) : (
+            <div>
+              {sales.slice(0, vendas).map((s) => (
+                <div
+                  key={s.handle}
+                  className="luna-border mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-3"
+                >
+                  <span className="flex size-9 items-center justify-center rounded-full bg-muted">
+                    <User className="size-4 text-muted-foreground" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1 leading-tight">
+                    <p className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                      {s.handle}
+                      <BadgeCheck className="size-3.5 text-positive" aria-hidden="true" />
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">comprou {s.pack}</p>
+                  </div>
+                  <span className="flex items-center gap-1 text-sm font-bold text-positive">
+                    <Check className="size-4" aria-hidden="true" />
+                    {brl(s.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom nav */}
+      <nav className="flex items-center justify-around border-t border-border bg-card/80 px-2 pb-3 pt-2 backdrop-blur">
+        {[
+          { icon: Home, label: 'Início', active: true },
+          { icon: Package, label: 'Packs' },
+          { icon: Rocket, label: 'Boost', center: true },
+          { icon: Wallet, label: 'Carteira' },
+          { icon: User, label: 'Perfil' },
+        ].map((item) => (
+          <div key={item.label} className="flex flex-1 flex-col items-center gap-1">
+            {item.center ? (
+              <span className="luna-gradient -mt-6 flex size-12 items-center justify-center rounded-full shadow-lg shadow-primary/40">
+                <item.icon className="size-5 text-primary-foreground" aria-hidden="true" />
+              </span>
+            ) : (
+              <item.icon
+                className={`size-5 ${item.active ? 'text-primary' : 'text-muted-foreground'}`}
+                aria-hidden="true"
+              />
+            )}
+            <span
+              className={`text-[0.6rem] ${
+                item.active ? 'font-semibold text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              {item.label}
+            </span>
+          </div>
+        ))}
+      </nav>
+
+      {/* Coach bar (tour) — flutua sobre o app, acima da nav */}
+      {phase === 'tour' && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-20 px-4">
+          <div className="luna-border pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-card/95 px-4 py-3.5 shadow-2xl backdrop-blur">
+            <img
+              src="/images/mentor.png"
+              alt="Camila"
+              className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+            />
+            <div className="flex-1">
+              <p key={tourStep} className="animate-item text-pretty text-sm leading-relaxed text-foreground">
+                {tour[tourStep].text}
+              </p>
+              <button
+                type="button"
+                onClick={advanceTour}
+                className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
+              >
+                {tourStep < tour.length - 1 ? 'Entendi, próximo' : 'Ver meu primeiro pedido'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Estado final — overlay dentro do app */}
+      {phase === 'done' && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center px-5">
+          <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-positive/40 bg-card p-6 text-center shadow-2xl">
+            <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-positive/15">
+              <Check className="size-7 text-positive" aria-hidden="true" />
+            </span>
+            <p className="mt-4 text-sm text-muted-foreground">Você acabou de faturar</p>
+            <p className="mt-1 text-4xl font-bold text-positive">{brl(balance)}</p>
+            <p className="mt-2 text-pretty text-xs text-muted-foreground">
+              em poucos cliques — e isso foi só uma simulação.
+            </p>
+            <div className="mt-6">
+              <CtaButton onClick={onComplete}>Quero vender de verdade</CtaButton>
             </div>
           </div>
         </div>
