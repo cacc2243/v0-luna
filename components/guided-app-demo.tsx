@@ -13,7 +13,6 @@ import {
   BadgeCheck,
   Bell,
   Check,
-  PiggyBank,
   X,
   Ghost,
   Plus,
@@ -140,7 +139,6 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
   // O saldo pendente só existe quando há um pedido pendente aparecendo na tela.
   const pendingCount = activeSale !== null ? 1 : 0
-  const pendingValue = activeSale !== null ? sellingList[activeSale].amount : 0
 
   // Visualizações sobem ao vivo durante o tour e as vendas
   useEffect(() => {
@@ -314,12 +312,12 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             <img src="/images/luna-icon-logo.png" alt="Luna Privé" className="h-8 w-8" />
           </div>
           <div
-            className={`luna-border relative flex items-center gap-2 rounded-2xl bg-card px-3 py-2 transition-all duration-300 ${ring('balance')}`}
+            className={`luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 transition-all duration-300 ${ring('balance')}`}
           >
-            <Wallet className="size-5 text-primary" aria-hidden="true" />
+            <Wallet className="size-6 text-primary" aria-hidden="true" />
             <div className="leading-tight">
-              <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
-              <p className="text-base font-bold text-foreground">{brl(animatedBalance)}</p>
+              <p className="text-xs text-muted-foreground">Saldo</p>
+              <p className="text-xl font-bold text-foreground">{brl(animatedBalance)}</p>
             </div>
             {floats.map((f) => (
               <span
@@ -343,22 +341,6 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           <StatCard icon={Eye} label="Views" value={String(views)} highlighted={highlight === 'stats'} />
           <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} highlighted={highlight === 'stats'} />
         </div>
-
-        {/* Saldo pendente — só aparece quando há pedido pendente */}
-        {pendingCount > 0 && (
-          <div className={`luna-border mt-3 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 transition-all duration-300 ${saleActive ? 'opacity-25 blur-[1px] brightness-75' : 'opacity-100'}`}>
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
-              <PiggyBank className="size-5 text-primary" aria-hidden="true" />
-            </span>
-            <div className="flex-1 leading-tight">
-              <p className="text-xs text-muted-foreground">Saldo pendente</p>
-              <p className="text-xl font-bold text-primary">{brl(pendingValue)}</p>
-            </div>
-            <span className="rounded-full border border-primary/40 px-2.5 py-1 text-xs font-semibold text-primary">
-              {pendingCount} {pendingCount === 1 ? 'pedido' : 'pedidos'}
-            </span>
-          </div>
-        )}
 
         {/* Visualizações recentes */}
         <div ref={viewsRef} className={`mt-5 transition-all duration-300 ${dim('views')}`}>
@@ -867,17 +849,17 @@ function StatCard({
   highlighted?: boolean
 }) {
   return (
-    <div
-      className={`flex flex-col items-center gap-1.5 rounded-2xl border bg-card px-2 py-3 text-center transition-all duration-300 ${
-        highlighted ? 'border-primary/50' : 'border-border'
-      }`}
-    >
-      <span className="flex size-9 items-center justify-center rounded-full bg-primary/10">
-        <Icon className="size-4 text-primary" aria-hidden="true" />
-      </span>
-      <span className="text-[0.65rem] text-muted-foreground">{label}</span>
-      <span className="text-sm font-bold text-foreground">{value}</span>
-    </div>
+  <div
+  className={`flex flex-col items-center gap-1.5 rounded-2xl border bg-card px-2 py-3.5 text-center transition-all duration-300 ${
+  highlighted ? 'border-primary/50' : 'border-border'
+  }`}
+  >
+  <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+  <Icon className="size-5 text-primary" aria-hidden="true" />
+  </span>
+  <span className="text-xs text-muted-foreground">{label}</span>
+  <span className="text-lg font-bold text-foreground">{value}</span>
+  </div>
   )
 }
 
