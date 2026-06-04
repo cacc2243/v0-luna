@@ -555,7 +555,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       )}
 
       {/* Bloqueio de interação durante tutorial - captura cliques fora das áreas permitidas */}
-      {(phase === 'tour' || phase === 'selling' || phase === 'selling2') && !createdPack && (
+      {phase === 'tour' && (
         <div 
           className="absolute inset-0 z-[43]"
           onClick={showBlockedToast}
