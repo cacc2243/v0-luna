@@ -28,6 +28,7 @@ import {
   Zap,
   TrendingUp,
   Sparkles,
+  MessageCircle,
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -255,7 +256,7 @@ function LoginScreen({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AppDashboard() {
-  const [activeTab, setActiveTab] = useState<'Início' | 'Packs' | 'Impulsionar' | 'Carteira' | 'Perfil'>('Início')
+  const [activeTab, setActiveTab] = useState<'Início' | 'Packs' | 'Impulsionar' | 'Carteira' | 'Chats' | 'Perfil'>('Início')
   const [balance, setBalance] = useState(639.10)
   const [vendas, setVendas] = useState(7)
   const [today, setToday] = useState(189.90)
@@ -337,6 +338,8 @@ function AppDashboard() {
         <ProfileScreen />
       ) : activeTab === 'Impulsionar' ? (
         <ImpulsionarScreen balance={animatedBalance} />
+      ) : activeTab === 'Chats' ? (
+        <ChatsScreen balance={animatedBalance} />
       ) : (
         <HomeScreen
           balance={animatedBalance}
@@ -352,7 +355,7 @@ function AppDashboard() {
           { icon: Home, label: 'Início' as const },
           { icon: Package, label: 'Packs' as const },
           { icon: Rocket, label: 'Impulsionar' as const, center: true },
-          { icon: Wallet, label: 'Carteira' as const },
+          { icon: MessageCircle, label: 'Chats' as const },
           { icon: User, label: 'Perfil' as const },
         ].map((item) => (
           <button
@@ -517,6 +520,130 @@ function AppDashboard() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tela Chats
+// ─────────────────────────────────────────────────────────────────────────────
+
+const mockChats = [
+  {
+    id: 1,
+    name: '@fan_secreto',
+    avatar: null,
+    lastMessage: 'Oi! Adorei seu pack novo 😍',
+    time: '2 min',
+    unread: 3,
+    online: true,
+  },
+  {
+    id: 2,
+    name: '@comprador_sp',
+    avatar: null,
+    lastMessage: 'Você aceita PIX?',
+    time: '15 min',
+    unread: 1,
+    online: true,
+  },
+  {
+    id: 3,
+    name: '@admirador_rj',
+    avatar: null,
+    lastMessage: 'Obrigado pelo conteúdo!',
+    time: '1h',
+    unread: 0,
+    online: false,
+  },
+  {
+    id: 4,
+    name: '@cliente_vip',
+    avatar: null,
+    lastMessage: 'Quando sai o próximo pack?',
+    time: '3h',
+    unread: 0,
+    online: false,
+  },
+  {
+    id: 5,
+    name: '@novo_seguidor',
+    avatar: null,
+    lastMessage: 'Acabei de assinar! 🎉',
+    time: '5h',
+    unread: 0,
+    online: true,
+  },
+]
+
+function ChatsScreen({ balance }: { balance: number }) {
+  return (
+    <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
+      {/* Header */}
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
+        </div>
+        <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
+          <Wallet className="size-6 text-primary" aria-hidden="true" />
+          <div className="leading-tight">
+            <p className="text-xs text-muted-foreground">Saldo</p>
+            <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
+          </div>
+        </div>
+      </header>
+
+      {/* Título */}
+      <div className="mt-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60">
+              <MessageCircle className="size-5 text-primary-foreground" aria-hidden="true" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Mensagens</h1>
+              <p className="text-sm text-muted-foreground">{mockChats.filter(c => c.unread > 0).length} não lidas</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de Chats */}
+      <div className="mt-5 flex flex-col gap-2">
+        {mockChats.map((chat) => (
+          <button
+            key={chat.id}
+            type="button"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left transition hover:border-primary/40 active:scale-[0.99]"
+          >
+            {/* Avatar */}
+            <div className="relative">
+              <div className="flex size-12 items-center justify-center rounded-full bg-muted text-lg font-bold text-muted-foreground">
+                {chat.name.charAt(1).toUpperCase()}
+              </div>
+              {chat.online && (
+                <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-card bg-positive" />
+              )}
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 overflow-hidden">
+              <div className="flex items-center justify-between gap-2">
+                <p className="truncate text-sm font-semibold text-foreground">{chat.name}</p>
+                <span className="shrink-0 text-[0.65rem] text-muted-foreground">{chat.time}</span>
+              </div>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{chat.lastMessage}</p>
+            </div>
+
+            {/* Badge de não lidas */}
+            {chat.unread > 0 && (
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[0.6rem] font-bold text-primary-foreground">
+                {chat.unread}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
