@@ -262,7 +262,6 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     e.stopPropagation()
     const x = e.clientX
     const y = e.clientY
-    console.log("[v0] showBlockedToast called:", { x, y, phase })
     setBlockedToast({ x, y })
     setTimeout(() => setBlockedToast(null), 1200)
   }
@@ -498,7 +497,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             </div>
           ) : (
             <div className={`transition-all duration-300 ${saleActive ? 'opacity-25 blur-[1px] brightness-75' : 'opacity-100'}`}>
-              {[...sales, ...sales2].slice(0, vendas).map((s, i) => (
+              {[...sales, ...sales2].slice(0, vendas).reverse().map((s, i) => (
                 <div
                   key={s.handle}
                   className="luna-border animate-notification-in mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5"
