@@ -266,6 +266,8 @@ function AppDashboard() {
   const [packDesc, setPackDesc] = useState('')
   const [publishing, setPublishing] = useState(false)
   const [createdPack, setCreatedPack] = useState<string | null>(null)
+  const [showWelcome, setShowWelcome] = useState(true)
+  const [welcomeClosing, setWelcomeClosing] = useState(false)
 
   const animatedBalance = useCountUp(balance)
   const animatedToday = useCountUp(today)
@@ -288,8 +290,35 @@ function AppDashboard() {
     }, 1300)
   }
 
+  function closeWelcome() {
+    setWelcomeClosing(true)
+    setTimeout(() => {
+      setShowWelcome(false)
+      setWelcomeClosing(false)
+    }, 400)
+  }
+
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-background">
+      {/* Banner de boas-vindas */}
+      {showWelcome && (
+        <div
+          className={`absolute inset-0 z-[60] flex items-center justify-center ${
+            welcomeClosing ? 'animate-welcome-out' : 'animate-welcome-in'
+          }`}
+          onClick={closeWelcome}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && closeWelcome()}
+        >
+          <img
+            src="/images/welcome-banner.png"
+            alt="Seja Bem Vinda ao Luna Privé!"
+            className="h-full w-full object-cover"
+          />
+        </div>
+      )}
+
       {/* Conteúdo rolável do app */}
       {activeTab === 'Carteira' ? (
         <WalletScreen balance={animatedBalance} />
@@ -915,7 +944,7 @@ function PacksScreen({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ─────────��──────���─���──────────────────────────────────────────────────────────
+// ─────────��──────���─�����──────────────────────────────────────────────────────────
 
 function WalletScreen({ balance }: { balance: number }) {
   return (
