@@ -37,6 +37,16 @@ import {
   MoreVertical,
   Phone,
   Video,
+  Camera,
+  Settings,
+  HelpCircle,
+  LogOut,
+  Star,
+  Heart,
+  MapPin,
+  Link,
+  Instagram,
+  Edit3,
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1414,29 +1424,244 @@ function WalletScreen({ balance }: { balance: number }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ProfileScreen() {
+  const [editMode, setEditMode] = useState(false)
+  const [profile, setProfile] = useState({
+    username: '@sua_luna',
+    displayName: 'Sua Luna',
+    bio: 'Criadora de conteudo exclusivo. Bem-vinda ao meu cantinho privado.',
+    location: 'Sao Paulo, SP',
+    instagram: '@sua_luna',
+    website: 'lunaprive.com/sua_luna',
+  })
+  const [editedProfile, setEditedProfile] = useState(profile)
+  const [highlights, setHighlights] = useState([
+    { id: 1, image: '/images/pack-photo-1.png', label: 'Favoritos' },
+    { id: 2, image: '/images/pack-photo-2.png', label: 'Premium' },
+    { id: 3, image: '/images/pack-photo-3.png', label: 'Novos' },
+  ])
+
+  function saveProfile() {
+    setProfile(editedProfile)
+    setEditMode(false)
+  }
+
+  function cancelEdit() {
+    setEditedProfile(profile)
+    setEditMode(false)
+  }
+
+  // Tela de edicao
+  if (editMode) {
+    return (
+      <div className="flex flex-1 flex-col bg-background">
+        {/* Header */}
+        <header className="flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 backdrop-blur-md">
+          <button
+            type="button"
+            onClick={cancelEdit}
+            className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
+          >
+            <X className="size-5 text-foreground" />
+          </button>
+          <h1 className="flex-1 text-center text-base font-semibold text-foreground">Editar perfil</h1>
+          <button
+            type="button"
+            onClick={saveProfile}
+            className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition active:scale-95"
+          >
+            Salvar
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          {/* Foto de perfil */}
+          <div className="flex flex-col items-center">
+            <div className="relative">
+              <img
+                src="/images/mentor.png"
+                alt="Foto de perfil"
+                className="size-24 rounded-full object-cover ring-4 ring-primary/30"
+              />
+              <button
+                type="button"
+                className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-primary shadow-lg transition active:scale-95"
+              >
+                <Camera className="size-4 text-primary-foreground" />
+              </button>
+            </div>
+            <button type="button" className="mt-3 text-sm font-semibold text-primary">
+              Alterar foto
+            </button>
+          </div>
+
+          {/* Campos editaveis */}
+          <div className="mt-8 flex flex-col gap-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Nome de usuario
+              </label>
+              <input
+                type="text"
+                value={editedProfile.username}
+                onChange={(e) => setEditedProfile({ ...editedProfile, username: e.target.value })}
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Nome de exibicao
+              </label>
+              <input
+                type="text"
+                value={editedProfile.displayName}
+                onChange={(e) => setEditedProfile({ ...editedProfile, displayName: e.target.value })}
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Bio
+              </label>
+              <textarea
+                value={editedProfile.bio}
+                onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })}
+                rows={3}
+                className="w-full resize-none rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Localizacao
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={editedProfile.location}
+                  onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
+                  className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Instagram
+              </label>
+              <div className="relative">
+                <Instagram className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={editedProfile.instagram}
+                  onChange={(e) => setEditedProfile({ ...editedProfile, instagram: e.target.value })}
+                  className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Website
+              </label>
+              <div className="relative">
+                <Link className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={editedProfile.website}
+                  onChange={(e) => setEditedProfile({ ...editedProfile, website: e.target.value })}
+                  className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Destaques */}
+          <div className="mt-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-foreground">Destaques do perfil</h2>
+              <button type="button" className="text-xs font-semibold text-primary">
+                Gerenciar
+              </button>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {highlights.map((h) => (
+                <div key={h.id} className="flex flex-col items-center gap-1.5">
+                  <div className="relative size-16 overflow-hidden rounded-full ring-2 ring-primary/30">
+                    <img src={h.image} alt={h.label} className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition hover:opacity-100"
+                    >
+                      <Edit3 className="size-4 text-white" />
+                    </button>
+                  </div>
+                  <span className="text-[0.65rem] text-muted-foreground">{h.label}</span>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="flex flex-col items-center gap-1.5"
+              >
+                <div className="flex size-16 items-center justify-center rounded-full border-2 border-dashed border-primary/40 bg-primary/5">
+                  <Plus className="size-5 text-primary" />
+                </div>
+                <span className="text-[0.65rem] text-muted-foreground">Adicionar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Tela de perfil normal
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
+          <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
         </div>
+        <button
+          type="button"
+          onClick={() => setEditMode(true)}
+          className="flex size-10 items-center justify-center rounded-full bg-card transition active:scale-95"
+        >
+          <Edit3 className="size-5 text-muted-foreground" />
+        </button>
       </header>
 
       {/* Perfil */}
-      <div className="mt-8 flex flex-col items-center text-center">
+      <div className="mt-6 flex flex-col items-center text-center">
         <div className="relative">
           <img
             src="/images/mentor.png"
             alt="Foto de perfil"
-            className="size-24 rounded-full object-cover ring-4 ring-primary/30"
+            className="size-28 rounded-full object-cover ring-4 ring-primary/30"
           />
-          <span className="absolute bottom-1 right-1 size-5 rounded-full border-2 border-background bg-positive" />
+          <span className="absolute bottom-2 right-2 size-5 rounded-full border-2 border-background bg-positive" />
         </div>
-        <h1 className="mt-4 text-xl font-bold text-foreground">@voce</h1>
-        <p className="text-sm text-muted-foreground">Luna desde maio 2024</p>
+        <div className="mt-4 flex items-center gap-1.5">
+          <h1 className="text-xl font-bold text-foreground">{profile.displayName}</h1>
+          <BadgeCheck className="size-5 text-primary" />
+        </div>
+        <p className="text-sm text-muted-foreground">{profile.username}</p>
         
-        <div className="mt-4 flex gap-6">
+        {/* Bio */}
+        <p className="mt-3 max-w-[280px] text-sm text-muted-foreground">{profile.bio}</p>
+        
+        {/* Links */}
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="size-3" />
+            {profile.location}
+          </span>
+          <span className="flex items-center gap-1 text-xs text-primary">
+            <Instagram className="size-3" />
+            {profile.instagram}
+          </span>
+        </div>
+        
+        {/* Stats */}
+        <div className="mt-5 flex gap-8">
           <div className="text-center">
             <p className="text-2xl font-bold text-foreground">1.2k</p>
             <p className="text-xs text-muted-foreground">Seguidores</p>
@@ -1446,31 +1671,105 @@ function ProfileScreen() {
             <p className="text-xs text-muted-foreground">Vendas</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">4.9</p>
-            <p className="text-xs text-muted-foreground">Avaliação</p>
+            <div className="flex items-center justify-center gap-1">
+              <p className="text-2xl font-bold text-foreground">4.9</p>
+              <Star className="size-4 fill-amber-400 text-amber-400" />
+            </div>
+            <p className="text-xs text-muted-foreground">Avaliacao</p>
           </div>
         </div>
       </div>
 
-      {/* Menu */}
-      <div className="mt-8 flex flex-col gap-2">
-        {[
-          { label: 'Editar perfil', icon: User },
-          { label: 'Configurações', icon: Package },
-          { label: 'Ajuda e suporte', icon: Info },
-        ].map((item) => (
+      {/* Destaques */}
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Destaques</h2>
+        <div className="flex gap-4 overflow-x-auto pb-2">
+          {highlights.map((h) => (
+            <div key={h.id} className="flex flex-col items-center gap-1.5">
+              <div className="size-20 overflow-hidden rounded-full ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
+                <img src={h.image} alt={h.label} className="h-full w-full object-cover" />
+              </div>
+              <span className="text-xs text-muted-foreground">{h.label}</span>
+            </div>
+          ))}
           <button
-            key={item.label}
             type="button"
-            className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+            onClick={() => setEditMode(true)}
+            className="flex flex-col items-center gap-1.5"
           >
-            <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
-              <item.icon className="size-5 text-primary" aria-hidden="true" />
-            </span>
-            <span className="flex-1 text-sm font-semibold text-foreground">{item.label}</span>
+            <div className="flex size-20 items-center justify-center rounded-full border-2 border-dashed border-primary/40 bg-primary/5 ring-offset-2 ring-offset-background">
+              <Plus className="size-6 text-primary" />
+            </div>
+            <span className="text-xs text-muted-foreground">Adicionar</span>
           </button>
-        ))}
+        </div>
       </div>
+
+      {/* Menu */}
+      <div className="mt-6 flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => setEditMode(true)}
+          className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+            <User className="size-5 text-primary" aria-hidden="true" />
+          </span>
+          <span className="flex-1 text-sm font-semibold text-foreground">Editar perfil</span>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </button>
+        
+        <button
+          type="button"
+          className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+            <Bell className="size-5 text-primary" aria-hidden="true" />
+          </span>
+          <span className="flex-1 text-sm font-semibold text-foreground">Notificacoes</span>
+          <span className="rounded-full bg-primary px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
+            3
+          </span>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </button>
+        
+        <button
+          type="button"
+          className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+            <Settings className="size-5 text-primary" aria-hidden="true" />
+          </span>
+          <span className="flex-1 text-sm font-semibold text-foreground">Configuracoes</span>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </button>
+        
+        <button
+          type="button"
+          className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+            <HelpCircle className="size-5 text-primary" aria-hidden="true" />
+          </span>
+          <span className="flex-1 text-sm font-semibold text-foreground">Ajuda e suporte</span>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </button>
+        
+        <button
+          type="button"
+          className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-red-500/10">
+            <LogOut className="size-5 text-red-500" aria-hidden="true" />
+          </span>
+          <span className="flex-1 text-sm font-semibold text-red-500">Sair da conta</span>
+        </button>
+      </div>
+
+      {/* Versao */}
+      <p className="mt-6 text-center text-xs text-muted-foreground/50">
+        Luna Prive v1.0.0
+      </p>
     </div>
   )
 }
