@@ -300,10 +300,10 @@ function AppDashboard() {
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-background">
-      {/* Banner de boas-vindas */}
+      {/* Modal de boas-vindas */}
       {showWelcome && (
         <div
-          className={`absolute inset-0 z-[60] flex items-center justify-center ${
+          className={`absolute inset-0 z-[60] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm ${
             welcomeClosing ? 'animate-welcome-out' : 'animate-welcome-in'
           }`}
           onClick={closeWelcome}
@@ -311,11 +311,13 @@ function AppDashboard() {
           tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && closeWelcome()}
         >
-          <img
-            src="/images/welcome-banner.png"
-            alt="Seja Bem Vinda ao Luna Privé!"
-            className="h-full w-full object-cover"
-          />
+          <div className="relative w-full max-w-sm overflow-hidden rounded-3xl shadow-2xl">
+            <img
+              src="/images/welcome-banner.png"
+              alt="Seja Bem Vinda ao Luna Privé!"
+              className="h-auto w-full"
+            />
+          </div>
         </div>
       )}
 
