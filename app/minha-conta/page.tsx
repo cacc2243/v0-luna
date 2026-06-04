@@ -311,12 +311,14 @@ function AppDashboard() {
           tabIndex={0}
           onKeyDown={(e) => e.key === 'Enter' && closeWelcome()}
         >
-          <div className="relative w-full max-w-sm overflow-hidden rounded-3xl shadow-2xl">
-            <img
-              src="/images/welcome-banner.png"
-              alt="Seja Bem Vinda ao Luna Privé!"
-              className="h-auto w-full"
-            />
+          <div className="relative w-full max-w-sm rounded-[28px] bg-gradient-to-br from-primary via-primary/70 to-primary/40 p-[3px] shadow-2xl shadow-primary/30">
+            <div className="overflow-hidden rounded-[25px]">
+              <img
+                src="/images/welcome-banner.png"
+                alt="Seja Bem Vinda ao Luna Privé!"
+                className="h-auto w-full"
+              />
+            </div>
           </div>
         </div>
       )}
