@@ -677,13 +677,6 @@ function PacksScreen({
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
-          <div className="leading-tight">
-            <p className="text-sm font-semibold text-foreground">@voce</p>
-            <span className="flex items-center gap-1 text-xs text-positive">
-              <span className="size-1.5 rounded-full bg-positive" />
-              Online
-            </span>
-          </div>
         </div>
         <div className="luna-border flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
           <Wallet className="size-5 text-primary" aria-hidden="true" />
