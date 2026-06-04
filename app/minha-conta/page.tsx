@@ -288,10 +288,10 @@ function AppDashboard() {
     <div className="fixed inset-0 z-40 flex flex-col bg-background">
       {/* Conteúdo rolável do app */}
       {activeTab === 'Carteira' ? (
-        <WalletScreen balance={balance} />
+        <WalletScreen balance={animatedBalance} />
       ) : activeTab === 'Packs' ? (
         <PacksScreen
-          balance={balance}
+          balance={animatedBalance}
           createdPack={createdPack}
           packPrice={packPrice}
           onCreate={() => setShowCreate(true)}
@@ -678,11 +678,11 @@ function PacksScreen({
         <div className="flex items-center gap-2.5">
           <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
         </div>
-        <div className="luna-border flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
-          <Wallet className="size-5 text-primary" aria-hidden="true" />
+        <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
+          <Wallet className="size-6 text-primary" aria-hidden="true" />
           <div className="leading-tight">
-            <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
-            <p className="text-base font-bold text-foreground">{brl(balance)}</p>
+            <p className="text-xs text-muted-foreground">Saldo</p>
+            <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
           </div>
         </div>
       </header>
@@ -753,11 +753,9 @@ function PacksScreen({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────���────────────────────────────────────────────────────────────
 
 function WalletScreen({ balance }: { balance: number }) {
-  const available = 18541.67
-
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
@@ -765,11 +763,11 @@ function WalletScreen({ balance }: { balance: number }) {
         <div className="flex items-center gap-2.5">
           <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
         </div>
-        <div className="luna-border flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
-          <Wallet className="size-5 text-primary" aria-hidden="true" />
+        <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
+          <Wallet className="size-6 text-primary" aria-hidden="true" />
           <div className="leading-tight">
-            <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
-            <p className="text-base font-bold text-foreground">{brl(available)}</p>
+            <p className="text-xs text-muted-foreground">Saldo</p>
+            <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
           </div>
         </div>
       </header>
@@ -785,7 +783,7 @@ function WalletScreen({ balance }: { balance: number }) {
         <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
           Saldo disponível
         </p>
-        <p className="mt-1.5 text-4xl font-bold text-foreground">{brl(available)}</p>
+        <p className="mt-1.5 text-4xl font-bold text-foreground">{brl(balance)}</p>
         <p className="mt-1.5 flex items-center justify-center gap-1 text-sm font-semibold text-positive">
           <ArrowUpRight className="size-4" aria-hidden="true" />
           {brl(1664.97)} hoje
