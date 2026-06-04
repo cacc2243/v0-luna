@@ -494,9 +494,9 @@ function AppDashboard() {
 
 const boostPlans = [
   { days: 2, price: 28.0, pricePerDay: 14.0, discount: 0 },
-  { days: 7, price: 77.0, pricePerDay: 11.0, discount: 21 },
-  { days: 14, price: 126.0, pricePerDay: 9.0, discount: 36 },
-  { days: 21, price: 147.0, pricePerDay: 7.0, discount: 50 },
+  { days: 7, price: 56.0, pricePerDay: 8.0, discount: 43 },
+  { days: 14, price: 70.0, pricePerDay: 5.0, discount: 64 },
+  { days: 21, price: 84.0, pricePerDay: 4.0, discount: 71 },
   { days: 30, price: 99.0, pricePerDay: 3.3, discount: 76, popular: true },
 ]
 
@@ -915,7 +915,7 @@ function PacksScreen({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ─────────��──────���────────────────────────────────────────────────────────────
+// ─────────��──────���─���──────────────────────────────────────────────────────────
 
 function WalletScreen({ balance }: { balance: number }) {
   return (
