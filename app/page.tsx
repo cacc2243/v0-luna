@@ -239,9 +239,9 @@ export default function Page() {
 
         {/* STEP 1 — Prova de ganhos */}
         {step === 0 && (
-          <div key="step-0" className="animate-screen flex flex-col">
+          <div key="step-0" className={`flex flex-col ${verified ? 'animate-screen' : ''}`}>
             <section
-              className="animate-item mt-7 text-center"
+              className={`mt-7 text-center ${verified ? 'animate-item' : ''}`}
               style={{ animationDelay: '60ms' }}
             >
               <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
@@ -255,6 +255,7 @@ export default function Page() {
 
             <AnimatedSalesFeed
               notifications={notifications}
+              shouldAnimate={verified}
               footer={
                 <>
                   <CtaButton onClick={next}>Entrar e ver como funciona</CtaButton>
@@ -368,9 +369,9 @@ export default function Page() {
               <TestimonialCarousel items={testimonials} />
             </section>
 
-            <section
-              className="animate-item mt-7 text-center"
-              style={{ animationDelay: '260ms' }}
+<section
+              className={`mt-7 text-center ${verified ? 'animate-item' : ''}`}
+              style={{ animationDelay: '60ms' }}
             >
               <p className="text-balance text-base font-semibold text-foreground">
                 Esses resultados são <span className="text-primary">reais</span>.

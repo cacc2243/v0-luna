@@ -17,6 +17,8 @@ interface AnimatedSalesFeedProps {
   stagger?: number
   /** conteúdo revelado após a última notificação (ex.: botão) */
   footer: ReactNode
+  /** controla se as animações devem iniciar */
+  shouldAnimate?: boolean
 }
 
 export function AnimatedSalesFeed({
@@ -24,11 +26,15 @@ export function AnimatedSalesFeed({
   startDelay = 300,
   stagger = 700,
   footer,
+  shouldAnimate = true,
 }: AnimatedSalesFeedProps) {
   const [visibleCount, setVisibleCount] = useState(0)
   const [showFooter, setShowFooter] = useState(false)
 
   useEffect(() => {
+    // Não inicia animações se shouldAnimate for false
+    if (!shouldAnimate) return
+
     const timers: ReturnType<typeof setTimeout>[] = []
 
     notifications.forEach((_, i) => {
@@ -45,7 +51,7 @@ export function AnimatedSalesFeed({
     )
 
     return () => timers.forEach(clearTimeout)
-  }, [notifications, startDelay, stagger])
+  }, [notifications, startDelay, stagger, shouldAnimate])
 
   return (
     <>
