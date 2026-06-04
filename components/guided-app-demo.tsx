@@ -23,6 +23,7 @@ import {
   ArrowDownRight,
   Receipt,
   ChevronRight,
+  Lock,
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { CtaButton } from '@/components/cta-button'
@@ -133,6 +134,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [shake, setShake] = useState(false)
   const [refuseHint, setRefuseHint] = useState(false)
   const [toast, setToast] = useState<{ id: number; amount: number } | null>(null)
+  const [blockedToast, setBlockedToast] = useState<{ x: number; y: number } | null>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
@@ -256,6 +258,15 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     setTimeout(() => setRefuseHint(false), 2400)
   }
 
+  function showBlockedToast(e: React.MouseEvent) {
+    e.stopPropagation()
+    const x = e.clientX
+    const y = e.clientY
+    console.log("[v0] showBlockedToast called:", { x, y, phase })
+    setBlockedToast({ x, y })
+    setTimeout(() => setBlockedToast(null), 1200)
+  }
+
   function publishPack() {
     if (publishing) return
     setPublishing(true)
@@ -302,6 +313,22 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               <p className="text-xs text-muted-foreground">agora</p>
             </div>
             <span className="text-sm font-bold text-positive">+{brl(toast.amount)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Toast de ação bloqueada */}
+      {blockedToast && (
+        <div
+          className="pointer-events-none fixed z-[70] animate-blocked-toast"
+          style={{ 
+            left: Math.max(20, Math.min(blockedToast.x - 70, typeof window !== 'undefined' ? window.innerWidth - 180 : 300)),
+            top: blockedToast.y - 40,
+          }}
+        >
+          <div className="flex items-center gap-1.5 rounded-full bg-card/95 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-lg ring-1 ring-border/50 backdrop-blur-sm">
+            <Lock className="size-3" aria-hidden="true" />
+            <span>Complete o tutorial</span>
           </div>
         </div>
       )}
@@ -412,7 +439,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           {currentSale && (phase === 'selling' || phase === 'selling2') && (
             <div
               key={`order-${activeSale}`}
-              className={`luna-border relative z-10 mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3 ${ring('orders')} ${
+              className={`luna-border relative z-[45] mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3 ${ring('orders')} ${
                 shake ? 'animate-shake' : 'animate-card-enter'
               }`}
             >
@@ -497,6 +524,15 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           )}
         </div>
       </div>
+      )}
+
+      {/* Bloqueio de interação durante tutorial - captura cliques fora das áreas permitidas */}
+      {(phase === 'tour' || phase === 'selling' || phase === 'selling2') && !createdPack && (
+        <div 
+          className="absolute inset-0 z-[43]"
+          onClick={showBlockedToast}
+          aria-hidden="true"
+        />
       )}
 
       {/* Bottom nav */}
