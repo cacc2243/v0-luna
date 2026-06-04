@@ -199,21 +199,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   useEffect(() => {
     if (phase !== 'celebrate') return
     const colors = ['#ff3d77', '#ff7aa2', '#ffd1dc', '#ffffff']
-    const end = Date.now() + 2400
-    confetti({ particleCount: 130, spread: 100, startVelocity: 45, origin: { y: 0.35 }, colors, zIndex: 100 })
+    const end = Date.now() + 1600
+    confetti({ particleCount: 35, spread: 60, startVelocity: 30, origin: { y: 0.4 }, colors, zIndex: 100 })
     const frame = () => {
-      confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors, zIndex: 100 })
-      confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors, zIndex: 100 })
-      confetti({
-        particleCount: 6,
-        startVelocity: 0,
-        ticks: 220,
-        gravity: 0.7,
-        scalar: 0.9,
-        origin: { x: Math.random(), y: -0.05 },
-        colors,
-        zIndex: 100,
-      })
+      confetti({ particleCount: 2, angle: 60, spread: 40, origin: { x: 0 }, colors, zIndex: 100 })
+      confetti({ particleCount: 2, angle: 120, spread: 40, origin: { x: 1 }, colors, zIndex: 100 })
       if (Date.now() < end) requestAnimationFrame(frame)
     }
     frame()
