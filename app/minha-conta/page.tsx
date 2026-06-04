@@ -1056,16 +1056,14 @@ function HomeScreen({
 }) {
   // Lista de visualizações com novas entrando
   const allViews = [
-    { tag: 'SP', text: 'alguém de São Paulo viu seu perfil' },
-    { tag: 'RJ', text: 'um comprador do Rio abriu seus packs' },
-    { tag: 'MG', text: 'visitante de BH favoritou seu perfil' },
-    { tag: 'RS', text: 'novo fã de Porto Alegre curtiu seu pack' },
-    { tag: 'BA', text: 'comprador de Salvador viu seu perfil' },
-    { tag: 'PR', text: 'visitante de Curitiba abriu seus packs' },
-    { tag: 'PE', text: 'alguém de Recife favoritou seu perfil' },
-    { tag: 'CE', text: 'fã de Fortaleza viu seu conteúdo' },
-    { tag: 'GO', text: 'comprador de Goiânia curtiu seu pack' },
-    { tag: 'SC', text: 'visitante de Floripa abriu seu perfil' },
+    { text: 'alguem viu seu perfil' },
+    { text: 'alguem curtiu seu pack' },
+    { text: 'alguem favoritou seu perfil' },
+    { text: 'alguem abriu seus packs' },
+    { text: 'alguem viu seu conteudo' },
+    { text: 'alguem salvou seu perfil' },
+    { text: 'alguem compartilhou seu pack' },
+    { text: 'alguem visitou seu perfil' },
   ]
   
   const [viewList, setViewList] = useState([
@@ -1139,8 +1137,8 @@ function HomeScreen({
                 index === 0 ? 'animate-notification-in' : ''
               }`}
             >
-              <span className="flex size-8 items-center justify-center rounded-full bg-positive/10 text-[0.65rem] font-bold text-positive">
-                {v.tag}
+              <span className="flex size-8 items-center justify-center rounded-full bg-positive/10">
+                <Eye className="size-4 text-positive" />
               </span>
               <p className="flex-1 text-pretty text-xs text-muted-foreground">{v.text}</p>
               <span className="text-[0.65rem] text-muted-foreground/70">{v.t}</span>
