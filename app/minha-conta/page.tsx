@@ -355,6 +355,7 @@ function AppDashboard() {
           { icon: Home, label: 'Início' as const },
           { icon: Package, label: 'Packs' as const },
           { icon: Rocket, label: 'Impulsionar' as const, center: true },
+          { icon: Wallet, label: 'Carteira' as const },
           { icon: MessageCircle, label: 'Chats' as const },
           { icon: User, label: 'Perfil' as const },
         ].map((item) => (
