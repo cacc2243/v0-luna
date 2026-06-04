@@ -29,6 +29,14 @@ import {
   TrendingUp,
   Sparkles,
   MessageCircle,
+  ArrowLeft,
+  Send,
+  Smile,
+  Image,
+  Mic,
+  MoreVertical,
+  Phone,
+  Video,
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -534,10 +542,18 @@ const mockChats = [
     id: 1,
     name: '@fan_secreto',
     avatar: null,
-    lastMessage: 'Oi! Adorei seu pack novo 😍',
+    lastMessage: 'Oi! Adorei seu pack novo',
     time: '2 min',
     unread: 3,
     online: true,
+    lastSeen: 'Online agora',
+    messages: [
+      { id: 1, text: 'Oi! Vi seu perfil e adorei', sent: false, time: '14:30' },
+      { id: 2, text: 'Obrigada! Fico feliz que gostou', sent: true, time: '14:32' },
+      { id: 3, text: 'Você tem mais conteúdo assim?', sent: false, time: '14:33' },
+      { id: 4, text: 'Tenho sim! Dá uma olhada nos meus packs', sent: true, time: '14:35' },
+      { id: 5, text: 'Oi! Adorei seu pack novo', sent: false, time: '14:58' },
+    ],
   },
   {
     id: 2,
@@ -547,6 +563,12 @@ const mockChats = [
     time: '15 min',
     unread: 1,
     online: true,
+    lastSeen: 'Online agora',
+    messages: [
+      { id: 1, text: 'Boa tarde!', sent: false, time: '13:20' },
+      { id: 2, text: 'Oi! Tudo bem?', sent: true, time: '13:25' },
+      { id: 3, text: 'Você aceita PIX?', sent: false, time: '13:45' },
+    ],
   },
   {
     id: 3,
@@ -556,6 +578,12 @@ const mockChats = [
     time: '1h',
     unread: 0,
     online: false,
+    lastSeen: 'Visto há 1h',
+    messages: [
+      { id: 1, text: 'Comprei seu pack!', sent: false, time: '12:00' },
+      { id: 2, text: 'Muito obrigada pelo apoio!', sent: true, time: '12:05' },
+      { id: 3, text: 'Obrigado pelo conteúdo!', sent: false, time: '12:10' },
+    ],
   },
   {
     id: 4,
@@ -565,19 +593,220 @@ const mockChats = [
     time: '3h',
     unread: 0,
     online: false,
+    lastSeen: 'Visto há 3h',
+    messages: [
+      { id: 1, text: 'Quando sai o próximo pack?', sent: false, time: '10:30' },
+    ],
   },
   {
     id: 5,
     name: '@novo_seguidor',
     avatar: null,
-    lastMessage: 'Acabei de assinar! 🎉',
+    lastMessage: 'Acabei de assinar!',
     time: '5h',
     unread: 0,
     online: true,
+    lastSeen: 'Online agora',
+    messages: [
+      { id: 1, text: 'Acabei de assinar!', sent: false, time: '08:00' },
+      { id: 2, text: 'Seja bem-vindo!', sent: true, time: '08:15' },
+    ],
   },
 ]
 
 function ChatsScreen({ balance }: { balance: number }) {
+  const [activeChat, setActiveChat] = useState<typeof mockChats[0] | null>(null)
+  const [message, setMessage] = useState('')
+  const [messages, setMessages] = useState<typeof mockChats[0]['messages']>([])
+  const [showEmojis, setShowEmojis] = useState(false)
+
+  const emojis = ['😊', '😍', '🥰', '😘', '💕', '❤️', '🔥', '💋', '😏', '🙈', '💖', '✨']
+
+  function openChat(chat: typeof mockChats[0]) {
+    setActiveChat(chat)
+    setMessages(chat.messages)
+    setShowEmojis(false)
+  }
+
+  function closeChat() {
+    setActiveChat(null)
+    setMessage('')
+    setShowEmojis(false)
+  }
+
+  function sendMessage() {
+    if (!message.trim()) return
+    const newMsg = {
+      id: Date.now(),
+      text: message.trim(),
+      sent: true,
+      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    }
+    setMessages((prev) => [...prev, newMsg])
+    setMessage('')
+    setShowEmojis(false)
+  }
+
+  function addEmoji(emoji: string) {
+    setMessage((prev) => prev + emoji)
+  }
+
+  // Tela de conversa aberta
+  if (activeChat) {
+    return (
+      <div className="flex flex-1 flex-col bg-background">
+        {/* Header da conversa */}
+        <header className="flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 backdrop-blur-md">
+          <button
+            type="button"
+            onClick={closeChat}
+            className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
+          >
+            <ArrowLeft className="size-5 text-foreground" />
+          </button>
+          
+          <div className="relative">
+            <div className="flex size-10 items-center justify-center rounded-full bg-muted text-base font-bold text-muted-foreground">
+              {activeChat.name.charAt(1).toUpperCase()}
+            </div>
+            {activeChat.online && (
+              <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-card bg-positive" />
+            )}
+          </div>
+          
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">{activeChat.name}</p>
+            <p className={`text-xs ${activeChat.online ? 'text-positive' : 'text-muted-foreground'}`}>
+              {activeChat.lastSeen}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
+            >
+              <Phone className="size-4 text-muted-foreground" />
+            </button>
+            <button
+              type="button"
+              className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
+            >
+              <Video className="size-4 text-muted-foreground" />
+            </button>
+            <button
+              type="button"
+              className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
+            >
+              <MoreVertical className="size-4 text-muted-foreground" />
+            </button>
+          </div>
+        </header>
+
+        {/* Mensagens */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <div className="flex flex-col gap-3">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.sent ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                    msg.sent
+                      ? 'rounded-br-md bg-primary text-primary-foreground'
+                      : 'rounded-bl-md bg-card text-foreground'
+                  }`}
+                >
+                  <p className="text-sm">{msg.text}</p>
+                  <p
+                    className={`mt-1 text-right text-[0.6rem] ${
+                      msg.sent ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {msg.time}
+                    {msg.sent && (
+                      <Check className="ml-1 inline size-3" />
+                    )}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Painel de emojis */}
+        {showEmojis && (
+          <div className="border-t border-border bg-card px-4 py-3">
+            <div className="flex flex-wrap gap-2">
+              {emojis.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => addEmoji(emoji)}
+                  className="flex size-10 items-center justify-center rounded-xl text-xl transition hover:bg-muted active:scale-95"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Input de mensagem */}
+        <div className="border-t border-border bg-card/95 px-4 py-3 backdrop-blur-md">
+          <div className="flex items-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowEmojis(!showEmojis)}
+              className={`flex size-10 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+                showEmojis ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-muted-foreground'
+              }`}
+            >
+              <Smile className="size-5" />
+            </button>
+            
+            <button
+              type="button"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted active:scale-95"
+            >
+              <Image className="size-5" />
+            </button>
+            
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                placeholder="Digite uma mensagem..."
+                className="w-full rounded-2xl border border-border bg-muted/50 px-4 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            {message.trim() ? (
+              <button
+                type="button"
+                onClick={sendMessage}
+                className="luna-gradient flex size-10 shrink-0 items-center justify-center rounded-full shadow-md shadow-primary/30 transition active:scale-95"
+              >
+                <Send className="size-4 text-primary-foreground" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted active:scale-95"
+              >
+                <Mic className="size-5" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Lista de chats
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
@@ -615,6 +844,7 @@ function ChatsScreen({ balance }: { balance: number }) {
           <button
             key={chat.id}
             type="button"
+            onClick={() => openChat(chat)}
             className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left transition hover:border-primary/40 active:scale-[0.99]"
           >
             {/* Avatar */}
