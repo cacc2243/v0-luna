@@ -497,7 +497,7 @@ const boostPlans = [
   { days: 7, price: 77.0, pricePerDay: 11.0, discount: 21 },
   { days: 14, price: 126.0, pricePerDay: 9.0, discount: 36 },
   { days: 21, price: 147.0, pricePerDay: 7.0, discount: 50 },
-  { days: 30, price: 150.0, pricePerDay: 5.0, discount: 64, popular: true },
+  { days: 30, price: 99.0, pricePerDay: 3.3, discount: 76, popular: true },
 ]
 
 function ImpulsionarScreen({ balance }: { balance: number }) {
