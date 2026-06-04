@@ -497,12 +497,55 @@ function HomeScreen({
   views: number
   vendas: number
 }) {
+  // Lista de visualizações com novas entrando
+  const allViews = [
+    { tag: 'SP', text: 'alguém de São Paulo viu seu perfil' },
+    { tag: 'RJ', text: 'um comprador do Rio abriu seus packs' },
+    { tag: 'MG', text: 'visitante de BH favoritou seu perfil' },
+    { tag: 'RS', text: 'novo fã de Porto Alegre curtiu seu pack' },
+    { tag: 'BA', text: 'comprador de Salvador viu seu perfil' },
+    { tag: 'PR', text: 'visitante de Curitiba abriu seus packs' },
+    { tag: 'PE', text: 'alguém de Recife favoritou seu perfil' },
+    { tag: 'CE', text: 'fã de Fortaleza viu seu conteúdo' },
+    { tag: 'GO', text: 'comprador de Goiânia curtiu seu pack' },
+    { tag: 'SC', text: 'visitante de Floripa abriu seu perfil' },
+  ]
+  
+  const [viewList, setViewList] = useState([
+    { ...allViews[0], t: 'agora', id: 0 },
+    { ...allViews[1], t: '1 min', id: 1 },
+    { ...allViews[2], t: '3 min', id: 2 },
+  ])
+  const [nextId, setNextId] = useState(3)
+
+  // Adiciona nova visualização a cada 3-5 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setViewList((prev) => {
+        const newView = {
+          ...allViews[nextId % allViews.length],
+          t: 'agora',
+          id: nextId,
+        }
+        // Atualiza tempos das visualizações existentes
+        const updated = prev.map((v, i) => ({
+          ...v,
+          t: i === 0 ? '1 min' : i === 1 ? '2 min' : `${i + 2} min`,
+        }))
+        // Adiciona nova no topo e mantém apenas 3
+        return [newView, ...updated].slice(0, 3)
+      })
+      setNextId((n) => n + 1)
+    }, 3500)
+    return () => clearInterval(interval)
+  }, [nextId])
+
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
+          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
         </div>
         <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
           <Wallet className="size-6 text-primary" aria-hidden="true" />
@@ -532,12 +575,13 @@ function HomeScreen({
           </span>
         </div>
         <div className="rounded-2xl border border-border bg-card/60 px-4 py-3">
-          {[
-            { tag: 'SP', text: 'alguém de São Paulo viu seu perfil', t: 'agora' },
-            { tag: 'RJ', text: 'um comprador do Rio abriu seus packs', t: '1 min' },
-            { tag: 'MG', text: 'visitante de BH favoritou seu perfil', t: '3 min' },
-          ].map((v) => (
-            <div key={v.text} className="flex items-center gap-3 border-b border-border/50 py-2 last:border-0">
+          {viewList.map((v, index) => (
+            <div 
+              key={v.id} 
+              className={`flex items-center gap-3 border-b border-border/50 py-2 last:border-0 ${
+                index === 0 ? 'animate-notification-in' : ''
+              }`}
+            >
               <span className="flex size-8 items-center justify-center rounded-full bg-positive/10 text-[0.65rem] font-bold text-positive">
                 {v.tag}
               </span>
@@ -632,7 +676,7 @@ function PacksScreen({
       {/* Header */}
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
+          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
           <div className="leading-tight">
             <p className="text-sm font-semibold text-foreground">@voce</p>
             <span className="flex items-center gap-1 text-xs text-positive">
@@ -726,7 +770,7 @@ function WalletScreen({ balance }: { balance: number }) {
       {/* Header */}
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
+          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
         </div>
         <div className="luna-border flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
           <Wallet className="size-5 text-primary" aria-hidden="true" />
@@ -831,7 +875,7 @@ function ProfileScreen() {
       {/* Header */}
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
+          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
         </div>
       </header>
 
