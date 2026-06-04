@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Check, ChevronLeft, BadgeCheck, Quote } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
@@ -27,17 +27,41 @@ export function PlatformWalkthrough({
   onComplete,
 }: PlatformWalkthroughProps) {
   const [index, setIndex] = useState(0)
+  const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
+  const [isAnimating, setIsAnimating] = useState(false)
+  const animationKey = useRef(0)
+  
   const current = steps[index]
   const Icon = current.icon
   const isLast = index === steps.length - 1
 
   const handleNext = () => {
+    if (isAnimating) return
     if (isLast) {
       onComplete()
     } else {
-      setIndex((i) => i + 1)
+      setIsAnimating(true)
+      setDirection('forward')
+      animationKey.current += 1
+      setTimeout(() => {
+        setIndex((i) => i + 1)
+        setIsAnimating(false)
+      }, 50)
     }
   }
+
+  const handlePrev = () => {
+    if (isAnimating) return
+    setIsAnimating(true)
+    setDirection('backward')
+    animationKey.current += 1
+    setTimeout(() => {
+      setIndex((i) => i - 1)
+      setIsAnimating(false)
+    }, 50)
+  }
+
+  const slideClass = direction === 'forward' ? 'animate-slide-in-right' : 'animate-slide-in-left'
 
   return (
     <div className="mt-8 flex flex-col">
@@ -74,7 +98,11 @@ export function PlatformWalkthrough({
         </div>
 
         {/* Fala da mentora */}
-        <div key={`speech-${index}`} className="animate-item relative px-4 py-4">
+        <div 
+          key={`speech-${index}-${animationKey.current}`} 
+          className="animate-speech-enter relative px-4 py-4"
+          style={{ animationDelay: '100ms' }}
+        >
           <Quote
             className="absolute left-3 top-3 size-7 text-primary/15"
             aria-hidden="true"
@@ -87,16 +115,20 @@ export function PlatformWalkthrough({
 
       {/* Card do passo atual */}
       <div
-        key={`card-${index}`}
-        className={`animate-item luna-border mt-4 overflow-hidden rounded-2xl ${
+        key={`card-${index}-${animationKey.current}`}
+        className={`animate-card-enter luna-border mt-4 overflow-hidden rounded-2xl ${
           current.highlight ? 'luna-gradient-soft' : 'bg-card'
         }`}
+        style={{ animationDelay: '150ms' }}
       >
         <div className="flex items-start gap-3.5 px-4 py-4">
-          <div className="luna-gradient flex size-12 shrink-0 items-center justify-center rounded-2xl shadow-[0_0_22px_-4px] shadow-primary/70">
+          <div 
+            className={`luna-gradient flex size-12 shrink-0 items-center justify-center rounded-2xl shadow-[0_0_22px_-4px] shadow-primary/70 ${slideClass}`}
+            style={{ animationDelay: '200ms' }}
+          >
             <Icon className="size-5 text-primary-foreground" aria-hidden="true" />
           </div>
-          <div className="flex-1">
+          <div className={`flex-1 ${slideClass}`} style={{ animationDelay: '180ms' }}>
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider ${
                 current.highlight
@@ -126,11 +158,12 @@ export function PlatformWalkthrough({
         </div>
         {current.reward && (
           <div
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-[0.82rem] font-medium ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-[0.82rem] font-medium ${slideClass} ${
               current.highlight
                 ? 'bg-background/25 text-primary-foreground'
                 : 'bg-positive/10 text-positive'
             }`}
+            style={{ animationDelay: '220ms' }}
           >
             <Check className="size-4 shrink-0" aria-hidden="true" />
             {current.reward}
@@ -159,14 +192,15 @@ export function PlatformWalkthrough({
         {index > 0 && (
           <button
             type="button"
-            onClick={() => setIndex((i) => i - 1)}
+            onClick={handlePrev}
+            disabled={isAnimating}
             aria-label="Voltar um passo"
-            className="luna-border flex size-12 shrink-0 items-center justify-center rounded-2xl bg-card text-foreground transition-colors active:scale-95"
+            className="luna-border flex size-12 shrink-0 items-center justify-center rounded-2xl bg-card text-foreground transition-all active:scale-95 disabled:opacity-50"
           >
             <ChevronLeft className="size-5" aria-hidden="true" />
           </button>
         )}
-        <CtaButton onClick={handleNext} className="flex-1">
+        <CtaButton onClick={handleNext} disabled={isAnimating} className="flex-1">
           {isLast ? finalLabel : 'Próximo'}
         </CtaButton>
       </div>
