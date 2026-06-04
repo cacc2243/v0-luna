@@ -24,6 +24,7 @@ import {
   Receipt,
   Lock,
   Mail,
+  ChevronRight,
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
