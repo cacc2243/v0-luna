@@ -312,14 +312,14 @@ function AppDashboard() {
         {[
           { icon: Home, label: 'Início' as const },
           { icon: Package, label: 'Packs' as const },
-          { icon: Rocket, label: 'Boost' as const, center: true },
+          { icon: Rocket, label: 'Impulsionar' as const, center: true },
           { icon: Wallet, label: 'Carteira' as const },
           { icon: User, label: 'Perfil' as const },
         ].map((item) => (
           <button
             key={item.label}
             type="button"
-            onClick={() => item.label !== 'Boost' && setActiveTab(item.label as any)}
+            onClick={() => item.label !== 'Impulsionar' && setActiveTab(item.label as any)}
             className="flex flex-1 flex-col items-center gap-1"
           >
             {item.center ? (
