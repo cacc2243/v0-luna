@@ -25,6 +25,9 @@ import {
   Lock,
   Mail,
   ChevronRight,
+  Zap,
+  TrendingUp,
+  Sparkles,
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -252,7 +255,7 @@ function LoginScreen({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AppDashboard() {
-  const [activeTab, setActiveTab] = useState<'Início' | 'Packs' | 'Carteira' | 'Perfil'>('Início')
+  const [activeTab, setActiveTab] = useState<'Início' | 'Packs' | 'Impulsionar' | 'Carteira' | 'Perfil'>('Início')
   const [balance, setBalance] = useState(639.10)
   const [vendas, setVendas] = useState(7)
   const [today, setToday] = useState(189.90)
@@ -299,6 +302,8 @@ function AppDashboard() {
         />
       ) : activeTab === 'Perfil' ? (
         <ProfileScreen />
+      ) : activeTab === 'Impulsionar' ? (
+        <ImpulsionarScreen balance={animatedBalance} />
       ) : (
         <HomeScreen
           balance={animatedBalance}
@@ -320,7 +325,7 @@ function AppDashboard() {
           <button
             key={item.label}
             type="button"
-            onClick={() => item.label !== 'Impulsionar' && setActiveTab(item.label as any)}
+            onClick={() => setActiveTab(item.label as any)}
             className="flex flex-1 flex-col items-center gap-1"
           >
             {item.center ? (
@@ -479,6 +484,156 @@ function AppDashboard() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tela Impulsionar
+// ─────────────────────────────────────────────────────────────────────────────
+
+const boostPlans = [
+  { days: 2, price: 28.0, pricePerDay: 14.0, discount: 0 },
+  { days: 7, price: 77.0, pricePerDay: 11.0, discount: 21 },
+  { days: 14, price: 126.0, pricePerDay: 9.0, discount: 36 },
+  { days: 21, price: 147.0, pricePerDay: 7.0, discount: 50 },
+  { days: 30, price: 150.0, pricePerDay: 5.0, discount: 64, popular: true },
+]
+
+function ImpulsionarScreen({ balance }: { balance: number }) {
+  const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
+
+  return (
+    <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
+      {/* Header */}
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
+        </div>
+        <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
+          <Wallet className="size-6 text-primary" aria-hidden="true" />
+          <div className="leading-tight">
+            <p className="text-xs text-muted-foreground">Saldo</p>
+            <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
+          </div>
+        </div>
+      </header>
+
+      {/* Título */}
+      <div className="mt-6">
+        <div className="flex items-center gap-2">
+          <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60">
+            <Rocket className="size-5 text-primary-foreground" aria-hidden="true" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Impulsionar</h1>
+            <p className="text-sm text-muted-foreground">Aumente sua visibilidade</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Benefícios */}
+      <div className="mt-5 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-4">
+        <div className="flex items-start gap-3">
+          <Sparkles className="mt-0.5 size-5 text-primary" aria-hidden="true" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Destaque seu perfil</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Seu perfil aparece em destaque para mais compradores. Quanto mais dias, mais visibilidade e vendas.
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-4 border-t border-primary/20 pt-3">
+          <div className="flex items-center gap-1.5">
+            <Eye className="size-4 text-positive" aria-hidden="true" />
+            <span className="text-xs text-muted-foreground">+300% views</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <TrendingUp className="size-4 text-positive" aria-hidden="true" />
+            <span className="text-xs text-muted-foreground">+150% vendas</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Planos */}
+      <div className="mt-5">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Escolha seu plano</h2>
+        <div className="flex flex-col gap-2.5">
+          {boostPlans.map((plan) => (
+            <button
+              key={plan.days}
+              type="button"
+              onClick={() => setSelectedPlan(plan.days)}
+              className={`relative flex items-center gap-3 rounded-2xl border p-4 text-left transition ${
+                selectedPlan === plan.days
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                  : 'border-border bg-card hover:border-primary/40'
+              }`}
+            >
+              {plan.popular && (
+                <span className="absolute -top-2 right-3 rounded-full bg-positive px-2 py-0.5 text-[0.6rem] font-bold text-white">
+                  Mais popular
+                </span>
+              )}
+              
+              {/* Ícone de seleção */}
+              <div
+                className={`flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                  selectedPlan === plan.days
+                    ? 'border-primary bg-primary'
+                    : 'border-muted-foreground/30 bg-transparent'
+                }`}
+              >
+                {selectedPlan === plan.days && (
+                  <Check className="size-3.5 text-primary-foreground" aria-hidden="true" />
+                )}
+              </div>
+
+              {/* Info do plano */}
+              <div className="flex-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-base font-bold text-foreground">{plan.days} dias</span>
+                  {plan.discount > 0 && (
+                    <span className="rounded-full bg-positive/15 px-1.5 py-0.5 text-[0.6rem] font-bold text-positive">
+                      -{plan.discount}%
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {brl(plan.pricePerDay)}/dia
+                </p>
+              </div>
+
+              {/* Preço */}
+              <div className="text-right">
+                <p className="text-lg font-bold text-foreground">{brl(plan.price)}</p>
+                {plan.discount > 0 && (
+                  <p className="text-[0.65rem] text-muted-foreground line-through">
+                    {brl(14 * plan.days)}
+                  </p>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Botão de ação */}
+      <div className="mt-6 pb-4">
+        <button
+          type="button"
+          disabled={!selectedPlan}
+          className="luna-gradient flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-50"
+        >
+          <Zap className="size-5" aria-hidden="true" />
+          {selectedPlan
+            ? `Impulsionar por ${brl(boostPlans.find((p) => p.days === selectedPlan)?.price || 0)}`
+            : 'Selecione um plano'}
+        </button>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          O impulsionamento começa imediatamente após a confirmação
+        </p>
+      </div>
     </div>
   )
 }
