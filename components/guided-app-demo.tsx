@@ -135,6 +135,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [refuseHint, setRefuseHint] = useState(false)
   const [toast, setToast] = useState<{ id: number; amount: number } | null>(null)
   const [blockedToast, setBlockedToast] = useState<{ x: number; y: number } | null>(null)
+  const [moneyParticles, setMoneyParticles] = useState<{ id: number; x: number; y: number }[]>([])
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
@@ -226,9 +227,22 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     }, 50)
   }
 
-  function acceptSale() {
+  function acceptSale(e: React.MouseEvent) {
     const list = phase === 'selling2' ? sales2 : sales
     const sale = list[saleIndex]
+    
+    // Criar partículas de dinheiro no local do clique
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const baseX = e.clientX
+    const baseY = rect.top
+    const particles = Array.from({ length: 6 }, (_, i) => ({
+      id: Date.now() + i,
+      x: baseX + (Math.random() - 0.5) * 60,
+      y: baseY,
+    }))
+    setMoneyParticles(particles)
+    setTimeout(() => setMoneyParticles([]), 1200)
+    
     setActiveSale(null)
     setBalance((b) => b + sale.amount)
     setToday((t) => t + sale.amount)
@@ -331,6 +345,21 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           </div>
         </div>
       )}
+
+      {/* Partículas de dinheiro subindo */}
+      {moneyParticles.map((particle, i) => (
+        <div
+          key={particle.id}
+          className="pointer-events-none fixed z-[70] animate-money-float text-lg font-bold text-positive"
+          style={{ 
+            left: particle.x,
+            top: particle.y,
+            animationDelay: `${i * 50}ms`,
+          }}
+        >
+          R$
+        </div>
+      ))}
 
       {/* Conteúdo rolável do app */}
       {phase === 'wallet' || phase === 'signup' ? (
