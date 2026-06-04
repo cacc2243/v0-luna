@@ -115,6 +115,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   >('tour')
   const [showSellModal, setShowSellModal] = useState(false)
   const [tourStep, setTourStep] = useState(0)
+  const [tourDirection, setTourDirection] = useState<'forward' | 'backward'>('forward')
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [packName, setPackName] = useState('Pés & Saltos')
   const [packPrice, setPackPrice] = useState('29,90')
@@ -218,11 +220,18 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   }, [phase])
 
   function advanceTour() {
-    if (tourStep < tour.length - 1) {
-      setTourStep((s) => s + 1)
-    } else {
-      setPhase('selling')
-    }
+    if (isTransitioning) return
+    setIsTransitioning(true)
+    setTourDirection('forward')
+    
+    setTimeout(() => {
+      if (tourStep < tour.length - 1) {
+        setTourStep((s) => s + 1)
+      } else {
+        setPhase('selling')
+      }
+      setIsTransitioning(false)
+    }, 50)
   }
 
   function acceptSale() {
@@ -279,12 +288,12 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
   const dim = (key: string) =>
   phase === 'tour' && highlight !== key
-    ? 'opacity-55 brightness-90 transition-all duration-300'
+    ? 'opacity-55 brightness-90 transition-all duration-500 ease-out'
     : saleActive && key !== 'orders'
-      ? 'opacity-55 brightness-90 transition-all duration-300'
-      : 'opacity-100 transition-all duration-300'
+      ? 'opacity-55 brightness-90 transition-all duration-500 ease-out'
+      : 'opacity-100 transition-all duration-500 ease-out'
 
-  const ring = (key: string) => (highlight === key ? 'animate-highlight' : '')
+  const ring = (key: string) => (highlight === key ? 'animate-highlight ring-2 ring-primary/50 transition-all duration-500' : 'ring-0 transition-all duration-500')
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-background">
@@ -309,19 +318,23 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
       {/* Conteúdo rolável do app */}
       {phase === 'wallet' || phase === 'signup' ? (
-        <WalletScreen
-          onDone={() => setShowSellModal(true)}
-          hideHint={phase === 'signup'}
-        />
+        <div key="wallet-screen" className="animate-slide-in-right flex-1">
+          <WalletScreen
+            onDone={() => setShowSellModal(true)}
+            hideHint={phase === 'signup'}
+          />
+        </div>
       ) : phase === 'packs' ? (
-  <PacksScreen
-  balance={balance}
-  createdPack={createdPack}
-  packPrice={packPrice}
-  onCreate={() => setShowCreate(true)}
-  />
+        <div key="packs-screen" className="animate-slide-in-right flex-1">
+          <PacksScreen
+            balance={balance}
+            createdPack={createdPack}
+            packPrice={packPrice}
+            onCreate={() => setShowCreate(true)}
+          />
+        </div>
       ) : (
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
+      <div key="home-screen" ref={scrollRef} className="animate-screen flex-1 overflow-y-auto px-4 pb-6 pt-6">
         {/* Header */}
         <header
           ref={headerRef}
@@ -409,8 +422,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           {currentSale && (phase === 'selling' || phase === 'selling2') && (
             <div
               key={`order-${activeSale}`}
-              className={`luna-border relative z-10 mb-2 rounded-2xl bg-card px-3 py-3 ${ring('orders')} ${
-                shake ? 'animate-shake' : 'animate-soft-pulse'
+              className={`luna-border relative z-10 mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3 ${ring('orders')} ${
+                shake ? 'animate-shake' : 'animate-card-enter'
               }`}
             >
               <div className="flex items-center gap-2.5">
@@ -468,10 +481,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             </div>
           ) : (
             <div className={`transition-all duration-300 ${saleActive ? 'opacity-25 blur-[1px] brightness-75' : 'opacity-100'}`}>
-              {[...sales, ...sales2].slice(0, vendas).map((s) => (
+              {[...sales, ...sales2].slice(0, vendas).map((s, i) => (
                 <div
                   key={s.handle}
-                  className="luna-border mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5"
+                  className="luna-border animate-notification-in mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5"
+                  style={{ animationDelay: `${i * 50}ms` }}
                 >
                   <span className="flex size-8 items-center justify-center rounded-full bg-muted">
                     <User className="size-4 text-muted-foreground" aria-hidden="true" />
@@ -546,13 +560,19 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                 className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
               />
             <div className="flex-1">
-              <p key={tourStep} className="animate-item text-pretty text-base leading-relaxed text-foreground">
+              <p 
+                key={`tour-text-${tourStep}`} 
+                className={`text-pretty text-base leading-relaxed text-foreground ${
+                  tourDirection === 'forward' ? 'animate-slide-in-right' : 'animate-slide-in-left'
+                }`}
+              >
                 {tour[tourStep].text}
               </p>
               <button
                 type="button"
                 onClick={advanceTour}
-                className="mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
+                disabled={isTransitioning}
+                className="mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition active:scale-[0.98] disabled:opacity-70"
               >
                 {tourStep < tour.length - 1 ? 'Entendi, próximo' : 'Ver meu primeiro pedido'}
               </button>
@@ -738,15 +758,15 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
         <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
           <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
           <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-border bg-card p-7 text-center shadow-2xl">
-            <span className="luna-gradient mx-auto flex size-16 items-center justify-center rounded-full shadow-lg shadow-primary/40">
+            <span className="luna-gradient animate-card-enter mx-auto flex size-16 items-center justify-center rounded-full shadow-lg shadow-primary/40" style={{ animationDelay: '100ms' }}>
               <Check className="size-8 text-primary-foreground" aria-hidden="true" />
             </span>
-            <p className="mt-5 text-xl font-bold text-foreground">Pack publicado!</p>
-            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+            <p className="animate-card-enter mt-5 text-xl font-bold text-foreground" style={{ animationDelay: '150ms' }}>Pack publicado!</p>
+            <p className="animate-card-enter mt-2 text-pretty text-sm leading-relaxed text-muted-foreground" style={{ animationDelay: '200ms' }}>
               <span className="font-semibold text-primary">{createdPack}</span> já está na sua
               vitrine. Vamos aceitar mais alguns pedidos?
             </p>
-            <div className="mt-6">
+            <div className="animate-card-enter mt-6" style={{ animationDelay: '250ms' }}>
               <CtaButton
                 onClick={() => {
                   setCreatedPack(null)
@@ -771,11 +791,12 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               <img
                 src="/images/mentor.png"
                 alt="Camila"
-                className="mx-auto size-16 rounded-full object-cover ring-2 ring-primary/50"
+                className="animate-card-enter mx-auto size-16 rounded-full object-cover ring-2 ring-primary/50"
+                style={{ animationDelay: '100ms' }}
               />
-              <p className="mt-4 text-xl font-bold text-foreground">Meus parabéns!</p>
+              <p className="animate-card-enter mt-4 text-xl font-bold text-foreground" style={{ animationDelay: '150ms' }}>Meus parabéns!</p>
 
-              <div className="luna-gradient mx-auto mt-4 w-fit rounded-2xl px-5 py-3 shadow-lg shadow-primary/30">
+              <div className="animate-card-enter luna-gradient mx-auto mt-4 w-fit rounded-2xl px-5 py-3 shadow-lg shadow-primary/30" style={{ animationDelay: '200ms' }}>
                 <p className="text-[0.7rem] font-medium uppercase tracking-wide text-primary-foreground/80">
                   No app real você já teria ganho
                 </p>
@@ -959,8 +980,12 @@ function PacksScreen({
             </div>
           </article>
         )}
-        {examplePacks.map((pack) => (
-          <article key={pack.name} className="luna-border overflow-hidden rounded-2xl bg-card">
+        {examplePacks.map((pack, i) => (
+          <article 
+            key={pack.name} 
+            className="luna-border animate-card-enter overflow-hidden rounded-2xl bg-card"
+            style={{ animationDelay: `${(createdPack ? i + 1 : i) * 100}ms` }}
+          >
             <div className="aspect-square overflow-hidden">
               <img
                 src={pack.photo || "/placeholder.svg"}
@@ -996,7 +1021,7 @@ function PacksScreen({
                 className="size-11 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
               />
               <div className="flex-1">
-                <p className="animate-item text-pretty text-base leading-relaxed text-foreground">
+                <p className="animate-speech-enter text-pretty text-base leading-relaxed text-foreground">
                   Aqui é a sua vitrine! No app real, você monta seus packs{' '}
                   <span className="font-bold">antes de começar a vender</span>. Toque em{' '}
                   <span className="font-bold text-primary">Criar Pack</span> que eu te mostro como é
