@@ -47,6 +47,19 @@ import {
   Link,
   Instagram,
   Edit3,
+  Shield,
+  CreditCard,
+  Globe,
+  Moon,
+  BellRing,
+  UserX,
+  Trash2,
+  FileText,
+  MessageSquare,
+  ExternalLink,
+  ChevronDown,
+  ToggleLeft,
+  ToggleRight,
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1422,7 +1435,7 @@ function WalletScreen({ balance }: { balance: number }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ProfileScreen() {
-  const [editMode, setEditMode] = useState(false)
+  const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help'>('main')
   const [profile, setProfile] = useState({
     username: '@sua_luna',
     displayName: 'Sua Luna',
@@ -1437,19 +1450,368 @@ function ProfileScreen() {
     { id: 2, image: '/images/pack-photo-2.png', label: 'Premium' },
     { id: 3, image: '/images/pack-photo-3.png', label: 'Novos' },
   ])
+  const [notifications, setNotifications] = useState([
+    { id: 1, type: 'sale', title: 'Nova venda!', desc: 'Voce vendeu Pack Premium', time: '2 min', read: false },
+    { id: 2, type: 'follow', title: 'Novo seguidor', desc: '@fan_secreto comecou a seguir voce', time: '15 min', read: false },
+    { id: 3, type: 'like', title: 'Novo like', desc: 'Alguem curtiu seu Pack Exclusivo', time: '1h', read: false },
+    { id: 4, type: 'message', title: 'Nova mensagem', desc: '@comprador_sp enviou uma mensagem', time: '2h', read: true },
+    { id: 5, type: 'sale', title: 'Nova venda!', desc: 'Voce vendeu Colecao VIP', time: '5h', read: true },
+  ])
+  const [settings, setSettings] = useState({
+    darkMode: true,
+    notifications: true,
+    emailNotifications: false,
+    privateProfile: false,
+    showOnline: true,
+    showLocation: true,
+  })
 
   function saveProfile() {
     setProfile(editedProfile)
-    setEditMode(false)
+    setCurrentView('main')
   }
 
   function cancelEdit() {
     setEditedProfile(profile)
-    setEditMode(false)
+    setCurrentView('main')
+  }
+
+  function markAllRead() {
+    setNotifications(notifications.map(n => ({ ...n, read: true })))
+  }
+
+  function toggleSetting(key: keyof typeof settings) {
+    setSettings({ ...settings, [key]: !settings[key] })
+  }
+
+  // Header padrao para sub-telas
+  function SubHeader({ title, onBack }: { title: string; onBack: () => void }) {
+    return (
+      <header className="flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 backdrop-blur-md">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
+        >
+          <ArrowLeft className="size-5 text-foreground" />
+        </button>
+        <h1 className="flex-1 text-base font-semibold text-foreground">{title}</h1>
+      </header>
+    )
+  }
+
+  // Tela de Notificacoes
+  if (currentView === 'notifications') {
+    const unreadCount = notifications.filter(n => !n.read).length
+    return (
+      <div className="flex flex-1 flex-col bg-background">
+        <header className="flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => setCurrentView('main')}
+            className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
+          >
+            <ArrowLeft className="size-5 text-foreground" />
+          </button>
+          <h1 className="flex-1 text-base font-semibold text-foreground">Notificacoes</h1>
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={markAllRead}
+              className="text-xs font-semibold text-primary"
+            >
+              Marcar todas lidas
+            </button>
+          )}
+        </header>
+
+        <div className="flex-1 overflow-y-auto">
+          {notifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Bell className="size-12 text-muted-foreground/30" />
+              <p className="mt-3 text-sm text-muted-foreground">Nenhuma notificacao</p>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {notifications.map((notif) => (
+                <button
+                  key={notif.id}
+                  type="button"
+                  onClick={() => setNotifications(notifications.map(n => n.id === notif.id ? { ...n, read: true } : n))}
+                  className={`flex items-start gap-3 border-b border-border px-4 py-4 text-left transition active:bg-muted/50 ${
+                    !notif.read ? 'bg-primary/5' : ''
+                  }`}
+                >
+                  <span className={`flex size-10 shrink-0 items-center justify-center rounded-full ${
+                    notif.type === 'sale' ? 'bg-positive/15' :
+                    notif.type === 'follow' ? 'bg-primary/15' :
+                    notif.type === 'like' ? 'bg-red-500/15' :
+                    'bg-blue-500/15'
+                  }`}>
+                    {notif.type === 'sale' && <ShoppingBag className="size-5 text-positive" />}
+                    {notif.type === 'follow' && <User className="size-5 text-primary" />}
+                    {notif.type === 'like' && <Heart className="size-5 text-red-500" />}
+                    {notif.type === 'message' && <MessageCircle className="size-5 text-blue-500" />}
+                  </span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-foreground">{notif.title}</p>
+                      {!notif.read && <span className="size-2 rounded-full bg-primary" />}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{notif.desc}</p>
+                    <p className="mt-1 text-[0.65rem] text-muted-foreground/70">{notif.time}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Tela de Configuracoes
+  if (currentView === 'settings') {
+    return (
+      <div className="flex flex-1 flex-col bg-background">
+        <SubHeader title="Configuracoes" onBack={() => setCurrentView('main')} />
+
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {/* Aparencia */}
+          <div className="mb-6">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aparencia</h2>
+            <div className="flex flex-col gap-1 rounded-2xl border border-border bg-card">
+              <div className="flex items-center justify-between px-4 py-3.5">
+                <div className="flex items-center gap-3">
+                  <Moon className="size-5 text-muted-foreground" />
+                  <span className="text-sm text-foreground">Modo escuro</span>
+                </div>
+                <button type="button" onClick={() => toggleSetting('darkMode')}>
+                  {settings.darkMode ? (
+                    <ToggleRight className="size-8 text-primary" />
+                  ) : (
+                    <ToggleLeft className="size-8 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Notificacoes */}
+          <div className="mb-6">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notificacoes</h2>
+            <div className="flex flex-col rounded-2xl border border-border bg-card">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
+                <div className="flex items-center gap-3">
+                  <BellRing className="size-5 text-muted-foreground" />
+                  <span className="text-sm text-foreground">Notificacoes push</span>
+                </div>
+                <button type="button" onClick={() => toggleSetting('notifications')}>
+                  {settings.notifications ? (
+                    <ToggleRight className="size-8 text-primary" />
+                  ) : (
+                    <ToggleLeft className="size-8 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3.5">
+                <div className="flex items-center gap-3">
+                  <Mail className="size-5 text-muted-foreground" />
+                  <span className="text-sm text-foreground">Notificacoes por e-mail</span>
+                </div>
+                <button type="button" onClick={() => toggleSetting('emailNotifications')}>
+                  {settings.emailNotifications ? (
+                    <ToggleRight className="size-8 text-primary" />
+                  ) : (
+                    <ToggleLeft className="size-8 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Privacidade */}
+          <div className="mb-6">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Privacidade</h2>
+            <div className="flex flex-col rounded-2xl border border-border bg-card">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
+                <div className="flex items-center gap-3">
+                  <Lock className="size-5 text-muted-foreground" />
+                  <span className="text-sm text-foreground">Perfil privado</span>
+                </div>
+                <button type="button" onClick={() => toggleSetting('privateProfile')}>
+                  {settings.privateProfile ? (
+                    <ToggleRight className="size-8 text-primary" />
+                  ) : (
+                    <ToggleLeft className="size-8 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+              <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
+                <div className="flex items-center gap-3">
+                  <Eye className="size-5 text-muted-foreground" />
+                  <span className="text-sm text-foreground">Mostrar status online</span>
+                </div>
+                <button type="button" onClick={() => toggleSetting('showOnline')}>
+                  {settings.showOnline ? (
+                    <ToggleRight className="size-8 text-primary" />
+                  ) : (
+                    <ToggleLeft className="size-8 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3.5">
+                <div className="flex items-center gap-3">
+                  <MapPin className="size-5 text-muted-foreground" />
+                  <span className="text-sm text-foreground">Mostrar localizacao</span>
+                </div>
+                <button type="button" onClick={() => toggleSetting('showLocation')}>
+                  {settings.showLocation ? (
+                    <ToggleRight className="size-8 text-primary" />
+                  ) : (
+                    <ToggleLeft className="size-8 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Conta */}
+          <div className="mb-6">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Conta</h2>
+            <div className="flex flex-col rounded-2xl border border-border bg-card">
+              <button type="button" className="flex items-center gap-3 border-b border-border px-4 py-3.5 text-left">
+                <CreditCard className="size-5 text-muted-foreground" />
+                <span className="flex-1 text-sm text-foreground">Metodos de pagamento</span>
+                <ChevronRight className="size-5 text-muted-foreground" />
+              </button>
+              <button type="button" className="flex items-center gap-3 border-b border-border px-4 py-3.5 text-left">
+                <Shield className="size-5 text-muted-foreground" />
+                <span className="flex-1 text-sm text-foreground">Seguranca</span>
+                <ChevronRight className="size-5 text-muted-foreground" />
+              </button>
+              <button type="button" className="flex items-center gap-3 px-4 py-3.5 text-left">
+                <Globe className="size-5 text-muted-foreground" />
+                <span className="flex-1 text-sm text-foreground">Idioma</span>
+                <span className="text-xs text-muted-foreground">Portugues</span>
+                <ChevronRight className="size-5 text-muted-foreground" />
+              </button>
+            </div>
+          </div>
+
+          {/* Zona de perigo */}
+          <div className="mb-6">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-red-500/70">Zona de perigo</h2>
+            <div className="flex flex-col rounded-2xl border border-red-500/20 bg-card">
+              <button type="button" className="flex items-center gap-3 border-b border-red-500/20 px-4 py-3.5 text-left">
+                <UserX className="size-5 text-red-500" />
+                <span className="flex-1 text-sm text-red-500">Desativar conta</span>
+              </button>
+              <button type="button" className="flex items-center gap-3 px-4 py-3.5 text-left">
+                <Trash2 className="size-5 text-red-500" />
+                <span className="flex-1 text-sm text-red-500">Excluir conta</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Tela de Ajuda e Suporte
+  if (currentView === 'help') {
+    const faqItems = [
+      { q: 'Como recebo meus pagamentos?', a: 'Os pagamentos sao processados automaticamente e enviados para sua conta cadastrada em ate 7 dias uteis apos a venda.' },
+      { q: 'Como criar um pack de sucesso?', a: 'Use fotos de alta qualidade, escreva descricoes atraentes e defina um preco competitivo. Promova nas suas redes sociais!' },
+      { q: 'Posso alterar o preco dos meus packs?', a: 'Sim! Va ate a aba Packs, selecione o pack que deseja editar e altere o preco a qualquer momento.' },
+      { q: 'Como funciona o impulsionamento?', a: 'O impulsionamento coloca seu perfil em destaque para mais compradores, aumentando sua visibilidade e vendas.' },
+    ]
+    const [openFaq, setOpenFaq] = useState<number | null>(null)
+
+    return (
+      <div className="flex flex-1 flex-col bg-background">
+        <SubHeader title="Ajuda e Suporte" onBack={() => setCurrentView('main')} />
+
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {/* Contato rapido */}
+          <div className="mb-6">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contato rapido</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card px-4 py-4 transition active:scale-[0.98]"
+              >
+                <span className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+                  <MessageSquare className="size-6 text-primary" />
+                </span>
+                <span className="text-sm font-medium text-foreground">Chat</span>
+                <span className="text-[0.65rem] text-muted-foreground">Resposta rapida</span>
+              </button>
+              <button
+                type="button"
+                className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card px-4 py-4 transition active:scale-[0.98]"
+              >
+                <span className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+                  <Mail className="size-6 text-primary" />
+                </span>
+                <span className="text-sm font-medium text-foreground">E-mail</span>
+                <span className="text-[0.65rem] text-muted-foreground">suporte@lunaprive.com</span>
+              </button>
+            </div>
+          </div>
+
+          {/* FAQ */}
+          <div className="mb-6">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Perguntas frequentes</h2>
+            <div className="flex flex-col gap-2">
+              {faqItems.map((item, idx) => (
+                <div key={idx} className="rounded-2xl border border-border bg-card">
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+                  >
+                    <span className="flex-1 text-sm font-medium text-foreground">{item.q}</span>
+                    <ChevronDown className={`size-5 text-muted-foreground transition ${openFaq === idx ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openFaq === idx && (
+                    <div className="border-t border-border px-4 py-3">
+                      <p className="text-sm text-muted-foreground">{item.a}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Links uteis */}
+          <div className="mb-6">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Links uteis</h2>
+            <div className="flex flex-col rounded-2xl border border-border bg-card">
+              <button type="button" className="flex items-center gap-3 border-b border-border px-4 py-3.5 text-left">
+                <FileText className="size-5 text-muted-foreground" />
+                <span className="flex-1 text-sm text-foreground">Termos de uso</span>
+                <ExternalLink className="size-4 text-muted-foreground" />
+              </button>
+              <button type="button" className="flex items-center gap-3 border-b border-border px-4 py-3.5 text-left">
+                <Shield className="size-5 text-muted-foreground" />
+                <span className="flex-1 text-sm text-foreground">Politica de privacidade</span>
+                <ExternalLink className="size-4 text-muted-foreground" />
+              </button>
+              <button type="button" className="flex items-center gap-3 px-4 py-3.5 text-left">
+                <Info className="size-5 text-muted-foreground" />
+                <span className="flex-1 text-sm text-foreground">Sobre o Luna Prive</span>
+                <ExternalLink className="size-4 text-muted-foreground" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Tela de edicao
-  if (editMode) {
+  if (currentView === 'edit') {
     return (
       <div className="flex flex-1 flex-col bg-background">
         {/* Header */}
@@ -1620,7 +1982,7 @@ function ProfileScreen() {
         </div>
         <button
           type="button"
-          onClick={() => setEditMode(true)}
+          onClick={() => setCurrentView('edit')}
           className="flex size-10 items-center justify-center rounded-full bg-card transition active:scale-95"
         >
           <Edit3 className="size-5 text-muted-foreground" />
@@ -1692,7 +2054,7 @@ function ProfileScreen() {
           ))}
           <button
             type="button"
-            onClick={() => setEditMode(true)}
+            onClick={() => setCurrentView('edit')}
             className="flex flex-col items-center gap-1.5"
           >
             <div className="flex size-20 items-center justify-center rounded-full border-2 border-dashed border-primary/40 bg-primary/5 ring-offset-2 ring-offset-background">
@@ -1707,7 +2069,7 @@ function ProfileScreen() {
       <div className="mt-6 flex flex-col gap-2">
         <button
           type="button"
-          onClick={() => setEditMode(true)}
+          onClick={() => setCurrentView('edit')}
           className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
         >
           <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
@@ -1719,20 +2081,24 @@ function ProfileScreen() {
         
         <button
           type="button"
+          onClick={() => setCurrentView('notifications')}
           className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
         >
           <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
             <Bell className="size-5 text-primary" aria-hidden="true" />
           </span>
           <span className="flex-1 text-sm font-semibold text-foreground">Notificacoes</span>
-          <span className="rounded-full bg-primary px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
-            3
-          </span>
+          {notifications.filter(n => !n.read).length > 0 && (
+            <span className="rounded-full bg-primary px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
+              {notifications.filter(n => !n.read).length}
+            </span>
+          )}
           <ChevronRight className="size-5 text-muted-foreground" />
         </button>
         
         <button
           type="button"
+          onClick={() => setCurrentView('settings')}
           className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
         >
           <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
@@ -1744,6 +2110,7 @@ function ProfileScreen() {
         
         <button
           type="button"
+          onClick={() => setCurrentView('help')}
           className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
         >
           <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
