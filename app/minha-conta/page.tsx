@@ -704,45 +704,51 @@ function PacksScreen({
       </div>
 
       {/* Vitrine */}
-      <div className="mt-5 grid grid-cols-2 gap-3">
+      <div className="mt-5 flex flex-col gap-3">
         {createdPack && (
-          <article className="luna-border animate-pop overflow-hidden rounded-2xl bg-card ring-1 ring-primary/30">
-            <div className="relative aspect-square overflow-hidden">
+          <article className="luna-border animate-pop flex overflow-hidden rounded-2xl bg-card ring-1 ring-primary/30">
+            <div className="relative h-24 w-24 shrink-0 overflow-hidden">
               <img
                 src="/images/pack-photo-1.png"
                 alt={createdPack}
                 className="h-full w-full object-cover"
               />
-              <span className="luna-gradient absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
+              <span className="luna-gradient absolute left-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold text-primary-foreground">
                 Novo
               </span>
             </div>
-            <div className="p-3">
+            <div className="flex flex-1 flex-col justify-center px-3 py-2">
               <p className="truncate text-sm font-semibold text-foreground">{createdPack}</p>
-              <p className="text-sm font-bold text-positive">R$ {packPrice}</p>
-              <p className="mt-1 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
+              <p className="text-base font-bold text-positive">R$ {packPrice}</p>
+              <p className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
                 <Eye className="size-3" aria-hidden="true" />
                 0 views · 0 vendas
               </p>
             </div>
+            <div className="flex items-center pr-3">
+              <ChevronRight className="size-5 text-muted-foreground/50" />
+            </div>
           </article>
         )}
         {examplePacks.map((pack) => (
-          <article key={pack.name} className="luna-border overflow-hidden rounded-2xl bg-card">
-            <div className="aspect-square overflow-hidden">
+          <article key={pack.name} className="luna-border flex overflow-hidden rounded-2xl bg-card">
+            <div className="h-24 w-24 shrink-0 overflow-hidden">
               <img
                 src={pack.photo || '/placeholder.svg'}
                 alt={pack.name}
                 className="h-full w-full object-cover"
               />
             </div>
-            <div className="p-3">
+            <div className="flex flex-1 flex-col justify-center px-3 py-2">
               <p className="truncate text-sm font-semibold text-foreground">{pack.name}</p>
-              <p className="text-sm font-bold text-positive">{pack.price}</p>
-              <p className="mt-1 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
+              <p className="text-base font-bold text-positive">{pack.price}</p>
+              <p className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
                 <Eye className="size-3" aria-hidden="true" />
                 {pack.views} · {pack.sales}
               </p>
+            </div>
+            <div className="flex items-center pr-3">
+              <ChevronRight className="size-5 text-muted-foreground/50" />
             </div>
           </article>
         ))}
@@ -753,7 +759,7 @@ function PacksScreen({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ────────────────���────────────────────────────────────────────────────────────
+// ─────────��──────���────────────────────────────────────────────────────────────
 
 function WalletScreen({ balance }: { balance: number }) {
   return (
