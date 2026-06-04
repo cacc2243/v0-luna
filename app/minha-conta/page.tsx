@@ -350,39 +350,33 @@ function AppDashboard() {
       )}
 
       {/* Bottom nav */}
-      <nav className="flex items-end justify-around border-t border-border bg-card/95 px-4 pb-4 pt-3 backdrop-blur-md">
+      <nav className="flex items-end justify-around border-t border-border bg-card/95 px-2 pb-4 pt-3 backdrop-blur-md">
         {[
           { icon: Home, label: 'Início' as const },
           { icon: Package, label: 'Packs' as const },
-          { icon: Rocket, label: 'Impulsionar' as const, center: true },
           { icon: Wallet, label: 'Carteira' as const },
-          { icon: MessageCircle, label: 'Chats' as const },
+          { icon: MessageCircle, label: 'Chats' as const, center: true },
+          { icon: Rocket, label: 'Impulsionar' as const },
           { icon: User, label: 'Perfil' as const },
         ].map((item) => (
           <button
             key={item.label}
             type="button"
             onClick={() => setActiveTab(item.label as any)}
-            className="flex flex-1 flex-col items-center gap-1.5"
+            className="flex w-14 flex-col items-center gap-1"
           >
             {item.center ? (
-              <span className="luna-gradient -mt-8 flex size-14 items-center justify-center rounded-full shadow-lg shadow-primary/40 ring-4 ring-card">
-                <item.icon className="size-6 text-primary-foreground" aria-hidden="true" />
+              <span className="luna-gradient -mt-7 flex size-12 items-center justify-center rounded-full shadow-lg shadow-primary/40 ring-4 ring-card">
+                <item.icon className="size-5 text-primary-foreground" aria-hidden="true" />
               </span>
             ) : (
-              <span
-                className={`flex size-10 items-center justify-center rounded-xl transition ${
-                  item.label === activeTab ? 'bg-primary/15' : 'bg-transparent'
-                }`}
-              >
-                <item.icon
-                  className={`size-6 transition ${item.label === activeTab ? 'text-primary' : 'text-muted-foreground'}`}
-                  aria-hidden="true"
-                />
-              </span>
+              <item.icon
+                className={`size-5 transition ${item.label === activeTab ? 'text-primary' : 'text-muted-foreground'}`}
+                aria-hidden="true"
+              />
             )}
             <span
-              className={`text-[0.65rem] transition ${
+              className={`text-[0.6rem] transition ${
                 item.label === activeTab ? 'font-semibold text-primary' : 'text-muted-foreground'
               }`}
             >
