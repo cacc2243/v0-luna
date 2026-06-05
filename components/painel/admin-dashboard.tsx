@@ -55,6 +55,7 @@ const STATUSES: { key: StatusFilter; label: string }[] = [
 ]
 
 const TODAY_LABEL = new Date().toLocaleDateString('pt-BR', {
+  timeZone: 'America/Sao_Paulo',
   weekday: 'long',
   day: '2-digit',
   month: 'long',

@@ -30,34 +30,73 @@ export const PERIOD_LABELS: Record<PeriodKey, string> = {
   all: 'Tudo',
 }
 
-// Retorna [inicio, fim] do periodo selecionado
+// Fuso horario de referencia: Brasilia / Sao Paulo
+export const TIME_ZONE = 'America/Sao_Paulo'
+
+// Calcula o offset (em ms) do fuso de Sao Paulo para uma data UTC.
+// Robusto a eventuais mudancas de horario de verao.
+function getSpOffsetMs(date: Date): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+  const parts = dtf.formatToParts(date)
+  const map: Record<string, number> = {}
+  for (const p of parts) {
+    if (p.type !== 'literal') map[p.type] = Number(p.value)
+  }
+  // Instante "como se" os componentes locais de SP fossem UTC
+  const asUTC = Date.UTC(
+    map.year,
+    map.month - 1,
+    map.day,
+    map.hour === 24 ? 0 : map.hour,
+    map.minute,
+    map.second,
+  )
+  return asUTC - date.getTime()
+}
+
+// Retorna o inicio do dia (00:00 em Sao Paulo) como instante UTC
+export function startOfDaySP(date: Date): Date {
+  const offset = getSpOffsetMs(date)
+  // Componentes de data em SP
+  const spNow = new Date(date.getTime() + offset)
+  const y = spNow.getUTCFullYear()
+  const m = spNow.getUTCMonth()
+  const d = spNow.getUTCDate()
+  // 00:00 SP -> subtrai o offset para voltar a UTC
+  return new Date(Date.UTC(y, m, d, 0, 0, 0) - offset)
+}
+
+export function addDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000)
+}
+
+// Retorna [inicio, fim] do periodo selecionado, sempre em horario de Brasilia
 export function getPeriodRange(period: PeriodKey): [Date | null, Date | null] {
   const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfToday = startOfDaySP(now)
 
   switch (period) {
     case 'today':
       return [startOfToday, now]
     case 'yesterday': {
-      const startYesterday = new Date(startOfToday)
-      startYesterday.setDate(startYesterday.getDate() - 1)
+      const startYesterday = addDays(startOfToday, -1)
       return [startYesterday, startOfToday]
     }
-    case '7d': {
-      const start = new Date(startOfToday)
-      start.setDate(start.getDate() - 6)
-      return [start, now]
-    }
-    case '14d': {
-      const start = new Date(startOfToday)
-      start.setDate(start.getDate() - 13)
-      return [start, now]
-    }
-    case '30d': {
-      const start = new Date(startOfToday)
-      start.setDate(start.getDate() - 29)
-      return [start, now]
-    }
+    case '7d':
+      return [addDays(startOfToday, -6), now]
+    case '14d':
+      return [addDays(startOfToday, -13), now]
+    case '30d':
+      return [addDays(startOfToday, -29), now]
     case 'all':
     default:
       return [null, null]
@@ -90,6 +129,7 @@ export function formatBRL(value: number): string {
 export function formatDateTime(dateStr: string | null): string {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleString('pt-BR', {
+    timeZone: TIME_ZONE,
     day: '2-digit',
     month: '2-digit',
     hour: '2-digit',
@@ -264,43 +304,40 @@ export interface TimeBucket {
   signups: number
 }
 
-// Agrupa receita/cadastros em buckets temporais conforme o periodo
+// Agrupa receita/cadastros em buckets temporais (horario de Brasilia)
 export function buildTimeSeries(
   invites: InviteRow[],
   profiles: ProfileRow[],
   period: PeriodKey,
 ): TimeBucket[] {
   const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfToday = startOfDaySP(now)
 
   // Periodos curtos -> buckets por hora; longos -> por dia
   const hourly = period === 'today' || period === 'yesterday'
   const buckets: { start: Date; end: Date; label: string }[] = []
 
   if (hourly) {
-    const dayStart =
-      period === 'yesterday'
-        ? new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000)
-        : startOfToday
-    // 12 buckets de 2 horas
+    const dayStart = period === 'yesterday' ? addDays(startOfToday, -1) : startOfToday
+    // 12 buckets de 2 horas (em horario de Brasilia)
     for (let h = 0; h < 24; h += 2) {
-      const start = new Date(dayStart)
-      start.setHours(h, 0, 0, 0)
-      const end = new Date(start)
-      end.setHours(h + 2, 0, 0, 0)
+      const start = new Date(dayStart.getTime() + h * 60 * 60 * 1000)
+      const end = new Date(dayStart.getTime() + (h + 2) * 60 * 60 * 1000)
       buckets.push({ start, end, label: `${String(h).padStart(2, '0')}h` })
     }
   } else {
     const days = period === '7d' ? 7 : period === '14d' ? 14 : period === '30d' ? 30 : 30
     for (let i = days - 1; i >= 0; i--) {
-      const start = new Date(startOfToday)
-      start.setDate(start.getDate() - i)
-      const end = new Date(start)
-      end.setDate(end.getDate() + 1)
+      const start = addDays(startOfToday, -i)
+      const end = addDays(start, 1)
       buckets.push({
         start,
         end,
-        label: start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        label: start.toLocaleDateString('pt-BR', {
+          timeZone: TIME_ZONE,
+          day: '2-digit',
+          month: '2-digit',
+        }),
       })
     }
   }
