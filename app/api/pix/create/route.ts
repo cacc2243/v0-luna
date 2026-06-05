@@ -204,9 +204,8 @@ export async function POST(request: NextRequest) {
       transactionData.pix?.qrCode ||
       ''
 
-    const pixExpirationDate = transactionData.pix?.expirationDate
-      ? new Date(transactionData.pix.expirationDate)
-      : new Date(Date.now() + 24 * 60 * 60 * 1000)
+    // Expiração do PIX: 5 minutos a partir de agora
+    const pixExpirationDate = new Date(Date.now() + 5 * 60 * 1000)
 
     // Se ja existia um convite pendente sem pix_code, atualizar; senao inserir
     let invite
