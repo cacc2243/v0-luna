@@ -845,8 +845,8 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
     const orders = initial ? randInt(1, 3) : randInt(0, 2)
     for (let i = 0; i < orders; i++) {
       const amount = Number(pack.price) || 0
-      const platformFee = Math.round(amount * 0.2 * 100) / 100
-      const netAmount = Math.round((amount - platformFee) * 100) / 100
+      // A pessoa recebe o valor total da venda, sem desconto de taxa
+      const netAmount = amount
       const buyer = pick(BUYER_NAMES)
 
       const { data: sale } = await supabase
@@ -856,7 +856,7 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
           buyer_name: buyer,
           pack_id: pack.id,
           amount,
-          platform_fee: platformFee,
+          platform_fee: 0,
           net_amount: netAmount,
           status: 'pending',
         })
