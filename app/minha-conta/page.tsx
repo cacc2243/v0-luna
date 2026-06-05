@@ -448,7 +448,7 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Dashboard do App (com dados reais do Supabase)
-// ────────────────────────────────────────────────────────────────────────────�����
+// ────────────────────────────────────────────────────────────────────────────������
 
 function AppDashboard() {
   const router = useRouter()
@@ -1816,7 +1816,7 @@ function ProfileScreen({
   if (currentView === 'notifications') {
     const unreadCount = notifications.filter(n => !n.read).length
     return (
-      <div className="flex flex-1 flex-col bg-background">
+      <div className="flex min-h-0 flex-1 flex-col bg-background">
         <header className="flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 backdrop-blur-md">
           <button
             type="button"
@@ -1885,7 +1885,7 @@ function ProfileScreen({
   // Tela de Configuracoes
   if (currentView === 'settings') {
     return (
-      <div className="flex flex-1 flex-col bg-background">
+      <div className="flex min-h-0 flex-1 flex-col bg-background">
         <SubHeader title="Configuracoes" onBack={() => setCurrentView('main')} />
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -2041,7 +2041,7 @@ function ProfileScreen({
     const [openFaq, setOpenFaq] = useState<number | null>(null)
 
     return (
-      <div className="flex flex-1 flex-col bg-background">
+      <div className="flex min-h-0 flex-1 flex-col bg-background">
         <SubHeader title="Ajuda e Suporte" onBack={() => setCurrentView('main')} />
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -2125,7 +2125,7 @@ function ProfileScreen({
   // Tela de edicao
   if (currentView === 'edit') {
     return (
-      <div className="flex flex-1 flex-col bg-background">
+      <div className="flex min-h-0 flex-1 flex-col bg-background">
         {/* Header */}
         <header className="flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 backdrop-blur-md">
           <button
