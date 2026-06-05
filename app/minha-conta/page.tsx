@@ -823,7 +823,7 @@ function ChatsScreen({ balance }: { balance: number }) {
 }
 
 
-// ─────────────────────────────────────────────────���───────────────────────────
+// ─────────────────────────────────────────────────���─────���─────────────────────
 // Tela Impulsionar
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1175,7 +1175,7 @@ function PacksScreen({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ───────────────────────────��─────────────────────────────────────────────────
+// ───────────────────────────��────��────────────────────────────────────────────
 
 function WalletScreen({ 
   balance,
@@ -1224,6 +1224,35 @@ function WalletScreen({
       return tDate.toDateString() === today.toDateString() && t.amount > 0
     })
     .reduce((sum, t) => sum + Number(t.amount), 0)
+
+  // Ganhos do mes atual (transacoes de entrada: vendas e presentes)
+  const now = new Date()
+  const isEarning = (t: Transaction) => t.type === 'sale' || t.type === 'gift_received'
+  const monthEarnings = transactions
+    .filter(t => {
+      const d = new Date(t.created_at)
+      return isEarning(t) && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    })
+    .reduce((sum, t) => sum + Number(t.amount), 0)
+
+  // Ganhos do mes anterior, para calcular a variacao percentual real
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const prevMonthEarnings = transactions
+    .filter(t => {
+      const d = new Date(t.created_at)
+      return isEarning(t) && d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear()
+    })
+    .reduce((sum, t) => sum + Number(t.amount), 0)
+
+  const monthDeltaPct =
+    prevMonthEarnings > 0
+      ? Math.round(((monthEarnings - prevMonthEarnings) / prevMonthEarnings) * 100)
+      : null
+
+  // Total sacado (somente saques concluidos)
+  const totalWithdrawn = withdrawals
+    .filter(w => ['completed', 'approved', 'paid', 'done'].includes(String(w.status).toLowerCase()))
+    .reduce((sum, w) => sum + Number(w.amount), 0)
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -1303,8 +1332,14 @@ function WalletScreen({
                   </span>
                   <span className="text-xs font-medium text-muted-foreground">Ganhos do mes</span>
                 </div>
-                <p className="mt-2 text-2xl font-bold text-foreground">{brl(18541.67)}</p>
-                <p className="mt-1 text-xs text-positive">+23% vs mes anterior</p>
+                <p className="mt-2 text-2xl font-bold text-foreground">{brl(monthEarnings)}</p>
+                {monthDeltaPct !== null ? (
+                  <p className={`mt-1 text-xs ${monthDeltaPct >= 0 ? 'text-positive' : 'text-destructive'}`}>
+                    {monthDeltaPct >= 0 ? '+' : ''}{monthDeltaPct}% vs mes anterior
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">Neste mes</p>
+                )}
               </div>
               <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
                 <div className="flex items-center gap-2">
@@ -1313,7 +1348,7 @@ function WalletScreen({
                   </span>
                   <span className="text-xs font-medium text-muted-foreground">Total sacado</span>
                 </div>
-                <p className="mt-2 text-2xl font-bold text-foreground">{brl(94614.76)}</p>
+                <p className="mt-2 text-2xl font-bold text-foreground">{brl(totalWithdrawn)}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Desde o inicio</p>
               </div>
             </div>
