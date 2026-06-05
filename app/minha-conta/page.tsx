@@ -697,6 +697,7 @@ function AppDashboard() {
                   profile={profile}
                   packs={packs}
                   pendingSales={pendingSales}
+                  completedSales={completedSales}
                   notifications={notifications}
                   onAccept={handleAcceptSale}
                   onReject={handleRejectSale}
@@ -1125,6 +1126,7 @@ function HomeScreen({
   profile,
   packs,
   pendingSales,
+  completedSales,
   notifications,
   onAccept,
   onReject,
@@ -1136,6 +1138,7 @@ function HomeScreen({
   profile: Profile | null | undefined
   packs: Pack[]
   pendingSales: Sale[]
+  completedSales: Sale[]
   notifications: Notification[]
   onAccept: (id: string) => void
   onReject: (id: string) => void
@@ -1172,76 +1175,12 @@ function HomeScreen({
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
       </div>
 
-      {/* Pedidos pendentes para aceitar/recusar */}
-      <div className="mt-5">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <ShoppingBag className="size-4 text-primary" aria-hidden="true" />
-            Pedidos pendentes
-          </h3>
-          {pendingSales.length > 0 && (
-            <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
-              {pendingSales.length}
-            </span>
-          )}
-        </div>
-        {pendingSales.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card/60 px-4 py-6">
-            <p className="text-center text-xs text-muted-foreground">
-              {packs.length === 0
-                ? 'Crie seu primeiro pack para começar a receber pedidos'
-                : 'Nenhum pedido pendente no momento'}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            {pendingSales.map((sale) => (
-              <div key={sale.id} className="luna-border rounded-2xl bg-card p-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                    {(sale.buyer_name || 'C').charAt(0)}
-                  </span>
-                  <div className="min-w-0 flex-1 leading-tight">
-                    <p className="truncate text-sm font-semibold text-foreground">{sale.buyer_name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{sale.pack?.title || 'Pack'}</p>
-                  </div>
-                  <div className="text-right leading-tight">
-                    <p className="text-sm font-bold text-positive">{brl(Number(sale.net_amount))}</p>
-                    <p className="text-[0.65rem] text-muted-foreground">você recebe</p>
-                  </div>
-                </div>
-                <div className="mt-2.5 flex gap-2">
-                  <button
-                    type="button"
-                    disabled={processing === sale.id}
-                    onClick={() => act(sale.id, onAccept)}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-positive py-2 text-xs font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
-                  >
-                    {processing === sale.id ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-                    Aceitar
-                  </button>
-                  <button
-                    type="button"
-                    disabled={processing === sale.id}
-                    onClick={() => act(sale.id, onReject)}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary py-2 text-xs font-bold text-foreground transition active:scale-[0.98] disabled:opacity-60"
-                  >
-                    <X className="size-3.5" />
-                    Recusar
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Visualizações recentes */}
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Eye className="size-4 text-positive" aria-hidden="true" />
-            Atividade recente
+            Visualizações recentes
           </h3>
           <span className="rounded-full border border-positive/40 px-2 py-0.5 text-xs font-semibold text-positive">
             {views}
@@ -1254,27 +1193,135 @@ function HomeScreen({
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="rounded-2xl border border-border bg-card/60 px-4 py-3">
             {viewNotifs.map((n) => (
-              <div key={n.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card/60 px-3 py-2.5">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-positive/10">
+              <div key={n.id} className="flex items-center gap-3 border-b border-border/50 py-2 last:border-0">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-positive/10">
                   {n.type === 'follow' ? (
                     <Heart className="size-4 text-positive" aria-hidden="true" />
                   ) : (
                     <Eye className="size-4 text-positive" aria-hidden="true" />
                   )}
                 </span>
-                <div className="min-w-0 flex-1 leading-tight">
-                  <p className="truncate text-xs font-semibold text-foreground">{n.title}</p>
-                  <p className="truncate text-[0.7rem] text-muted-foreground">{n.description}</p>
-                </div>
+                <p className="flex-1 text-pretty text-xs text-muted-foreground">{n.description}</p>
+                <span className="shrink-0 text-[0.65rem] text-muted-foreground/70">{relativeTime(n.created_at)}</span>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Pedidos recentes (pedidos pendentes + histórico de aceitas) */}
+      <div className="mt-5">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <ShoppingBag className="size-4 text-primary" aria-hidden="true" />
+            Pedidos recentes
+          </h3>
+          {pendingSales.length > 0 && (
+            <span className="rounded-full border border-primary/40 px-2 py-0.5 text-xs font-semibold text-primary">
+              {pendingSales.length} novos
+            </span>
+          )}
+        </div>
+
+        {/* Pedidos pendentes — aguardando aceite */}
+        {pendingSales.map((sale) => (
+          <div
+            key={`pending-${sale.id}`}
+            className="luna-border relative mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                <Bell className="size-4 text-primary" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1 leading-snug">
+                <p className="truncate text-[0.8rem] font-semibold text-foreground">
+                  {sale.buyer_name} quer {sale.pack?.title || 'seu pack'}
+                </p>
+                <p className="text-[0.65rem] text-muted-foreground">
+                  {relativeTime(sale.created_at)} · você recebe {brl(Number(sale.net_amount))}
+                </p>
+              </div>
+              <span className="text-sm font-bold text-positive">{brl(Number(sale.amount))}</span>
+            </div>
+
+            <div className="mt-2.5 flex gap-2">
+              <button
+                type="button"
+                disabled={processing === sale.id}
+                onClick={() => act(sale.id, onReject)}
+                className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98] disabled:opacity-60"
+              >
+                <X className="size-3.5" aria-hidden="true" />
+                Recusar
+              </button>
+              <button
+                type="button"
+                disabled={processing === sale.id}
+                onClick={() => act(sale.id, onAccept)}
+                style={{
+                  backgroundImage:
+                    'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
+                }}
+                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+              >
+                {processing === sale.id ? (
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Check className="size-3.5" aria-hidden="true" />
+                )}
+                Aceitar venda
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {/* Histórico de aceitas / vazio */}
+        {pendingSales.length === 0 && completedSales.length === 0 ? (
+          <div className="rounded-2xl border border-border bg-card/60 px-4 py-6 text-center">
+            <p className="text-xs text-muted-foreground">
+              {packs.length === 0
+                ? 'Crie seu primeiro pack para começar a receber pedidos'
+                : 'Seus pedidos aparecem aqui.'}
+            </p>
+          </div>
+        ) : (
+          completedSales.slice(0, 10).map((s) => (
+            <div
+              key={`done-${s.id}`}
+              className="luna-border mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5"
+            >
+              <span className="flex size-8 items-center justify-center rounded-full bg-muted">
+                <User className="size-4 text-muted-foreground" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1 leading-tight">
+                <p className="flex items-center gap-1 text-[0.8rem] font-semibold text-foreground">
+                  {s.buyer_name}
+                  <BadgeCheck className="size-3.5 text-positive" aria-hidden="true" />
+                </p>
+                <p className="truncate text-[0.7rem] text-muted-foreground">comprou {s.pack?.title || 'seu pack'}</p>
+              </div>
+              <span className="flex items-center gap-1 text-[0.8rem] font-bold text-positive">
+                <Check className="size-3.5" aria-hidden="true" />
+                {brl(Number(s.net_amount))}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
+}
+
+function relativeTime(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return 'agora'
+  if (min < 60) return `${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h}h`
+  return `${Math.floor(h / 24)}d`
 }
 
 // ────────────────────────────────────────────────────────���────────────────────
