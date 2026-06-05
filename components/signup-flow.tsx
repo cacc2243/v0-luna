@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import {
   User,
   Mail,
@@ -15,6 +16,7 @@ import {
   ChevronDown,
   Check,
   Loader2,
+  AlertCircle,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 import { cn } from '@/lib/utils'
@@ -25,12 +27,13 @@ interface SignupFlowProps {
 
 const TOTAL = 6
 
-const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatória']
+const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 
 export function SignupFlow({ onComplete }: SignupFlowProps) {
   const router = useRouter()
   const [step, setStep] = useState(0)
-  const [status, setStatus] = useState<'form' | 'loading' | 'invite'>('form')
+  const [status, setStatus] = useState<'form' | 'loading' | 'invite' | 'error'>('form')
+  const [errorMessage, setErrorMessage] = useState('')
 
   // Campos
   const [username, setUsername] = useState('')
@@ -48,22 +51,85 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const back = () => setStep((s) => Math.max(0, s - 1))
   const advance = () => setStep((s) => Math.min(TOTAL - 1, s + 1))
 
-  const finish = () => {
+  const finish = async () => {
     setStatus('loading')
-    setTimeout(() => setStatus('invite'), 2200)
+    setErrorMessage('')
+    
+    try {
+      const supabase = createClient()
+      
+      // Criar usuario no Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            username: username.trim(),
+            display_name: username.trim(),
+            phone: phone.replace(/\D/g, ''),
+            pix_type: pixType,
+            pix_key: pixKey.trim(),
+            is_creator: true,
+          },
+        },
+      })
+      
+      if (error) {
+        console.error('[v0] Supabase signup error:', error)
+        setErrorMessage(error.message === 'User already registered' 
+          ? 'Este email ja esta cadastrado. Tente fazer login.'
+          : error.message)
+        setStatus('error')
+        return
+      }
+      
+      if (!data.user) {
+        setErrorMessage('Erro ao criar conta. Tente novamente.')
+        setStatus('error')
+        return
+      }
+      
+      // Atualizar o perfil com dados adicionais (phone e pix)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          phone: phone.replace(/\D/g, ''),
+          pix_type: pixType,
+          pix_key: pixKey.trim(),
+        })
+        .eq('id', data.user.id)
+      
+      if (profileError) {
+        console.error('[v0] Profile update error:', profileError)
+        // Nao bloquear - o trigger ja criou o perfil basico
+      }
+      
+      // Salvar dados no sessionStorage para a pagina de convite
+      try {
+        sessionStorage.setItem(
+          'luna_signup',
+          JSON.stringify({ username, email, pixType, pixKey }),
+        )
+      } catch {
+        // ignore storage errors
+      }
+      
+      setStatus('invite')
+    } catch (err) {
+      console.error('[v0] Signup error:', err)
+      setErrorMessage('Erro inesperado. Tente novamente.')
+      setStatus('error')
+    }
   }
 
   const goToConvite = () => {
-    try {
-      sessionStorage.setItem(
-        'luna_signup',
-        JSON.stringify({ username, email, pixType, pixKey }),
-      )
-    } catch {
-      // ignore storage errors
-    }
     onComplete()
     router.push('/convite')
+  }
+  
+  const goToMinhaConta = () => {
+    onComplete()
+    router.push('/minha-conta')
   }
 
   // Validação por etapa
@@ -93,7 +159,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
       <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-6">
           {status === 'invite' ? (
-            <InviteCard onAccept={goToConvite} />
+            <InviteCard onAccept={goToConvite} onSkip={goToMinhaConta} />
+          ) : status === 'error' ? (
+            <ErrorCard message={errorMessage} onRetry={() => setStatus('form')} />
           ) : status === 'loading' ? (
           <LoadingCard />
         ) : (
@@ -517,13 +585,30 @@ function LoadingCard() {
       <Loader2 className="size-10 animate-spin text-primary" aria-hidden="true" />
       <p className="mt-5 text-lg font-bold text-foreground">Criando sua conta...</p>
       <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-        Estamos preparando tudo para você começar a vender.
+        Estamos preparando tudo para voce comecar a vender.
       </p>
     </div>
   )
 }
 
-function InviteCard({ onAccept }: { onAccept: () => void }) {
+function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="animate-pop luna-border flex w-full max-w-sm flex-col items-center rounded-3xl bg-card px-6 py-10 text-center shadow-2xl shadow-primary/15">
+      <div className="flex size-14 items-center justify-center rounded-full bg-destructive/15">
+        <AlertCircle className="size-7 text-destructive" aria-hidden="true" />
+      </div>
+      <p className="mt-5 text-lg font-bold text-foreground">Ops! Algo deu errado</p>
+      <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
+        {message}
+      </p>
+      <CtaButton className="mt-6" onClick={onRetry}>
+        Tentar novamente
+      </CtaButton>
+    </div>
+  )
+}
+
+function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => void }) {
   return (
     <div className="animate-pop luna-border w-full max-w-md overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20">
       {/* Mulher falando */}
@@ -532,35 +617,42 @@ function InviteCard({ onAccept }: { onAccept: () => void }) {
           <span className="absolute -inset-1.5 rounded-full luna-gradient opacity-70 blur-lg" aria-hidden="true" />
           <img
             src="/images/mentor.png"
-            alt="Mentora do Luna Privé"
+            alt="Mentora do Luna Prive"
             className="relative size-28 rounded-full border-2 border-primary/60 object-cover"
           />
           <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
         </div>
         <p className="mt-5 text-sm font-bold uppercase tracking-[0.2em] text-primary">
-          Meus parabéns!
+          Meus parabens!
         </p>
       </div>
 
-      {/* Balão de fala */}
+      {/* Balao de fala */}
       <div className="px-6 pb-8 pt-5">
         <div className="rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
           <p>
             Sua conta foi criada com{' '}
             <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
-            <span className="font-semibold text-primary">Convite de Acesso ao Luna Privé</span>.
+            <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
           </p>
           <p className="mt-3">
-            Ele garante que você é uma usuária <span className="font-semibold">real e comprometida</span> aqui dentro.
+            Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
-            acesso está muito barato e confiável.
+            acesso esta muito barato e confiavel.
           </p>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col gap-3">
           <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
+          <button
+            type="button"
+            onClick={onSkip}
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Pular e ir para minha conta
+          </button>
         </div>
       </div>
     </div>

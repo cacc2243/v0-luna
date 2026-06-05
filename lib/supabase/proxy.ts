@@ -29,19 +29,9 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Proteger rota /minha-conta - redirecionar para login se não autenticado
-  if (
-    request.nextUrl.pathname.startsWith('/minha-conta') &&
-    !user
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
+  // Apenas atualiza a sessao, sem redirecionar
+  // O /minha-conta gerencia seu proprio estado de login
+  await supabase.auth.getUser()
 
   return supabaseResponse
 }
