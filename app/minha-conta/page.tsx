@@ -63,13 +63,6 @@ import {
   ChevronDown,
   ToggleLeft,
   ToggleRight,
-  Gift,
-  Gem,
-  Crown,
-  Flower2,
-  Wine,
-  Car,
-  Plane,
   AlertCircle,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
@@ -770,158 +763,8 @@ function AppDashboard() {
 // Tela Chats
 // ─────────────────────────────────────────────────────────────────────────────
 
-const mockChats = [
-  {
-    id: 1,
-    name: '@fan_secreto',
-    avatar: null,
-    lastMessage: 'Oi! Adorei seu pack novo',
-    time: '2 min',
-    unread: 3,
-    online: true,
-    lastSeen: 'Online agora',
-    messages: [
-      { id: 1, text: 'Oi! Vi seu perfil e adorei', sent: false, time: '14:30' },
-      { id: 2, text: 'Obrigada! Fico feliz que gostou', sent: true, time: '14:32' },
-      { id: 3, text: 'Você tem mais conteúdo assim?', sent: false, time: '14:33' },
-      { id: 4, text: 'Tenho sim! Dá uma olhada nos meus packs', sent: true, time: '14:35' },
-      { id: 5, text: 'Oi! Adorei seu pack novo', sent: false, time: '14:58' },
-    ],
-  },
-  {
-    id: 2,
-    name: '@comprador_sp',
-    avatar: null,
-    lastMessage: 'Você aceita PIX?',
-    time: '15 min',
-    unread: 1,
-    online: true,
-    lastSeen: 'Online agora',
-    messages: [
-      { id: 1, text: 'Boa tarde!', sent: false, time: '13:20' },
-      { id: 2, text: 'Oi! Tudo bem?', sent: true, time: '13:25' },
-      { id: 3, text: 'Você aceita PIX?', sent: false, time: '13:45' },
-    ],
-  },
-  {
-    id: 3,
-    name: '@admirador_rj',
-    avatar: null,
-    lastMessage: 'Obrigado pelo conteúdo!',
-    time: '1h',
-    unread: 0,
-    online: false,
-    lastSeen: 'Visto há 1h',
-    messages: [
-      { id: 1, text: 'Comprei seu pack!', sent: false, time: '12:00' },
-      { id: 2, text: 'Muito obrigada pelo apoio!', sent: true, time: '12:05' },
-      { id: 3, text: 'Obrigado pelo conteúdo!', sent: false, time: '12:10' },
-    ],
-  },
-  {
-    id: 4,
-    name: '@cliente_vip',
-    avatar: null,
-    lastMessage: 'Quando sai o próximo pack?',
-    time: '3h',
-    unread: 0,
-    online: false,
-    lastSeen: 'Visto há 3h',
-    messages: [
-      { id: 1, text: 'Quando sai o próximo pack?', sent: false, time: '10:30' },
-    ],
-  },
-  {
-    id: 5,
-    name: '@novo_seguidor',
-    avatar: null,
-    lastMessage: 'Acabei de assinar!',
-    time: '5h',
-    unread: 0,
-    online: true,
-    lastSeen: 'Online agora',
-    messages: [
-      { id: 1, text: 'Acabei de assinar!', sent: false, time: '08:00' },
-      { id: 2, text: 'Seja bem-vindo!', sent: true, time: '08:15' },
-    ],
-  },
-]
-
-const giftOptions = [
-  { id: 1, name: 'Rosa', icon: Flower2, price: 20, color: 'text-pink-400' },
-  { id: 2, name: 'Coracao', icon: Heart, price: 50, color: 'text-red-500' },
-  { id: 3, name: 'Estrela', icon: Star, price: 100, color: 'text-amber-400' },
-  { id: 4, name: 'Vinho', icon: Wine, price: 250, color: 'text-purple-500' },
-  { id: 5, name: 'Presente', icon: Gift, price: 500, color: 'text-primary' },
-  { id: 6, name: 'Diamante', icon: Gem, price: 1000, color: 'text-cyan-400' },
-  { id: 7, name: 'Coroa', icon: Crown, price: 2500, color: 'text-amber-500' },
-  { id: 8, name: 'Carro', icon: Car, price: 5000, color: 'text-slate-400' },
-  { id: 9, name: 'Viagem', icon: Plane, price: 10000, color: 'text-sky-400' },
-]
-
 function ChatsScreen({ balance, conversations }: { balance: number; conversations: Conversation[] }) {
-  const [activeChat, setActiveChat] = useState<Conversation | null>(null)
-  const [message, setMessage] = useState('')
-  const [messages, setMessages] = useState<typeof mockChats[0]['messages']>([])
-  const [showEmojis, setShowEmojis] = useState(false)
-  const [showGifts, setShowGifts] = useState(false)
-  const [sendingGift, setSendingGift] = useState<number | null>(null)
-
-  const emojis = ['😊', '😍', '🥰', '😘', '💕', '❤️', '🔥', '💋', '😏', '🙈', '💖', '✨']
-
-  function openChat(chat: typeof mockChats[0]) {
-    setActiveChat(chat)
-    setMessages(chat.messages)
-    setShowEmojis(false)
-    setShowGifts(false)
-  }
-
-  function closeChat() {
-    setActiveChat(null)
-    setMessage('')
-    setShowEmojis(false)
-    setShowGifts(false)
-  }
-
-  function sendMessage() {
-    if (!message.trim()) return
-    const newMsg = {
-      id: Date.now(),
-      text: message.trim(),
-      sent: true,
-      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    }
-    setMessages((prev) => [...prev, newMsg])
-    setMessage('')
-    setShowEmojis(false)
-  }
-
-  function addEmoji(emoji: string) {
-    setMessage((prev) => prev + emoji)
-  }
-
-  function sendGift(gift: typeof giftOptions[0]) {
-    setSendingGift(gift.id)
-    setTimeout(() => {
-      const newMsg = {
-        id: Date.now(),
-        text: `Enviou um presente: ${gift.name}`,
-        sent: true,
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        isGift: true,
-        giftIcon: gift.icon,
-        giftColor: gift.color,
-        giftPrice: gift.price,
-      }
-      setMessages((prev) => [...prev, newMsg as any])
-      setSendingGift(null)
-      setShowGifts(false)
-    }, 1000)
-  }
-
-  // Tela de conversa aberta
-  if (activeChat) {
-    return (
+  return (
       <div className="flex flex-1 flex-col">
         {/* Header da conversa */}
         <header className="relative z-10 flex items-center gap-3 bg-gradient-to-b from-card via-card/95 to-card/80 px-4 py-3 backdrop-blur-md">
@@ -1178,61 +1021,22 @@ function ChatsScreen({ balance, conversations }: { balance: number; conversation
             <div>
               <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
               <p className="text-sm text-muted-foreground">
-                {mockChats.filter(c => c.unread > 0).length} conversas nao lidas
+                0 conversas nao lidas
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Lista de Chats */}
-      <div className="mt-6 flex flex-col gap-2.5">
-        {mockChats.map((chat) => (
-          <button
-            key={chat.id}
-            type="button"
-            onClick={() => openChat(chat)}
-            className={`flex items-center gap-3 rounded-2xl border bg-card/80 p-3.5 text-left backdrop-blur-sm transition hover:bg-card active:scale-[0.98] ${
-              chat.unread > 0 ? 'border-primary/30 shadow-sm shadow-primary/10' : 'border-border'
-            }`}
-          >
-            {/* Avatar */}
-            <div className="relative">
-              <div className={`flex size-14 items-center justify-center rounded-full text-lg font-bold ${
-                chat.unread > 0 
-                  ? 'bg-gradient-to-br from-primary/30 to-primary/10 text-primary ring-2 ring-primary/20' 
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {chat.name.charAt(1).toUpperCase()}
-              </div>
-              {chat.online && (
-                <span className="absolute bottom-0 right-0 size-4 rounded-full border-2 border-card bg-positive shadow-md shadow-positive/50" />
-              )}
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 overflow-hidden">
-              <div className="flex items-center justify-between gap-2">
-                <p className={`truncate text-sm ${chat.unread > 0 ? 'font-bold text-foreground' : 'font-semibold text-foreground'}`}>
-                  {chat.name}
-                </p>
-                <span className={`shrink-0 text-[0.65rem] ${chat.unread > 0 ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
-                  {chat.time}
-                </span>
-              </div>
-              <p className={`mt-1 truncate text-xs ${chat.unread > 0 ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
-                {chat.lastMessage}
-              </p>
-            </div>
-
-            {/* Badge de nao lidas */}
-            {chat.unread > 0 && (
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow-md shadow-primary/30">
-                {chat.unread}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* Lista de Chats - Estado vazio */}
+      <div className="mt-6">
+        <div className="rounded-2xl border border-border bg-card/60 px-4 py-10 text-center">
+          <MessageCircle className="mx-auto size-12 text-muted-foreground/30" aria-hidden="true" />
+          <p className="mt-4 text-sm font-medium text-foreground">Nenhuma conversa ainda</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Suas mensagens com compradores aparecerão aqui
+          </p>
+        </div>
       </div>
     </div>
   )
