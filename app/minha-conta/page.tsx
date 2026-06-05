@@ -1144,7 +1144,7 @@ function HomeScreen({
   onReject: (id: string) => void
 }) {
   const [processing, setProcessing] = useState<string | null>(null)
-  const viewNotifs = notifications.filter(n => n.type === 'like' || n.type === 'follow').slice(0, 5)
+  const viewNotifs = notifications.filter(n => n.type === 'like' || n.type === 'follow').slice(0, 3)
 
   async function act(id: string, fn: (id: string) => void) {
     setProcessing(id)
