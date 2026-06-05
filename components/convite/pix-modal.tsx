@@ -210,13 +210,13 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
               {/* QR Code */}
               {pixQrCode && (
                 <div className="mb-6 flex justify-center">
-                  <div className="rounded-2xl bg-white p-4">
+                  <div className="rounded-2xl bg-white p-3">
                     <Image
                       src={pixQrCode}
                       alt="QR Code PIX"
-                      width={200}
-                      height={200}
-                      className="size-[200px]"
+                      width={140}
+                      height={140}
+                      className="size-[140px]"
                       unoptimized
                     />
                   </div>
