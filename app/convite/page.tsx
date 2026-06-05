@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Lock, Mail } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
+import { PixModal } from '@/components/convite/pix-modal'
 
 interface SignupData {
   username: string
@@ -15,13 +17,17 @@ interface SignupData {
   pixKey: string
 }
 
+const INVITE_PRICE = 24.80
+
 export default function ConvitePage() {
+  const router = useRouter()
   const [data, setData] = useState<SignupData>({
     username: '',
     email: '',
     pixType: '',
     pixKey: '',
   })
+  const [showPixModal, setShowPixModal] = useState(false)
 
   useEffect(() => {
     try {
@@ -31,6 +37,20 @@ export default function ConvitePage() {
       // ignore
     }
   }, [])
+
+  function handleAcquire() {
+    if (!data.email || data.email === 'seu@email.com') {
+      alert('Por favor, complete seu cadastro primeiro.')
+      return
+    }
+    setShowPixModal(true)
+  }
+
+  function handlePaymentConfirmed() {
+    setShowPixModal(false)
+    // Redirecionar para minha-conta após pagamento
+    router.push('/minha-conta?convite=pago')
+  }
 
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">
@@ -87,7 +107,7 @@ export default function ConvitePage() {
         />
 
         {/* Preço + garantia */}
-        <PriceCard />
+        <PriceCard onAcquire={handleAcquire} />
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
@@ -95,6 +115,16 @@ export default function ConvitePage() {
         {/* Empresa */}
         <CompanyInfo />
       </div>
+
+      {/* Modal de PIX */}
+      <PixModal
+        isOpen={showPixModal}
+        onClose={() => setShowPixModal(false)}
+        email={data.email}
+        amount={INVITE_PRICE}
+        userName={data.username}
+        onPaymentConfirmed={handlePaymentConfirmed}
+      />
     </main>
   )
 }

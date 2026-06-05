@@ -301,19 +301,14 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
     setError('')
     
     const supabase = createClient()
-    console.log('[v0] Tentando login com:', email.trim())
     
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     })
     
-    console.log('[v0] Resultado login:', { data, error: signInError })
-    
-    setIsLoading(false)
-    
     if (signInError) {
-      console.log('[v0] Erro de login:', signInError.message, signInError)
+      setIsLoading(false)
       if (signInError.message === 'Invalid login credentials') {
         setError('Email ou senha incorretos.')
       } else if (signInError.message.includes('Database error')) {
@@ -324,6 +319,24 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
       return
     }
     
+    // Verificar se o convite está pago
+    try {
+      const inviteResponse = await fetch(`/api/pix/status?email=${encodeURIComponent(email.trim())}`)
+      const inviteData = await inviteResponse.json()
+      
+      if (!inviteData.hasPaidInvite) {
+        // Fazer logout e redirecionar para página de convite
+        await supabase.auth.signOut()
+        setIsLoading(false)
+        setError('Seu convite ainda não foi pago. Complete o pagamento para acessar.')
+        return
+      }
+    } catch (err) {
+      console.error('[v0] Erro ao verificar convite:', err)
+      // Em caso de erro, permitir login (fail-open para não bloquear usuários)
+    }
+    
+    setIsLoading(false)
     onSuccess()
   }
 
@@ -436,7 +449,7 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Dashboard do App (com dados reais do Supabase)
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────���
 
 function AppDashboard() {
   const router = useRouter()
@@ -570,7 +583,7 @@ function AppDashboard() {
       ) : activeTab === 'Impulsionar' ? (
         <ImpulsionarScreen balance={animatedBalance} boosts={boosts} />
       ) : activeTab === 'Chats' ? (
-        <ChatsScreen balance={animatedBalance} conversations={conversations} />
+        <ChatsScreen balance={animatedBalance} />
       ) : (
         <HomeScreen
           balance={animatedBalance}
@@ -763,238 +776,7 @@ function AppDashboard() {
 // Tela Chats
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ChatsScreen({ balance, conversations }: { balance: number; conversations: Conversation[] }) {
-  return (
-      <div className="flex flex-1 flex-col">
-        {/* Header da conversa */}
-        <header className="relative z-10 flex items-center gap-3 bg-gradient-to-b from-card via-card/95 to-card/80 px-4 py-3 backdrop-blur-md">
-          <button
-            type="button"
-            onClick={closeChat}
-            className="flex size-10 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted active:scale-95"
-          >
-            <ArrowLeft className="size-5 text-foreground" />
-          </button>
-          
-          <div className="relative">
-            <div className="flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 to-primary/10 text-lg font-bold text-primary ring-2 ring-primary/20">
-              {activeChat.name.charAt(1).toUpperCase()}
-            </div>
-            {activeChat.online && (
-              <span className="absolute bottom-0 right-0 size-3.5 rounded-full border-2 border-card bg-positive shadow-lg shadow-positive/50" />
-            )}
-          </div>
-          
-          <div className="flex-1">
-            <p className="text-base font-semibold text-foreground">{activeChat.name}</p>
-            <div className="flex items-center gap-1.5">
-              {activeChat.online && <span className="size-1.5 rounded-full bg-positive" />}
-              <p className={`text-xs ${activeChat.online ? 'text-positive' : 'text-muted-foreground'}`}>
-                {activeChat.lastSeen}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-0.5">
-            <button
-              type="button"
-              className="flex size-10 items-center justify-center rounded-full transition hover:bg-muted/50 active:scale-95"
-            >
-              <Phone className="size-5 text-primary" />
-            </button>
-            <button
-              type="button"
-              className="flex size-10 items-center justify-center rounded-full transition hover:bg-muted/50 active:scale-95"
-            >
-              <Video className="size-5 text-primary" />
-            </button>
-          </div>
-        </header>
-
-        {/* Mensagens */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          {/* Data separador */}
-          <div className="mb-4 flex justify-center">
-            <span className="rounded-full bg-muted/50 px-3 py-1 text-[0.65rem] text-muted-foreground">
-              Hoje
-            </span>
-          </div>
-          <div className="flex flex-col gap-3">
-            {messages.map((msg, index) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.sent ? 'justify-end' : 'justify-start'}`}
-              >
-                {!msg.sent && (
-                  <div className="mr-2 flex size-8 shrink-0 items-center justify-center self-end rounded-full bg-gradient-to-br from-primary/30 to-primary/10 text-xs font-bold text-primary">
-                    {activeChat.name.charAt(1).toUpperCase()}
-                  </div>
-                )}
-                {(msg as any).isGift ? (
-                  <div className="flex flex-col items-center gap-2 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent px-8 py-5 shadow-lg shadow-primary/10">
-                    {(() => {
-                      const GiftIcon = (msg as any).giftIcon
-                      return <GiftIcon className={`size-12 ${(msg as any).giftColor} drop-shadow-lg`} />
-                    })()}
-                    <p className="text-sm font-semibold text-foreground">Presente enviado!</p>
-                    <span className="rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground shadow-md shadow-primary/30">
-                      {brl((msg as any).giftPrice)}
-                    </span>
-                    <p className="text-[0.65rem] text-muted-foreground">{msg.time}</p>
-                  </div>
-                ) : (
-                  <div
-                    className={`max-w-[70%] rounded-3xl px-4 py-3 shadow-sm ${
-                      msg.sent
-                        ? 'rounded-br-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-primary/20'
-                        : 'rounded-bl-lg bg-card/90 text-foreground backdrop-blur-sm'
-                    }`}
-                  >
-                    <p className="text-sm leading-relaxed">{msg.text}</p>
-                    <div
-                      className={`mt-1.5 flex items-center justify-end gap-1 text-[0.6rem] ${
-                        msg.sent ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>{msg.time}</span>
-                      {msg.sent && (
-                        <Check className="size-3" />
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Painel de emojis */}
-        {showEmojis && (
-          <div className="border-t border-border bg-card/95 px-4 py-4 backdrop-blur-md">
-            <div className="grid grid-cols-6 gap-2">
-              {emojis.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => addEmoji(emoji)}
-                  className="flex aspect-square items-center justify-center rounded-2xl text-2xl transition hover:bg-muted active:scale-90"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Modal de presentes */}
-        {showGifts && (
-          <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-            <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
-              <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
-              <div className="flex items-center justify-between px-5 py-4">
-                <h3 className="text-lg font-bold text-foreground">Enviar presente</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowGifts(false)}
-                  className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
-                >
-                  <X className="size-5 text-muted-foreground" />
-                </button>
-              </div>
-              <div className="grid grid-cols-3 gap-3 px-4">
-                {giftOptions.map((gift) => (
-                  <button
-                    key={gift.id}
-                    type="button"
-                    onClick={() => sendGift(gift)}
-                    disabled={sendingGift !== null}
-                    className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-gradient-to-b from-muted/50 to-transparent p-4 transition hover:border-primary/40 hover:from-primary/10 active:scale-95 disabled:opacity-50"
-                  >
-                    {sendingGift === gift.id ? (
-                      <Loader2 className={`size-9 animate-spin ${gift.color}`} />
-                    ) : (
-                      <gift.icon className={`size-9 ${gift.color} drop-shadow-md`} />
-                    )}
-                    <span className="text-xs font-semibold text-foreground">{gift.name}</span>
-                    <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-[0.65rem] font-bold text-primary">
-                      {brl(gift.price)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <p className="mt-5 px-4 text-center text-xs text-muted-foreground">
-                O valor do presente sera creditado para a criadora
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Input de mensagem */}
-        <div className="relative z-10 border-t border-border bg-card/95 px-3 py-3 backdrop-blur-md">
-          <div className="flex items-end gap-1.5">
-            <div className="flex gap-0.5">
-              <button
-                type="button"
-                onClick={() => { setShowEmojis(!showEmojis); setShowGifts(false); }}
-                className={`flex size-10 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
-                  showEmojis ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground'
-                }`}
-              >
-                <Smile className="size-5" />
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => { setShowGifts(!showGifts); setShowEmojis(false); }}
-                className={`flex size-10 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
-                  showGifts ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground'
-                }`}
-              >
-                <Gift className="size-5" />
-              </button>
-              
-              <button
-                type="button"
-                className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted active:scale-95"
-              >
-                <Image className="size-5" />
-              </button>
-            </div>
-            
-            <div className="relative flex-1">
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Mensagem..."
-                className="w-full rounded-full border-0 bg-muted/60 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
-
-            {message.trim() ? (
-              <button
-                type="button"
-                onClick={sendMessage}
-                className="luna-gradient flex size-10 shrink-0 items-center justify-center rounded-full shadow-lg shadow-primary/40 transition active:scale-90"
-              >
-                <Send className="size-4 -translate-x-px text-primary-foreground" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition hover:bg-muted active:scale-95"
-              >
-                <Mic className="size-5" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Lista de chats
+function ChatsScreen({ balance }: { balance: number }) {
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
@@ -1011,19 +793,17 @@ function ChatsScreen({ balance, conversations }: { balance: number; conversation
         </div>
       </header>
 
-      {/* Titulo e busca */}
+      {/* Titulo */}
       <div className="mt-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/30">
-              <MessageCircle className="size-6 text-primary-foreground" aria-hidden="true" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
-              <p className="text-sm text-muted-foreground">
-                0 conversas nao lidas
-              </p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/30">
+            <MessageCircle className="size-6 text-primary-foreground" aria-hidden="true" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
+            <p className="text-sm text-muted-foreground">
+              0 conversas
+            </p>
           </div>
         </div>
       </div>
@@ -1042,7 +822,8 @@ function ChatsScreen({ balance, conversations }: { balance: number; conversation
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────���───────────────────────────
 // Tela Impulsionar
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1394,7 +1175,7 @@ function PacksScreen({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────��─────────────────────────────────────────────────
 
 function WalletScreen({ 
   balance,
