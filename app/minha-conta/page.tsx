@@ -729,94 +729,102 @@ function ChatsScreen({ balance }: { balance: number }) {
   // Tela de conversa aberta
   if (activeChat) {
     return (
-      <div className="flex flex-1 flex-col bg-background">
+      <div className="flex flex-1 flex-col">
         {/* Header da conversa */}
-        <header className="flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 backdrop-blur-md">
+        <header className="relative z-10 flex items-center gap-3 bg-gradient-to-b from-card via-card/95 to-card/80 px-4 py-3 backdrop-blur-md">
           <button
             type="button"
             onClick={closeChat}
-            className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
+            className="flex size-10 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted active:scale-95"
           >
             <ArrowLeft className="size-5 text-foreground" />
           </button>
           
           <div className="relative">
-            <div className="flex size-10 items-center justify-center rounded-full bg-muted text-base font-bold text-muted-foreground">
+            <div className="flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 to-primary/10 text-lg font-bold text-primary ring-2 ring-primary/20">
               {activeChat.name.charAt(1).toUpperCase()}
             </div>
             {activeChat.online && (
-              <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-card bg-positive" />
+              <span className="absolute bottom-0 right-0 size-3.5 rounded-full border-2 border-card bg-positive shadow-lg shadow-positive/50" />
             )}
           </div>
           
           <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">{activeChat.name}</p>
-            <p className={`text-xs ${activeChat.online ? 'text-positive' : 'text-muted-foreground'}`}>
-              {activeChat.lastSeen}
-            </p>
+            <p className="text-base font-semibold text-foreground">{activeChat.name}</p>
+            <div className="flex items-center gap-1.5">
+              {activeChat.online && <span className="size-1.5 rounded-full bg-positive" />}
+              <p className={`text-xs ${activeChat.online ? 'text-positive' : 'text-muted-foreground'}`}>
+                {activeChat.lastSeen}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <button
               type="button"
-              className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
+              className="flex size-10 items-center justify-center rounded-full transition hover:bg-muted/50 active:scale-95"
             >
-              <Phone className="size-4 text-muted-foreground" />
+              <Phone className="size-5 text-primary" />
             </button>
             <button
               type="button"
-              className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
+              className="flex size-10 items-center justify-center rounded-full transition hover:bg-muted/50 active:scale-95"
             >
-              <Video className="size-4 text-muted-foreground" />
-            </button>
-            <button
-              type="button"
-              className="flex size-9 items-center justify-center rounded-full transition hover:bg-muted active:scale-95"
-            >
-              <MoreVertical className="size-4 text-muted-foreground" />
+              <Video className="size-5 text-primary" />
             </button>
           </div>
         </header>
 
         {/* Mensagens */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
+          {/* Data separador */}
+          <div className="mb-4 flex justify-center">
+            <span className="rounded-full bg-muted/50 px-3 py-1 text-[0.65rem] text-muted-foreground">
+              Hoje
+            </span>
+          </div>
           <div className="flex flex-col gap-3">
-            {messages.map((msg) => (
+            {messages.map((msg, index) => (
               <div
                 key={msg.id}
                 className={`flex ${msg.sent ? 'justify-end' : 'justify-start'}`}
               >
+                {!msg.sent && (
+                  <div className="mr-2 flex size-8 shrink-0 items-center justify-center self-end rounded-full bg-gradient-to-br from-primary/30 to-primary/10 text-xs font-bold text-primary">
+                    {activeChat.name.charAt(1).toUpperCase()}
+                  </div>
+                )}
                 {(msg as any).isGift ? (
-                  <div className="flex flex-col items-center gap-2 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/20 to-primary/5 px-6 py-4">
+                  <div className="flex flex-col items-center gap-2 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent px-8 py-5 shadow-lg shadow-primary/10">
                     {(() => {
                       const GiftIcon = (msg as any).giftIcon
-                      return <GiftIcon className={`size-10 ${(msg as any).giftColor}`} />
+                      return <GiftIcon className={`size-12 ${(msg as any).giftColor} drop-shadow-lg`} />
                     })()}
-                    <p className="text-xs font-medium text-foreground">Presente enviado!</p>
-                    <span className="rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary">
+                    <p className="text-sm font-semibold text-foreground">Presente enviado!</p>
+                    <span className="rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground shadow-md shadow-primary/30">
                       {brl((msg as any).giftPrice)}
                     </span>
-                    <p className="text-[0.6rem] text-muted-foreground">{msg.time}</p>
+                    <p className="text-[0.65rem] text-muted-foreground">{msg.time}</p>
                   </div>
                 ) : (
                   <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                    className={`max-w-[70%] rounded-3xl px-4 py-3 shadow-sm ${
                       msg.sent
-                        ? 'rounded-br-md bg-primary text-primary-foreground'
-                        : 'rounded-bl-md bg-card text-foreground'
+                        ? 'rounded-br-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-primary/20'
+                        : 'rounded-bl-lg bg-card/90 text-foreground backdrop-blur-sm'
                     }`}
                   >
-                    <p className="text-sm">{msg.text}</p>
-                    <p
-                      className={`mt-1 text-right text-[0.6rem] ${
+                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                    <div
+                      className={`mt-1.5 flex items-center justify-end gap-1 text-[0.6rem] ${
                         msg.sent ? 'text-primary-foreground/70' : 'text-muted-foreground'
                       }`}
                     >
-                      {msg.time}
+                      <span>{msg.time}</span>
                       {msg.sent && (
-                        <Check className="ml-1 inline size-3" />
+                        <Check className="size-3" />
                       )}
-                    </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -826,14 +834,14 @@ function ChatsScreen({ balance }: { balance: number }) {
 
         {/* Painel de emojis */}
         {showEmojis && (
-          <div className="border-t border-border bg-card px-4 py-3">
-            <div className="flex flex-wrap gap-2">
+          <div className="border-t border-border bg-card/95 px-4 py-4 backdrop-blur-md">
+            <div className="grid grid-cols-6 gap-2">
               {emojis.map((emoji) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => addEmoji(emoji)}
-                  className="flex size-10 items-center justify-center rounded-xl text-xl transition hover:bg-muted active:scale-95"
+                  className="flex aspect-square items-center justify-center rounded-2xl text-2xl transition hover:bg-muted active:scale-90"
                 >
                   {emoji}
                 </button>
@@ -845,74 +853,77 @@ function ChatsScreen({ balance }: { balance: number }) {
         {/* Modal de presentes */}
         {showGifts && (
           <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-            <div className="w-full animate-in slide-in-from-bottom rounded-t-3xl bg-card pb-6">
-              <div className="flex items-center justify-between border-b border-border px-4 py-4">
-                <h3 className="text-base font-semibold text-foreground">Enviar presente</h3>
+            <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
+              <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
+              <div className="flex items-center justify-between px-5 py-4">
+                <h3 className="text-lg font-bold text-foreground">Enviar presente</h3>
                 <button
                   type="button"
                   onClick={() => setShowGifts(false)}
-                  className="flex size-8 items-center justify-center rounded-full transition hover:bg-muted"
+                  className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
                 >
                   <X className="size-5 text-muted-foreground" />
                 </button>
               </div>
-              <div className="grid grid-cols-3 gap-3 px-4 pt-4">
+              <div className="grid grid-cols-3 gap-3 px-4">
                 {giftOptions.map((gift) => (
                   <button
                     key={gift.id}
                     type="button"
                     onClick={() => sendGift(gift)}
                     disabled={sendingGift !== null}
-                    className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-muted/30 p-4 transition hover:border-primary/40 hover:bg-primary/5 active:scale-95 disabled:opacity-50"
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-gradient-to-b from-muted/50 to-transparent p-4 transition hover:border-primary/40 hover:from-primary/10 active:scale-95 disabled:opacity-50"
                   >
                     {sendingGift === gift.id ? (
-                      <Loader2 className={`size-8 animate-spin ${gift.color}`} />
+                      <Loader2 className={`size-9 animate-spin ${gift.color}`} />
                     ) : (
-                      <gift.icon className={`size-8 ${gift.color}`} />
+                      <gift.icon className={`size-9 ${gift.color} drop-shadow-md`} />
                     )}
-                    <span className="text-xs font-medium text-foreground">{gift.name}</span>
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.65rem] font-bold text-primary">
+                    <span className="text-xs font-semibold text-foreground">{gift.name}</span>
+                    <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-[0.65rem] font-bold text-primary">
                       {brl(gift.price)}
                     </span>
                   </button>
                 ))}
               </div>
-              <p className="mt-4 px-4 text-center text-xs text-muted-foreground">
-                O valor do presente sera adicionado ao saldo da criadora
+              <p className="mt-5 px-4 text-center text-xs text-muted-foreground">
+                O valor do presente sera creditado para a criadora
               </p>
             </div>
           </div>
         )}
 
         {/* Input de mensagem */}
-        <div className="border-t border-border bg-card/95 px-4 py-3 backdrop-blur-md">
-          <div className="flex items-end gap-2">
-            <button
-              type="button"
-              onClick={() => { setShowEmojis(!showEmojis); setShowGifts(false); }}
-              className={`flex size-10 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
-                showEmojis ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-muted-foreground'
-              }`}
-            >
-              <Smile className="size-5" />
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => { setShowGifts(!showGifts); setShowEmojis(false); }}
-              className={`flex size-10 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
-                showGifts ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-muted-foreground'
-              }`}
-            >
-              <Gift className="size-5" />
-            </button>
-            
-            <button
-              type="button"
-              className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted active:scale-95"
-            >
-              <Image className="size-5" />
-            </button>
+        <div className="relative z-10 border-t border-border bg-card/95 px-3 py-3 backdrop-blur-md">
+          <div className="flex items-end gap-1.5">
+            <div className="flex gap-0.5">
+              <button
+                type="button"
+                onClick={() => { setShowEmojis(!showEmojis); setShowGifts(false); }}
+                className={`flex size-10 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+                  showEmojis ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground'
+                }`}
+              >
+                <Smile className="size-5" />
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => { setShowGifts(!showGifts); setShowEmojis(false); }}
+                className={`flex size-10 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+                  showGifts ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground'
+                }`}
+              >
+                <Gift className="size-5" />
+              </button>
+              
+              <button
+                type="button"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted active:scale-95"
+              >
+                <Image className="size-5" />
+              </button>
+            </div>
             
             <div className="relative flex-1">
               <input
@@ -920,8 +931,8 @@ function ChatsScreen({ balance }: { balance: number }) {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Digite uma mensagem..."
-                className="w-full rounded-2xl border border-border bg-muted/50 px-4 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="Mensagem..."
+                className="w-full rounded-full border-0 bg-muted/60 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
 
@@ -929,14 +940,14 @@ function ChatsScreen({ balance }: { balance: number }) {
               <button
                 type="button"
                 onClick={sendMessage}
-                className="luna-gradient flex size-10 shrink-0 items-center justify-center rounded-full shadow-md shadow-primary/30 transition active:scale-95"
+                className="luna-gradient flex size-10 shrink-0 items-center justify-center rounded-full shadow-lg shadow-primary/40 transition active:scale-90"
               >
-                <Send className="size-4 text-primary-foreground" />
+                <Send className="size-4 -translate-x-px text-primary-foreground" />
               </button>
             ) : (
               <button
                 type="button"
-                className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted active:scale-95"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition hover:bg-muted active:scale-95"
               >
                 <Mic className="size-5" />
               </button>
@@ -953,9 +964,9 @@ function ChatsScreen({ balance }: { balance: number }) {
       {/* Header */}
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
+          <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
         </div>
-        <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
+        <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card/80 px-4 py-2.5 backdrop-blur-sm">
           <Wallet className="size-6 text-primary" aria-hidden="true" />
           <div className="leading-tight">
             <p className="text-xs text-muted-foreground">Saldo</p>
@@ -964,52 +975,66 @@ function ChatsScreen({ balance }: { balance: number }) {
         </div>
       </header>
 
-      {/* Título */}
+      {/* Titulo e busca */}
       <div className="mt-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60">
-              <MessageCircle className="size-5 text-primary-foreground" aria-hidden="true" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/30">
+              <MessageCircle className="size-6 text-primary-foreground" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Mensagens</h1>
-              <p className="text-sm text-muted-foreground">{mockChats.filter(c => c.unread > 0).length} não lidas</p>
+              <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
+              <p className="text-sm text-muted-foreground">
+                {mockChats.filter(c => c.unread > 0).length} conversas nao lidas
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Lista de Chats */}
-      <div className="mt-5 flex flex-col gap-2">
+      <div className="mt-6 flex flex-col gap-2.5">
         {mockChats.map((chat) => (
           <button
             key={chat.id}
             type="button"
             onClick={() => openChat(chat)}
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left transition hover:border-primary/40 active:scale-[0.99]"
+            className={`flex items-center gap-3 rounded-2xl border bg-card/80 p-3.5 text-left backdrop-blur-sm transition hover:bg-card active:scale-[0.98] ${
+              chat.unread > 0 ? 'border-primary/30 shadow-sm shadow-primary/10' : 'border-border'
+            }`}
           >
             {/* Avatar */}
             <div className="relative">
-              <div className="flex size-12 items-center justify-center rounded-full bg-muted text-lg font-bold text-muted-foreground">
+              <div className={`flex size-14 items-center justify-center rounded-full text-lg font-bold ${
+                chat.unread > 0 
+                  ? 'bg-gradient-to-br from-primary/30 to-primary/10 text-primary ring-2 ring-primary/20' 
+                  : 'bg-muted text-muted-foreground'
+              }`}>
                 {chat.name.charAt(1).toUpperCase()}
               </div>
               {chat.online && (
-                <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-card bg-positive" />
+                <span className="absolute bottom-0 right-0 size-4 rounded-full border-2 border-card bg-positive shadow-md shadow-positive/50" />
               )}
             </div>
 
             {/* Info */}
             <div className="flex-1 overflow-hidden">
               <div className="flex items-center justify-between gap-2">
-                <p className="truncate text-sm font-semibold text-foreground">{chat.name}</p>
-                <span className="shrink-0 text-[0.65rem] text-muted-foreground">{chat.time}</span>
+                <p className={`truncate text-sm ${chat.unread > 0 ? 'font-bold text-foreground' : 'font-semibold text-foreground'}`}>
+                  {chat.name}
+                </p>
+                <span className={`shrink-0 text-[0.65rem] ${chat.unread > 0 ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
+                  {chat.time}
+                </span>
               </div>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">{chat.lastMessage}</p>
+              <p className={`mt-1 truncate text-xs ${chat.unread > 0 ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                {chat.lastMessage}
+              </p>
             </div>
 
-            {/* Badge de não lidas */}
+            {/* Badge de nao lidas */}
             {chat.unread > 0 && (
-              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[0.6rem] font-bold text-primary-foreground">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow-md shadow-primary/30">
                 {chat.unread}
               </span>
             )}
