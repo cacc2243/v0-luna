@@ -10,6 +10,7 @@ interface StatCardProps {
   value: string
   label: string
   sublabel?: string
+  accent?: boolean
 }
 
 export function StatCard({
@@ -19,13 +20,25 @@ export function StatCard({
   value,
   label,
   sublabel,
+  accent = false,
 }: StatCardProps) {
   return (
-    <div className="flex flex-col rounded-2xl border border-border bg-card p-4">
-      <div className={cn('mb-3 flex size-9 items-center justify-center rounded-xl', iconBg)}>
-        <Icon className={cn('size-[1.1rem]', iconColor)} />
+    <div
+      className={cn(
+        'group relative flex flex-col overflow-hidden rounded-2xl border p-4 transition-colors',
+        accent
+          ? 'border-primary/30 bg-primary/5'
+          : 'border-border bg-card hover:border-border/80',
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <div className={cn('flex size-9 items-center justify-center rounded-xl', iconBg)}>
+          <Icon className={cn('size-[1.1rem]', iconColor)} />
+        </div>
       </div>
-      <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
+      <p className="mt-3 text-2xl font-bold tracking-tight text-foreground tabular-nums">
+        {value}
+      </p>
       <p className="mt-0.5 text-sm font-medium text-foreground">{label}</p>
       {sublabel && <p className="mt-0.5 text-xs text-muted-foreground">{sublabel}</p>}
     </div>

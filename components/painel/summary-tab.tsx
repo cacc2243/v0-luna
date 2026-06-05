@@ -7,21 +7,25 @@ import {
   CheckCircle2,
   Copy,
   TrendingUp,
-  Download,
+  ArrowUpRight,
+  Link2,
   Instagram,
   Facebook,
-  Link2,
+  ShieldCheck,
 } from 'lucide-react'
 import { StatCard } from './stat-card'
 import { ConversionFunnel } from './conversion-funnel'
 import { TransactionsList } from './transactions-list'
+import { RevenueChart } from './revenue-chart'
 import {
   computeMetrics,
+  buildTimeSeries,
   getPeriodRange,
   isInRange,
   isPaid,
   isPending,
   formatBRL,
+  PERIOD_LABELS,
   type InviteRow,
   type ProfileRow,
   type PeriodKey,
@@ -35,15 +39,6 @@ interface SummaryTabProps {
   statusFilter: StatusFilter
 }
 
-// Gateways configurados na plataforma
-const GATEWAYS = [
-  { key: 'bynet', label: 'Bynet', color: 'text-positive', bg: 'bg-positive/15' },
-  { key: 'pixup', label: 'PixUp', color: 'text-purple-400', bg: 'bg-purple-500/15' },
-  { key: 'duttyfy', label: 'Duttyfy', color: 'text-amber-400', bg: 'bg-amber-500/15' },
-  { key: 'sigilopay', label: 'SigiloPay', color: 'text-primary', bg: 'bg-primary/15' },
-  { key: 'buckpay', label: 'BuckPay', color: 'text-sky-400', bg: 'bg-sky-500/15' },
-] as const
-
 export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryTabProps) {
   const range = useMemo(() => getPeriodRange(period), [period])
 
@@ -52,7 +47,11 @@ export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryT
     [invites, profiles, range],
   )
 
-  // Transacoes filtradas por periodo + status
+  const series = useMemo(
+    () => buildTimeSeries(invites, profiles, period),
+    [invites, profiles, period],
+  )
+
   const filteredInvites = useMemo(() => {
     return invites
       .filter((i) => isInRange(i.created_at, range))
@@ -63,31 +62,65 @@ export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryT
       })
   }, [invites, range, statusFilter])
 
-  const paidInvites = filteredInvites.filter((i) => isPaid(i.status))
+  const totalRevenue = metrics.revenue + metrics.pendingRevenue
+  const paidPct = totalRevenue > 0 ? (metrics.revenue / totalRevenue) * 100 : 0
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Botao exportar */}
-      <button className="flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3.5 text-sm font-semibold text-primary transition hover:bg-primary/15">
-        <Download className="size-4" />
-        Exportar CSV Lookalike ({metrics.paidCount} compradores)
-      </button>
+      {/* Hero de receita + grafico */}
+      <section className="overflow-hidden rounded-3xl border border-border bg-card">
+        <div className="flex flex-col gap-4 p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <DollarSign className="size-4 text-positive" />
+                Receita confirmada · {PERIOD_LABELS[period]}
+              </p>
+              <p className="mt-1 text-4xl font-bold tracking-tight text-foreground tabular-nums">
+                {formatBRL(metrics.revenue)}
+              </p>
+              <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded-md bg-positive/15 px-1.5 py-0.5 text-xs font-semibold text-positive">
+                  <ArrowUpRight className="size-3" />
+                  {metrics.paidCount} vendas
+                </span>
+                Ticket médio {formatBRL(metrics.avgTicket)}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border bg-background/50 px-4 py-3 text-right">
+              <p className="text-xs text-muted-foreground">Pendente</p>
+              <p className="text-lg font-bold tabular-nums text-amber-500">
+                {formatBRL(metrics.pendingRevenue)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {metrics.pendingCount} aguardando
+              </p>
+            </div>
+          </div>
 
-      {/* Cards principais */}
+          <RevenueChart data={series} />
+
+          {/* Barra pago x pendente */}
+          <div>
+            <div className="mb-1.5 flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Pago vs. Pendente</span>
+              <span className="font-semibold text-foreground">{paidPct.toFixed(0)}% confirmado</span>
+            </div>
+            <div className="flex h-2 overflow-hidden rounded-full bg-secondary">
+              <div className="bg-positive" style={{ width: `${paidPct}%` }} />
+              <div className="bg-amber-500" style={{ width: `${100 - paidPct}%` }} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           icon={Users}
           value={String(metrics.clientsCount)}
           label="Clientes"
-          sublabel="no período"
-        />
-        <StatCard
-          icon={DollarSign}
-          iconColor="text-positive"
-          iconBg="bg-positive/15"
-          value={formatBRL(metrics.revenue)}
-          label="Receita"
-          sublabel={`${metrics.paidCount} pagos`}
+          sublabel="cadastrados no período"
         />
         <StatCard
           icon={CheckCircle2}
@@ -96,6 +129,7 @@ export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryT
           value={String(metrics.paidCount)}
           label="PIX Pagos"
           sublabel={`de ${metrics.generatedCount} gerados`}
+          accent
         />
         <StatCard
           icon={Copy}
@@ -103,60 +137,43 @@ export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryT
           iconBg="bg-sky-500/15"
           value={String(metrics.copiedCount)}
           label="Copiaram PIX"
-          sublabel={`de ${metrics.pendingCount} pendentes`}
-        />
-      </div>
-
-      {/* Cards secundarios: conversao + gateways */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          icon={TrendingUp}
-          value={`${metrics.conversionRate.toFixed(0)}%`}
-          label="Conversão"
           sublabel={`${metrics.pendingCount} pendentes`}
         />
-        {GATEWAYS.map((gw) => {
-          // No momento todos os PIX passam pela Bynet
-          const gwPaid = gw.key === 'bynet' ? paidInvites.length : 0
-          const gwRate =
-            gw.key === 'bynet' && filteredInvites.length > 0
-              ? (gwPaid / filteredInvites.length) * 100
-              : 0
-          return (
-            <StatCard
-              key={gw.key}
-              icon={CheckCircle2}
-              iconColor={gw.color}
-              iconBg={gw.bg}
-              value={String(gwPaid)}
-              label={gw.label}
-              sublabel={`${gwPaid} pagos · ${gwRate.toFixed(1)}%`}
-            />
-          )
-        })}
+        <StatCard
+          icon={TrendingUp}
+          iconColor="text-amber-400"
+          iconBg="bg-amber-500/15"
+          value={`${metrics.conversionRate.toFixed(0)}%`}
+          label="Conversão"
+          sublabel="cadastro → pago"
+        />
       </div>
 
-      {/* Receita por status */}
+      {/* Gateway ativo (apenas Bynet) */}
       <section className="rounded-2xl border border-border bg-card p-5">
-        <h2 className="mb-4 text-base font-bold text-foreground">Receita por Status</h2>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-sm text-foreground">
-              <span className="size-2.5 rounded-full bg-positive" />
-              Pago
-            </span>
-            <span className="text-sm font-bold tabular-nums text-positive">
-              {formatBRL(metrics.revenue)}
-            </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-positive/15">
+              <ShieldCheck className="size-5 text-positive" />
+            </div>
+            <div>
+              <p className="flex items-center gap-2 text-sm font-bold text-foreground">
+                Bynet
+                <span className="inline-flex items-center gap-1 rounded-full bg-positive/15 px-2 py-0.5 text-[11px] font-semibold text-positive">
+                  <span className="size-1.5 rounded-full bg-positive" />
+                  Ativo
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground">Gateway de pagamento PIX</p>
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-sm text-foreground">
-              <span className="size-2.5 rounded-full bg-amber-500" />
-              Pendente
-            </span>
-            <span className="text-sm font-bold tabular-nums text-amber-500">
-              {formatBRL(metrics.pendingRevenue)}
-            </span>
+          <div className="text-right">
+            <p className="text-lg font-bold tabular-nums text-foreground">
+              {formatBRL(metrics.revenue)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {metrics.paidCount}/{metrics.generatedCount} convertidos
+            </p>
           </div>
         </div>
       </section>
@@ -171,7 +188,10 @@ export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryT
 
       {/* Origem das vendas */}
       <section className="rounded-2xl border border-border bg-card p-5">
-        <h2 className="mb-4 text-base font-bold text-foreground">Origem das Vendas</h2>
+        <div className="mb-4 flex items-center gap-2">
+          <Link2 className="size-4 text-muted-foreground" />
+          <h2 className="text-base font-bold text-foreground">Origem das Vendas</h2>
+        </div>
         <div className="flex flex-col gap-4">
           <OriginRow
             icon={Instagram}

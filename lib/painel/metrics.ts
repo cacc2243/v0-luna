@@ -106,6 +106,7 @@ export interface DashboardMetrics {
   copiedCount: number
   pendingCount: number
   conversionRate: number
+  avgTicket: number
   funnel: {
     signups: number
     viewedCheckout: number
@@ -135,6 +136,7 @@ export function computeMetrics(
   const signups = periodProfiles.length
 
   const conversionRate = signups > 0 ? (paidCount / signups) * 100 : 0
+  const avgTicket = paidCount > 0 ? revenue / paidCount : 0
 
   return {
     clientsCount: signups,
@@ -145,6 +147,7 @@ export function computeMetrics(
     copiedCount: withPixCode.length,
     pendingCount: pending.length,
     conversionRate,
+    avgTicket,
     funnel: {
       signups,
       viewedCheckout: generatedCount,
@@ -152,4 +155,70 @@ export function computeMetrics(
       invitePaid: paidCount,
     },
   }
+}
+
+export interface TimeBucket {
+  label: string
+  revenue: number
+  paid: number
+  signups: number
+}
+
+// Agrupa receita/cadastros em buckets temporais conforme o periodo
+export function buildTimeSeries(
+  invites: InviteRow[],
+  profiles: ProfileRow[],
+  period: PeriodKey,
+): TimeBucket[] {
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  // Periodos curtos -> buckets por hora; longos -> por dia
+  const hourly = period === 'today' || period === 'yesterday'
+  const buckets: { start: Date; end: Date; label: string }[] = []
+
+  if (hourly) {
+    const dayStart =
+      period === 'yesterday'
+        ? new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000)
+        : startOfToday
+    // 12 buckets de 2 horas
+    for (let h = 0; h < 24; h += 2) {
+      const start = new Date(dayStart)
+      start.setHours(h, 0, 0, 0)
+      const end = new Date(start)
+      end.setHours(h + 2, 0, 0, 0)
+      buckets.push({ start, end, label: `${String(h).padStart(2, '0')}h` })
+    }
+  } else {
+    const days = period === '7d' ? 7 : period === '14d' ? 14 : period === '30d' ? 30 : 30
+    for (let i = days - 1; i >= 0; i--) {
+      const start = new Date(startOfToday)
+      start.setDate(start.getDate() - i)
+      const end = new Date(start)
+      end.setDate(end.getDate() + 1)
+      buckets.push({
+        start,
+        end,
+        label: start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      })
+    }
+  }
+
+  return buckets.map((b) => {
+    const inRange = (d: string | null) => {
+      if (!d) return false
+      const t = new Date(d).getTime()
+      return t >= b.start.getTime() && t < b.end.getTime()
+    }
+    const paidInBucket = invites.filter((i) => isPaid(i.status) && inRange(i.paid_at || i.created_at))
+    const revenue = paidInBucket.reduce((s, i) => s + (Number(i.amount) || 0), 0)
+    const signups = profiles.filter((p) => inRange(p.created_at)).length
+    return {
+      label: b.label,
+      revenue,
+      paid: paidInBucket.length,
+      signups,
+    }
+  })
 }

@@ -27,16 +27,12 @@ const TEST_NAMES = [
   'Fernanda Souza Alves',
 ]
 
-// Configuracao dos gateways disponiveis
+// Configuracao dos gateways disponiveis (apenas Bynet em uso)
 const GATEWAYS: Record<
   string,
   { label: string; envKey: string; configured: boolean }
 > = {
   bynet: { label: 'Bynet', envKey: 'BYNET_API_KEY', configured: !!process.env.BYNET_API_KEY },
-  pixup: { label: 'PixUp', envKey: 'PIXUP_API_KEY', configured: !!process.env.PIXUP_API_KEY },
-  duttyfy: { label: 'Duttyfy', envKey: 'DUTTYFY_API_KEY', configured: !!process.env.DUTTYFY_API_KEY },
-  sigilopay: { label: 'SigiloPay', envKey: 'SIGILOPAY_API_KEY', configured: !!process.env.SIGILOPAY_API_KEY },
-  buckpay: { label: 'BuckPay', envKey: 'BUCKPAY_API_KEY', configured: !!process.env.BUCKPAY_API_KEY },
 }
 
 async function testBynet(amount: number) {
