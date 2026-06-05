@@ -449,7 +449,7 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Dashboard do App (com dados reais do Supabase)
-// ────────────────────────────────────────────────────────────────────────────���
+// ────────────────────────────────────────────────────────────────────────────����
 
 function AppDashboard() {
   const router = useRouter()
@@ -458,7 +458,10 @@ function AppDashboard() {
   const [packName, setPackName] = useState('')
   const [packPrice, setPackPrice] = useState('')
   const [packDesc, setPackDesc] = useState('')
+  const [packPhotos, setPackPhotos] = useState<string[]>([])
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [packError, setPackError] = useState<string | null>(null)
   const [showWelcome, setShowWelcome] = useState(false)
   const [welcomeClosing, setWelcomeClosing] = useState(false)
 
@@ -470,7 +473,7 @@ function AppDashboard() {
   const { data: withdrawals = [] } = useSWR('withdrawals', fetchWithdrawals)
   const { data: conversations = [] } = useSWR('conversations', fetchConversations)
   const { data: boosts = [] } = useSWR('boosts', fetchBoosts)
-  const { data: highlights = [] } = useSWR('highlights', fetchHighlights)
+  const { data: highlights = [], mutate: mutateHighlights } = useSWR('highlights', fetchHighlights)
 
   // Calcular estatisticas
   const balance = profile?.balance || 0
@@ -485,39 +488,102 @@ function AppDashboard() {
   const animatedBalance = useCountUp(balance)
   const animatedToday = useCountUp(todayEarnings)
 
+  // Upload de uma foto para o Storage e retorno da URL publica
+  async function handleAddPackPhoto(file: File) {
+    if (uploadingPhoto) return
+    setUploadingPhoto(true)
+    setPackError(null)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setPackError('Sessão expirada. Faça login novamente.')
+        return
+      }
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `${user.id}/packs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('media')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (upErr) {
+        setPackError('Não foi possível enviar a foto. Tente novamente.')
+        return
+      }
+      const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+      setPackPhotos((prev) => [...prev, pub.publicUrl])
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  function removePackPhoto(url: string) {
+    setPackPhotos((prev) => prev.filter((u) => u !== url))
+  }
+
+  function resetPackForm() {
+    setPackName('')
+    setPackPrice('')
+    setPackDesc('')
+    setPackPhotos([])
+    setPackError(null)
+  }
+
   // Publicar pack real
   async function publishPack() {
-    if (publishing || !packName.trim()) return
+    if (publishing) return
+    if (!packName.trim()) {
+      setPackError('Dê um nome ao seu pack.')
+      return
+    }
     setPublishing(true)
-    
+    setPackError(null)
+
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (!user) {
+      setPackError('Sessão expirada. Faça login novamente.')
       setPublishing(false)
       return
     }
 
     const priceNum = parseFloat(packPrice.replace(',', '.')) || 0
-    
-    const { error } = await supabase
+
+    const { data: created, error } = await supabase
       .from('packs')
       .insert({
         user_id: user.id,
         title: packName.trim(),
-        description: packDesc || null,
+        description: packDesc.trim() || null,
         price: priceNum,
+        cover_image_url: packPhotos[0] || null,
+        is_published: true,
       })
-    
-    setPublishing(false)
-    
-    if (!error) {
-      setShowCreate(false)
-      setPackName('')
-      setPackPrice('')
-      setPackDesc('')
-      mutatePacks()
+      .select()
+      .single()
+
+    if (error || !created) {
+      setPackError('Não foi possível criar o pack. Tente novamente.')
+      setPublishing(false)
+      return
     }
+
+    // Salvar as fotos do pack (se houver)
+    if (packPhotos.length > 0) {
+      await supabase.from('pack_images').insert(
+        packPhotos.map((url, i) => ({
+          pack_id: created.id,
+          image_url: url,
+          is_preview: i === 0,
+          order_index: i,
+        })),
+      )
+    }
+
+    setPublishing(false)
+    setShowCreate(false)
+    resetPackForm()
+    mutatePacks()
   }
 
   function closeWelcome() {
@@ -579,7 +645,7 @@ function AppDashboard() {
           onCreate={() => setShowCreate(true)}
         />
       ) : activeTab === 'Perfil' ? (
-        <ProfileScreen profile={profile} highlights={highlights} onLogout={handleLogout} />
+        <ProfileScreen profile={profile} highlights={highlights} onLogout={handleLogout} onProfileUpdated={mutateProfile} onHighlightsUpdated={mutateHighlights} />
       ) : activeTab === 'Impulsionar' ? (
         <ImpulsionarScreen balance={animatedBalance} boosts={boosts} />
       ) : activeTab === 'Chats' ? (
@@ -715,33 +781,65 @@ function AppDashboard() {
               <div className="mb-2.5 flex items-center justify-between">
                 <span className="text-sm font-semibold text-foreground">Fotos</span>
                 <span className="rounded-full bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive">
-                  {examplePhotos.length} adicionadas
+                  {packPhotos.length} adicionadas
                 </span>
               </div>
-              <div className="mb-3 grid grid-cols-3 gap-2.5">
-                {examplePhotos.map((src, i) => (
-                  <div
-                    key={src}
-                    className="relative aspect-square overflow-hidden rounded-xl border border-border"
-                  >
-                    <img
-                      src={src || '/placeholder.svg'}
-                      alt={`Foto de exemplo ${i + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                    <span className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-positive shadow">
-                      <Check className="size-3 text-white" aria-hidden="true" />
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 py-3.5 text-sm font-semibold text-primary transition active:scale-[0.99]"
+              {packPhotos.length > 0 && (
+                <div className="mb-3 grid grid-cols-3 gap-2.5">
+                  {packPhotos.map((src, i) => (
+                    <div
+                      key={src}
+                      className="relative aspect-square overflow-hidden rounded-xl border border-border"
+                    >
+                      <img
+                        src={src || '/placeholder.svg'}
+                        alt={`Foto ${i + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePackPhoto(src)}
+                        className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-destructive text-white shadow"
+                        aria-label="Remover foto"
+                      >
+                        <X className="size-3" aria-hidden="true" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label
+                className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 py-3.5 text-sm font-semibold text-primary transition active:scale-[0.99] ${
+                  uploadingPhoto ? 'pointer-events-none opacity-70' : ''
+                }`}
               >
-                <ImagePlus className="size-4" aria-hidden="true" />
-                Adicionar fotos ou vídeos
-              </button>
+                {uploadingPhoto ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus className="size-4" aria-hidden="true" />
+                    Adicionar fotos
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={uploadingPhoto}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleAddPackPhoto(file)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+
+              {packError && (
+                <p className="mt-3 text-center text-xs font-medium text-destructive">{packError}</p>
+              )}
             </div>
 
             {/* Rodapé fixo */}
@@ -823,7 +921,7 @@ function ChatsScreen({ balance }: { balance: number }) {
 }
 
 
-// ─────────────────────────────────────────────────���─────���─────────────────────
+// ─────────────────────────────────────────────────���─────�����─────────────────────
 // Tela Impulsionar
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1175,7 +1273,7 @@ function PacksScreen({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ───────────────────────────��────��────────────────────────────────────────────
+// ───────────────────────────��──��─��────────────────────────────────────────────
 
 function WalletScreen({ 
   balance,
@@ -1561,11 +1659,15 @@ function WalletScreen({
 function ProfileScreen({ 
   profile: userProfile, 
   highlights: userHighlights,
-  onLogout 
+  onLogout,
+  onProfileUpdated,
+  onHighlightsUpdated,
 }: { 
   profile: Profile | null | undefined
   highlights: Highlight[]
   onLogout: () => void
+  onProfileUpdated?: () => void
+  onHighlightsUpdated?: () => void
 }) {
   const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help'>('main')
   const [localProfile, setLocalProfile] = useState({
@@ -1577,6 +1679,9 @@ function ProfileScreen({
     website: userProfile?.website || '',
   })
   const [editedProfile, setEditedProfile] = useState(localProfile)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
+  const [addingHighlight, setAddingHighlight] = useState(false)
   const [notifications, setNotifications] = useState<Array<{id: number; type: string; title: string; desc: string; time: string; read: boolean}>>([])
   const [settings, setSettings] = useState({
     darkMode: true,
@@ -1609,9 +1714,79 @@ function ProfileScreen({
     }
   }, [userProfile])
 
-  function saveProfile() {
+  async function saveProfile() {
+    if (savingProfile) return
+    setSavingProfile(true)
+    setProfileError(null)
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      setProfileError('Sessão expirada. Faça login novamente.')
+      setSavingProfile(false)
+      return
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        display_name: editedProfile.displayName.trim() || null,
+        bio: editedProfile.bio.trim() || null,
+        location: editedProfile.location.trim() || null,
+        instagram: editedProfile.instagram.trim() || null,
+        website: editedProfile.website.trim() || null,
+      })
+      .eq('id', user.id)
+
+    setSavingProfile(false)
+
+    if (error) {
+      setProfileError('Não foi possível salvar. Tente novamente.')
+      return
+    }
+
     setLocalProfile(editedProfile)
+    onProfileUpdated?.()
     setCurrentView('main')
+  }
+
+  // Adicionar destaque com upload de imagem
+  async function addHighlight(file: File) {
+    if (addingHighlight) return
+    setAddingHighlight(true)
+    setProfileError(null)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setProfileError('Sessão expirada. Faça login novamente.')
+        return
+      }
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `${user.id}/highlights/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('media')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (upErr) {
+        setProfileError('Não foi possível enviar a imagem. Tente novamente.')
+        return
+      }
+      const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+      const { error: insErr } = await supabase.from('highlights').insert({
+        user_id: user.id,
+        label: 'Destaque',
+        image_url: pub.publicUrl,
+        order_index: userHighlights.length,
+      })
+      if (insErr) {
+        setProfileError('Não foi possível adicionar o destaque. Tente novamente.')
+        return
+      }
+      onHighlightsUpdated?.()
+    } finally {
+      setAddingHighlight(false)
+    }
   }
 
   function cancelEdit() {
@@ -1970,9 +2145,11 @@ function ProfileScreen({
           <button
             type="button"
             onClick={saveProfile}
-            className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition active:scale-95"
+            disabled={savingProfile}
+            className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition active:scale-95 disabled:opacity-70"
           >
-            Salvar
+            {savingProfile && <Loader2 className="size-3.5 animate-spin" />}
+            {savingProfile ? 'Salvando...' : 'Salvar'}
           </button>
         </header>
 
@@ -2085,30 +2262,43 @@ function ProfileScreen({
               </button>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {highlights.map((h) => (
+              {userHighlights.map((h) => (
                 <div key={h.id} className="flex flex-col items-center gap-1.5">
                   <div className="relative size-16 overflow-hidden rounded-full ring-2 ring-primary/30">
-                    <img src={h.image} alt={h.label} className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition hover:opacity-100"
-                    >
-                      <Edit3 className="size-4 text-white" />
-                    </button>
+                    <img src={h.image_url || '/placeholder.svg'} alt={h.label} className="h-full w-full object-cover" />
                   </div>
                   <span className="text-[0.65rem] text-muted-foreground">{h.label}</span>
                 </div>
               ))}
-              <button
-                type="button"
-                className="flex flex-col items-center gap-1.5"
+              <label
+                className={`flex cursor-pointer flex-col items-center gap-1.5 ${
+                  addingHighlight ? 'pointer-events-none opacity-70' : ''
+                }`}
               >
                 <div className="flex size-16 items-center justify-center rounded-full border-2 border-dashed border-primary/40 bg-primary/5">
-                  <Plus className="size-5 text-primary" />
+                  {addingHighlight ? (
+                    <Loader2 className="size-5 animate-spin text-primary" />
+                  ) : (
+                    <Plus className="size-5 text-primary" />
+                  )}
                 </div>
                 <span className="text-[0.65rem] text-muted-foreground">Adicionar</span>
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={addingHighlight}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) addHighlight(file)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
             </div>
+            {profileError && (
+              <p className="mt-3 text-xs font-medium text-destructive">{profileError}</p>
+            )}
           </div>
         </div>
       </div>
