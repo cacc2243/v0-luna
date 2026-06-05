@@ -1,11 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
-const BYNET_API_URL = 'https://api.bynet.com.br/v1'
+const BYNET_API_URL = 'https://api-gateway.techbynet.com'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, amount, name, document } = await request.json()
+    const { userId, email, amount, name, document, phone } = await request.json()
 
     if (!email || !amount) {
       return NextResponse.json(
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     // Verificar se já existe um convite pendente para este email
     const { data: existingInvite } = await supabase
@@ -46,43 +46,69 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar transação no gateway Bynet
-    const externalId = `luna-invite-${Date.now()}-${Math.random().toString(36).substring(7)}`
-    
-    const bynetResponse = await fetch(`${BYNET_API_URL}/transactions/create`, {
+    // Formato conforme documentação: https://docs.techbynet.com
+    const requestBody = {
+      amount: Math.round(amount * 100), // Converter para centavos
+      paymentMethod: 'PIX',
+      customer: {
+        name: name || 'Cliente Luna',
+        email,
+        phone: phone || '11999999999',
+        document: {
+          number: document || '00000000000',
+          type: 'CPF',
+        },
+      },
+      items: [
+        {
+          title: 'Convite Luna Privé',
+          unitPrice: Math.round(amount * 100),
+          quantity: 1,
+          tangible: false,
+        },
+      ],
+      pix: {
+        expiresInDays: 1, // Expira em 1 dia
+      },
+    }
+
+    const bynetResponse = await fetch(`${BYNET_API_URL}/api/user/transactions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'x-api-key': apiKey,
+        'User-Agent': 'AtivoB2B/1.0',
       },
-      body: JSON.stringify({
-        amount: Math.round(amount * 100), // Converter para centavos
-        externalId,
-        description: 'Luna Creators - Convite Premium',
-        customer: {
-          name: name || 'Cliente Luna',
-          email,
-          document: document || null,
-        },
-        pix: {
-          expiresIn: 3600, // 1 hora em segundos
-        },
-      }),
+      body: JSON.stringify(requestBody),
     })
 
-    if (!bynetResponse.ok) {
-      const errorData = await bynetResponse.json().catch(() => ({}))
-      console.error('[v0] Erro Bynet:', bynetResponse.status, errorData)
+    const bynetData = await bynetResponse.json()
+
+    if (!bynetResponse.ok || bynetData.error) {
+      console.error('[v0] Erro Bynet:', bynetResponse.status, bynetData)
+      const errorMessage = Array.isArray(bynetData.error) 
+        ? bynetData.error.join(', ')
+        : bynetData.error || bynetData.message || 'Erro ao gerar PIX. Tente novamente.'
       return NextResponse.json(
-        { error: 'Erro ao gerar PIX. Tente novamente.' },
+        { error: errorMessage },
         { status: 500 }
       )
     }
 
-    const bynetData = await bynetResponse.json()
-
-    // Calcular expiração do PIX
-    const pixExpiration = new Date()
-    pixExpiration.setHours(pixExpiration.getHours() + 1)
+    // Extrair dados do PIX da resposta
+    // Formato: data.pix.qrcode e data.qrCode
+    const transactionData = bynetData.data || bynetData
+    
+    // Código PIX copia e cola (EMV)
+    const pixCode = transactionData.qrCode || 
+                    transactionData.pix?.qrcode ||
+                    transactionData.pix?.qrCode ||
+                    ''
+    
+    // Expiração do PIX
+    const pixExpirationDate = transactionData.pix?.expirationDate
+      ? new Date(transactionData.pix.expirationDate)
+      : new Date(Date.now() + 24 * 60 * 60 * 1000) // +1 dia
 
     // Salvar convite no banco
     const { data: invite, error: insertError } = await supabase
@@ -92,10 +118,10 @@ export async function POST(request: NextRequest) {
         email,
         amount,
         status: 'pending',
-        transaction_id: bynetData.id || externalId,
-        pix_code: bynetData.pix?.qrCode || bynetData.pix?.copyPaste || bynetData.qrCode,
-        pix_qrcode: bynetData.pix?.qrCodeBase64 || bynetData.pix?.qrCodeImage || bynetData.qrCodeBase64,
-        pix_expiration: pixExpiration.toISOString(),
+        transaction_id: transactionData.id || `luna-${Date.now()}`,
+        pix_code: pixCode,
+        pix_qrcode: null, // A API não retorna imagem base64, usar QR code generator no frontend
+        pix_expiration: pixExpirationDate.toISOString(),
       })
       .select()
       .single()

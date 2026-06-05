@@ -83,7 +83,12 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
       const data = await response.json()
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Erro ao gerar PIX')
+        const errorMessage = typeof data.error === 'string' 
+          ? data.error 
+          : typeof data.error === 'object' && data.error?.message
+            ? data.error.message
+            : 'Erro ao gerar PIX'
+        throw new Error(errorMessage)
       }
 
       setPixCode(data.pixCode)
