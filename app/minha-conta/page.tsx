@@ -65,6 +65,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
+import { generatePackActivity, acceptSale, rejectSale } from './actions'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -467,16 +468,20 @@ function AppDashboard() {
   // Fetch dados reais do Supabase usando SWR
   const { data: profile, mutate: mutateProfile } = useSWR('profile', fetchProfile)
   const { data: packs = [], mutate: mutatePacks } = useSWR('packs', fetchPacks)
-  const { data: sales = [] } = useSWR('sales', fetchSales)
-  const { data: transactions = [] } = useSWR('transactions', fetchTransactions)
+  const { data: sales = [], mutate: mutateSales } = useSWR('sales', fetchSales)
+  const { data: transactions = [], mutate: mutateTransactions } = useSWR('transactions', fetchTransactions)
   const { data: withdrawals = [] } = useSWR('withdrawals', fetchWithdrawals)
   const { data: conversations = [] } = useSWR('conversations', fetchConversations)
   const { data: boosts = [] } = useSWR('boosts', fetchBoosts)
   const { data: highlights = [], mutate: mutateHighlights } = useSWR('highlights', fetchHighlights)
+  const { data: notifications = [], mutate: mutateNotifications } = useSWR('notifications', fetchNotifications)
 
   // Calcular estatisticas
   const balance = profile?.balance || 0
-  const todaySales = sales.filter(s => {
+  const pendingSales = sales.filter(s => s.status === 'pending')
+  const pendingBalance = pendingSales.reduce((sum, s) => sum + Number(s.net_amount), 0)
+  const completedSales = sales.filter(s => s.status === 'completed')
+  const todaySales = completedSales.filter(s => {
     const saleDate = new Date(s.created_at)
     const today = new Date()
     return saleDate.toDateString() === today.toDateString()
@@ -486,6 +491,35 @@ function AppDashboard() {
 
   const animatedBalance = useCountUp(balance)
   const animatedToday = useCountUp(todayEarnings)
+
+  // Revalida tudo que muda com a atividade
+  const refreshActivity = useCallback(() => {
+    mutatePacks()
+    mutateSales()
+    mutateNotifications()
+    mutateProfile()
+    mutateTransactions()
+  }, [mutatePacks, mutateSales, mutateNotifications, mutateProfile, mutateTransactions])
+
+  // Motor de atividade: enquanto houver packs publicados, gera views/pedidos periodicamente
+  useEffect(() => {
+    if (packs.length === 0) return
+    const interval = setInterval(async () => {
+      await generatePackActivity()
+      refreshActivity()
+    }, 25000)
+    return () => clearInterval(interval)
+  }, [packs.length, refreshActivity])
+
+  // Aceitar / recusar pedidos
+  async function handleAcceptSale(saleId: string) {
+    await acceptSale(saleId)
+    refreshActivity()
+  }
+  async function handleRejectSale(saleId: string) {
+    await rejectSale(saleId)
+    refreshActivity()
+  }
 
   // Upload de uma foto para o Storage e retorno da URL publica
   async function handleAddPackPhoto(file: File) {
@@ -583,6 +617,11 @@ function AppDashboard() {
     setShowCreate(false)
     resetPackForm()
     mutatePacks()
+
+    // Dispara a atividade inicial: views, pedidos pendentes e notificacoes
+    generatePackActivity({ initial: true }).then(() => {
+      refreshActivity()
+    })
   }
 
   function closeWelcome() {
@@ -636,7 +675,7 @@ function AppDashboard() {
       {/* Conteudo rolavel do app */}
       <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
       {activeTab === 'Carteira' ? (
-        <WalletScreen balance={animatedBalance} withdrawals={withdrawals} transactions={transactions} profile={profile} />
+                <WalletScreen balance={animatedBalance} pendingBalance={pendingBalance} withdrawals={withdrawals} transactions={transactions} profile={profile} />
       ) : activeTab === 'Packs' ? (
         <PacksScreen
           balance={animatedBalance}
@@ -650,14 +689,18 @@ function AppDashboard() {
       ) : activeTab === 'Chats' ? (
         <ChatsScreen balance={animatedBalance} />
       ) : (
-        <HomeScreen
-          balance={animatedBalance}
-          today={animatedToday}
-          views={totalViews}
-          vendas={todaySales.length}
-          profile={profile}
-          packs={packs}
-        />
+                <HomeScreen
+                  balance={animatedBalance}
+                  today={animatedToday}
+                  views={totalViews}
+                  vendas={profile?.sales_count || 0}
+                  profile={profile}
+                  packs={packs}
+                  pendingSales={pendingSales}
+                  notifications={notifications}
+                  onAccept={handleAcceptSale}
+                  onReject={handleRejectSale}
+                />
       )}
       </div>
 
@@ -1081,6 +1124,10 @@ function HomeScreen({
   vendas,
   profile,
   packs,
+  pendingSales,
+  notifications,
+  onAccept,
+  onReject,
 }: {
   balance: number
   today: number
@@ -1088,7 +1135,20 @@ function HomeScreen({
   vendas: number
   profile: Profile | null | undefined
   packs: Pack[]
+  pendingSales: Sale[]
+  notifications: Notification[]
+  onAccept: (id: string) => void
+  onReject: (id: string) => void
 }) {
+  const [processing, setProcessing] = useState<string | null>(null)
+  const viewNotifs = notifications.filter(n => n.type === 'like' || n.type === 'follow').slice(0, 5)
+
+  async function act(id: string, fn: (id: string) => void) {
+    setProcessing(id)
+    await fn(id)
+    setProcessing(null)
+  }
+
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
@@ -1112,37 +1172,106 @@ function HomeScreen({
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
       </div>
 
-      {/* Visualizações recentes - só mostra quando tiver packs */}
-      <div className="mt-5">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Eye className="size-4 text-positive" aria-hidden="true" />
-            Visualizações recentes
-          </h3>
-          <span className="rounded-full border border-positive/40 px-2 py-0.5 text-xs font-semibold text-positive">
-            0
-          </span>
-        </div>
-        <div className="rounded-2xl border border-border bg-card/60 px-4 py-6">
-          <p className="text-center text-xs text-muted-foreground">
-            Crie seu primeiro pack para começar a receber visualizações
-          </p>
-        </div>
-      </div>
-
-      {/* Pedidos recentes - só mostra quando tiver packs e vendas */}
+      {/* Pedidos pendentes para aceitar/recusar */}
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <ShoppingBag className="size-4 text-primary" aria-hidden="true" />
-            Pedidos recentes
+            Pedidos pendentes
           </h3>
+          {pendingSales.length > 0 && (
+            <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+              {pendingSales.length}
+            </span>
+          )}
         </div>
-        <div className="rounded-2xl border border-border bg-card/60 px-4 py-6">
-          <p className="text-center text-xs text-muted-foreground">
-            Seus pedidos aparecerão aqui quando você realizar vendas
-          </p>
+        {pendingSales.length === 0 ? (
+          <div className="rounded-2xl border border-border bg-card/60 px-4 py-6">
+            <p className="text-center text-xs text-muted-foreground">
+              {packs.length === 0
+                ? 'Crie seu primeiro pack para começar a receber pedidos'
+                : 'Nenhum pedido pendente no momento'}
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {pendingSales.map((sale) => (
+              <div key={sale.id} className="luna-border rounded-2xl bg-card p-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                    {(sale.buyer_name || 'C').charAt(0)}
+                  </span>
+                  <div className="min-w-0 flex-1 leading-tight">
+                    <p className="truncate text-sm font-semibold text-foreground">{sale.buyer_name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{sale.pack?.title || 'Pack'}</p>
+                  </div>
+                  <div className="text-right leading-tight">
+                    <p className="text-sm font-bold text-positive">{brl(Number(sale.net_amount))}</p>
+                    <p className="text-[0.65rem] text-muted-foreground">você recebe</p>
+                  </div>
+                </div>
+                <div className="mt-2.5 flex gap-2">
+                  <button
+                    type="button"
+                    disabled={processing === sale.id}
+                    onClick={() => act(sale.id, onAccept)}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-positive py-2 text-xs font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
+                  >
+                    {processing === sale.id ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+                    Aceitar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={processing === sale.id}
+                    onClick={() => act(sale.id, onReject)}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary py-2 text-xs font-bold text-foreground transition active:scale-[0.98] disabled:opacity-60"
+                  >
+                    <X className="size-3.5" />
+                    Recusar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Visualizações recentes */}
+      <div className="mt-5">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Eye className="size-4 text-positive" aria-hidden="true" />
+            Atividade recente
+          </h3>
+          <span className="rounded-full border border-positive/40 px-2 py-0.5 text-xs font-semibold text-positive">
+            {views}
+          </span>
         </div>
+        {viewNotifs.length === 0 ? (
+          <div className="rounded-2xl border border-border bg-card/60 px-4 py-6">
+            <p className="text-center text-xs text-muted-foreground">
+              Crie seu primeiro pack para começar a receber visualizações
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {viewNotifs.map((n) => (
+              <div key={n.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card/60 px-3 py-2.5">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-positive/10">
+                  {n.type === 'follow' ? (
+                    <Heart className="size-4 text-positive" aria-hidden="true" />
+                  ) : (
+                    <Eye className="size-4 text-positive" aria-hidden="true" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1 leading-tight">
+                  <p className="truncate text-xs font-semibold text-foreground">{n.title}</p>
+                  <p className="truncate text-[0.7rem] text-muted-foreground">{n.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1276,11 +1405,13 @@ function PacksScreen({
 
 function WalletScreen({ 
   balance,
+  pendingBalance,
   withdrawals,
   transactions,
   profile
 }: { 
   balance: number
+  pendingBalance: number
   withdrawals: Withdrawal[]
   transactions: Transaction[]
   profile: Profile | null | undefined
@@ -1379,6 +1510,15 @@ function WalletScreen({
           <div className="relative">
             <p className="text-xs font-medium text-muted-foreground">Saldo disponivel</p>
             <p className="mt-1 text-4xl font-bold tracking-tight text-foreground">{brl(balance)}</p>
+
+            {pendingBalance > 0 && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1">
+                <Loader2 className="size-3.5 text-amber-500" />
+                <span className="text-xs font-semibold text-amber-500">
+                  {brl(pendingBalance)} pendente · aceite os pedidos
+                </span>
+              </div>
+            )}
             
             <div className="mt-4 flex items-center gap-4">
               {todayEarnings > 0 && (

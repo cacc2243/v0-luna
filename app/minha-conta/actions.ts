@@ -784,6 +784,217 @@ export async function updateSettings(updates: Partial<UserSettings>) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Pack Activity Engine (views, pedidos pendentes, notificacoes)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BUYER_NAMES = [
+  'Rafael Mendes', 'Lucas Oliveira', 'Bruno Costa', 'Thiago Almeida',
+  'Gabriel Santos', 'Felipe Rocha', 'Matheus Lima', 'Pedro Henrique',
+  'Carlos Eduardo', 'Vinicius Souza', 'Diego Ferreira', 'Andre Martins',
+  'Joao Vitor', 'Leonardo Dias', 'Gustavo Pereira', 'Rodrigo Barbosa',
+]
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+function randInt(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+// Gera atividade para os packs do usuario: views, likes, seguidores e pedidos pendentes.
+// Tudo fica salvo no banco. Retorna quantos pedidos novos foram criados.
+export async function generatePackActivity(opts?: { initial?: boolean }) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const { data: packs } = await supabase
+    .from('packs')
+    .select('id, title, price, views_count, likes_count')
+    .eq('user_id', user.id)
+    .eq('is_published', true)
+
+  if (!packs || packs.length === 0) return { success: true, newOrders: 0 }
+
+  const initial = opts?.initial
+  let newOrders = 0
+
+  for (const pack of packs) {
+    // Visualizacoes
+    const viewsGained = initial ? randInt(8, 25) : randInt(2, 9)
+    const likesGained = initial ? randInt(2, 8) : randInt(0, 3)
+    await supabase
+      .from('packs')
+      .update({
+        views_count: (pack.views_count || 0) + viewsGained,
+        likes_count: (pack.likes_count || 0) + likesGained,
+      })
+      .eq('id', pack.id)
+      .eq('user_id', user.id)
+
+    // Notificacao de visualizacoes
+    await supabase.from('notifications').insert({
+      user_id: user.id,
+      type: 'like',
+      title: `${viewsGained} novas visualizacoes`,
+      description: `Seu pack "${pack.title}" esta recebendo atencao`,
+      reference_id: pack.id,
+    })
+
+    // Pedidos de venda pendentes (1-2 por pack, mais no inicio)
+    const orders = initial ? randInt(1, 3) : randInt(0, 2)
+    for (let i = 0; i < orders; i++) {
+      const amount = Number(pack.price) || 0
+      const platformFee = Math.round(amount * 0.2 * 100) / 100
+      const netAmount = Math.round((amount - platformFee) * 100) / 100
+      const buyer = pick(BUYER_NAMES)
+
+      const { data: sale } = await supabase
+        .from('sales')
+        .insert({
+          seller_id: user.id,
+          buyer_name: buyer,
+          pack_id: pack.id,
+          amount,
+          platform_fee: platformFee,
+          net_amount: netAmount,
+          status: 'pending',
+        })
+        .select()
+        .single()
+
+      if (sale) {
+        newOrders++
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          type: 'sale',
+          title: 'Novo pedido de venda',
+          description: `${buyer} quer comprar "${pack.title}" por ${formatBRL(amount)}`,
+          reference_id: sale.id,
+        })
+      }
+    }
+
+    // Eventualmente um novo seguidor
+    if (Math.random() < (initial ? 0.8 : 0.3)) {
+      const follower = pick(BUYER_NAMES)
+      await supabase.from('followers').insert({
+        creator_id: user.id,
+        follower_name: follower,
+      })
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'follow',
+        title: 'Novo seguidor',
+        description: `${follower} comecou a seguir voce`,
+      })
+    }
+  }
+
+  revalidatePath('/minha-conta')
+  return { success: true, newOrders }
+}
+
+function formatBRL(value: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+}
+
+// Aceitar um pedido de venda: pendente -> saldo disponivel
+export async function acceptSale(saleId: string) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const { data: sale } = await supabase
+    .from('sales')
+    .select('*')
+    .eq('id', saleId)
+    .eq('seller_id', user.id)
+    .single()
+
+  if (!sale) return { error: 'Pedido nao encontrado' }
+  if (sale.status !== 'pending') return { error: 'Pedido ja processado' }
+
+  const profile = await getProfile()
+  if (!profile) return { error: 'Profile not found' }
+
+  const net = Number(sale.net_amount)
+  const newBalance = Number(profile.balance) + net
+
+  // Marca a venda como concluida
+  await supabase
+    .from('sales')
+    .update({ status: 'completed' })
+    .eq('id', saleId)
+    .eq('seller_id', user.id)
+
+  // Atualiza saldo, total ganho e contador de vendas
+  await supabase
+    .from('profiles')
+    .update({
+      balance: newBalance,
+      total_earned: Number(profile.total_earned) + net,
+      sales_count: Number(profile.sales_count) + 1,
+    })
+    .eq('id', user.id)
+
+  // Incrementa vendas do pack
+  const { data: pack } = await supabase
+    .from('packs')
+    .select('sales_count, title')
+    .eq('id', sale.pack_id)
+    .single()
+  if (pack) {
+    await supabase
+      .from('packs')
+      .update({ sales_count: (pack.sales_count || 0) + 1 })
+      .eq('id', sale.pack_id)
+      .eq('user_id', user.id)
+  }
+
+  // Registra transacao
+  await supabase.from('transactions').insert({
+    user_id: user.id,
+    type: 'sale',
+    amount: net,
+    description: `Venda confirmada - ${sale.buyer_name || 'Comprador'}`,
+    reference_id: saleId,
+    balance_after: newBalance,
+  })
+
+  // Notificacao
+  await supabase.from('notifications').insert({
+    user_id: user.id,
+    type: 'sale',
+    title: 'Venda confirmada',
+    description: `Voce recebeu ${formatBRL(net)} pela venda${pack ? ` de "${pack.title}"` : ''}`,
+    reference_id: saleId,
+  })
+
+  revalidatePath('/minha-conta')
+  return { success: true }
+}
+
+// Recusar um pedido de venda
+export async function rejectSale(saleId: string) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const { error } = await supabase
+    .from('sales')
+    .update({ status: 'cancelled' })
+    .eq('id', saleId)
+    .eq('seller_id', user.id)
+    .eq('status', 'pending')
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/minha-conta')
+  return { success: true }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Dashboard Stats
 // ─────────────────────────────────────────────────────────────────────────────
 
