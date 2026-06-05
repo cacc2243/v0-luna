@@ -464,6 +464,7 @@ function AppDashboard() {
   const [packError, setPackError] = useState<string | null>(null)
   const [showWelcome, setShowWelcome] = useState(false)
   const [welcomeClosing, setWelcomeClosing] = useState(false)
+  const [balanceFlash, setBalanceFlash] = useState(false)
 
   // Fetch dados reais do Supabase usando SWR
   const { data: profile, mutate: mutateProfile } = useSWR('profile', fetchProfile)
@@ -511,14 +512,42 @@ function AppDashboard() {
     return () => clearInterval(interval)
   }, [packs.length, refreshActivity])
 
-  // Aceitar / recusar pedidos
+  // Aceitar / recusar pedidos (atualizacao otimista = instantaneo)
   async function handleAcceptSale(saleId: string) {
-    await acceptSale(saleId)
-    refreshActivity()
+    const sale = sales.find(s => s.id === saleId)
+    if (!sale) return
+    const net = Number(sale.net_amount)
+
+    // Atualiza a UI imediatamente, sem esperar o servidor
+    mutateSales(
+      sales.map(s => (s.id === saleId ? { ...s, status: 'completed' } : s)),
+      { revalidate: false },
+    )
+    mutateProfile(
+      profile
+        ? {
+            ...profile,
+            balance: Number(profile.balance) + net,
+            total_earned: Number(profile.total_earned) + net,
+            sales_count: Number(profile.sales_count) + 1,
+          }
+        : profile,
+      { revalidate: false },
+    )
+    // Dispara destaque no saldo
+    setBalanceFlash(true)
+    setTimeout(() => setBalanceFlash(false), 1200)
+
+    // Persiste no servidor em segundo plano e revalida
+    acceptSale(saleId).then(() => refreshActivity())
   }
   async function handleRejectSale(saleId: string) {
-    await rejectSale(saleId)
-    refreshActivity()
+    // Remove da lista imediatamente
+    mutateSales(
+      sales.map(s => (s.id === saleId ? { ...s, status: 'cancelled' } : s)),
+      { revalidate: false },
+    )
+    rejectSale(saleId).then(() => refreshActivity())
   }
 
   // Upload de uma foto para o Storage e retorno da URL publica
@@ -701,6 +730,7 @@ function AppDashboard() {
                   notifications={notifications}
                   onAccept={handleAcceptSale}
                   onReject={handleRejectSale}
+                  balanceFlash={balanceFlash}
                 />
       )}
       </div>
@@ -1130,6 +1160,7 @@ function HomeScreen({
   notifications,
   onAccept,
   onReject,
+  balanceFlash,
 }: {
   balance: number
   today: number
@@ -1142,14 +1173,18 @@ function HomeScreen({
   notifications: Notification[]
   onAccept: (id: string) => void
   onReject: (id: string) => void
+  balanceFlash: boolean
 }) {
-  const [processing, setProcessing] = useState<string | null>(null)
+  const [accepting, setAccepting] = useState<string | null>(null)
   const viewNotifs = notifications.filter(n => n.type === 'like' || n.type === 'follow').slice(0, 3)
 
-  async function act(id: string, fn: (id: string) => void) {
-    setProcessing(id)
-    await fn(id)
-    setProcessing(null)
+  function handleAccept(id: string) {
+    setAccepting(id)
+    // Deixa a animacao de saida rodar antes de remover da lista
+    setTimeout(() => {
+      onAccept(id)
+      setAccepting(null)
+    }, 450)
   }
 
   return (
@@ -1159,18 +1194,22 @@ function HomeScreen({
         <div className="flex items-center gap-2.5">
           <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
         </div>
-        <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
-          <Wallet className="size-6 text-primary" aria-hidden="true" />
+        <div
+          className={`luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 ${
+            balanceFlash ? 'animate-balance-pop' : ''
+          }`}
+        >
+          <Wallet className={`size-6 ${balanceFlash ? 'text-positive' : 'text-primary'}`} aria-hidden="true" />
           <div className="leading-tight">
             <p className="text-xs text-muted-foreground">Saldo</p>
-            <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
+            <p className={`text-xl font-bold ${balanceFlash ? 'text-positive' : 'text-foreground'}`}>{brl(balance)}</p>
           </div>
         </div>
       </header>
 
       {/* Stats */}
       <div className="mt-4 grid grid-cols-3 gap-2.5">
-        <StatCard icon={CalendarDays} label="Hoje" value={brl(today)} />
+        <StatCard icon={CalendarDays} label="Hoje" value={brl(today)} accent="positive" />
         <StatCard icon={Eye} label="Views" value={String(views)} />
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
       </div>
@@ -1229,7 +1268,9 @@ function HomeScreen({
         {pendingSales.map((sale) => (
           <div
             key={`pending-${sale.id}`}
-            className="luna-border relative mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3"
+            className={`luna-border relative mb-2 rounded-2xl bg-card px-3 py-3 ${
+              accepting === sale.id ? 'animate-accept-out' : 'overflow-hidden'
+            }`}
           >
             <div className="flex items-center gap-2.5">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
@@ -1246,11 +1287,17 @@ function HomeScreen({
               <span className="text-sm font-bold text-positive">{brl(Number(sale.amount))}</span>
             </div>
 
+            {accepting === sale.id && (
+              <span className="animate-money-float pointer-events-none absolute right-4 top-1 text-base font-bold text-positive">
+                +{brl(Number(sale.net_amount))}
+              </span>
+            )}
+
             <div className="mt-2.5 flex gap-2">
               <button
                 type="button"
-                disabled={processing === sale.id}
-                onClick={() => act(sale.id, onReject)}
+                disabled={accepting === sale.id}
+                onClick={() => onReject(sale.id)}
                 className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98] disabled:opacity-60"
               >
                 <X className="size-3.5" aria-hidden="true" />
@@ -1258,19 +1305,15 @@ function HomeScreen({
               </button>
               <button
                 type="button"
-                disabled={processing === sale.id}
-                onClick={() => act(sale.id, onAccept)}
+                disabled={accepting === sale.id}
+                onClick={() => handleAccept(sale.id)}
                 style={{
                   backgroundImage:
                     'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
                 }}
                 className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
               >
-                {processing === sale.id ? (
-                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-                ) : (
-                  <Check className="size-3.5" aria-hidden="true" />
-                )}
+                <Check className="size-3.5" aria-hidden="true" />
                 Aceitar venda
               </button>
             </div>
@@ -1332,18 +1375,21 @@ function StatCard({
   icon: Icon,
   label,
   value,
+  accent,
 }: {
   icon: typeof Home
   label: string
   value: string
+  accent?: 'positive'
 }) {
+  const isPositive = accent === 'positive'
   return (
     <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3.5 text-center">
-      <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
-        <Icon className="size-5 text-primary" aria-hidden="true" />
+      <span className={`flex size-10 items-center justify-center rounded-full ${isPositive ? 'bg-positive/15' : 'bg-primary/10'}`}>
+        <Icon className={`size-5 ${isPositive ? 'text-positive' : 'text-primary'}`} aria-hidden="true" />
       </span>
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-lg font-bold text-foreground">{value}</span>
+      <span className={`text-lg font-bold ${isPositive ? 'text-positive' : 'text-foreground'}`}>{value}</span>
     </div>
   )
 }

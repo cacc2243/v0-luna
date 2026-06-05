@@ -520,6 +520,44 @@
   animation: money-float 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+/* Destaque do saldo ao receber uma venda */
+@keyframes balance-pop {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 oklch(0.75 0.18 155 / 0);
+  }
+  35% {
+    transform: scale(1.12);
+    box-shadow: 0 0 28px -2px oklch(0.75 0.18 155 / 0.7);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 oklch(0.75 0.18 155 / 0);
+  }
+}
+.animate-balance-pop {
+  animation: balance-pop 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Card do pedido saindo ao ser aceito */
+@keyframes accept-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  20% {
+    transform: scale(1.03);
+    box-shadow: 0 0 30px -2px oklch(0.75 0.18 155 / 0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+  }
+}
+.animate-accept-out {
+  animation: accept-out 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 /* Pedido pendente — pulso suave e lento para destaque */
 @keyframes soft-pulse {
   0%,
