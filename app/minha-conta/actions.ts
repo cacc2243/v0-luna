@@ -818,6 +818,7 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
 
   const initial = opts?.initial
   let newOrders = 0
+  let followersGained = 0
 
   for (const pack of packs) {
     // Visualizacoes
@@ -840,6 +841,29 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
       description: `Seu pack "${pack.title}" esta recebendo atencao`,
       reference_id: pack.id,
     })
+
+    // Seguidores crescem conforme as views: 1 seguidor a cada 5-10 views
+    let remainingViews = viewsGained
+    while (remainingViews > 0) {
+      const threshold = randInt(5, 10)
+      if (remainingViews >= threshold) {
+        remainingViews -= threshold
+        followersGained++
+        const follower = pick(BUYER_NAMES)
+        await supabase.from('followers').insert({
+          creator_id: user.id,
+          follower_name: follower,
+        })
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          type: 'follow',
+          title: 'Novo seguidor',
+          description: `${follower} comecou a seguir voce`,
+        })
+      } else {
+        break
+      }
+    }
 
     // Pedidos de venda pendentes (1-2 por pack, mais no inicio)
     const orders = initial ? randInt(1, 3) : randInt(0, 2)
@@ -874,21 +898,19 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
         })
       }
     }
+  }
 
-    // Eventualmente um novo seguidor
-    if (Math.random() < (initial ? 0.8 : 0.3)) {
-      const follower = pick(BUYER_NAMES)
-      await supabase.from('followers').insert({
-        creator_id: user.id,
-        follower_name: follower,
-      })
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        type: 'follow',
-        title: 'Novo seguidor',
-        description: `${follower} comecou a seguir voce`,
-      })
-    }
+  // Atualiza o contador de seguidores do perfil
+  if (followersGained > 0) {
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('followers_count')
+      .eq('id', user.id)
+      .single()
+    await supabase
+      .from('profiles')
+      .update({ followers_count: (prof?.followers_count || 0) + followersGained })
+      .eq('id', user.id)
   }
 
   revalidatePath('/minha-conta')
