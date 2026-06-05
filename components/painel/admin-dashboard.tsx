@@ -26,7 +26,17 @@ import {
 } from '@/lib/painel/metrics'
 import { cn } from '@/lib/utils'
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+const fetcher = async (url: string) => {
+  const r = await fetch(url)
+  if (!r.ok) {
+    const err = new Error('fetch_failed') as Error & { status?: number }
+    err.status = r.status
+    throw err
+  }
+  const json = await r.json()
+  if (json?.error) throw new Error(json.error)
+  return json
+}
 
 type TabKey = 'resumo' | 'clientes' | 'pix' | 'gateways'
 
@@ -55,14 +65,18 @@ export function AdminDashboard() {
   const [period, setPeriod] = useState<PeriodKey>('today')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
-  const { data, isLoading, mutate, isValidating } = useSWR<{
+  const { data, error, isLoading, mutate, isValidating } = useSWR<{
     invites: InviteRow[]
     profiles: ProfileRow[]
     fetchedAt: string
   }>('/api/admin/data', fetcher, {
     refreshInterval: 10000,
     revalidateOnFocus: true,
+    keepPreviousData: true,
   })
+
+  const fetchError = error as (Error & { status?: number }) | undefined
+  const sessionExpired = fetchError?.status === 401
 
   const invites = data?.invites || []
   const profiles = data?.profiles || []
@@ -158,10 +172,41 @@ export function AdminDashboard() {
         </header>
 
         <main className="mx-auto w-full max-w-4xl flex-1 px-4 pb-28 pt-5 lg:pb-10">
-          {isLoading ? (
+          {isLoading && !data ? (
             <div className="flex flex-col items-center justify-center py-24">
               <Loader2 className="size-7 animate-spin text-primary" />
               <p className="mt-3 text-sm text-muted-foreground">Carregando dados...</p>
+            </div>
+          ) : sessionExpired ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+              <p className="text-base font-semibold text-foreground">Sessão expirada</p>
+              <p className="max-w-xs text-sm text-muted-foreground">
+                Sua sessão de administrador expirou. Faça login novamente para visualizar os
+                dados.
+              </p>
+              <form action={logoutAction}>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+                >
+                  Fazer login
+                </button>
+              </form>
+            </div>
+          ) : fetchError ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+              <p className="text-base font-semibold text-foreground">
+                Erro ao carregar os dados
+              </p>
+              <p className="max-w-xs text-sm text-muted-foreground">
+                Não foi possível buscar as informações. Verifique sua conexão e tente novamente.
+              </p>
+              <button
+                onClick={() => mutate()}
+                className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+              >
+                Tentar novamente
+              </button>
             </div>
           ) : (
             <>

@@ -1,8 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Search, UserRound, CheckCircle2 } from 'lucide-react'
-import { formatBRL, formatDateTime, isPaid, type InviteRow, type ProfileRow } from '@/lib/painel/metrics'
+import { Search, UserRound, CheckCircle2, Mail, Clock } from 'lucide-react'
+import {
+  buildLeads,
+  formatBRL,
+  formatDateTime,
+  type InviteRow,
+  type ProfileRow,
+} from '@/lib/painel/metrics'
 import { cn } from '@/lib/utils'
 
 interface ClientsTabProps {
@@ -10,44 +16,35 @@ interface ClientsTabProps {
   invites: InviteRow[]
 }
 
+type ClientFilter = 'all' | 'buyers' | 'leads'
+
 export function ClientsTab({ profiles, invites }: ClientsTabProps) {
   const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<ClientFilter>('all')
 
-  // Mapeia convites por user_id e por email
-  const invitesByUser = useMemo(() => {
-    const map = new Map<string, InviteRow[]>()
-    for (const inv of invites) {
-      const key = inv.user_id || inv.email || ''
-      if (!key) continue
-      if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(inv)
-    }
-    return map
-  }, [invites])
-
-  const rows = useMemo(() => {
-    return profiles.map((p) => {
-      const userInvites = invitesByUser.get(p.id) || []
-      const paidInvites = userInvites.filter((i) => isPaid(i.status))
-      const totalPaid = paidInvites.reduce((s, i) => s + (Number(i.amount) || 0), 0)
-      return {
-        profile: p,
-        invitesCount: userInvites.length,
-        paidCount: paidInvites.length,
-        totalPaid,
-      }
-    })
-  }, [profiles, invitesByUser])
+  const leads = useMemo(() => buildLeads(invites, profiles), [invites, profiles])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter(
-      (r) =>
-        (r.profile.username || '').toLowerCase().includes(q) ||
-        (r.profile.display_name || '').toLowerCase().includes(q),
-    )
-  }, [rows, query])
+    return leads.filter((l) => {
+      if (filter === 'buyers' && l.paidCount === 0) return false
+      if (filter === 'leads' && l.paidCount > 0) return false
+      if (!q) return true
+      return (
+        (l.email || '').toLowerCase().includes(q) ||
+        (l.username || '').toLowerCase().includes(q) ||
+        (l.name || '').toLowerCase().includes(q)
+      )
+    })
+  }, [leads, query, filter])
+
+  const buyersCount = leads.filter((l) => l.paidCount > 0).length
+
+  const FILTERS: { key: ClientFilter; label: string; count: number }[] = [
+    { key: 'all', label: 'Todos', count: leads.length },
+    { key: 'buyers', label: 'Compradores', count: buyersCount },
+    { key: 'leads', label: 'Leads', count: leads.length - buyersCount },
+  ]
 
   return (
     <div className="flex flex-col gap-4">
@@ -56,12 +53,37 @@ export function ClientsTab({ profiles, invites }: ClientsTabProps) {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por usuário ou nome..."
+          placeholder="Buscar por email, usuário ou nome..."
           className="w-full bg-transparent px-2 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
         />
       </div>
 
-      <section className="rounded-2xl border border-border bg-card p-5">
+      <div className="flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition',
+              filter === f.key
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-card text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {f.label}
+            <span
+              className={cn(
+                'rounded-full px-1.5 text-xs tabular-nums',
+                filter === f.key ? 'bg-primary-foreground/20' : 'bg-secondary',
+              )}
+            >
+              {f.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
         <h2 className="mb-4 text-base font-bold text-foreground">
           Clientes ({filtered.length})
         </h2>
@@ -72,44 +94,76 @@ export function ClientsTab({ profiles, invites }: ClientsTabProps) {
           </p>
         ) : (
           <div className="flex flex-col gap-2">
-            {filtered.map(({ profile, invitesCount, paidCount, totalPaid }) => (
-              <div
-                key={profile.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/40 px-4 py-3"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                    <UserRound className="size-4 text-primary" />
+            {filtered.map((lead) => {
+              const title =
+                lead.name || lead.username || lead.email || 'Lead anônimo'
+              const isBuyer = lead.paidCount > 0
+              return (
+                <div
+                  key={lead.key}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/40 px-4 py-3"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div
+                      className={cn(
+                        'flex size-9 shrink-0 items-center justify-center rounded-full',
+                        isBuyer ? 'bg-positive/15' : 'bg-primary/15',
+                      )}
+                    >
+                      {lead.hasAccount ? (
+                        <UserRound
+                          className={cn(
+                            'size-4',
+                            isBuyer ? 'text-positive' : 'text-primary',
+                          )}
+                        />
+                      ) : (
+                        <Mail
+                          className={cn(
+                            'size-4',
+                            isBuyer ? 'text-positive' : 'text-primary',
+                          )}
+                        />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-1.5 truncate text-sm font-medium text-foreground">
+                        {title}
+                        {lead.hasAccount && (
+                          <span className="rounded bg-sky-500/15 px-1 py-0.5 text-[0.6rem] font-semibold text-sky-400">
+                            CONTA
+                          </span>
+                        )}
+                      </p>
+                      <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                        <Clock className="size-3 shrink-0" />
+                        {formatDateTime(lead.firstSeen)}
+                        {lead.email && lead.email !== title ? ` · ${lead.email}` : ''}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {profile.display_name || profile.username || 'Sem nome'}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      @{profile.username || '—'} · {formatDateTime(profile.created_at)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  {totalPaid > 0 ? (
-                    <span className="inline-flex items-center gap-1 text-sm font-bold tabular-nums text-positive">
-                      <CheckCircle2 className="size-3.5" />
-                      {formatBRL(totalPaid)}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">Sem compras</span>
-                  )}
-                  <span
-                    className={cn(
-                      'text-[0.7rem] font-medium',
-                      paidCount > 0 ? 'text-foreground' : 'text-muted-foreground',
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    {isBuyer ? (
+                      <span className="inline-flex items-center gap-1 text-sm font-bold tabular-nums text-positive">
+                        <CheckCircle2 className="size-3.5" />
+                        {formatBRL(lead.totalPaid)}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Sem compras</span>
                     )}
-                  >
-                    {invitesCount} PIX · {paidCount} pago{paidCount === 1 ? '' : 's'}
-                  </span>
+                    <span
+                      className={cn(
+                        'text-[0.7rem] font-medium',
+                        isBuyer ? 'text-foreground' : 'text-muted-foreground',
+                      )}
+                    >
+                      {lead.pixGenerated} PIX · {lead.paidCount} pago
+                      {lead.paidCount === 1 ? '' : 's'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>

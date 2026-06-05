@@ -115,14 +115,110 @@ export interface DashboardMetrics {
   }
 }
 
-// Calcula metricas com base nos convites e perfis filtrados por periodo
+// Um "lead" representa um cliente unico, identificado pelo email.
+// Unifica os cadastros (profiles) e os PIX gerados (invites) pelo email.
+export interface Lead {
+  key: string // email normalizado ou id do profile
+  email: string | null
+  name: string | null
+  username: string | null
+  hasAccount: boolean // possui profile (criou conta)
+  firstSeen: string // data mais antiga (cadastro ou 1o PIX)
+  invites: InviteRow[]
+  pixGenerated: number
+  paidCount: number
+  totalPaid: number
+  pendingCount: number
+}
+
+function normalizeEmail(email: string | null): string | null {
+  if (!email) return null
+  return email.trim().toLowerCase()
+}
+
+// Constroi a lista de leads unificando profiles + invites por email
+export function buildLeads(invites: InviteRow[], profiles: ProfileRow[]): Lead[] {
+  const byKey = new Map<string, Lead>()
+
+  // Indexa profiles por id e por (futuro match de email via username nao disponivel)
+  const profileById = new Map<string, ProfileRow>()
+  for (const p of profiles) profileById.set(p.id, p)
+
+  // 1) Cria um lead para cada profile (conta criada)
+  for (const p of profiles) {
+    const key = `profile:${p.id}`
+    byKey.set(key, {
+      key,
+      email: null,
+      name: p.display_name || null,
+      username: p.username || null,
+      hasAccount: true,
+      firstSeen: p.created_at,
+      invites: [],
+      pixGenerated: 0,
+      paidCount: 0,
+      totalPaid: 0,
+      pendingCount: 0,
+    })
+  }
+
+  // 2) Agrega invites: por user_id (casa com profile) ou por email (lead anonimo)
+  for (const inv of invites) {
+    let lead: Lead | undefined
+
+    if (inv.user_id && profileById.has(inv.user_id)) {
+      lead = byKey.get(`profile:${inv.user_id}`)
+    }
+
+    if (!lead) {
+      const email = normalizeEmail(inv.email)
+      const key = email ? `email:${email}` : `invite:${inv.id}`
+      lead = byKey.get(key)
+      if (!lead) {
+        lead = {
+          key,
+          email: inv.email,
+          name: null,
+          username: null,
+          hasAccount: false,
+          firstSeen: inv.created_at,
+          invites: [],
+          pixGenerated: 0,
+          paidCount: 0,
+          totalPaid: 0,
+          pendingCount: 0,
+        }
+        byKey.set(key, lead)
+      }
+    }
+
+    lead.invites.push(inv)
+    if (!lead.email && inv.email) lead.email = inv.email
+    if (inv.pix_code) lead.pixGenerated += 1
+    if (isPaid(inv.status)) {
+      lead.paidCount += 1
+      lead.totalPaid += Number(inv.amount) || 0
+    }
+    if (isPending(inv.status)) lead.pendingCount += 1
+    // firstSeen = data mais antiga
+    if (new Date(inv.created_at).getTime() < new Date(lead.firstSeen).getTime()) {
+      lead.firstSeen = inv.created_at
+    }
+  }
+
+  return Array.from(byKey.values()).sort(
+    (a, b) => new Date(b.firstSeen).getTime() - new Date(a.firstSeen).getTime(),
+  )
+}
+
+// Calcula metricas com base nos convites e perfis filtrados por periodo.
+// "Clientes" = leads unicos (cadastros + PIX por email) dentro do periodo.
 export function computeMetrics(
   invites: InviteRow[],
   profiles: ProfileRow[],
   range: [Date | null, Date | null],
 ): DashboardMetrics {
   const periodInvites = invites.filter((i) => isInRange(i.created_at, range))
-  const periodProfiles = profiles.filter((p) => isInRange(p.created_at, range))
 
   const paid = periodInvites.filter((i) => isPaid(i.status))
   const pending = periodInvites.filter((i) => isPending(i.status))
@@ -133,7 +229,11 @@ export function computeMetrics(
 
   const generatedCount = periodInvites.length
   const paidCount = paid.length
-  const signups = periodProfiles.length
+
+  // Leads (clientes) unicos cujo primeiro contato caiu no periodo
+  const allLeads = buildLeads(invites, profiles)
+  const periodLeads = allLeads.filter((l) => isInRange(l.firstSeen, range))
+  const signups = periodLeads.length
 
   const conversionRate = signups > 0 ? (paidCount / signups) * 100 : 0
   const avgTicket = paidCount > 0 ? revenue / paidCount : 0

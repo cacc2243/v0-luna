@@ -120,7 +120,7 @@ export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryT
           icon={Users}
           value={String(metrics.clientsCount)}
           label="Clientes"
-          sublabel="cadastrados no período"
+          sublabel="leads no período"
         />
         <StatCard
           icon={CheckCircle2}

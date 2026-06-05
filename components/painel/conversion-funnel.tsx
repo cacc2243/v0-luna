@@ -14,7 +14,6 @@ interface ConversionFunnelProps {
   viewedCheckout: number
   pixGenerated: number
   invitePaid: number
-  chatUnlock?: number
 }
 
 export function ConversionFunnel({
@@ -22,14 +21,12 @@ export function ConversionFunnel({
   viewedCheckout,
   pixGenerated,
   invitePaid,
-  chatUnlock = 0,
 }: ConversionFunnelProps) {
   const steps: FunnelStep[] = [
-    { label: 'Cadastros', value: signups, color: 'bg-rose-900/70', dotColor: 'bg-primary' },
+    { label: 'Clientes / Leads', value: signups, color: 'bg-rose-900/70', dotColor: 'bg-primary' },
     { label: 'Viu Checkout', value: viewedCheckout, color: 'bg-amber-700/60', dotColor: 'bg-amber-500' },
     { label: 'PIX Gerado', value: pixGenerated, color: 'bg-lime-700/50', dotColor: 'bg-amber-400' },
     { label: 'Convite Pago', value: invitePaid, color: 'bg-emerald-700/60', dotColor: 'bg-positive' },
-    { label: 'Chat Unlock', value: chatUnlock, color: 'bg-sky-800/60', dotColor: 'bg-sky-400' },
   ]
 
   const base = signups || 1
