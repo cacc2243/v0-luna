@@ -1407,47 +1407,6 @@ function HomeScreen({
   profile: Profile | null | undefined
   packs: Pack[]
 }) {
-  // Lista de visualizações com novas entrando
-  const allViews = [
-    { text: 'alguem viu seu perfil' },
-    { text: 'alguem curtiu seu pack' },
-    { text: 'alguem favoritou seu perfil' },
-    { text: 'alguem abriu seus packs' },
-    { text: 'alguem viu seu conteudo' },
-    { text: 'alguem salvou seu perfil' },
-    { text: 'alguem compartilhou seu pack' },
-    { text: 'alguem visitou seu perfil' },
-  ]
-  
-  const [viewList, setViewList] = useState([
-    { ...allViews[0], t: 'agora', id: 0 },
-    { ...allViews[1], t: '1 min', id: 1 },
-    { ...allViews[2], t: '3 min', id: 2 },
-  ])
-  const [nextId, setNextId] = useState(3)
-
-  // Adiciona nova visualização a cada 3-5 segundos
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setViewList((prev) => {
-        const newView = {
-          ...allViews[nextId % allViews.length],
-          t: 'agora',
-          id: nextId,
-        }
-        // Atualiza tempos das visualizações existentes
-        const updated = prev.map((v, i) => ({
-          ...v,
-          t: i === 0 ? '1 min' : i === 1 ? '2 min' : `${i + 2} min`,
-        }))
-        // Adiciona nova no topo e mantém apenas 3
-        return [newView, ...updated].slice(0, 3)
-      })
-      setNextId((n) => n + 1)
-    }, 3500)
-    return () => clearInterval(interval)
-  }, [nextId])
-
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
@@ -1471,7 +1430,7 @@ function HomeScreen({
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
       </div>
 
-      {/* Visualizações recentes */}
+      {/* Visualizações recentes - só mostra quando tiver packs */}
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -1479,28 +1438,17 @@ function HomeScreen({
             Visualizações recentes
           </h3>
           <span className="rounded-full border border-positive/40 px-2 py-0.5 text-xs font-semibold text-positive">
-            {views}
+            0
           </span>
         </div>
-        <div className="rounded-2xl border border-border bg-card/60 px-4 py-3">
-          {viewList.map((v, index) => (
-            <div 
-              key={v.id} 
-              className={`flex items-center gap-3 border-b border-border/50 py-2 last:border-0 ${
-                index === 0 ? 'animate-notification-in' : ''
-              }`}
-            >
-              <span className="flex size-8 items-center justify-center rounded-full bg-positive/10">
-                <Eye className="size-4 text-positive" />
-              </span>
-              <p className="flex-1 text-pretty text-xs text-muted-foreground">{v.text}</p>
-              <span className="text-[0.65rem] text-muted-foreground/70">{v.t}</span>
-            </div>
-          ))}
+        <div className="rounded-2xl border border-border bg-card/60 px-4 py-6">
+          <p className="text-center text-xs text-muted-foreground">
+            Crie seu primeiro pack para começar a receber visualizações
+          </p>
         </div>
       </div>
 
-      {/* Pedidos recentes */}
+      {/* Pedidos recentes - só mostra quando tiver packs e vendas */}
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -1508,32 +1456,10 @@ function HomeScreen({
             Pedidos recentes
           </h3>
         </div>
-        <div className="flex flex-col gap-2">
-          {[
-            { handle: '@fan_secreto', pack: 'Pack 03', amount: 89.9 },
-            { handle: '@serg10.tp', pack: 'Pack 07', amount: 129.9 },
-            { handle: '@lobo_solitario', pack: 'Pack 01', amount: 69.9 },
-          ].map((s) => (
-            <div
-              key={s.handle}
-              className="luna-border flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5"
-            >
-              <span className="flex size-8 items-center justify-center rounded-full bg-muted">
-                <User className="size-4 text-muted-foreground" aria-hidden="true" />
-              </span>
-              <div className="min-w-0 flex-1 leading-tight">
-                <p className="flex items-center gap-1 text-[0.8rem] font-semibold text-foreground">
-                  {s.handle}
-                  <BadgeCheck className="size-3.5 text-positive" aria-hidden="true" />
-                </p>
-                <p className="truncate text-[0.7rem] text-muted-foreground">comprou {s.pack}</p>
-              </div>
-              <span className="flex items-center gap-1 text-[0.8rem] font-bold text-positive">
-                <Check className="size-3.5" aria-hidden="true" />
-                {brl(s.amount)}
-              </span>
-            </div>
-          ))}
+        <div className="rounded-2xl border border-border bg-card/60 px-4 py-6">
+          <p className="text-center text-xs text-muted-foreground">
+            Seus pedidos aparecerão aqui quando você realizar vendas
+          </p>
         </div>
       </div>
     </div>
@@ -1566,7 +1492,7 @@ function StatCard({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Packs
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────��───────────────────────────────────────────────────────────────
 
 function PacksScreen({
   balance,
