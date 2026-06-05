@@ -147,29 +147,29 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-md rounded-3xl bg-card border border-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
+      <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col rounded-3xl bg-card border border-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-primary/20 to-primary/5 px-6 py-5 border-b border-border">
+        <div className="relative bg-gradient-to-r from-primary/20 to-primary/5 px-4 py-4 sm:px-6 sm:py-5 border-b border-border shrink-0">
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+            className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition"
           >
             <X className="size-5" />
           </button>
-          <div className="flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/20">
-              <QrCode className="size-6 text-primary" />
+          <div className="flex items-center gap-3 pr-10">
+            <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/20">
+              <QrCode className="size-5 sm:size-6 text-primary" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-foreground">Pagamento PIX</h2>
-              <p className="text-sm text-muted-foreground">Convite Luna Privé</p>
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground truncate">Pagamento PIX</h2>
+              <p className="text-sm text-muted-foreground truncate">Convite Luna Privé</p>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6 overflow-y-auto">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-10">
               <div className="size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -192,15 +192,15 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
           ) : (
             <>
               {/* Valor */}
-              <div className="mb-6 text-center">
+              <div className="mb-4 sm:mb-6 text-center">
                 <p className="text-sm text-muted-foreground">Valor a pagar</p>
-                <p className="text-4xl font-bold text-foreground">
+                <p className="text-3xl sm:text-4xl font-bold text-foreground">
                   R$ {amount.toFixed(2).replace('.', ',')}
                 </p>
               </div>
 
               {/* Timer */}
-              <div className="mb-6 flex items-center justify-center gap-2 rounded-xl bg-amber-500/10 px-4 py-2">
+              <div className="mb-4 sm:mb-6 flex items-center justify-center gap-2 rounded-xl bg-amber-500/10 px-4 py-2">
                 <Clock className="size-4 text-amber-500" />
                 <span className="text-sm font-medium text-amber-500">
                   Expira em {timeLeft}
@@ -209,14 +209,14 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
 
               {/* QR Code */}
               {pixQrCode && (
-                <div className="mb-6 flex justify-center">
+                <div className="mb-4 sm:mb-6 flex justify-center">
                   <div className="rounded-2xl bg-white p-3">
                     <Image
                       src={pixQrCode}
                       alt="QR Code PIX"
                       width={140}
                       height={140}
-                      className="size-[140px]"
+                      className="size-[120px] sm:size-[140px]"
                       unoptimized
                     />
                   </div>
@@ -224,7 +224,7 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
               )}
 
               {/* Código PIX */}
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 <p className="mb-2 text-xs font-medium text-muted-foreground text-center">
                   Ou copie o código PIX
                 </p>
