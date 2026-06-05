@@ -339,6 +339,14 @@ function AppDashboard() {
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-background">
+      {/* Imagem de fundo */}
+      <div 
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/images/app-background.webp)' }}
+      >
+        <div className="absolute inset-0 bg-black/80" />
+      </div>
+
       {/* Modal de boas-vindas */}
       {showWelcome && (
         <div
