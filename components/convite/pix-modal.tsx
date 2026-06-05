@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, Copy, Check, Clock, QrCode, AlertCircle, RefreshCw } from 'lucide-react'
 import Image from 'next/image'
+import QRCode from 'qrcode'
 
 interface PixModalProps {
   isOpen: boolean
@@ -92,9 +93,23 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
       }
 
       setPixCode(data.pixCode)
-      setPixQrCode(data.pixQrCode)
       setExpiresAt(data.expiresAt)
       setInviteId(data.invite?.id)
+
+      // Gerar QR Code a partir do codigo PIX (a API retorna apenas o codigo EMV)
+      if (data.pixCode) {
+        try {
+          const qrDataUrl = await QRCode.toDataURL(data.pixCode, {
+            width: 240,
+            margin: 1,
+            errorCorrectionLevel: 'M',
+          })
+          setPixQrCode(qrDataUrl)
+        } catch (qrErr) {
+          console.error('[v0] Erro ao gerar QR Code:', qrErr)
+          setPixQrCode(null)
+        }
+      }
 
     } catch (err) {
       console.error('[v0] Erro ao gerar PIX:', err)
@@ -196,23 +211,14 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
               {pixQrCode && (
                 <div className="mb-6 flex justify-center">
                   <div className="rounded-2xl bg-white p-4">
-                    {pixQrCode.startsWith('data:') ? (
-                      <Image
-                        src={pixQrCode}
-                        alt="QR Code PIX"
-                        width={200}
-                        height={200}
-                        className="size-[200px]"
-                      />
-                    ) : (
-                      <Image
-                        src={`data:image/png;base64,${pixQrCode}`}
-                        alt="QR Code PIX"
-                        width={200}
-                        height={200}
-                        className="size-[200px]"
-                      />
-                    )}
+                    <Image
+                      src={pixQrCode}
+                      alt="QR Code PIX"
+                      width={200}
+                      height={200}
+                      className="size-[200px]"
+                      unoptimized
+                    />
                   </div>
                 </div>
               )}
