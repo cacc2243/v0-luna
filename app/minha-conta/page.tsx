@@ -371,6 +371,7 @@ function AppDashboard() {
       )}
 
       {/* Conteúdo rolável do app */}
+      <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
       {activeTab === 'Carteira' ? (
         <WalletScreen balance={animatedBalance} />
       ) : activeTab === 'Packs' ? (
@@ -394,6 +395,7 @@ function AppDashboard() {
           vendas={vendas}
         />
       )}
+      </div>
 
       {/* Bottom nav */}
       <nav className="relative z-10 flex shrink-0 items-end justify-around border-t border-border bg-card/95 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
@@ -1170,7 +1172,7 @@ function ImpulsionarScreen({ balance }: { balance: number }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Início
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────��──────────────
 
 function HomeScreen({
   balance,
