@@ -655,15 +655,8 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
           </p>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3">
+        <div className="mt-6">
           <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
-          <button
-            type="button"
-            onClick={onSkip}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Pular e ir para minha conta
-          </button>
         </div>
       </div>
     </div>
