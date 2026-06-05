@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
@@ -8,6 +8,13 @@ const manrope = Manrope({
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-manrope',
 })
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0a0a0a',
+}
 
 export const metadata: Metadata = {
   title: 'Luna Privé — Ganhe com seus pés, 100% anônimo',
