@@ -1470,110 +1470,328 @@ function PacksScreen({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ─────────��──────���─�����──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
 function WalletScreen({ balance }: { balance: number }) {
+  const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
+  const [withdrawAmount, setWithdrawAmount] = useState('')
+  const [pixKey, setPixKey] = useState('email@exemplo.com')
+
+  const monthlyData = [
+    { month: 'Jan', value: 12450 },
+    { month: 'Fev', value: 15320 },
+    { month: 'Mar', value: 18900 },
+    { month: 'Abr', value: 14200 },
+    { month: 'Mai', value: 21500 },
+    { month: 'Jun', value: 18541 },
+  ]
+  const maxValue = Math.max(...monthlyData.map(d => d.value))
+
+  const transactions = [
+    { id: 1, type: 'sale', desc: 'Venda Pack Premium', amount: 129.9, date: 'Hoje, 14:32' },
+    { id: 2, type: 'sale', desc: 'Venda Pack Exclusivo', amount: 89.9, date: 'Hoje, 11:15' },
+    { id: 3, type: 'gift', desc: 'Presente recebido', amount: 50, date: 'Hoje, 09:45' },
+    { id: 4, type: 'withdraw', desc: 'Saque PIX', amount: -2000, date: 'Ontem, 18:00' },
+    { id: 5, type: 'sale', desc: 'Venda Pack VIP', amount: 199.9, date: 'Ontem, 15:20' },
+    { id: 6, type: 'sale', desc: 'Venda Pack Basico', amount: 49.9, date: 'Ontem, 12:00' },
+    { id: 7, type: 'gift', desc: 'Presente recebido', amount: 100, date: '01/06, 20:30' },
+    { id: 8, type: 'withdraw', desc: 'Saque PIX', amount: -5000, date: '30/05, 10:00' },
+  ]
+
   return (
-    <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
-      {/* Header */}
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
-        </div>
-        <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
-          <Wallet className="size-6 text-primary" aria-hidden="true" />
-          <div className="leading-tight">
-            <p className="text-xs text-muted-foreground">Saldo</p>
-            <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Header fixo */}
+      <header className="shrink-0 px-4 pt-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
           </div>
+          <button
+            type="button"
+            onClick={() => setShowWithdrawModal(true)}
+            className="luna-gradient flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95"
+          >
+            <ArrowUpRight className="size-4" />
+            Sacar
+          </button>
         </div>
       </header>
 
-      {/* Título */}
-      <div className="mt-5 leading-tight">
-        <h1 className="text-xl font-bold text-foreground">Carteira</h1>
-        <p className="text-xs text-muted-foreground">Saldo, ganhos e transferências</p>
-      </div>
-
-      {/* Card saldo disponível */}
-      <div className="luna-border mt-4 rounded-3xl bg-card px-5 py-6 text-center shadow-lg shadow-primary/10">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
-          Saldo disponível
-        </p>
-        <p className="mt-1.5 text-4xl font-bold text-foreground">{brl(balance)}</p>
-        <p className="mt-1.5 flex items-center justify-center gap-1 text-sm font-semibold text-positive">
-          <ArrowUpRight className="size-4" aria-hidden="true" />
-          {brl(1664.97)} hoje
-        </p>
-      </div>
-
-      {/* Ações */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          className="luna-gradient flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30"
-        >
-          <ArrowUpRight className="size-4" aria-hidden="true" />
-          Transferir PIX
-        </button>
-        <button
-          type="button"
-          className="luna-border flex items-center justify-center gap-2 rounded-2xl bg-card py-3.5 text-sm font-semibold text-foreground"
-        >
-          <Receipt className="size-4 text-primary" aria-hidden="true" />
-          Extrato
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <div className="luna-border rounded-2xl bg-card p-3.5">
-          <p className="flex items-center gap-1 text-[0.6rem] font-semibold uppercase tracking-wider text-muted-foreground">
-            <ArrowUpRight className="size-3 text-positive" aria-hidden="true" />
-            Ganhos mês
-          </p>
-          <p className="mt-1 text-lg font-bold text-foreground">{brl(18541.67)}</p>
-        </div>
-        <div className="luna-border rounded-2xl bg-card p-3.5">
-          <p className="flex items-center gap-1 text-[0.6rem] font-semibold uppercase tracking-wider text-muted-foreground">
-            <ArrowDownRight className="size-3 text-primary" aria-hidden="true" />
-            Sacado
-          </p>
-          <p className="mt-1 text-lg font-bold text-foreground">{brl(94614.76)}</p>
-        </div>
-      </div>
-
-      {/* Saques realizados */}
-      <div className="mt-5">
-        <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-          <ArrowDownLeft className="size-4 text-primary" aria-hidden="true" />
-          Saques realizados
-        </p>
-        <div className="flex flex-col gap-2">
-          {withdrawals.map((w, i) => (
-            <div
-              key={i}
-              className="luna-border flex items-center justify-between rounded-2xl bg-card px-3.5 py-3"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex size-9 items-center justify-center rounded-full bg-primary/10">
-                  <ArrowDownLeft className="size-4 text-primary" aria-hidden="true" />
-                </span>
-                <div className="leading-tight">
-                  <p className="text-sm font-semibold text-foreground">{w.label}</p>
-                  <p className="text-[0.65rem] text-muted-foreground">{w.date}</p>
-                </div>
+      {/* Card de saldo principal */}
+      <div className="shrink-0 px-4 pt-5">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-5 ring-1 ring-primary/20">
+          <div className="absolute -right-8 -top-8 size-32 rounded-full bg-primary/10 blur-2xl" />
+          <div className="absolute -bottom-8 -left-8 size-32 rounded-full bg-primary/5 blur-2xl" />
+          
+          <div className="relative">
+            <p className="text-xs font-medium text-muted-foreground">Saldo disponivel</p>
+            <p className="mt-1 text-4xl font-bold tracking-tight text-foreground">{brl(balance)}</p>
+            
+            <div className="mt-4 flex items-center gap-4">
+              <div className="flex items-center gap-1.5 rounded-full bg-positive/15 px-3 py-1">
+                <TrendingUp className="size-3.5 text-positive" />
+                <span className="text-xs font-semibold text-positive">+{brl(1664.97)} hoje</span>
               </div>
-              <p className="text-sm font-bold text-foreground">-{brl(w.amount)}</p>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-positive animate-pulse" />
+                <span className="text-xs text-muted-foreground">Atualizado agora</span>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="shrink-0 mt-5 px-4">
+        <div className="flex rounded-2xl bg-card/60 p-1 ring-1 ring-border">
+          {(['resumo', 'extrato', 'saques'] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+                activeTab === tab
+                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/30'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab === 'resumo' ? 'Resumo' : tab === 'extrato' ? 'Extrato' : 'Saques'}
+            </button>
           ))}
         </div>
       </div>
+
+      {/* Conteudo scrollavel */}
+      <div className="flex-1 overflow-y-auto px-4 pb-6 pt-5">
+        {activeTab === 'resumo' && (
+          <>
+            {/* Stats rápidos */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-positive/15">
+                    <TrendingUp className="size-4 text-positive" />
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">Ganhos do mes</span>
+                </div>
+                <p className="mt-2 text-2xl font-bold text-foreground">{brl(18541.67)}</p>
+                <p className="mt-1 text-xs text-positive">+23% vs mes anterior</p>
+              </div>
+              <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-primary/15">
+                    <Wallet className="size-4 text-primary" />
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">Total sacado</span>
+                </div>
+                <p className="mt-2 text-2xl font-bold text-foreground">{brl(94614.76)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Desde o inicio</p>
+              </div>
+            </div>
+
+            {/* Grafico de barras */}
+            <div className="mt-5 rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground">Ganhos mensais</h3>
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">2024</span>
+              </div>
+              <div className="flex h-32 items-end justify-between gap-2">
+                {monthlyData.map((d, i) => (
+                  <div key={d.month} className="flex flex-1 flex-col items-center gap-1.5">
+                    <div 
+                      className={`w-full rounded-lg transition-all ${
+                        i === monthlyData.length - 1 ? 'bg-primary shadow-md shadow-primary/30' : 'bg-primary/30'
+                      }`}
+                      style={{ height: `${(d.value / maxValue) * 100}%`, minHeight: '8px' }}
+                    />
+                    <span className="text-[0.6rem] text-muted-foreground">{d.month}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Ultimas vendas */}
+            <div className="mt-5">
+              <h3 className="mb-3 text-sm font-semibold text-foreground">Ultimas vendas</h3>
+              <div className="flex flex-col gap-2">
+                {transactions.filter(t => t.type === 'sale').slice(0, 3).map((t) => (
+                  <div key={t.id} className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm">
+                    <span className="flex size-10 items-center justify-center rounded-full bg-positive/15">
+                      <ShoppingBag className="size-5 text-positive" />
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-foreground">{t.desc}</p>
+                      <p className="text-xs text-muted-foreground">{t.date}</p>
+                    </div>
+                    <span className="text-sm font-bold text-positive">+{brl(t.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'extrato' && (
+          <div className="flex flex-col gap-2">
+            {transactions.map((t) => (
+              <div key={t.id} className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm">
+                <span className={`flex size-10 items-center justify-center rounded-full ${
+                  t.type === 'sale' ? 'bg-positive/15' :
+                  t.type === 'gift' ? 'bg-amber-500/15' :
+                  'bg-primary/15'
+                }`}>
+                  {t.type === 'sale' && <ShoppingBag className="size-5 text-positive" />}
+                  {t.type === 'gift' && <Gift className="size-5 text-amber-500" />}
+                  {t.type === 'withdraw' && <ArrowDownLeft className="size-5 text-primary" />}
+                </span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">{t.desc}</p>
+                  <p className="text-xs text-muted-foreground">{t.date}</p>
+                </div>
+                <span className={`text-sm font-bold ${t.amount > 0 ? 'text-positive' : 'text-foreground'}`}>
+                  {t.amount > 0 ? '+' : ''}{brl(Math.abs(t.amount))}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'saques' && (
+          <div className="flex flex-col gap-4">
+            {/* Info de saque */}
+            <div className="rounded-2xl bg-primary/10 p-4 ring-1 ring-primary/20">
+              <div className="flex items-start gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                  <Info className="size-5 text-primary" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Saques via PIX</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Saques sao processados em ate 24h uteis. O valor minimo para saque e de R$ 50,00.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Chave PIX */}
+            <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+              <p className="text-xs font-medium text-muted-foreground">Chave PIX cadastrada</p>
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-sm font-semibold text-foreground">{pixKey}</p>
+                <button type="button" className="text-xs font-semibold text-primary">
+                  Alterar
+                </button>
+              </div>
+            </div>
+
+            {/* Historico de saques */}
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-foreground">Historico de saques</h3>
+              <div className="flex flex-col gap-2">
+                {withdrawals.map((w, i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm">
+                    <span className="flex size-10 items-center justify-center rounded-full bg-primary/15">
+                      <ArrowDownLeft className="size-5 text-primary" />
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-foreground">{w.label}</p>
+                      <p className="text-xs text-muted-foreground">{w.date}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-foreground">{brl(w.amount)}</p>
+                      <span className="rounded-full bg-positive/15 px-2 py-0.5 text-[0.6rem] font-semibold text-positive">
+                        Concluido
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Saque */}
+      {showWithdrawModal && (
+        <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
+            <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
+            <div className="flex items-center justify-between px-5 py-4">
+              <h3 className="text-lg font-bold text-foreground">Solicitar saque</h3>
+              <button
+                type="button"
+                onClick={() => setShowWithdrawModal(false)}
+                className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
+              >
+                <X className="size-5 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="px-5">
+              {/* Saldo disponivel */}
+              <div className="rounded-2xl bg-muted/50 p-4 text-center">
+                <p className="text-xs text-muted-foreground">Saldo disponivel para saque</p>
+                <p className="mt-1 text-3xl font-bold text-foreground">{brl(balance)}</p>
+              </div>
+
+              {/* Input de valor */}
+              <div className="mt-5">
+                <label className="mb-2 block text-sm font-medium text-foreground">Valor do saque</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">R$</span>
+                  <input
+                    type="text"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    placeholder="0,00"
+                    className="w-full rounded-2xl border-0 bg-muted/50 py-4 pl-12 pr-4 text-2xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+
+              {/* Atalhos de valor */}
+              <div className="mt-3 flex gap-2">
+                {[100, 500, 1000, balance].map((val, i) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setWithdrawAmount(val.toFixed(2).replace('.', ','))}
+                    className="flex-1 rounded-xl bg-muted/50 py-2 text-xs font-semibold text-foreground transition hover:bg-muted"
+                  >
+                    {i === 3 ? 'Tudo' : brl(val)}
+                  </button>
+                ))}
+              </div>
+
+              {/* Chave PIX */}
+              <div className="mt-5 rounded-2xl bg-muted/30 p-4">
+                <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">{pixKey}</p>
+              </div>
+
+              {/* Botao de saque */}
+              <button
+                type="button"
+                onClick={() => setShowWithdrawModal(false)}
+                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                <ArrowUpRight className="size-5" />
+                Confirmar saque
+              </button>
+
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                O valor sera creditado em ate 24h uteis
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────��─────────────────────────────────────
 // Tela Perfil
 // ─────────────────────────────────────────────────────────────────────────────
 
