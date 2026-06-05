@@ -39,7 +39,7 @@ export async function createAdminSession() {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 12, // 12 horas
+    maxAge: 60 * 60 * 72, // 72 horas
   })
 }
 
