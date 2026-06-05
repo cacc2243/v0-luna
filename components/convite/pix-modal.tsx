@@ -163,7 +163,7 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
             </div>
             <div>
               <h2 className="text-xl font-bold text-foreground">Pagamento PIX</h2>
-              <p className="text-sm text-muted-foreground">Convite Luna Creators</p>
+              <p className="text-sm text-muted-foreground">Convite Luna Privé</p>
             </div>
           </div>
         </div>
@@ -228,25 +228,27 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
                 <p className="mb-2 text-xs font-medium text-muted-foreground text-center">
                   Ou copie o código PIX
                 </p>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={pixCode || ''}
-                    readOnly
-                    className="w-full rounded-xl bg-muted/50 border border-border px-4 py-3 pr-12 text-xs font-mono text-foreground truncate"
-                  />
-                  <button
-                    onClick={copyPixCode}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-primary p-2 text-primary-foreground hover:bg-primary/90 transition"
-                  >
-                    {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                  </button>
-                </div>
-                {copied && (
-                  <p className="mt-2 text-center text-xs text-positive font-medium">
-                    Código copiado!
+                <div className="rounded-xl bg-muted/50 border border-border px-4 py-3">
+                  <p className="text-xs font-mono text-foreground break-all leading-relaxed">
+                    {pixCode || ''}
                   </p>
-                )}
+                </div>
+                <button
+                  onClick={copyPixCode}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition active:scale-[0.98]"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="size-5" />
+                      Código copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="size-5" />
+                      Copiar código PIX
+                    </>
+                  )}
+                </button>
               </div>
 
               {/* Instruções */}
