@@ -1,6 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import useSWR from 'swr'
 import {
   Home,
   Package,
@@ -67,7 +70,9 @@ import {
   Wine,
   Car,
   Plane,
+  AlertCircle,
 } from 'lucide-react'
+import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -102,231 +107,260 @@ function useCountUp(target: number, duration = 700) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Dados mockados
+// Supabase Data Fetching
 // ─────────────────────────────────────────────────────────────────────────────
 
-const examplePhotos = [
-  '/images/pack-photo-1.png',
-  '/images/pack-photo-2.png',
-  '/images/pack-photo-3.png',
-]
+async function fetchProfile() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+  
+  return data as Profile | null
+}
 
-const examplePacks = [
-  {
-    name: 'Pés & Saltos',
-    price: 'R$ 24,90',
-    photo: '/images/pack-photo-2.png',
-    views: '1.2k views',
-    sales: '84 vendas',
-  },
-  {
-    name: 'Ensaio Premium',
-    price: 'R$ 39,90',
-    photo: '/images/pack-photo-3.png',
-    views: '876 views',
-    sales: '52 vendas',
-  },
-  {
-    name: 'Coleção VIP',
-    price: 'R$ 59,90',
-    photo: '/images/pack-photo-1.png',
-    views: '2.4k views',
-    sales: '137 vendas',
-  },
-]
+async function fetchPacks() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  
+  const { data } = await supabase
+    .from('packs')
+    .select('*, images:pack_images(*)')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+  
+  return (data || []) as Pack[]
+}
 
-const withdrawals = [
-  { label: 'Saque PIX', date: 'Hoje, 14:32', amount: 4280.0 },
-  { label: 'Saque PIX', date: 'Ontem, 09:10', amount: 2150.0 },
-  { label: 'Saque PIX', date: '12 mai, 18:47', amount: 3890.0 },
-]
+async function fetchSales() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  
+  const { data } = await supabase
+    .from('sales')
+    .select('*, pack:packs(id, title, price, cover_image_url)')
+    .eq('seller_id', user.id)
+    .order('created_at', { ascending: false })
+  
+  return (data || []) as Sale[]
+}
+
+async function fetchTransactions() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  
+  const { data } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  
+  return (data || []) as Transaction[]
+}
+
+async function fetchWithdrawals() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  
+  const { data } = await supabase
+    .from('withdrawals')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+  
+  return (data || []) as Withdrawal[]
+}
+
+async function fetchConversations() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  
+  const { data } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('creator_id', user.id)
+    .order('last_message_at', { ascending: false })
+  
+  return (data || []) as Conversation[]
+}
+
+async function fetchBoosts() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  
+  const { data } = await supabase
+    .from('boosts')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+  
+  return (data || []) as Boost[]
+}
+
+async function fetchHighlights() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  
+  const { data } = await supabase
+    .from('highlights')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('order_index', { ascending: true })
+  
+  return (data || []) as Highlight[]
+}
+
+async function fetchNotifications() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  
+  const { data } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  
+  return (data || []) as Notification[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dados mockados (REMOVIDOS - agora usamos dados reais)
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Componente Principal
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function MinhaContaPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-
-  function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    if (!email || !password) return
-    setIsLoading(true)
-    // Simula login (qualquer credencial é válida)
-    setTimeout(() => {
-      setIsLoading(false)
-      setIsLoggedIn(true)
-    }, 1000)
-  }
-
-  if (!isLoggedIn) {
-    return <LoginScreen email={email} setEmail={setEmail} password={password} setPassword={setPassword} isLoading={isLoading} onSubmit={handleLogin} />
+  const router = useRouter()
+  const [isChecking, setIsChecking] = useState(true)
+  
+  // Verificar autenticacao
+  useEffect(() => {
+    const supabase = createClient()
+    
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
+      setIsChecking(false)
+    }
+    
+    checkAuth()
+    
+    // Escutar mudancas de autenticacao
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        router.push('/login')
+      }
+    })
+    
+    return () => subscription.unsubscribe()
+  }, [router])
+  
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="size-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    )
   }
 
   return <AppDashboard />
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tela de Login
 // ─────────────────────────────────────────────────────────────────────────────
-
-function LoginScreen({
-  email,
-  setEmail,
-  password,
-  setPassword,
-  isLoading,
-  onSubmit,
-}: {
-  email: string
-  setEmail: (v: string) => void
-  password: string
-  setPassword: (v: string) => void
-  isLoading: boolean
-  onSubmit: (e: React.FormEvent) => void
-}) {
-  return (
-    <div className="flex min-h-screen flex-col bg-background">
-      {/* Background decorativo */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-20"
-        style={{ backgroundImage: 'url(/images/hero-bg.png)' }}
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(to bottom, oklch(0.11 0.02 360 / 0.3) 0%, oklch(0.11 0.02 360) 60%)',
-        }}
-        aria-hidden="true"
-      />
-
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-12">
-        {/* Logo */}
-        <img
-          src="/images/luna-prive-logo.png"
-          alt="Luna Privé"
-          className="mb-8 h-10 w-auto"
-        />
-
-        {/* Card de Login */}
-        <div className="w-full max-w-sm">
-          <div className="luna-border rounded-3xl bg-card p-6 shadow-2xl">
-            <div className="mb-6 text-center">
-              <h1 className="text-2xl font-bold text-foreground">Entrar</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Acesse sua conta Luna Privé
-              </p>
-            </div>
-
-            <form onSubmit={onSubmit} className="flex flex-col gap-4">
-              <div>
-                <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-foreground">
-                  E-mail
-                </label>
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
-                  <Mail className="size-5 text-muted-foreground" />
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                    className="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/60"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="password" className="mb-1.5 block text-sm font-semibold text-foreground">
-                  Senha
-                </label>
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
-                  <Lock className="size-5 text-muted-foreground" />
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/60"
-                    required
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="luna-gradient mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="size-5 animate-spin" />
-                    Entrando...
-                  </>
-                ) : (
-                  'Entrar'
-                )}
-              </button>
-            </form>
-
-            <p className="mt-5 text-center text-xs text-muted-foreground">
-              Ainda não tem conta?{' '}
-              <a href="/" className="font-semibold text-primary hover:underline">
-                Criar conta
-              </a>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Dashboard do App (mesmo layout do GuidedAppDemo)
+// Dashboard do App (com dados reais do Supabase)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AppDashboard() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<'Início' | 'Packs' | 'Impulsionar' | 'Carteira' | 'Chats' | 'Perfil'>('Início')
-  const [balance, setBalance] = useState(639.10)
-  const [vendas, setVendas] = useState(7)
-  const [today, setToday] = useState(189.90)
-  const [views, setViews] = useState(734)
   const [showCreate, setShowCreate] = useState(false)
-  const [packName, setPackName] = useState('Pés & Saltos')
-  const [packPrice, setPackPrice] = useState('29,90')
+  const [packName, setPackName] = useState('')
+  const [packPrice, setPackPrice] = useState('')
   const [packDesc, setPackDesc] = useState('')
   const [publishing, setPublishing] = useState(false)
-  const [createdPack, setCreatedPack] = useState<string | null>(null)
-  const [showWelcome, setShowWelcome] = useState(true)
+  const [showWelcome, setShowWelcome] = useState(false)
   const [welcomeClosing, setWelcomeClosing] = useState(false)
 
+  // Fetch dados reais do Supabase usando SWR
+  const { data: profile, mutate: mutateProfile } = useSWR('profile', fetchProfile)
+  const { data: packs = [], mutate: mutatePacks } = useSWR('packs', fetchPacks)
+  const { data: sales = [] } = useSWR('sales', fetchSales)
+  const { data: transactions = [] } = useSWR('transactions', fetchTransactions)
+  const { data: withdrawals = [] } = useSWR('withdrawals', fetchWithdrawals)
+  const { data: conversations = [] } = useSWR('conversations', fetchConversations)
+  const { data: boosts = [] } = useSWR('boosts', fetchBoosts)
+  const { data: highlights = [] } = useSWR('highlights', fetchHighlights)
+
+  // Calcular estatisticas
+  const balance = profile?.balance || 0
+  const todaySales = sales.filter(s => {
+    const saleDate = new Date(s.created_at)
+    const today = new Date()
+    return saleDate.toDateString() === today.toDateString()
+  })
+  const todayEarnings = todaySales.reduce((sum, s) => sum + Number(s.net_amount), 0)
+  const totalViews = packs.reduce((sum, p) => sum + p.views_count, 0)
+
   const animatedBalance = useCountUp(balance)
-  const animatedToday = useCountUp(today)
+  const animatedToday = useCountUp(todayEarnings)
 
-  // Visualizações sobem ao vivo
-  useEffect(() => {
-    const id = setInterval(() => {
-      setViews((v) => v + Math.floor(Math.random() * 5) + 1)
-    }, 2000)
-    return () => clearInterval(id)
-  }, [])
-
-  function publishPack() {
-    if (publishing) return
+  // Publicar pack real
+  async function publishPack() {
+    if (publishing || !packName.trim()) return
     setPublishing(true)
-    setTimeout(() => {
+    
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
       setPublishing(false)
+      return
+    }
+
+    const priceNum = parseFloat(packPrice.replace(',', '.')) || 0
+    
+    const { error } = await supabase
+      .from('packs')
+      .insert({
+        user_id: user.id,
+        title: packName.trim(),
+        description: packDesc || null,
+        price: priceNum,
+      })
+    
+    setPublishing(false)
+    
+    if (!error) {
       setShowCreate(false)
-      setCreatedPack(packName.trim() || 'Pés & Saltos')
-    }, 1300)
+      setPackName('')
+      setPackPrice('')
+      setPackDesc('')
+      mutatePacks()
+    }
   }
 
   function closeWelcome() {
@@ -335,6 +369,13 @@ function AppDashboard() {
       setShowWelcome(false)
       setWelcomeClosing(false)
     }, 400)
+  }
+
+  // Logout
+  async function handleLogout() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
   }
 
   return (
@@ -362,7 +403,7 @@ function AppDashboard() {
             <div className="overflow-hidden rounded-[25px]">
               <img
                 src="/images/welcome-banner.png"
-                alt="Seja Bem Vinda ao Luna Privé!"
+                alt="Seja Bem Vinda ao Luna Prive!"
                 className="h-auto w-full"
               />
             </div>
@@ -370,29 +411,30 @@ function AppDashboard() {
         </div>
       )}
 
-      {/* Conteúdo rolável do app */}
+      {/* Conteudo rolavel do app */}
       <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
       {activeTab === 'Carteira' ? (
-        <WalletScreen balance={animatedBalance} />
+        <WalletScreen balance={animatedBalance} withdrawals={withdrawals} transactions={transactions} profile={profile} />
       ) : activeTab === 'Packs' ? (
         <PacksScreen
           balance={animatedBalance}
-          createdPack={createdPack}
-          packPrice={packPrice}
+          packs={packs}
           onCreate={() => setShowCreate(true)}
         />
       ) : activeTab === 'Perfil' ? (
-        <ProfileScreen />
+        <ProfileScreen profile={profile} highlights={highlights} onLogout={handleLogout} />
       ) : activeTab === 'Impulsionar' ? (
-        <ImpulsionarScreen balance={animatedBalance} />
+        <ImpulsionarScreen balance={animatedBalance} boosts={boosts} />
       ) : activeTab === 'Chats' ? (
-        <ChatsScreen balance={animatedBalance} />
+        <ChatsScreen balance={animatedBalance} conversations={conversations} />
       ) : (
         <HomeScreen
           balance={animatedBalance}
           today={animatedToday}
-          views={views}
-          vendas={vendas}
+          views={totalViews}
+          vendas={todaySales.length}
+          profile={profile}
+          packs={packs}
         />
       )}
       </div>
@@ -666,8 +708,8 @@ const giftOptions = [
   { id: 9, name: 'Viagem', icon: Plane, price: 10000, color: 'text-sky-400' },
 ]
 
-function ChatsScreen({ balance }: { balance: number }) {
-  const [activeChat, setActiveChat] = useState<typeof mockChats[0] | null>(null)
+function ChatsScreen({ balance, conversations }: { balance: number; conversations: Conversation[] }) {
+  const [activeChat, setActiveChat] = useState<Conversation | null>(null)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<typeof mockChats[0]['messages']>([])
   const [showEmojis, setShowEmojis] = useState(false)
@@ -1057,7 +1099,7 @@ const boostPlans = [
   { days: 30, price: 99.0, pricePerDay: 3.3, discount: 76, popular: true },
 ]
 
-function ImpulsionarScreen({ balance }: { balance: number }) {
+function ImpulsionarScreen({ balance, boosts }: { balance: number; boosts: Boost[] }) {
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
 
   return (
@@ -1196,19 +1238,23 @@ function ImpulsionarScreen({ balance }: { balance: number }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tela Início
-// ──────────────────────────────────────────────────────────────��──────────────
+// Tela Inicio
+// ─────────────────────────────────────────────────────────────────────────────
 
 function HomeScreen({
   balance,
   today,
   views,
   vendas,
+  profile,
+  packs,
 }: {
   balance: number
   today: number
   views: number
   vendas: number
+  profile: Profile | null | undefined
+  packs: Pack[]
 }) {
   // Lista de visualizações com novas entrando
   const allViews = [
@@ -1373,13 +1419,11 @@ function StatCard({
 
 function PacksScreen({
   balance,
-  createdPack,
-  packPrice,
+  packs,
   onCreate,
 }: {
   balance: number
-  createdPack: string | null
-  packPrice: string
+  packs: Pack[]
   onCreate: () => void
 }) {
   return (
@@ -1387,7 +1431,7 @@ function PacksScreen({
       {/* Header */}
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
+          <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
         </div>
         <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
           <Wallet className="size-6 text-primary" aria-hidden="true" />
@@ -1398,11 +1442,11 @@ function PacksScreen({
         </div>
       </header>
 
-      {/* Título */}
+      {/* Titulo */}
       <div className="mt-5 flex items-center justify-between gap-3">
         <div className="leading-tight">
           <h1 className="text-xl font-bold text-foreground">Meus Packs</h1>
-          <p className="text-xs text-muted-foreground">Sua vitrine de conteúdo</p>
+          <p className="text-xs text-muted-foreground">Sua vitrine de conteudo</p>
         </div>
         <button
           type="button"
@@ -1416,53 +1460,52 @@ function PacksScreen({
 
       {/* Vitrine */}
       <div className="mt-5 flex flex-col gap-3">
-        {createdPack && (
-          <article className="luna-border animate-pop flex overflow-hidden rounded-2xl bg-card ring-1 ring-primary/30">
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden">
-              <img
-                src="/images/pack-photo-1.png"
-                alt={createdPack}
-                className="h-full w-full object-cover"
-              />
-              <span className="luna-gradient absolute left-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold text-primary-foreground">
-                Novo
-              </span>
-            </div>
-            <div className="flex flex-1 flex-col justify-center px-3 py-2">
-              <p className="truncate text-sm font-semibold text-foreground">{createdPack}</p>
-              <p className="text-base font-bold text-positive">R$ {packPrice}</p>
-              <p className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
-                <Eye className="size-3" aria-hidden="true" />
-                0 views · 0 vendas
-              </p>
-            </div>
-            <div className="flex items-center pr-3">
-              <ChevronRight className="size-5 text-muted-foreground/50" />
-            </div>
-          </article>
+        {packs.length === 0 ? (
+          <div className="luna-border flex flex-col items-center justify-center rounded-2xl bg-card py-12 text-center">
+            <Package className="size-12 text-muted-foreground/30" />
+            <h3 className="mt-3 font-semibold text-foreground">Nenhum pack ainda</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Crie seu primeiro pack e comece a vender!
+            </p>
+            <button
+              type="button"
+              onClick={onCreate}
+              className="luna-gradient mt-4 flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Criar meu primeiro pack
+            </button>
+          </div>
+        ) : (
+          packs.map((pack) => (
+            <article key={pack.id} className="luna-border flex overflow-hidden rounded-2xl bg-card">
+              <div className="h-24 w-24 shrink-0 overflow-hidden bg-secondary">
+                {pack.cover_image_url ? (
+                  <img
+                    src={pack.cover_image_url}
+                    alt={pack.title}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Package className="size-8 text-muted-foreground/30" />
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-1 flex-col justify-center px-3 py-2">
+                <p className="truncate text-sm font-semibold text-foreground">{pack.title}</p>
+                <p className="text-base font-bold text-positive">{brl(pack.price)}</p>
+                <p className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
+                  <Eye className="size-3" aria-hidden="true" />
+                  {pack.views_count} views · {pack.sales_count} vendas
+                </p>
+              </div>
+              <div className="flex items-center pr-3">
+                <ChevronRight className="size-5 text-muted-foreground/50" />
+              </div>
+            </article>
+          ))
         )}
-        {examplePacks.map((pack) => (
-          <article key={pack.name} className="luna-border flex overflow-hidden rounded-2xl bg-card">
-            <div className="h-24 w-24 shrink-0 overflow-hidden">
-              <img
-                src={pack.photo || '/placeholder.svg'}
-                alt={pack.name}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div className="flex flex-1 flex-col justify-center px-3 py-2">
-              <p className="truncate text-sm font-semibold text-foreground">{pack.name}</p>
-              <p className="text-base font-bold text-positive">{pack.price}</p>
-              <p className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
-                <Eye className="size-3" aria-hidden="true" />
-                {pack.views} · {pack.sales}
-              </p>
-            </div>
-            <div className="flex items-center pr-3">
-              <ChevronRight className="size-5 text-muted-foreground/50" />
-            </div>
-          </article>
-        ))}
       </div>
     </div>
   )
@@ -1472,32 +1515,53 @@ function PacksScreen({
 // Tela Carteira
 // ─────────────────────────────────────────────────────────────────────────────
 
-function WalletScreen({ balance }: { balance: number }) {
+function WalletScreen({ 
+  balance,
+  withdrawals,
+  transactions,
+  profile
+}: { 
+  balance: number
+  withdrawals: Withdrawal[]
+  transactions: Transaction[]
+  profile: Profile | null | undefined
+}) {
   const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [withdrawAmount, setWithdrawAmount] = useState('')
-  const [pixKey, setPixKey] = useState('email@exemplo.com')
+  const pixKey = profile?.pix_key || ''
 
+  // Calcular dados do grafico baseado em transacoes reais
   const monthlyData = [
-    { month: 'Jan', value: 12450 },
-    { month: 'Fev', value: 15320 },
-    { month: 'Mar', value: 18900 },
-    { month: 'Abr', value: 14200 },
-    { month: 'Mai', value: 21500 },
-    { month: 'Jun', value: 18541 },
+    { month: 'Jan', value: 0 },
+    { month: 'Fev', value: 0 },
+    { month: 'Mar', value: 0 },
+    { month: 'Abr', value: 0 },
+    { month: 'Mai', value: 0 },
+    { month: 'Jun', value: 0 },
   ]
-  const maxValue = Math.max(...monthlyData.map(d => d.value))
+  
+  // Preencher dados dos ultimos meses com transacoes reais
+  transactions.forEach(t => {
+    if (t.type === 'sale' || t.type === 'gift_received') {
+      const date = new Date(t.created_at)
+      const monthIndex = date.getMonth()
+      if (monthIndex >= 0 && monthIndex < 6) {
+        monthlyData[monthIndex].value += Number(t.amount)
+      }
+    }
+  })
+  
+  const maxValue = Math.max(...monthlyData.map(d => d.value), 1)
 
-  const transactions = [
-    { id: 1, type: 'sale', desc: 'Venda Pack Premium', amount: 129.9, date: 'Hoje, 14:32' },
-    { id: 2, type: 'sale', desc: 'Venda Pack Exclusivo', amount: 89.9, date: 'Hoje, 11:15' },
-    { id: 3, type: 'gift', desc: 'Presente recebido', amount: 50, date: 'Hoje, 09:45' },
-    { id: 4, type: 'withdraw', desc: 'Saque PIX', amount: -2000, date: 'Ontem, 18:00' },
-    { id: 5, type: 'sale', desc: 'Venda Pack VIP', amount: 199.9, date: 'Ontem, 15:20' },
-    { id: 6, type: 'sale', desc: 'Venda Pack Basico', amount: 49.9, date: 'Ontem, 12:00' },
-    { id: 7, type: 'gift', desc: 'Presente recebido', amount: 100, date: '01/06, 20:30' },
-    { id: 8, type: 'withdraw', desc: 'Saque PIX', amount: -5000, date: '30/05, 10:00' },
-  ]
+  // Calcular ganhos de hoje
+  const todayEarnings = transactions
+    .filter(t => {
+      const today = new Date()
+      const tDate = new Date(t.created_at)
+      return tDate.toDateString() === today.toDateString() && t.amount > 0
+    })
+    .reduce((sum, t) => sum + Number(t.amount), 0)
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -1529,10 +1593,12 @@ function WalletScreen({ balance }: { balance: number }) {
             <p className="mt-1 text-4xl font-bold tracking-tight text-foreground">{brl(balance)}</p>
             
             <div className="mt-4 flex items-center gap-4">
-              <div className="flex items-center gap-1.5 rounded-full bg-positive/15 px-3 py-1">
-                <TrendingUp className="size-3.5 text-positive" />
-                <span className="text-xs font-semibold text-positive">+{brl(1664.97)} hoje</span>
-              </div>
+              {todayEarnings > 0 && (
+                <div className="flex items-center gap-1.5 rounded-full bg-positive/15 px-3 py-1">
+                  <TrendingUp className="size-3.5 text-positive" />
+                  <span className="text-xs font-semibold text-positive">+{brl(todayEarnings)} hoje</span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5">
                 <span className="size-2 rounded-full bg-positive animate-pulse" />
                 <span className="text-xs text-muted-foreground">Atualizado agora</span>
@@ -1791,33 +1857,30 @@ function WalletScreen({ balance }: { balance: number }) {
   )
 }
 
-// ───────────────────────────────────────��─────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // Tela Perfil
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ProfileScreen() {
+function ProfileScreen({ 
+  profile: userProfile, 
+  highlights: userHighlights,
+  onLogout 
+}: { 
+  profile: Profile | null | undefined
+  highlights: Highlight[]
+  onLogout: () => void
+}) {
   const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help'>('main')
-  const [profile, setProfile] = useState({
-    username: '@sua_luna',
-    displayName: 'Sua Luna',
-    bio: 'Criadora de conteudo exclusivo. Bem-vinda ao meu cantinho privado.',
-    location: 'Sao Paulo, SP',
-    instagram: '@sua_luna',
-    website: 'lunaprive.com/sua_luna',
+  const [localProfile, setLocalProfile] = useState({
+    username: userProfile?.username || '@usuario',
+    displayName: userProfile?.display_name || 'Usuario',
+    bio: userProfile?.bio || '',
+    location: userProfile?.location || '',
+    instagram: userProfile?.instagram || '',
+    website: userProfile?.website || '',
   })
-  const [editedProfile, setEditedProfile] = useState(profile)
-  const [highlights, setHighlights] = useState([
-    { id: 1, image: '/images/pack-photo-1.png', label: 'Favoritos' },
-    { id: 2, image: '/images/pack-photo-2.png', label: 'Premium' },
-    { id: 3, image: '/images/pack-photo-3.png', label: 'Novos' },
-  ])
-  const [notifications, setNotifications] = useState([
-    { id: 1, type: 'sale', title: 'Nova venda!', desc: 'Voce vendeu Pack Premium', time: '2 min', read: false },
-    { id: 2, type: 'follow', title: 'Novo seguidor', desc: '@fan_secreto comecou a seguir voce', time: '15 min', read: false },
-    { id: 3, type: 'like', title: 'Novo like', desc: 'Alguem curtiu seu Pack Exclusivo', time: '1h', read: false },
-    { id: 4, type: 'message', title: 'Nova mensagem', desc: '@comprador_sp enviou uma mensagem', time: '2h', read: true },
-    { id: 5, type: 'sale', title: 'Nova venda!', desc: 'Voce vendeu Colecao VIP', time: '5h', read: true },
-  ])
+  const [editedProfile, setEditedProfile] = useState(localProfile)
+  const [notifications, setNotifications] = useState<Array<{id: number; type: string; title: string; desc: string; time: string; read: boolean}>>([])
   const [settings, setSettings] = useState({
     darkMode: true,
     notifications: true,
@@ -1827,13 +1890,35 @@ function ProfileScreen() {
     showLocation: true,
   })
 
+  // Atualizar localProfile quando userProfile mudar
+  useEffect(() => {
+    if (userProfile) {
+      setLocalProfile({
+        username: userProfile.username || '@usuario',
+        displayName: userProfile.display_name || 'Usuario',
+        bio: userProfile.bio || '',
+        location: userProfile.location || '',
+        instagram: userProfile.instagram || '',
+        website: userProfile.website || '',
+      })
+      setEditedProfile({
+        username: userProfile.username || '@usuario',
+        displayName: userProfile.display_name || 'Usuario',
+        bio: userProfile.bio || '',
+        location: userProfile.location || '',
+        instagram: userProfile.instagram || '',
+        website: userProfile.website || '',
+      })
+    }
+  }, [userProfile])
+
   function saveProfile() {
-    setProfile(editedProfile)
+    setLocalProfile(editedProfile)
     setCurrentView('main')
   }
 
   function cancelEdit() {
-    setEditedProfile(profile)
+    setEditedProfile(localProfile)
     setCurrentView('main')
   }
 
@@ -2361,39 +2446,45 @@ function ProfileScreen() {
           <span className="absolute bottom-2 right-2 size-5 rounded-full border-2 border-background bg-positive" />
         </div>
         <div className="mt-4 flex items-center gap-1.5">
-          <h1 className="text-xl font-bold text-foreground">{profile.displayName}</h1>
-          <BadgeCheck className="size-5 text-primary" />
+          <h1 className="text-xl font-bold text-foreground">{localProfile.displayName}</h1>
+          {userProfile?.is_verified && <BadgeCheck className="size-5 text-primary" />}
         </div>
-        <p className="text-sm text-muted-foreground">{profile.username}</p>
+        <p className="text-sm text-muted-foreground">{localProfile.username}</p>
         
         {/* Bio */}
-        <p className="mt-3 max-w-[280px] text-sm text-muted-foreground">{profile.bio}</p>
+        {localProfile.bio && (
+          <p className="mt-3 max-w-[280px] text-sm text-muted-foreground">{localProfile.bio}</p>
+        )}
         
         {/* Links */}
         <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <MapPin className="size-3" />
-            {profile.location}
-          </span>
-          <span className="flex items-center gap-1 text-xs text-primary">
-            <Instagram className="size-3" />
-            {profile.instagram}
-          </span>
+          {localProfile.location && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="size-3" />
+              {localProfile.location}
+            </span>
+          )}
+          {localProfile.instagram && (
+            <span className="flex items-center gap-1 text-xs text-primary">
+              <Instagram className="size-3" />
+              {localProfile.instagram}
+            </span>
+          )}
         </div>
         
         {/* Stats */}
         <div className="mt-5 flex gap-8">
           <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">1.2k</p>
+            <p className="text-2xl font-bold text-foreground">{userProfile?.followers_count || 0}</p>
             <p className="text-xs text-muted-foreground">Seguidores</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">847</p>
+            <p className="text-2xl font-bold text-foreground">{userProfile?.sales_count || 0}</p>
             <p className="text-xs text-muted-foreground">Vendas</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1">
-              <p className="text-2xl font-bold text-foreground">4.9</p>
+              <p className="text-2xl font-bold text-foreground">{userProfile?.rating?.toFixed(1) || '0.0'}</p>
               <Star className="size-4 fill-amber-400 text-amber-400" />
             </div>
             <p className="text-xs text-muted-foreground">Avaliacao</p>
@@ -2405,24 +2496,39 @@ function ProfileScreen() {
       <div className="mt-6">
         <h2 className="mb-3 text-sm font-semibold text-foreground">Destaques</h2>
         <div className="flex gap-4 overflow-x-auto pb-2">
-          {highlights.map((h) => (
-            <div key={h.id} className="flex flex-col items-center gap-1.5">
-              <div className="size-20 overflow-hidden rounded-full ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
-                <img src={h.image} alt={h.label} className="h-full w-full object-cover" />
+          {userHighlights.length === 0 ? (
+            <button
+              type="button"
+              onClick={() => setCurrentView('edit')}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <div className="flex size-20 items-center justify-center rounded-full border-2 border-dashed border-primary/40 bg-primary/5 ring-offset-2 ring-offset-background">
+                <Plus className="size-6 text-primary" />
               </div>
-              <span className="text-xs text-muted-foreground">{h.label}</span>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => setCurrentView('edit')}
-            className="flex flex-col items-center gap-1.5"
-          >
-            <div className="flex size-20 items-center justify-center rounded-full border-2 border-dashed border-primary/40 bg-primary/5 ring-offset-2 ring-offset-background">
-              <Plus className="size-6 text-primary" />
-            </div>
-            <span className="text-xs text-muted-foreground">Adicionar</span>
-          </button>
+              <span className="text-xs text-muted-foreground">Adicionar</span>
+            </button>
+          ) : (
+            <>
+              {userHighlights.map((h) => (
+                <div key={h.id} className="flex flex-col items-center gap-1.5">
+                  <div className="size-20 overflow-hidden rounded-full ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
+                    <img src={h.image_url} alt={h.label} className="h-full w-full object-cover" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">{h.label}</span>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setCurrentView('edit')}
+                className="flex flex-col items-center gap-1.5"
+              >
+                <div className="flex size-20 items-center justify-center rounded-full border-2 border-dashed border-primary/40 bg-primary/5 ring-offset-2 ring-offset-background">
+                  <Plus className="size-6 text-primary" />
+                </div>
+                <span className="text-xs text-muted-foreground">Adicionar</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -2483,6 +2589,7 @@ function ProfileScreen() {
         
         <button
           type="button"
+          onClick={onLogout}
           className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
         >
           <span className="flex size-10 items-center justify-center rounded-full bg-red-500/10">
