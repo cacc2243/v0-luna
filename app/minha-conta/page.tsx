@@ -60,6 +60,13 @@ import {
   ChevronDown,
   ToggleLeft,
   ToggleRight,
+  Gift,
+  Gem,
+  Crown,
+  Flower2,
+  Wine,
+  Car,
+  Plane,
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -637,11 +644,25 @@ const mockChats = [
   },
 ]
 
+const giftOptions = [
+  { id: 1, name: 'Rosa', icon: Flower2, price: 20, color: 'text-pink-400' },
+  { id: 2, name: 'Coracao', icon: Heart, price: 50, color: 'text-red-500' },
+  { id: 3, name: 'Estrela', icon: Star, price: 100, color: 'text-amber-400' },
+  { id: 4, name: 'Vinho', icon: Wine, price: 250, color: 'text-purple-500' },
+  { id: 5, name: 'Presente', icon: Gift, price: 500, color: 'text-primary' },
+  { id: 6, name: 'Diamante', icon: Gem, price: 1000, color: 'text-cyan-400' },
+  { id: 7, name: 'Coroa', icon: Crown, price: 2500, color: 'text-amber-500' },
+  { id: 8, name: 'Carro', icon: Car, price: 5000, color: 'text-slate-400' },
+  { id: 9, name: 'Viagem', icon: Plane, price: 10000, color: 'text-sky-400' },
+]
+
 function ChatsScreen({ balance }: { balance: number }) {
   const [activeChat, setActiveChat] = useState<typeof mockChats[0] | null>(null)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<typeof mockChats[0]['messages']>([])
   const [showEmojis, setShowEmojis] = useState(false)
+  const [showGifts, setShowGifts] = useState(false)
+  const [sendingGift, setSendingGift] = useState<number | null>(null)
 
   const emojis = ['😊', '😍', '🥰', '😘', '💕', '❤️', '🔥', '💋', '😏', '🙈', '💖', '✨']
 
@@ -649,12 +670,14 @@ function ChatsScreen({ balance }: { balance: number }) {
     setActiveChat(chat)
     setMessages(chat.messages)
     setShowEmojis(false)
+    setShowGifts(false)
   }
 
   function closeChat() {
     setActiveChat(null)
     setMessage('')
     setShowEmojis(false)
+    setShowGifts(false)
   }
 
   function sendMessage() {
@@ -672,6 +695,25 @@ function ChatsScreen({ balance }: { balance: number }) {
 
   function addEmoji(emoji: string) {
     setMessage((prev) => prev + emoji)
+  }
+
+  function sendGift(gift: typeof giftOptions[0]) {
+    setSendingGift(gift.id)
+    setTimeout(() => {
+      const newMsg = {
+        id: Date.now(),
+        text: `Enviou um presente: ${gift.name}`,
+        sent: true,
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        isGift: true,
+        giftIcon: gift.icon,
+        giftColor: gift.color,
+        giftPrice: gift.price,
+      }
+      setMessages((prev) => [...prev, newMsg as any])
+      setSendingGift(null)
+      setShowGifts(false)
+    }, 1000)
   }
 
   // Tela de conversa aberta
@@ -734,25 +776,39 @@ function ChatsScreen({ balance }: { balance: number }) {
                 key={msg.id}
                 className={`flex ${msg.sent ? 'justify-end' : 'justify-start'}`}
               >
-                <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                    msg.sent
-                      ? 'rounded-br-md bg-primary text-primary-foreground'
-                      : 'rounded-bl-md bg-card text-foreground'
-                  }`}
-                >
-                  <p className="text-sm">{msg.text}</p>
-                  <p
-                    className={`mt-1 text-right text-[0.6rem] ${
-                      msg.sent ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                {(msg as any).isGift ? (
+                  <div className="flex flex-col items-center gap-2 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/20 to-primary/5 px-6 py-4">
+                    {(() => {
+                      const GiftIcon = (msg as any).giftIcon
+                      return <GiftIcon className={`size-10 ${(msg as any).giftColor}`} />
+                    })()}
+                    <p className="text-xs font-medium text-foreground">Presente enviado!</p>
+                    <span className="rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary">
+                      {brl((msg as any).giftPrice)}
+                    </span>
+                    <p className="text-[0.6rem] text-muted-foreground">{msg.time}</p>
+                  </div>
+                ) : (
+                  <div
+                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                      msg.sent
+                        ? 'rounded-br-md bg-primary text-primary-foreground'
+                        : 'rounded-bl-md bg-card text-foreground'
                     }`}
                   >
-                    {msg.time}
-                    {msg.sent && (
-                      <Check className="ml-1 inline size-3" />
-                    )}
-                  </p>
-                </div>
+                    <p className="text-sm">{msg.text}</p>
+                    <p
+                      className={`mt-1 text-right text-[0.6rem] ${
+                        msg.sent ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {msg.time}
+                      {msg.sent && (
+                        <Check className="ml-1 inline size-3" />
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -776,17 +832,69 @@ function ChatsScreen({ balance }: { balance: number }) {
           </div>
         )}
 
+        {/* Modal de presentes */}
+        {showGifts && (
+          <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+            <div className="w-full animate-in slide-in-from-bottom rounded-t-3xl bg-card pb-6">
+              <div className="flex items-center justify-between border-b border-border px-4 py-4">
+                <h3 className="text-base font-semibold text-foreground">Enviar presente</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowGifts(false)}
+                  className="flex size-8 items-center justify-center rounded-full transition hover:bg-muted"
+                >
+                  <X className="size-5 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-3 px-4 pt-4">
+                {giftOptions.map((gift) => (
+                  <button
+                    key={gift.id}
+                    type="button"
+                    onClick={() => sendGift(gift)}
+                    disabled={sendingGift !== null}
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-muted/30 p-4 transition hover:border-primary/40 hover:bg-primary/5 active:scale-95 disabled:opacity-50"
+                  >
+                    {sendingGift === gift.id ? (
+                      <Loader2 className={`size-8 animate-spin ${gift.color}`} />
+                    ) : (
+                      <gift.icon className={`size-8 ${gift.color}`} />
+                    )}
+                    <span className="text-xs font-medium text-foreground">{gift.name}</span>
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[0.65rem] font-bold text-primary">
+                      {brl(gift.price)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-4 px-4 text-center text-xs text-muted-foreground">
+                O valor do presente sera adicionado ao saldo da criadora
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Input de mensagem */}
         <div className="border-t border-border bg-card/95 px-4 py-3 backdrop-blur-md">
           <div className="flex items-end gap-2">
             <button
               type="button"
-              onClick={() => setShowEmojis(!showEmojis)}
+              onClick={() => { setShowEmojis(!showEmojis); setShowGifts(false); }}
               className={`flex size-10 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
                 showEmojis ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-muted-foreground'
               }`}
             >
               <Smile className="size-5" />
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => { setShowGifts(!showGifts); setShowEmojis(false); }}
+              className={`flex size-10 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+                showGifts ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-muted-foreground'
+              }`}
+            >
+              <Gift className="size-5" />
             </button>
             
             <button
