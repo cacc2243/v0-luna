@@ -308,16 +308,23 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
     setError('')
     
     const supabase = createClient()
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    console.log('[v0] Tentando login com:', email.trim())
+    
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     })
     
+    console.log('[v0] Resultado login:', { data, error: signInError })
+    
     setIsLoading(false)
     
     if (signInError) {
+      console.log('[v0] Erro de login:', signInError.message, signInError)
       if (signInError.message === 'Invalid login credentials') {
         setError('Email ou senha incorretos.')
+      } else if (signInError.message.includes('Database error')) {
+        setError('Erro no servidor. Tente novamente em alguns segundos.')
       } else {
         setError(signInError.message)
       }
