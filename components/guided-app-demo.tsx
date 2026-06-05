@@ -1262,7 +1262,10 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
                 </p>
                 <button
                   type="button"
-                  onClick={onDone}
+                  onClick={() => {
+                    setShowHint(false)
+                    onDone()
+                  }}
                 className="mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
                 >
                   Entendi
