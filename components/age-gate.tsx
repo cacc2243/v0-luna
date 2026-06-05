@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ShieldCheck, Lock } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 
 export function AgeGate({ onConfirm }: { onConfirm: () => void }) {
   const [leaving, setLeaving] = useState(false)
-  const [denied, setDenied] = useState(false)
 
   const handleConfirm = () => {
     setLeaving(true)
@@ -53,35 +51,9 @@ export function AgeGate({ onConfirm }: { onConfirm: () => void }) {
           <span className="font-semibold text-primary">18 anos ou mais</span>.
         </p>
 
-        {/* Selos de confiança */}
-        <div className="relative mt-5 flex items-center justify-center gap-4 text-[0.7rem] text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Lock className="size-3.5 text-positive" aria-hidden="true" />
-            100% sigiloso
-          </span>
-          <span className="size-1 rounded-full bg-muted-foreground/40" />
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck className="size-3.5 text-positive" aria-hidden="true" />
-            LGPD
-          </span>
-        </div>
-
         <div className="relative mt-6">
           <CtaButton onClick={handleConfirm}>Confirmar</CtaButton>
-          <button
-            type="button"
-            onClick={() => setDenied(true)}
-            className="mt-4 w-full text-xs text-muted-foreground/70 transition-colors hover:text-muted-foreground"
-          >
-            Não, sou menor de idade
-          </button>
         </div>
-
-        {denied && (
-          <p className="relative mt-3 text-pretty text-xs leading-relaxed text-destructive">
-            Este conteúdo é exclusivo para maiores de 18 anos. Você não pode continuar.
-          </p>
-        )}
       </div>
     </div>
   )
