@@ -47,7 +47,6 @@ import {
   Star,
   Heart,
   MapPin,
-  Link,
   Instagram,
   Edit3,
   Shield,
@@ -449,7 +448,7 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Dashboard do App (com dados reais do Supabase)
-// ────────────────────────────────────────────────────────────────────────────����
+// ────────────────────────────────────────────────────────────────────────────�����
 
 function AppDashboard() {
   const router = useRouter()
@@ -1676,7 +1675,6 @@ function ProfileScreen({
     bio: userProfile?.bio || '',
     location: userProfile?.location || '',
     instagram: userProfile?.instagram || '',
-    website: userProfile?.website || '',
   })
   const [editedProfile, setEditedProfile] = useState(localProfile)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -1701,7 +1699,6 @@ function ProfileScreen({
         bio: userProfile.bio || '',
         location: userProfile.location || '',
         instagram: userProfile.instagram || '',
-        website: userProfile.website || '',
       })
       setEditedProfile({
         username: userProfile.username || '@usuario',
@@ -1709,7 +1706,6 @@ function ProfileScreen({
         bio: userProfile.bio || '',
         location: userProfile.location || '',
         instagram: userProfile.instagram || '',
-        website: userProfile.website || '',
       })
     }
   }, [userProfile])
@@ -1731,11 +1727,9 @@ function ProfileScreen({
     const { error } = await supabase
       .from('profiles')
       .update({
-        display_name: editedProfile.displayName.trim() || null,
         bio: editedProfile.bio.trim() || null,
         location: editedProfile.location.trim() || null,
         instagram: editedProfile.instagram.trim() || null,
-        website: editedProfile.website.trim() || null,
       })
       .eq('id', user.id)
 
@@ -2183,9 +2177,12 @@ function ProfileScreen({
               <input
                 type="text"
                 value={editedProfile.username}
-                onChange={(e) => setEditedProfile({ ...editedProfile, username: e.target.value })}
-                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                readOnly
+                disabled
+                aria-label="Nome de usuario (nao editavel)"
+                className="w-full cursor-not-allowed rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground focus:outline-none"
               />
+              <p className="mt-1 text-[0.7rem] text-muted-foreground">O nome de usuario nao pode ser alterado.</p>
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
@@ -2194,9 +2191,12 @@ function ProfileScreen({
               <input
                 type="text"
                 value={editedProfile.displayName}
-                onChange={(e) => setEditedProfile({ ...editedProfile, displayName: e.target.value })}
-                className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                readOnly
+                disabled
+                aria-label="Nome de exibicao (nao editavel)"
+                className="w-full cursor-not-allowed rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground focus:outline-none"
               />
+              <p className="mt-1 text-[0.7rem] text-muted-foreground">O nome de exibicao nao pode ser alterado.</p>
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
@@ -2211,7 +2211,7 @@ function ProfileScreen({
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Localizacao
+                Localizacao <span className="text-muted-foreground/60">(opcional)</span>
               </label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -2219,13 +2219,14 @@ function ProfileScreen({
                   type="text"
                   value={editedProfile.location}
                   onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
+                  placeholder="Ex: Sao Paulo, SP"
                   className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Instagram
+                Instagram <span className="text-muted-foreground/60">(opcional)</span>
               </label>
               <div className="relative">
                 <Instagram className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -2233,20 +2234,7 @@ function ProfileScreen({
                   type="text"
                   value={editedProfile.instagram}
                   onChange={(e) => setEditedProfile({ ...editedProfile, instagram: e.target.value })}
-                  className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Website
-              </label>
-              <div className="relative">
-                <Link className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={editedProfile.website}
-                  onChange={(e) => setEditedProfile({ ...editedProfile, website: e.target.value })}
+                  placeholder="@seuusuario"
                   className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
