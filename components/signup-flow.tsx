@@ -76,9 +76,20 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       
       if (error) {
         console.error('[v0] Supabase signup error:', error)
-        setErrorMessage(error.message === 'User already registered' 
-          ? 'Este email ja esta cadastrado. Tente fazer login.'
-          : error.message)
+        // Traduzir mensagens de erro comuns
+        let msg = error.message
+        if (error.message.includes('User already registered')) {
+          msg = 'Este email ja esta cadastrado. Tente fazer login.'
+        } else if (error.message.includes('rate limit') || error.message.includes('too many')) {
+          msg = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.'
+        } else if (error.message.includes('is invalid') || error.message.includes('Invalid email')) {
+          msg = 'Use um email real e valido. Emails inventados nao funcionam.'
+        } else if (error.message.includes('Password')) {
+          msg = 'Senha deve ter pelo menos 6 caracteres.'
+        } else if (error.message.includes('email')) {
+          msg = 'Erro com o email. Verifique se esta correto.'
+        }
+        setErrorMessage(msg)
         setStatus('error')
         return
       }
