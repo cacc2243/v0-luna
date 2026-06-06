@@ -63,6 +63,7 @@ import {
   ToggleLeft,
   ToggleRight,
   AlertCircle,
+  Gift,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
 import { generatePackActivity, acceptSale, rejectSale } from './actions'
@@ -92,6 +93,25 @@ function useCountUp(target: number, duration = 700) {
       setValue(from + (target - from) * eased)
       if (p < 1) raf = requestAnimationFrame(tick)
       else fromRef.current = target
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [target, duration])
+  return value
+}
+
+// Conta de 0 ate o alvo uma unica vez, ao montar (para animacao de entrada)
+function useCountUpOnMount(target: number, duration = 900) {
+  const [value, setValue] = useState(0)
+  useEffect(() => {
+    const start = performance.now()
+    let raf = 0
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setValue(target * eased)
+      if (p < 1) raf = requestAnimationFrame(tick)
+      else setValue(target)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
@@ -1384,7 +1404,7 @@ function relativeTime(dateStr: string) {
   return `${Math.floor(h / 24)}d`
 }
 
-// ────────────────────────────────────────────────────────���────────���───────────
+// ──────────────────────────────────────��─────────────────���────────���───────────
 // StatCard
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1933,6 +1953,496 @@ function PackMetric({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
+// ─────────────────────────────────────────────────────────────────────────────
+
+function WalletScreen({
+  balance,
+  pendingBalance,
+  withdrawals,
+  transactions,
+  profile,
+}: {
+  balance: number
+  pendingBalance: number
+  withdrawals: Withdrawal[]
+  transactions: Transaction[]
+  profile: Profile | null | undefined
+}) {
+  const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
+  const [withdrawAmount, setWithdrawAmount] = useState('')
+  const [barsReady, setBarsReady] = useState(false)
+  const pixKey = profile?.pix_key || 'Nao cadastrada'
+
+  const isEarning = (t: Transaction) => t.type === 'sale' || t.type === 'gift_received' || t.type === 'bonus'
+
+  // Dispara a animacao das barras logo apos montar
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setBarsReady(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
+  // Grafico: 6 meses comecando no mes atual (2026) e seguindo para os proximos
+  const now = new Date()
+  const monthlyData = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
+    return {
+      key: `${d.getFullYear()}-${d.getMonth()}`,
+      label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
+      value: 0,
+    }
+  })
+  transactions.forEach((t) => {
+    if (!isEarning(t)) return
+    const d = new Date(t.created_at)
+    const key = `${d.getFullYear()}-${d.getMonth()}`
+    const bucket = monthlyData.find((m) => m.key === key)
+    if (bucket) bucket.value += Number(t.amount)
+  })
+  const chartYear = new Date(now.getFullYear(), now.getMonth(), 1).getFullYear()
+  const maxValue = Math.max(...monthlyData.map((d) => d.value), 1)
+
+  // Ganhos de hoje
+  const todayEarnings = transactions
+    .filter((t) => {
+      const tDate = new Date(t.created_at)
+      return isEarning(t) && tDate.toDateString() === now.toDateString()
+    })
+    .reduce((sum, t) => sum + Number(t.amount), 0)
+
+  // Ganhos do mes atual
+  const monthEarnings = transactions
+    .filter((t) => {
+      const d = new Date(t.created_at)
+      return isEarning(t) && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    })
+    .reduce((sum, t) => sum + Number(t.amount), 0)
+
+  // Ganhos do mes anterior, para variacao percentual real
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const prevMonthEarnings = transactions
+    .filter((t) => {
+      const d = new Date(t.created_at)
+      return isEarning(t) && d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear()
+    })
+    .reduce((sum, t) => sum + Number(t.amount), 0)
+
+  const monthDeltaPct =
+    prevMonthEarnings > 0 ? Math.round(((monthEarnings - prevMonthEarnings) / prevMonthEarnings) * 100) : null
+
+  // Total sacado (somente saques concluidos)
+  const totalWithdrawn = withdrawals
+    .filter((w) => ['completed', 'processing'].includes(String(w.status).toLowerCase()))
+    .reduce((sum, w) => sum + Number(w.amount), 0)
+
+  // Ganhos animados (contando de 0 ao entrar na tela)
+  const animatedMonth = useCountUpOnMount(monthEarnings)
+  const animatedWithdrawn = useCountUpOnMount(totalWithdrawn)
+  const animatedToday = useCountUpOnMount(todayEarnings)
+
+  // Vendas concluidas para "Ultimas vendas"
+  const saleTransactions = transactions.filter((t) => t.type === 'sale')
+
+  const formatDateTime = (iso: string) => {
+    const d = new Date(iso)
+    const diffMs = now.getTime() - d.getTime()
+    const diffMin = Math.floor(diffMs / 60000)
+    if (diffMin < 1) return 'agora'
+    if (diffMin < 60) return `ha ${diffMin} min`
+    const diffH = Math.floor(diffMin / 60)
+    if (diffH < 24) return `ha ${diffH}h`
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+  }
+
+  const txLabel = (t: Transaction) => {
+    if (t.description) return t.description
+    if (t.type === 'sale') return 'Venda de pack'
+    if (t.type === 'gift_received') return 'Presente recebido'
+    if (t.type === 'withdrawal') return 'Saque via PIX'
+    if (t.type === 'bonus') return 'Bonus'
+    return 'Transacao'
+  }
+
+  const statusLabel: Record<string, string> = {
+    completed: 'Concluido',
+    processing: 'Processando',
+    pending: 'Pendente',
+    failed: 'Falhou',
+  }
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Header fixo */}
+      <header className="shrink-0 px-4 pt-6">
+        <div className="flex items-center justify-between gap-3">
+          <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
+          <button
+            type="button"
+            onClick={() => setShowWithdrawModal(true)}
+            className="luna-gradient flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95"
+          >
+            <ArrowUpRight className="size-4" aria-hidden="true" />
+            Sacar
+          </button>
+        </div>
+      </header>
+
+      {/* Card de saldo principal */}
+      <div className="shrink-0 px-4 pt-5">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-5 ring-1 ring-primary/20">
+          <div className="absolute -right-8 -top-8 size-32 rounded-full bg-primary/10 blur-2xl" />
+          <div className="absolute -bottom-8 -left-8 size-32 rounded-full bg-primary/5 blur-2xl" />
+
+          <div className="relative">
+            <p className="text-xs font-medium text-muted-foreground">Saldo disponivel</p>
+            <p className="mt-1 text-4xl font-bold tracking-tight text-foreground">{brl(balance)}</p>
+
+            {pendingBalance > 0 && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1">
+                <Loader2 className="size-3.5 animate-spin text-amber-500" aria-hidden="true" />
+                <span className="text-xs font-semibold text-amber-500">
+                  {brl(pendingBalance)} pendente · aceite os pedidos
+                </span>
+              </div>
+            )}
+
+            <div className="mt-4 flex items-center gap-4">
+              {todayEarnings > 0 && (
+                <div className="flex items-center gap-1.5 rounded-full bg-positive/15 px-3 py-1">
+                  <TrendingUp className="size-3.5 text-positive" aria-hidden="true" />
+                  <span className="text-xs font-semibold text-positive">+{brl(animatedToday)} hoje</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 animate-pulse rounded-full bg-positive" />
+                <span className="text-xs text-muted-foreground">Atualizado agora</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="mt-5 shrink-0 px-4">
+        <div className="flex rounded-2xl bg-card/60 p-1 ring-1 ring-border">
+          {(['resumo', 'extrato', 'saques'] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+                activeTab === tab
+                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/30'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab === 'resumo' ? 'Resumo' : tab === 'extrato' ? 'Extrato' : 'Saques'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Conteudo scrollavel */}
+      <div className="flex-1 overflow-y-auto px-4 pb-6 pt-5">
+        {activeTab === 'resumo' && (
+          <>
+            {/* Stats rapidos */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-positive/15">
+                    <TrendingUp className="size-4 text-positive" aria-hidden="true" />
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">Ganhos do mes</span>
+                </div>
+                <p className="mt-2 text-2xl font-bold text-foreground">{brl(animatedMonth)}</p>
+                {monthDeltaPct !== null ? (
+                  <p className={`mt-1 text-xs ${monthDeltaPct >= 0 ? 'text-positive' : 'text-destructive'}`}>
+                    {monthDeltaPct >= 0 ? '+' : ''}
+                    {monthDeltaPct}% vs mes anterior
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">Neste mes</p>
+                )}
+              </div>
+              <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-primary/15">
+                    <Wallet className="size-4 text-primary" aria-hidden="true" />
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">Total sacado</span>
+                </div>
+                <p className="mt-2 text-2xl font-bold text-foreground">{brl(animatedWithdrawn)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Desde o inicio</p>
+              </div>
+            </div>
+
+            {/* Grafico de barras */}
+            <div className="mt-5 rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground">Ganhos mensais</h3>
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                  {chartYear}
+                </span>
+              </div>
+              <div className="flex h-36 items-end justify-between gap-2">
+                {monthlyData.map((d, i) => {
+                  const pct = barsReady ? Math.max((d.value / maxValue) * 100, d.value > 0 ? 6 : 2) : 0
+                  return (
+                    <div key={d.key} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+                      {d.value > 0 && (
+                        <span
+                          className="text-[0.6rem] font-semibold text-foreground transition-opacity duration-500"
+                          style={{ opacity: barsReady ? 1 : 0 }}
+                        >
+                          {d.value >= 1000 ? `${(d.value / 1000).toFixed(1)}k` : Math.round(d.value)}
+                        </span>
+                      )}
+                      <div
+                        className={`w-full rounded-lg ${
+                          i === 0 ? 'bg-primary shadow-md shadow-primary/30' : 'bg-primary/30'
+                        }`}
+                        style={{
+                          height: `${pct}%`,
+                          minHeight: '6px',
+                          transition: 'height 700ms cubic-bezier(0.22, 1, 0.36, 1)',
+                          transitionDelay: `${i * 80}ms`,
+                        }}
+                      />
+                      <span className={`text-[0.6rem] capitalize ${i === 0 ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
+                        {d.label}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Ultimas vendas */}
+            <div className="mt-5">
+              <h3 className="mb-3 text-sm font-semibold text-foreground">Ultimas vendas</h3>
+              {saleTransactions.length === 0 ? (
+                <div className="rounded-2xl bg-card/60 p-6 text-center ring-1 ring-border">
+                  <p className="text-sm text-muted-foreground">Nenhuma venda ainda. Compartilhe seus packs!</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {saleTransactions.slice(0, 5).map((t) => (
+                    <div
+                      key={t.id}
+                      className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm"
+                    >
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-positive/15">
+                        <ShoppingBag className="size-5 text-positive" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-foreground">{txLabel(t)}</p>
+                        <p className="text-xs text-muted-foreground">{formatDateTime(t.created_at)}</p>
+                      </div>
+                      <span className="shrink-0 text-sm font-bold text-positive">+{brl(Number(t.amount))}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {activeTab === 'extrato' && (
+          <div className="flex flex-col gap-2">
+            {transactions.length === 0 ? (
+              <div className="rounded-2xl bg-card/60 p-6 text-center ring-1 ring-border">
+                <p className="text-sm text-muted-foreground">Sem movimentacoes no extrato.</p>
+              </div>
+            ) : (
+              transactions.map((t) => {
+                const positive = isEarning(t)
+                return (
+                  <div
+                    key={t.id}
+                    className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm"
+                  >
+                    <span
+                      className={`flex size-10 shrink-0 items-center justify-center rounded-full ${
+                        t.type === 'sale'
+                          ? 'bg-positive/15'
+                          : t.type === 'gift_received'
+                            ? 'bg-amber-500/15'
+                            : t.type === 'bonus'
+                              ? 'bg-primary/15'
+                              : 'bg-muted'
+                      }`}
+                    >
+                      {t.type === 'sale' && <ShoppingBag className="size-5 text-positive" aria-hidden="true" />}
+                      {t.type === 'gift_received' && <Gift className="size-5 text-amber-500" aria-hidden="true" />}
+                      {t.type === 'bonus' && <Sparkles className="size-5 text-primary" aria-hidden="true" />}
+                      {t.type === 'withdrawal' && <ArrowDownLeft className="size-5 text-muted-foreground" aria-hidden="true" />}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">{txLabel(t)}</p>
+                      <p className="text-xs text-muted-foreground">{formatDateTime(t.created_at)}</p>
+                    </div>
+                    <span className={`shrink-0 text-sm font-bold ${positive ? 'text-positive' : 'text-foreground'}`}>
+                      {positive ? '+' : '-'}
+                      {brl(Math.abs(Number(t.amount)))}
+                    </span>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+
+        {activeTab === 'saques' && (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-2xl bg-primary/10 p-4 ring-1 ring-primary/20">
+              <div className="flex items-start gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                  <Info className="size-5 text-primary" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Saques via PIX</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Saques sao processados em ate 24h uteis. O valor minimo para saque e de R$ 50,00.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+              <p className="text-xs font-medium text-muted-foreground">Chave PIX cadastrada</p>
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-sm font-semibold text-foreground">{pixKey}</p>
+                <button type="button" className="text-xs font-semibold text-primary">
+                  Alterar
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-foreground">Historico de saques</h3>
+              {withdrawals.length === 0 ? (
+                <div className="rounded-2xl bg-card/60 p-6 text-center ring-1 ring-border">
+                  <p className="text-sm text-muted-foreground">Voce ainda nao fez nenhum saque.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {withdrawals.map((w) => {
+                    const st = String(w.status).toLowerCase()
+                    return (
+                      <div
+                        key={w.id}
+                        className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm"
+                      >
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                          <ArrowDownLeft className="size-5 text-primary" aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground">Saque via PIX</p>
+                          <p className="text-xs text-muted-foreground">{formatDateTime(w.created_at)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-foreground">{brl(Number(w.amount))}</p>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[0.6rem] font-semibold ${
+                              st === 'completed'
+                                ? 'bg-positive/15 text-positive'
+                                : st === 'failed'
+                                  ? 'bg-destructive/15 text-destructive'
+                                  : 'bg-amber-500/15 text-amber-500'
+                            }`}
+                          >
+                            {statusLabel[st] ?? 'Pendente'}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Saque */}
+      {showWithdrawModal && (
+        <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
+            <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
+            <div className="flex items-center justify-between px-5 py-4">
+              <h3 className="text-lg font-bold text-foreground">Solicitar saque</h3>
+              <button
+                type="button"
+                onClick={() => setShowWithdrawModal(false)}
+                className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
+                aria-label="Fechar"
+              >
+                <X className="size-5 text-muted-foreground" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="px-5">
+              <div className="rounded-2xl bg-muted/50 p-4 text-center">
+                <p className="text-xs text-muted-foreground">Saldo disponivel para saque</p>
+                <p className="mt-1 text-3xl font-bold text-foreground">{brl(balance)}</p>
+              </div>
+
+              <div className="mt-5">
+                <label className="mb-2 block text-sm font-medium text-foreground">Valor do saque</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">
+                    R$
+                  </span>
+                  <input
+                    type="text"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    placeholder="0,00"
+                    inputMode="decimal"
+                    className="w-full rounded-2xl border-0 bg-muted/50 py-4 pl-12 pr-4 text-2xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3 flex gap-2">
+                {[100, 500, 1000, balance].map((val, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setWithdrawAmount(val.toFixed(2).replace('.', ','))}
+                    className="flex-1 rounded-xl bg-muted/50 py-2 text-xs font-semibold text-foreground transition hover:bg-muted"
+                  >
+                    {i === 3 ? 'Tudo' : brl(val)}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-5 rounded-2xl bg-muted/30 p-4">
+                <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">{pixKey}</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowWithdrawModal(false)}
+                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                <ArrowUpRight className="size-5" aria-hidden="true" />
+                Confirmar saque
+              </button>
+
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                O valor sera creditado em ate 24h uteis
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Perfil
 // ─────────────────────────────────────────────────────────────────────────────
