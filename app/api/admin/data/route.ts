@@ -10,6 +10,7 @@ interface InviteRow {
   email: string | null
   amount: number | null
   status: string | null
+  type: string | null
   transaction_id: string | null
   pix_code: string | null
   created_at: string
@@ -22,6 +23,8 @@ interface ProfileRow {
   username: string | null
   display_name: string | null
   created_at: string
+  chat_unlocked: boolean | null
+  chat_unlocked_at: string | null
 }
 
 export async function GET() {
@@ -36,12 +39,12 @@ export async function GET() {
     supabase
       .from('invites')
       .select(
-        'id, user_id, email, amount, status, transaction_id, pix_code, created_at, paid_at, pix_expiration',
+        'id, user_id, email, amount, status, type, transaction_id, pix_code, created_at, paid_at, pix_expiration',
       )
       .order('created_at', { ascending: false }),
     supabase
       .from('profiles')
-      .select('id, username, display_name, created_at')
+      .select('id, username, display_name, created_at, chat_unlocked, chat_unlocked_at')
       .order('created_at', { ascending: false }),
   ])
 

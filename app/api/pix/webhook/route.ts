@@ -71,6 +71,45 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Se for um pagamento de Chat Exclusivo confirmado, desbloqueia o chat da usuaria
+    if (newStatus === 'paid' && invite.type === 'chat') {
+      let chatUserId: string | null = invite.user_id || null
+
+      // Se nao houver user_id no invite, tenta localizar pelo email do perfil/auth
+      if (!chatUserId && invite.email) {
+        const { data: authList } = await supabase.auth.admin.listUsers()
+        const matched = authList?.users?.find(
+          (u) => (u.email || '').toLowerCase() === invite.email.toLowerCase(),
+        )
+        chatUserId = matched?.id || null
+      }
+
+      if (chatUserId) {
+        const { error: chatErr } = await supabase
+          .from('profiles')
+          .update({
+            chat_unlocked: true,
+            chat_unlocked_at: new Date().toISOString(),
+          })
+          .eq('id', chatUserId)
+
+        if (chatErr) {
+          console.error('[v0] Erro ao desbloquear chat:', chatErr)
+        } else {
+          console.log('[v0] Chat exclusivo desbloqueado para usuaria:', chatUserId)
+          await supabase.from('notifications').insert({
+            user_id: chatUserId,
+            type: 'message',
+            title: 'Chat Exclusivo liberado',
+            description: 'Seu Chat Exclusivo foi ativado. Agora você pode aceitar vendas e conversar com seus clientes.',
+            reference_id: invite.id,
+          })
+        }
+      } else {
+        console.error('[v0] Nao foi possivel identificar a usuaria do chat para o invite:', invite.id)
+      }
+    }
+
     console.log('[v0] Convite atualizado:', invite.id, 'Status:', newStatus)
 
     return NextResponse.json({

@@ -27,6 +27,8 @@ export type Profile = {
   rating: number
   pix_key: string | null
   pix_key_type: string | null
+  chat_unlocked: boolean
+  chat_unlocked_at: string | null
   created_at: string
 }
 
@@ -973,7 +975,12 @@ export async function acceptSale(saleId: string) {
   // corridas que fazem o saldo "voltar" ao aceitar pedidos rapidamente.
   const { data, error } = await supabase.rpc('accept_sale_atomic', { p_sale_id: saleId })
   if (error) return { error: error.message }
-  if (data && (data as { error?: string }).error) return { error: (data as { error?: string }).error }
+  if (data && (data as { error?: string }).error) {
+    const errCode = (data as { error?: string }).error
+    // Sinaliza ao cliente que falta liberar o Chat Exclusivo
+    if (errCode === 'chat_locked') return { error: 'chat_locked' }
+    return { error: errCode }
+  }
 
   revalidatePath('/minha-conta')
   return { success: true }

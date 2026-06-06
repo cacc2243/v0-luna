@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
     const inviteId = searchParams.get('id')
+    const type = searchParams.get('type')
 
     if (!email && !inviteId) {
       return NextResponse.json(
@@ -24,6 +25,10 @@ export async function GET(request: NextRequest) {
       query = query.eq('email', email)
     }
 
+    if (type === 'chat' || type === 'invite') {
+      query = query.eq('type', type)
+    }
+
     const { data: invites, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
@@ -37,6 +42,32 @@ export async function GET(request: NextRequest) {
     // Verificar se tem convite pago
     const paidInvite = invites?.find(inv => inv.status === 'paid')
     const pendingInvite = invites?.find(inv => inv.status === 'pending')
+
+    // Safety net: se um pagamento de Chat Exclusivo ja foi confirmado,
+    // garante que o perfil esteja com o chat desbloqueado (caso o webhook falhe)
+    if (paidInvite && paidInvite.type === 'chat') {
+      let chatUserId: string | null = paidInvite.user_id || null
+      if (!chatUserId && paidInvite.email) {
+        const { data: authList } = await supabase.auth.admin.listUsers()
+        const matched = authList?.users?.find(
+          (u) => (u.email || '').toLowerCase() === paidInvite.email.toLowerCase(),
+        )
+        chatUserId = matched?.id || null
+      }
+      if (chatUserId) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('chat_unlocked')
+          .eq('id', chatUserId)
+          .single()
+        if (prof && !prof.chat_unlocked) {
+          await supabase
+            .from('profiles')
+            .update({ chat_unlocked: true, chat_unlocked_at: new Date().toISOString() })
+            .eq('id', chatUserId)
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
