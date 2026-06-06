@@ -1205,10 +1205,10 @@ function HomeScreen({
             balanceFlash ? 'animate-balance-pop' : ''
           }`}
         >
-          <Wallet className={`size-6 ${balanceFlash ? 'text-positive' : 'text-primary'}`} aria-hidden="true" />
+          <Wallet className="size-6 text-primary" aria-hidden="true" />
           <div className="leading-tight">
             <p className="text-xs text-muted-foreground">Saldo</p>
-            <p className={`text-xl font-bold ${balanceFlash ? 'text-positive' : 'text-foreground'}`}>{brl(balance)}</p>
+            <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
           </div>
         </div>
       </header>
@@ -1497,7 +1497,7 @@ function PacksScreen({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ───────────────────────────��──��─��────────────────────────────────────────────
+// ──────────────���────────────��──��─��────────────────────────────────────────────
 
 function WalletScreen({ 
   balance,
