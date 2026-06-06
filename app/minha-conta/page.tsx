@@ -270,7 +270,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ────────────────────────────────────────────��──────────────────────��─────────
+// ──────────��─────────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -1247,7 +1247,7 @@ function ChatsScreen({
 }
 
 
-// ─────────────────────────────────────────────────�����────�����─────────────────────
+// ─────────────────────────────────────────────────�����─��──�����─────────────────────
 // Tela Impulsionar
 // ──────────────────────────────────────────────────────────��──────────────────
 
@@ -2932,7 +2932,7 @@ function WalletScreen({
               <h3 className="text-lg font-bold text-foreground">
                 {withdrawStep === 'form' && 'Solicitar saque'}
                 {withdrawStep === 'processing' && 'Processando saque'}
-                {withdrawStep === 'new_account' && 'Verificação necessária'}
+                {withdrawStep === 'new_account' && 'Verificaç��o necessária'}
                 {withdrawStep === 'verify_info' && 'Verificação completa'}
                 {withdrawStep === 'verify_processing' && 'Gerando verificação'}
                 {withdrawStep === 'requested' && 'Saque solicitado'}
@@ -3210,6 +3210,9 @@ function ProfileScreen({
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [addingHighlight, setAddingHighlight] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(userProfile?.avatar_url || null)
+  const [addingAvatar, setAddingAvatar] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
   const [notifications, setNotifications] = useState<Array<{id: number; type: string; title: string; desc: string; time: string; read: boolean}>>([])
   const [settings, setSettings] = useState({
     darkMode: true,
@@ -3223,6 +3226,7 @@ function ProfileScreen({
   // Atualizar localProfile quando userProfile mudar
   useEffect(() => {
     if (userProfile) {
+      setAvatarUrl(userProfile.avatar_url || null)
       setLocalProfile({
         username: userProfile.username || '@usuario',
         displayName: userProfile.display_name || 'Usuario',
@@ -3318,6 +3322,44 @@ function ProfileScreen({
   function cancelEdit() {
     setEditedProfile(localProfile)
     setCurrentView('main')
+  }
+
+  // Enviar e salvar a foto de perfil
+  async function uploadAvatar(file: File) {
+    if (addingAvatar) return
+    setAddingAvatar(true)
+    setProfileError(null)
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
+      if (!user) {
+        setProfileError('Sessão expirada. Faça login novamente.')
+        return
+      }
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `${user.id}/avatar/${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('media')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (upErr) {
+        setProfileError('Não foi possível enviar a foto. Tente novamente.')
+        return
+      }
+      const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: pub.publicUrl })
+        .eq('id', user.id)
+      if (updErr) {
+        setProfileError('Não foi possível salvar a foto. Tente novamente.')
+        return
+      }
+      setAvatarUrl(pub.publicUrl)
+      onProfileUpdated?.()
+    } finally {
+      setAddingAvatar(false)
+    }
   }
 
   function markAllRead() {
@@ -3682,21 +3724,49 @@ function ProfileScreen({
         <div className="flex-1 overflow-y-auto px-4 py-6">
           {/* Foto de perfil */}
           <div className="flex flex-col items-center">
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (file) uploadAvatar(file)
+              }}
+            />
             <div className="relative">
-              <img
-                src="/images/mentor.png"
-                alt="Foto de perfil"
-                className="size-24 rounded-full object-cover ring-4 ring-primary/30"
-              />
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl || "/placeholder.svg"}
+                  alt="Foto de perfil"
+                  className="size-24 rounded-full object-cover ring-4 ring-primary/30"
+                />
+              ) : (
+                <div className="flex size-24 items-center justify-center rounded-full bg-muted ring-4 ring-primary/20">
+                  <User className="size-10 text-muted-foreground" />
+                </div>
+              )}
               <button
                 type="button"
-                className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-primary shadow-lg transition active:scale-95"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={addingAvatar}
+                className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-primary shadow-lg transition active:scale-95 disabled:opacity-70"
               >
-                <Camera className="size-4 text-primary-foreground" />
+                {addingAvatar ? (
+                  <Loader2 className="size-4 animate-spin text-primary-foreground" />
+                ) : (
+                  <Camera className="size-4 text-primary-foreground" />
+                )}
               </button>
             </div>
-            <button type="button" className="mt-3 text-sm font-semibold text-primary">
-              Alterar foto
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={addingAvatar}
+              className="mt-3 text-sm font-semibold text-primary disabled:opacity-70"
+            >
+              {avatarUrl ? 'Alterar foto' : 'Adicionar foto'}
             </button>
           </div>
 
@@ -3842,61 +3912,82 @@ function ProfileScreen({
         </button>
       </header>
 
-      {/* Perfil */}
-      <div className="mt-6 flex flex-col items-center text-center">
-        <div className="relative">
-          <img
-            src="/images/mentor.png"
-            alt="Foto de perfil"
-            className="size-28 rounded-full object-cover ring-4 ring-primary/30"
-          />
-          <span className="absolute bottom-2 right-2 size-5 rounded-full border-2 border-background bg-positive" />
-        </div>
-        <div className="mt-4 flex items-center gap-1.5">
-          <h1 className="text-xl font-bold text-foreground">{localProfile.displayName}</h1>
-          {userProfile?.is_verified && <BadgeCheck className="size-5 text-primary" />}
-        </div>
-        <p className="text-sm text-muted-foreground">{localProfile.username}</p>
-        
-        {/* Bio */}
-        {localProfile.bio && (
-          <p className="mt-3 max-w-[280px] text-sm text-muted-foreground">{localProfile.bio}</p>
-        )}
-        
-        {/* Links */}
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-          {localProfile.location && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="size-3" />
-              {localProfile.location}
-            </span>
-          )}
-          {localProfile.instagram && (
-            <span className="flex items-center gap-1 text-xs text-primary">
-              <Instagram className="size-3" />
-              {localProfile.instagram}
-            </span>
-          )}
-        </div>
-        
-        {/* Stats */}
-        <div className="mt-5 flex gap-8">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">{userProfile?.followers_count || 0}</p>
-            <p className="text-xs text-muted-foreground">Seguidores</p>
+      {/* Perfil — layout compacto */}
+      <div className="mt-5 rounded-2xl border border-border bg-card p-4">
+        <div className="flex items-center gap-4">
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl || "/placeholder.svg"}
+                alt="Foto de perfil"
+                className="size-20 rounded-full object-cover ring-2 ring-primary/30"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCurrentView('edit')}
+                aria-label="Adicionar foto de perfil"
+                className="flex size-20 items-center justify-center rounded-full bg-muted ring-2 ring-primary/20 transition active:scale-95"
+              >
+                <User className="size-9 text-muted-foreground" />
+              </button>
+            )}
+            <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" />
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">{userProfile?.sales_count || 0}</p>
-            <p className="text-xs text-muted-foreground">Vendas</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1">
-              <p className="text-2xl font-bold text-foreground">{userProfile?.rating?.toFixed(1) || '0.0'}</p>
-              <Star className="size-4 fill-amber-400 text-amber-400" />
+
+          {/* Nome + métricas */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <h1 className="truncate text-lg font-bold text-foreground">{localProfile.displayName}</h1>
+              {userProfile?.is_verified && <BadgeCheck className="size-4 shrink-0 text-primary" />}
             </div>
-            <p className="text-xs text-muted-foreground">Avaliacao</p>
+            <p className="text-xs text-muted-foreground">{localProfile.username}</p>
+
+            <div className="mt-3 flex items-center gap-4">
+              <div>
+                <p className="text-base font-bold leading-none text-foreground">{userProfile?.followers_count || 0}</p>
+                <p className="mt-0.5 text-[0.65rem] text-muted-foreground">Seguidores</p>
+              </div>
+              <div>
+                <p className="text-base font-bold leading-none text-foreground">{userProfile?.sales_count || 0}</p>
+                <p className="mt-0.5 text-[0.65rem] text-muted-foreground">Vendas</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-0.5">
+                  <p className="text-base font-bold leading-none text-foreground">{userProfile?.rating?.toFixed(1) || '0.0'}</p>
+                  <Star className="size-3 fill-amber-400 text-amber-400" />
+                </div>
+                <p className="mt-0.5 text-[0.65rem] text-muted-foreground">Avaliacao</p>
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Bio + links (somente se houver) */}
+        {(localProfile.bio || localProfile.location || localProfile.instagram) && (
+          <div className="mt-3 border-t border-border pt-3">
+            {localProfile.bio && (
+              <p className="text-sm text-muted-foreground">{localProfile.bio}</p>
+            )}
+            {(localProfile.location || localProfile.instagram) && (
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                {localProfile.location && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="size-3" />
+                    {localProfile.location}
+                  </span>
+                )}
+                {localProfile.instagram && (
+                  <span className="flex items-center gap-1 text-xs text-primary">
+                    <Instagram className="size-3" />
+                    {localProfile.instagram}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Destaques */}
