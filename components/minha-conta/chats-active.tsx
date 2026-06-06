@@ -11,6 +11,9 @@ import {
   Check,
   CheckCheck,
   ShieldCheck,
+  Sparkles,
+  Lock,
+  Search,
 } from 'lucide-react'
 import { claimGift } from '@/app/minha-conta/actions'
 import { PixModal } from '@/components/convite/pix-modal'
@@ -21,6 +24,10 @@ const GIFT_UNLOCK_PRICE = 38.6
 
 function brl(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+}
+
+function nowTime() {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,6 +97,7 @@ type ChatMessage = {
   kind?: 'text' | 'gift'
   giftAmount?: number
   giftClaimed?: boolean
+  time?: string
 }
 
 // passos do fluxo de cada conversa
@@ -119,6 +127,7 @@ export function ChatsActive({
   onProfileRefresh,
 }: ChatsActiveProps) {
   const [openId, setOpenId] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
 
   const activeBuyer = BUYERS.find((b) => b.id === openId) || null
 
@@ -134,6 +143,9 @@ export function ChatsActive({
       />
     )
   }
+
+  const filtered = BUYERS.filter((b) => b.name.toLowerCase().includes(query.toLowerCase()))
+  const onlineCount = BUYERS.filter((b) => b.online).length
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
@@ -162,29 +174,58 @@ export function ChatsActive({
               Ativo
             </span>
           </div>
-          <p className="text-sm text-muted-foreground">{BUYERS.length} conversas</p>
+          <p className="text-sm text-muted-foreground">
+            {BUYERS.length} conversas · <span className="text-positive">{onlineCount} online agora</span>
+          </p>
         </div>
       </div>
 
+      {/* Busca */}
+      <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-border bg-card px-4 py-3">
+        <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar conversa..."
+          className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
+        />
+      </div>
+
+      {/* Dica de ganhos */}
+      <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3">
+        <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+        <p className="text-pretty text-xs leading-relaxed text-foreground">
+          Responda com carinho. Clientes que se sentem especiais costumam{' '}
+          <span className="font-semibold text-primary">enviar presentes em dinheiro</span> direto pelo chat.
+        </p>
+      </div>
+
       {/* Lista de conversas */}
-      <ul className="mt-6 flex flex-col gap-2">
-        {BUYERS.map((b) => (
-          <li key={b.id}>
+      <ul className="mt-5 flex flex-col gap-2.5">
+        {filtered.map((b, i) => (
+          <li key={b.id} className="animate-item" style={{ animationDelay: `${i * 70}ms` }}>
             <button
               type="button"
               onClick={() => setOpenId(b.id)}
-              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-3.5 py-3 text-left transition hover:border-primary/40 active:scale-[0.99]"
+              className="luna-border-soft flex w-full items-center gap-3 rounded-2xl bg-card px-3.5 py-3.5 text-left transition hover:bg-card/70 active:scale-[0.99]"
             >
               <div className="relative shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={b.avatar || '/placeholder.svg'} alt={b.name} className="size-12 rounded-full object-cover" />
+                <img
+                  src={b.avatar || '/placeholder.svg'}
+                  alt={b.name}
+                  className="size-[3.25rem] rounded-full object-cover ring-2 ring-primary/20"
+                />
                 {b.online && (
                   <span className="absolute bottom-0 right-0 size-3.5 rounded-full border-2 border-card bg-positive" />
                 )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-sm font-semibold text-foreground">{b.name}</p>
+                  <p className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
+                    {b.name}
+                    <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                  </p>
                   <span className="shrink-0 text-[0.65rem] text-muted-foreground">{b.lastTime}</span>
                 </div>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">{b.greeting}</p>
@@ -195,6 +236,11 @@ export function ChatsActive({
             </button>
           </li>
         ))}
+        {filtered.length === 0 && (
+          <li className="rounded-2xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+            Nenhuma conversa encontrada.
+          </li>
+        )}
       </ul>
     </div>
   )
@@ -220,7 +266,7 @@ function ChatConversation({
   onProfileRefresh: () => void
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 'm0', from: 'buyer', text: buyer.greeting, kind: 'text' },
+    { id: 'm0', from: 'buyer', text: buyer.greeting, kind: 'text', time: nowTime() },
   ])
   const [step, setStep] = useState<FlowStep>(0)
   const [typing, setTyping] = useState(false)
@@ -255,7 +301,7 @@ function ChatConversation({
     setTyping(true)
     const t = setTimeout(() => {
       setTyping(false)
-      setMessages((prev) => [...prev, msg])
+      setMessages((prev) => [...prev, { ...msg, time: nowTime() }])
     }, delay)
     timers.current.push(t)
   }
@@ -264,7 +310,7 @@ function ChatConversation({
     const text = input.trim()
     if (!text || step >= 3) return
 
-    setMessages((prev) => [...prev, { id: `c-${Date.now()}`, from: 'creator', text, kind: 'text' }])
+    setMessages((prev) => [...prev, { id: `c-${Date.now()}`, from: 'creator', text, kind: 'text', time: nowTime() }])
     setInput('')
 
     if (step === 0) {
@@ -287,13 +333,22 @@ function ChatConversation({
         {
           id: `g-${Date.now()}`,
           from: 'buyer',
+          text: 'Toma, meu amor. É só pra te ver feliz. Aproveita!',
+          kind: 'text',
+        },
+        1500,
+      )
+      pushBuyerMessage(
+        {
+          id: `gift-${Date.now()}`,
+          from: 'buyer',
           kind: 'gift',
           giftAmount: amount,
           giftClaimed: false,
         },
-        2000,
+        3200,
       )
-      const t = setTimeout(() => setStep(3), 2100)
+      const t = setTimeout(() => setStep(3), 3300)
       timers.current.push(t)
     }
   }
@@ -330,22 +385,36 @@ function ChatConversation({
         </button>
         <div className="relative shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={buyer.avatar || '/placeholder.svg'} alt={buyer.name} className="size-10 rounded-full object-cover" />
+          <img
+            src={buyer.avatar || '/placeholder.svg'}
+            alt={buyer.name}
+            className="size-10 rounded-full object-cover ring-2 ring-primary/20"
+          />
           {buyer.online && (
             <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-card bg-positive" />
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">{buyer.name}</p>
-          <p className="text-xs text-positive">{typing ? 'digitando...' : buyer.online ? 'online' : 'visto recentemente'}</p>
+          <p className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
+            {buyer.name}
+            <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+          </p>
+          <p className="text-xs text-positive">
+            {typing ? 'digitando...' : buyer.online ? 'online' : 'visto recentemente'}
+          </p>
         </div>
+        <span className="flex items-center gap-1 rounded-full bg-positive/10 px-2.5 py-1 text-[0.6rem] font-semibold text-positive">
+          <ShieldCheck className="size-3" />
+          Protegido
+        </span>
       </header>
 
       {/* Mensagens */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto bg-background px-4 py-4">
         <div className="mx-auto flex max-w-md flex-col gap-2.5">
-          <p className="mx-auto mb-2 rounded-full bg-muted/60 px-3 py-1 text-center text-[0.65rem] text-muted-foreground">
-            Converse com respeito. O Luna Privé protege você.
+          <p className="mx-auto mb-2 flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1 text-center text-[0.65rem] text-muted-foreground">
+            <Lock className="size-3" />
+            Conversa protegida pelo Luna Privé
           </p>
 
           {messages.map((m) =>
@@ -354,10 +423,11 @@ function ChatConversation({
                 key={m.id}
                 amount={m.giftAmount || 0}
                 claimed={!!m.giftClaimed}
+                senderName={buyer.name}
                 onOpen={() => openGiftModal(m.giftAmount || 0)}
               />
             ) : (
-              <MessageBubble key={m.id} from={m.from} text={m.text || ''} />
+              <MessageBubble key={m.id} from={m.from} text={m.text || ''} time={m.time} />
             ),
           )}
 
@@ -440,23 +510,26 @@ function ChatConversation({
 // Subcomponentes de bolha
 // ─────────────────────────────────────────────────────────────────────────────
 
-function MessageBubble({ from, text }: { from: 'buyer' | 'creator'; text: string }) {
+function MessageBubble({ from, text, time }: { from: 'buyer' | 'creator'; text: string; time?: string }) {
   const isCreator = from === 'creator'
   return (
-    <div className={`flex ${isCreator ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex animate-speech-enter ${isCreator ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
           isCreator
             ? 'rounded-br-md bg-primary text-primary-foreground'
             : 'rounded-bl-md border border-border bg-card text-foreground'
         }`}
       >
         <p className="text-pretty">{text}</p>
-        {isCreator && (
-          <span className="mt-1 flex items-center justify-end gap-0.5 text-[0.6rem] text-primary-foreground/70">
-            <CheckCheck className="size-3" />
-          </span>
-        )}
+        <span
+          className={`mt-1 flex items-center justify-end gap-0.5 text-[0.6rem] ${
+            isCreator ? 'text-primary-foreground/70' : 'text-muted-foreground'
+          }`}
+        >
+          {time}
+          {isCreator && <CheckCheck className="size-3" />}
+        </span>
       </div>
     </div>
   )
@@ -464,7 +537,7 @@ function MessageBubble({ from, text }: { from: 'buyer' | 'creator'; text: string
 
 function TypingBubble({ avatar }: { avatar: string }) {
   return (
-    <div className="flex items-end gap-2">
+    <div className="flex animate-speech-enter items-end gap-2">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={avatar || '/placeholder.svg'} alt="" className="size-6 rounded-full object-cover" />
       <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3">
@@ -476,39 +549,93 @@ function TypingBubble({ avatar }: { avatar: string }) {
   )
 }
 
-function GiftBubble({ amount, claimed, onOpen }: { amount: number; claimed: boolean; onOpen: () => void }) {
+// Card de presente RECEBIDO — exclusivo, com brilho, confete e botão de resgate
+function GiftBubble({
+  amount,
+  claimed,
+  senderName,
+  onOpen,
+}: {
+  amount: number
+  claimed: boolean
+  senderName: string
+  onOpen: () => void
+}) {
+  // posições/atrasos fixos para as partículas de confete (não recalcular a cada render)
+  const confetti = [
+    { left: '12%', delay: '0s', color: 'bg-primary' },
+    { left: '28%', delay: '0.15s', color: 'bg-positive' },
+    { left: '46%', delay: '0.05s', color: 'bg-accent' },
+    { left: '64%', delay: '0.22s', color: 'bg-primary' },
+    { left: '82%', delay: '0.1s', color: 'bg-positive' },
+  ]
+
   return (
-    <div className="flex justify-start">
-      <div className="w-[85%] max-w-[300px] overflow-hidden rounded-2xl rounded-bl-md border border-primary/40 bg-gradient-to-br from-primary/15 to-card">
-        <div className="flex items-center gap-3 px-4 pt-4">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
-            <Gift className="size-6 text-primary-foreground" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-primary">Presente enviado</p>
-            <p className="text-2xl font-bold leading-none text-foreground">{brl(amount)}</p>
-          </div>
-        </div>
-        <div className="px-4 pb-4 pt-3">
-          {claimed ? (
-            <div className="flex items-center justify-center gap-1.5 rounded-xl bg-positive/15 py-2.5 text-sm font-semibold text-positive">
-              <Check className="size-4" />
-              Presente resgatado
+    <div className="flex animate-speech-enter justify-start">
+      <div className="relative w-[88%] max-w-[320px] overflow-hidden rounded-3xl rounded-bl-md p-[1.5px]">
+        {/* moldura em gradiente */}
+        <div className="luna-gradient absolute inset-0 rounded-3xl rounded-bl-md opacity-90" aria-hidden="true" />
+
+        <div className="animate-gift-shimmer relative overflow-hidden rounded-[1.4rem] rounded-bl-md bg-gradient-to-br from-card via-card to-primary/10">
+          {/* confete decorativo no topo (apenas quando ainda não resgatado) */}
+          {!claimed && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 overflow-hidden" aria-hidden="true">
+              {confetti.map((c, i) => (
+                <span
+                  key={i}
+                  className={`animate-confetti absolute top-0 size-1.5 rounded-[2px] ${c.color}`}
+                  style={{ left: c.left, animationDelay: c.delay }}
+                />
+              ))}
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={onOpen}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground shadow transition hover:brightness-110 active:scale-[0.98]"
-            >
-              <Gift className="size-4" />
-              Resgatar meu presente
-            </button>
           )}
-          <p className="mt-2 flex items-center justify-center gap-1 text-[0.6rem] text-muted-foreground">
-            <ShieldCheck className="size-3 text-positive" />
-            Vira saldo imediato na sua conta
+
+          {/* cabeçalho com ícone */}
+          <div className="relative flex items-center gap-3 px-4 pt-4">
+            <div className="relative shrink-0">
+              <span className="animate-gift-glow absolute -inset-1.5 rounded-2xl bg-primary/40 blur-md" aria-hidden="true" />
+              <div className="relative flex size-12 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/40">
+                <Gift className="animate-gift-wiggle size-6 text-primary-foreground" />
+              </div>
+            </div>
+            <div className="min-w-0">
+              <p className="flex items-center gap-1 text-[0.62rem] font-bold uppercase tracking-wider text-primary">
+                <Sparkles className="size-3" />
+                Presente recebido
+              </p>
+              <p className="animate-amount-reveal text-[1.7rem] font-extrabold leading-none text-foreground">
+                {brl(amount)}
+              </p>
+            </div>
+          </div>
+
+          {/* remetente */}
+          <p className="relative mt-2.5 px-4 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">{senderName}</span> enviou um presente para você
           </p>
+
+          {/* ação */}
+          <div className="relative px-4 pb-4 pt-3">
+            {claimed ? (
+              <div className="flex items-center justify-center gap-1.5 rounded-2xl bg-positive/15 py-2.5 text-sm font-bold text-positive">
+                <Check className="size-4" />
+                Presente resgatado
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpen}
+                className="luna-gradient flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
+              >
+                <Gift className="size-4" />
+                Abrir e resgatar
+              </button>
+            )}
+            <p className="mt-2 flex items-center justify-center gap-1 text-[0.6rem] text-muted-foreground">
+              <ShieldCheck className="size-3 text-positive" />
+              Vira saldo imediato na sua conta
+            </p>
+          </div>
         </div>
       </div>
     </div>

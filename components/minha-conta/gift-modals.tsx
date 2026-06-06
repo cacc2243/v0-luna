@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   X,
   Gift,
@@ -21,10 +21,29 @@ function brl(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 }
 
+// Partículas de confete reaproveitadas em vários estados
+function Confetti({ count = 14 }: { count?: number }) {
+  const colors = ['bg-primary', 'bg-positive', 'bg-accent', 'bg-amber-400']
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      {Array.from({ length: count }).map((_, i) => (
+        <span
+          key={i}
+          className={`animate-confetti absolute top-0 size-2 rounded-[2px] ${colors[i % colors.length]}`}
+          style={{
+            left: `${(i / count) * 100 + (i % 2 === 0 ? 3 : -3)}%`,
+            animationDelay: `${(i % 5) * 0.12}s`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal: Presente Recebido
-// Estado "presente" -> mostra o presente e botão Resgatar
-// Estado "bloqueado" -> se a conta não tem habilitação, explica e oferece ativar
+// Fluxo: "sealed" (caixa fechada, abrir) -> "gift" (valor revelado) -> resgatar
+// "locked" -> conta sem habilitação · "claimed" -> celebração final
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface GiftReceivedModalProps {
@@ -51,10 +70,24 @@ export function GiftReceivedModal({
   onClaim,
   onActivate,
 }: GiftReceivedModalProps) {
-  const [view, setView] = useState<'gift' | 'locked' | 'claimed'>('gift')
+  const [view, setView] = useState<'sealed' | 'opening' | 'gift' | 'locked' | 'claimed'>('sealed')
   const [claiming, setClaiming] = useState(false)
 
+  // Sempre que reabrir, recomeça pela caixa fechada
+  useEffect(() => {
+    if (isOpen) {
+      setView('sealed')
+      setClaiming(false)
+    }
+  }, [isOpen])
+
   if (!isOpen) return null
+
+  function handleOpenGift() {
+    // anima a caixa abrindo e então revela o valor
+    setView('opening')
+    setTimeout(() => setView('gift'), 1300)
+  }
 
   async function handleClaim() {
     // Sem habilitação -> mostra o aviso de bloqueio
@@ -69,7 +102,7 @@ export function GiftReceivedModal({
   }
 
   function handleClose() {
-    setView('gift')
+    setView('sealed')
     setClaiming(false)
     onClose()
   }
@@ -85,17 +118,74 @@ export function GiftReceivedModal({
           <X className="size-5" />
         </button>
 
-        {/* ── Estado: Presente recebido ────────────────────────────────── */}
+        {/* ── Estado: Caixa fechada (chamando para abrir) ──────────────── */}
+        {(view === 'sealed' || view === 'opening') && (
+          <div className="relative overflow-hidden px-5 pb-7 pt-10 text-center">
+            {/* fundo radial suave */}
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/25 via-primary/5 to-transparent"
+              aria-hidden="true"
+            />
+            <div className="relative">
+              <p className="flex items-center justify-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-widest text-primary">
+                <Sparkles className="size-3.5" />
+                Você recebeu um presente
+              </p>
+
+              {/* caixa de presente */}
+              <div className="relative mx-auto mt-6 flex size-32 items-center justify-center">
+                <span className="animate-gift-glow absolute inset-0 rounded-[2rem] bg-primary/40 blur-xl" aria-hidden="true" />
+                <div
+                  className={`relative flex size-28 items-center justify-center rounded-[1.75rem] bg-gradient-to-br from-primary to-accent shadow-2xl shadow-primary/40 ${
+                    view === 'opening' ? 'animate-gift-open' : 'animate-gift-wiggle'
+                  }`}
+                >
+                  <Gift className="size-14 text-primary-foreground" />
+                </div>
+                {view === 'opening' && <Confetti count={16} />}
+              </div>
+
+              <p className="mx-auto mt-6 max-w-xs text-pretty text-sm leading-relaxed text-muted-foreground">
+                <span className="font-semibold text-foreground">{senderName}</span> enviou algo especial para
+                você. Toque para abrir e descobrir o valor!
+              </p>
+
+              <button
+                onClick={handleOpenGift}
+                disabled={view === 'opening'}
+                className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-80"
+              >
+                {view === 'opening' ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Abrindo...
+                  </>
+                ) : (
+                  <>
+                    <Gift className="size-4" />
+                    Abrir presente
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Estado: Presente aberto (valor revelado) ─────────────────── */}
         {view === 'gift' && (
           <>
             <div className="relative overflow-hidden bg-gradient-to-br from-primary/30 via-primary/10 to-transparent px-5 pb-6 pt-8 text-center">
-              <div className="mx-auto flex size-20 items-center justify-center rounded-3xl bg-primary shadow-xl shadow-primary/40">
-                <Gift className="size-10 text-primary-foreground" />
+              <Confetti count={14} />
+              <div className="relative mx-auto flex size-20 items-center justify-center">
+                <span className="animate-gift-glow absolute inset-0 rounded-3xl bg-primary/40 blur-lg" aria-hidden="true" />
+                <div className="relative flex size-20 items-center justify-center rounded-3xl bg-primary shadow-xl shadow-primary/40">
+                  <Gift className="size-10 text-primary-foreground" />
+                </div>
               </div>
               <p className="mt-4 text-[0.7rem] font-semibold uppercase tracking-widest text-primary">
-                Você recebeu um presente
+                Presente recebido
               </p>
-              <p className="mt-1 text-4xl font-bold text-foreground">{brl(amount)}</p>
+              <p className="animate-amount-reveal mt-1 text-5xl font-extrabold text-foreground">{brl(amount)}</p>
             </div>
 
             <div className="px-5 py-5">
@@ -114,7 +204,7 @@ export function GiftReceivedModal({
                 )}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-foreground">{senderName}</p>
-                  <p className="text-xs text-muted-foreground">enviou um presente para você</p>
+                  <p className="text-xs text-muted-foreground">enviou este presente para você</p>
                 </div>
               </div>
 
@@ -130,7 +220,7 @@ export function GiftReceivedModal({
               <button
                 onClick={handleClaim}
                 disabled={claiming}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-70"
+                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-70"
               >
                 {claiming ? (
                   <>
@@ -199,18 +289,22 @@ export function GiftReceivedModal({
 
         {/* ── Estado: Presente resgatado ───────────────────────────────── */}
         {view === 'claimed' && (
-          <div className="px-5 py-8 text-center">
-            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-positive/15">
-              <PartyPopper className="size-8 text-positive" />
+          <div className="relative overflow-hidden px-5 py-9 text-center">
+            <Confetti count={18} />
+            <div className="relative mx-auto flex size-16 items-center justify-center">
+              <span className="animate-gift-glow absolute inset-0 rounded-full bg-positive/30 blur-lg" aria-hidden="true" />
+              <div className="relative flex size-16 items-center justify-center rounded-full bg-positive/15">
+                <PartyPopper className="size-8 text-positive" />
+              </div>
             </div>
             <h2 className="mt-4 text-xl font-bold text-foreground">Presente resgatado!</h2>
+            <p className="animate-amount-reveal mt-1 text-3xl font-extrabold text-positive">{brl(amount)}</p>
             <p className="mx-auto mt-2 max-w-xs text-pretty text-sm leading-relaxed text-muted-foreground">
-              <span className="font-bold text-positive">{brl(amount)}</span> foi adicionado ao seu saldo.
-              Você já pode sacar quando quiser.
+              foi adicionado ao seu saldo. Você já pode sacar quando quiser.
             </p>
             <button
               onClick={handleClose}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
+              className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
             >
               <BadgeCheck className="size-4" />
               Concluir
