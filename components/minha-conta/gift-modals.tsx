@@ -58,6 +58,8 @@ interface GiftReceivedModalProps {
   onClaim: () => Promise<boolean>
   /** Abrir o fluxo de habilitação de presentes */
   onActivate: () => void
+  /** Disparada quando ela tenta resgatar mas a conta não tem presentes ativos */
+  onLockedAttempt?: () => void
 }
 
 export function GiftReceivedModal({
@@ -69,6 +71,7 @@ export function GiftReceivedModal({
   giftsEnabled,
   onClaim,
   onActivate,
+  onLockedAttempt,
 }: GiftReceivedModalProps) {
   const [view, setView] = useState<'sealed' | 'opening' | 'gift' | 'locked' | 'claimed'>('sealed')
   const [claiming, setClaiming] = useState(false)
@@ -90,8 +93,9 @@ export function GiftReceivedModal({
   }
 
   async function handleClaim() {
-    // Sem habilitação -> mostra o aviso de bloqueio
+    // Sem habilitação -> mostra o aviso de bloqueio e avisa o chat (remetente responde)
     if (!giftsEnabled) {
+      onLockedAttempt?.()
       setView('locked')
       return
     }

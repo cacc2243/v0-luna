@@ -14,6 +14,7 @@ import {
   Sparkles,
   Lock,
   Search,
+  User,
 } from 'lucide-react'
 import { claimGift } from '@/app/minha-conta/actions'
 import { PixModal } from '@/components/convite/pix-modal'
@@ -30,6 +31,10 @@ function nowTime() {
   return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Compradores simulados (iniciam a conversa com um elogio)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -37,45 +42,54 @@ function nowTime() {
 type BuyerSeed = {
   id: string
   name: string
-  avatar: string
   greeting: string
   online: boolean
   lastTime: string
 }
 
 const BUYERS: BuyerSeed[] = [
-  {
-    id: 'b1',
-    name: 'Rafael Augusto',
-    avatar: '/images/buyers/buyer-1.png',
-    greeting: 'Boa noite, meu amor. Te achei linda demais aqui',
-    online: true,
-    lastTime: 'agora',
-  },
-  {
-    id: 'b2',
-    name: 'Bruno Carvalho',
-    avatar: '/images/buyers/buyer-2.png',
-    greeting: 'Oi meu anjo, tudo bem com você? Adorei seu perfil',
-    online: true,
-    lastTime: 'agora',
-  },
-  {
-    id: 'b3',
-    name: 'Lucas Ferreira',
-    avatar: '/images/buyers/buyer-3.png',
-    greeting: 'Olá bebê, você é simplesmente perfeita',
-    online: false,
-    lastTime: '2 min',
-  },
-  {
-    id: 'b4',
-    name: 'Diego Martins',
-    avatar: '/images/buyers/buyer-4.png',
-    greeting: 'Bom dia, gata. Não consegui parar de olhar seu perfil',
-    online: true,
-    lastTime: '5 min',
-  },
+  { id: 'b1', name: 'Rafael Augusto', greeting: 'Boa noite, meu amor. Te achei linda demais aqui', online: true, lastTime: 'agora' },
+  { id: 'b2', name: 'Bruno Carvalho', greeting: 'Oi meu anjo, tudo bem com você? Adorei seu perfil', online: true, lastTime: 'agora' },
+  { id: 'b3', name: 'Lucas Ferreira', greeting: 'Olá bebê, você é simplesmente perfeita', online: false, lastTime: '2 min' },
+  { id: 'b4', name: 'Diego Martins', greeting: 'Bom dia, gata. Não consegui parar de olhar seu perfil', online: true, lastTime: '5 min' },
+  { id: 'b5', name: 'Felipe Andrade', greeting: 'Oi linda, fiquei encantado com você agora mesmo', online: true, lastTime: 'agora' },
+  { id: 'b6', name: 'Gustavo Lima', greeting: 'Que mulher maravilhosa, preciso te conhecer melhor', online: true, lastTime: 'agora' },
+  { id: 'b7', name: 'Thiago Souza', greeting: 'Boa tarde, gata. Seu sorriso me ganhou na hora', online: false, lastTime: '8 min' },
+  { id: 'b8', name: 'Marcelo Rocha', greeting: 'Oi amor, você é a coisa mais linda que vi hoje', online: true, lastTime: 'agora' },
+  { id: 'b9', name: 'André Nogueira', greeting: 'Olá meu bem, fiquei impressionado com você', online: true, lastTime: 'agora' },
+  { id: 'b10', name: 'Vinícius Costa', greeting: 'Oi gata, posso te conhecer melhor? Adorei tudo aqui', online: true, lastTime: 'agora' },
+  { id: 'b11', name: 'Eduardo Pires', greeting: 'Boa noite, princesa. Você me deixou sem palavras', online: false, lastTime: '12 min' },
+  { id: 'b12', name: 'Henrique Alves', greeting: 'Oi linda, seu perfil é o melhor que já vi', online: true, lastTime: 'agora' },
+  { id: 'b13', name: 'Rodrigo Mendes', greeting: 'Olá amor, você é simplesmente deslumbrante', online: true, lastTime: 'agora' },
+  { id: 'b14', name: 'Caio Barbosa', greeting: 'Oi gata, fiquei completamente encantado com você', online: true, lastTime: 'agora' },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Variações de mensagens do comprador
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 1ª mensagem do comprador após a resposta dela: pergunta sobre enviar presente
+const ASK_GIFT_MESSAGES = [
+  'Que delícia conversar com você. Posso te mandar um presente? Seu perfil já tá aceitando?',
+  'Adorei te conhecer, gata. Queria te dar um mimo... sua conta já aceita presente?',
+  'Você é maravilhosa mesmo. Posso te enviar um presente em dinheiro? Já consegue receber?',
+  'Tô encantado com você. Deixa eu te mandar um agrado, seu perfil já libera presente?',
+]
+
+// 2ª mensagem do comprador: anuncia que está enviando o presente (com variações)
+const SEND_GIFT_MESSAGES = [
+  'Pronto, acabei de te mandar um presente. Espero que goste, linda!',
+  'Te enviei um mimo agora mesmo, meu amor. É só pra te ver feliz.',
+  'Olha só, deixei uma surpresa pra você aqui. Aproveita, você merece!',
+  'Mandei um presentinho pra você. Pega que é todo seu, gata.',
+  'Te mandei um agrado especial. Espero te ver sorrindo com ele!',
+]
+
+// Mensagem quando ela tenta resgatar mas a conta não tem presentes ativos
+const LOCKED_MESSAGES = [
+  'Poxa, mandei o presente mas acho que não chegou pra você... sua conta ainda não tem presentes ativos. Se você ativar, a gente continua conversando?',
+  'Te enviei aqui, mas parece que você não recebeu porque seu perfil não tem presentes ativados. Consegue ativar? Aí seguimos a conversa.',
+  'Mandei sim, só que acho que não caiu aí porque sua conta não aceita presentes ainda. Se conseguir ativar me avisa que continuamos!',
 ]
 
 // gera um valor de presente entre R$ 200 e R$ 600 (múltiplos de 10)
@@ -108,6 +122,34 @@ type ChatMessage = {
 type FlowStep = 0 | 1 | 2 | 3
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Avatar genérico (ícone, sem foto do usuário)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function BuyerAvatar({
+  online,
+  size = 'md',
+}: {
+  online?: boolean
+  size?: 'sm' | 'md' | 'lg'
+}) {
+  const box = size === 'lg' ? 'size-[3.25rem]' : size === 'md' ? 'size-10' : 'size-7'
+  const icon = size === 'lg' ? 'size-6' : size === 'md' ? 'size-5' : 'size-4'
+  const dot = size === 'lg' ? 'size-3.5' : 'size-3'
+  return (
+    <div className="relative shrink-0">
+      <div
+        className={`flex ${box} items-center justify-center rounded-full bg-gradient-to-br from-primary/25 to-accent/15 ring-2 ring-primary/20`}
+      >
+        <User className={`${icon} text-primary`} aria-hidden="true" />
+      </div>
+      {online && (
+        <span className={`absolute bottom-0 right-0 ${dot} rounded-full border-2 border-card bg-positive`} />
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Componente principal
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -129,7 +171,30 @@ export function ChatsActive({
   const [openId, setOpenId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
 
-  const activeBuyer = BUYERS.find((b) => b.id === openId) || null
+  // Lista que cresce com o tempo (novas conversas chegando sempre)
+  const [shown, setShown] = useState<BuyerSeed[]>(() => BUYERS.slice(0, 4))
+  const nextIndex = useRef(4)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShown((prev) => {
+        const idx = nextIndex.current
+        const base = BUYERS[idx % BUYERS.length]
+        nextIndex.current = idx + 1
+        const incoming: BuyerSeed = {
+          ...base,
+          id: idx < BUYERS.length ? base.id : `${base.id}-${idx}`,
+          lastTime: 'agora',
+          online: true,
+        }
+        // novas conversas entram no topo; mantém no máximo 30
+        return [incoming, ...prev].slice(0, 30)
+      })
+    }, 4500)
+    return () => clearInterval(interval)
+  }, [])
+
+  const activeBuyer = shown.find((b) => b.id === openId) || null
 
   if (activeBuyer) {
     return (
@@ -144,8 +209,8 @@ export function ChatsActive({
     )
   }
 
-  const filtered = BUYERS.filter((b) => b.name.toLowerCase().includes(query.toLowerCase()))
-  const onlineCount = BUYERS.filter((b) => b.online).length
+  const filtered = shown.filter((b) => b.name.toLowerCase().includes(query.toLowerCase()))
+  const onlineCount = shown.filter((b) => b.online).length
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
@@ -175,7 +240,7 @@ export function ChatsActive({
             </span>
           </div>
           <p className="text-sm text-muted-foreground">
-            {BUYERS.length} conversas · <span className="text-positive">{onlineCount} online agora</span>
+            {shown.length} conversas · <span className="text-positive">{onlineCount} online agora</span>
           </p>
         </div>
       </div>
@@ -202,24 +267,14 @@ export function ChatsActive({
 
       {/* Lista de conversas */}
       <ul className="mt-5 flex flex-col gap-2.5">
-        {filtered.map((b, i) => (
-          <li key={b.id} className="animate-item" style={{ animationDelay: `${i * 70}ms` }}>
+        {filtered.map((b) => (
+          <li key={b.id} className="animate-item">
             <button
               type="button"
               onClick={() => setOpenId(b.id)}
               className="luna-border-soft flex w-full items-center gap-3 rounded-2xl bg-card px-3.5 py-3.5 text-left transition hover:bg-card/70 active:scale-[0.99]"
             >
-              <div className="relative shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={b.avatar || '/placeholder.svg'}
-                  alt={b.name}
-                  className="size-[3.25rem] rounded-full object-cover ring-2 ring-primary/20"
-                />
-                {b.online && (
-                  <span className="absolute bottom-0 right-0 size-3.5 rounded-full border-2 border-card bg-positive" />
-                )}
-              </div>
+              <BuyerAvatar online={b.online} size="lg" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
@@ -280,6 +335,7 @@ function ChatConversation({
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const lockedMsgSent = useRef(false)
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -320,20 +376,20 @@ function ChatConversation({
         {
           id: `b-${Date.now()}`,
           from: 'buyer',
-          text: 'Que delícia falar com você. Posso te enviar um presente? Seu perfil já pode aceitar?',
+          text: pick(ASK_GIFT_MESSAGES),
           kind: 'text',
         },
         1800,
       )
     } else if (step === 1) {
-      // comprador envia o presente
+      // comprador anuncia e envia o presente
       setStep(2)
       const amount = randomGiftAmount()
       pushBuyerMessage(
         {
           id: `g-${Date.now()}`,
           from: 'buyer',
-          text: 'Toma, meu amor. É só pra te ver feliz. Aproveita!',
+          text: pick(SEND_GIFT_MESSAGES),
           kind: 'text',
         },
         1500,
@@ -356,6 +412,21 @@ function ChatConversation({
   function openGiftModal(amount: number) {
     setActiveGiftAmount(amount)
     setShowGift(true)
+  }
+
+  // Disparada quando ela tenta resgatar sem ter presentes ativos
+  function handleLockedAttempt() {
+    if (lockedMsgSent.current) return
+    lockedMsgSent.current = true
+    pushBuyerMessage(
+      {
+        id: `lock-${Date.now()}`,
+        from: 'buyer',
+        text: pick(LOCKED_MESSAGES),
+        kind: 'text',
+      },
+      1400,
+    )
   }
 
   async function handleClaim(): Promise<boolean> {
@@ -383,17 +454,7 @@ function ChatConversation({
         >
           <ArrowLeft className="size-5" />
         </button>
-        <div className="relative shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={buyer.avatar || '/placeholder.svg'}
-            alt={buyer.name}
-            className="size-10 rounded-full object-cover ring-2 ring-primary/20"
-          />
-          {buyer.online && (
-            <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-card bg-positive" />
-          )}
-        </div>
+        <BuyerAvatar online={buyer.online} size="md" />
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
             {buyer.name}
@@ -431,7 +492,7 @@ function ChatConversation({
             ),
           )}
 
-          {typing && <TypingBubble avatar={buyer.avatar} />}
+          {typing && <TypingBubble />}
         </div>
       </div>
 
@@ -464,10 +525,11 @@ function ChatConversation({
         isOpen={showGift}
         onClose={() => setShowGift(false)}
         senderName={buyer.name}
-        senderAvatar={buyer.avatar}
+        senderAvatar={null}
         amount={activeGiftAmount}
         giftsEnabled={giftsEnabled}
         onClaim={handleClaim}
+        onLockedAttempt={handleLockedAttempt}
         onActivate={() => {
           setShowGift(false)
           setShowEnable(true)
@@ -535,11 +597,10 @@ function MessageBubble({ from, text, time }: { from: 'buyer' | 'creator'; text: 
   )
 }
 
-function TypingBubble({ avatar }: { avatar: string }) {
+function TypingBubble() {
   return (
     <div className="flex animate-speech-enter items-end gap-2">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={avatar || '/placeholder.svg'} alt="" className="size-6 rounded-full object-cover" />
+      <BuyerAvatar size="sm" />
       <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3">
         <span className="size-2 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
         <span className="size-2 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.15s]" />
