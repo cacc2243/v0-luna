@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('email', email)
     }
 
-    if (type === 'chat' || type === 'invite') {
+    if (type === 'chat' || type === 'invite' || type === 'gift_unlock' || type === 'boost') {
       query = query.eq('type', type)
     }
 
@@ -91,6 +91,45 @@ export async function GET(request: NextRequest) {
             .from('profiles')
             .update({ gifts_enabled: true, gifts_enabled_at: new Date().toISOString() })
             .eq('id', giftUserId)
+        }
+      }
+    }
+
+    // Safety net (impulsionamento): se o pagamento do boost foi confirmado,
+    // garante que exista um boost ativo para a usuaria (caso o webhook falhe)
+    if (paidInvite && paidInvite.type === 'boost') {
+      let boostUserId: string | null = paidInvite.user_id || null
+      if (!boostUserId && paidInvite.email) {
+        const { data: authList } = await supabase.auth.admin.listUsers()
+        const matched = authList?.users?.find(
+          (u) => (u.email || '').toLowerCase() === paidInvite.email.toLowerCase(),
+        )
+        boostUserId = matched?.id || null
+      }
+      if (boostUserId) {
+        const { data: existingBoost } = await supabase
+          .from('boosts')
+          .select('id')
+          .eq('user_id', boostUserId)
+          .eq('boost_type', 'profile')
+          .eq('is_active', true)
+          .gte('ends_at', new Date().toISOString())
+          .maybeSingle()
+
+        if (!existingBoost) {
+          const days = Number(paidInvite.boost_days) || 2
+          const startsAt = new Date()
+          const endsAt = new Date(startsAt.getTime() + days * 24 * 60 * 60 * 1000)
+          await supabase.from('boosts').insert({
+            user_id: boostUserId,
+            boost_type: 'profile',
+            plan_name: `${days} dias`,
+            amount: paidInvite.amount,
+            duration_days: days,
+            starts_at: startsAt.toISOString(),
+            ends_at: endsAt.toISOString(),
+            is_active: true,
+          })
         }
       }
     }

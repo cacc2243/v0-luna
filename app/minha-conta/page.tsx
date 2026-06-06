@@ -64,6 +64,7 @@ import {
   ToggleRight,
   AlertCircle,
   Gift,
+  Clock,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
 import { generatePackActivity, acceptSale, rejectSale } from './actions'
@@ -266,7 +267,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ───────────────────────────────────────────────────────────────────��─────────
+// ────────────────────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -518,7 +519,7 @@ function AppDashboard() {
   const { data: transactions = [], mutate: mutateTransactions } = useSWR('transactions', fetchTransactions)
   const { data: withdrawals = [] } = useSWR('withdrawals', fetchWithdrawals)
   const { data: conversations = [] } = useSWR('conversations', fetchConversations)
-  const { data: boosts = [] } = useSWR('boosts', fetchBoosts)
+  const { data: boosts = [], mutate: mutateBoosts } = useSWR('boosts', fetchBoosts)
   const { data: highlights = [], mutate: mutateHighlights } = useSWR('highlights', fetchHighlights)
   const { data: notifications = [], mutate: mutateNotifications } = useSWR('notifications', fetchNotifications)
 
@@ -829,7 +830,15 @@ function AppDashboard() {
       ) : activeTab === 'Perfil' ? (
         <ProfileScreen profile={profile} highlights={highlights} onLogout={handleLogout} onProfileUpdated={mutateProfile} onHighlightsUpdated={mutateHighlights} />
       ) : activeTab === 'Impulsionar' ? (
-        <ImpulsionarScreen balance={animatedBalance} boosts={boosts} />
+        <ImpulsionarScreen
+          balance={animatedBalance}
+          boosts={boosts}
+          userEmail={userEmail}
+          userName={profile?.display_name || 'Criadora Luna'}
+          onBoostActivated={() => {
+            mutateBoosts()
+          }}
+        />
       ) : activeTab === 'Chats' ? (
         <ChatsScreen
           balance={animatedBalance}
@@ -1235,8 +1244,60 @@ const boostPlans = [
   { days: 30, price: 99.0, pricePerDay: 3.3, discount: 76, popular: true },
 ]
 
-function ImpulsionarScreen({ balance, boosts }: { balance: number; boosts: Boost[] }) {
+function ImpulsionarScreen({
+  balance,
+  boosts,
+  userEmail,
+  userName,
+  onBoostActivated,
+}: {
+  balance: number
+  boosts: Boost[]
+  userEmail: string
+  userName: string
+  onBoostActivated: () => void
+}) {
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [processing, setProcessing] = useState(false)
+  const [showPix, setShowPix] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
+
+  // Boost ativo (perfil) que ainda nao expirou
+  const activeBoost = boosts
+    .filter((b) => b.boost_type === 'profile' && b.is_active && new Date(b.ends_at).getTime() > now)
+    .sort((a, b) => new Date(b.ends_at).getTime() - new Date(a.ends_at).getTime())[0]
+
+  // Atualiza o contador regressivo a cada segundo enquanto houver boost ativo
+  useEffect(() => {
+    if (!activeBoost) return
+    const interval = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [activeBoost])
+
+  const plan = boostPlans.find((p) => p.days === selectedPlan)
+
+  function formatRemaining(endsAt: string) {
+    const diff = new Date(endsAt).getTime() - now
+    if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0, total: 0 }
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    const s = Math.floor((diff % (1000 * 60)) / 1000)
+    return { d, h, m, s, total: diff }
+  }
+
+  function handleConfirmBoost() {
+    setShowConfirm(false)
+    setProcessing(true)
+    // Pequena animacao antes de abrir o PIX
+    setTimeout(() => {
+      setProcessing(false)
+      setShowPix(true)
+    }, 1600)
+  }
+
+  const remaining = activeBoost ? formatRemaining(activeBoost.ends_at) : null
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
@@ -1266,6 +1327,49 @@ function ImpulsionarScreen({ balance, boosts }: { balance: number; boosts: Boost
           </div>
         </div>
       </div>
+
+      {/* Impulsionamento ativo — contador regressivo */}
+      {activeBoost && remaining && (
+        <div className="animate-pop mt-5 overflow-hidden rounded-2xl border border-positive/40 bg-gradient-to-br from-positive/15 to-positive/5">
+          <div className="flex items-center gap-2.5 border-b border-positive/20 px-4 py-3">
+            <span className="relative flex size-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-positive opacity-75" />
+              <span className="relative inline-flex size-2.5 rounded-full bg-positive" />
+            </span>
+            <p className="text-sm font-bold text-foreground">Impulsionamento ativo</p>
+            <span className="ml-auto rounded-full bg-positive/20 px-2 py-0.5 text-[0.6rem] font-bold text-positive">
+              {activeBoost.plan_name}
+            </span>
+          </div>
+          <div className="px-4 py-4">
+            <p className="mb-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="size-3.5 text-positive" aria-hidden="true" />
+              Tempo restante de destaque
+            </p>
+            <div className="flex items-stretch gap-2">
+              {[
+                { v: remaining.d, l: 'dias' },
+                { v: remaining.h, l: 'horas' },
+                { v: remaining.m, l: 'min' },
+                { v: remaining.s, l: 'seg' },
+              ].map((seg, i) => (
+                <div
+                  key={seg.l}
+                  className="flex flex-1 flex-col items-center rounded-xl border border-border bg-card py-2.5"
+                >
+                  <span className="text-2xl font-bold tabular-nums text-foreground">
+                    {seg.v.toString().padStart(2, '0')}
+                  </span>
+                  <span className="text-[0.6rem] uppercase tracking-wide text-muted-foreground">{seg.l}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Seu perfil está em destaque para mais compradores. Você pode renovar a qualquer momento.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Benefícios */}
       <div className="mt-5 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-4">
@@ -1358,17 +1462,126 @@ function ImpulsionarScreen({ balance, boosts }: { balance: number; boosts: Boost
         <button
           type="button"
           disabled={!selectedPlan}
+          onClick={() => selectedPlan && setShowConfirm(true)}
           className="luna-gradient flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-50"
         >
           <Zap className="size-5" aria-hidden="true" />
           {selectedPlan
-            ? `Impulsionar por ${brl(boostPlans.find((p) => p.days === selectedPlan)?.price || 0)}`
+            ? `${activeBoost ? 'Renovar' : 'Impulsionar'} por ${brl(plan?.price || 0)}`
             : 'Selecione um plano'}
         </button>
         <p className="mt-3 text-center text-xs text-muted-foreground">
           O impulsionamento começa imediatamente após a confirmação
         </p>
       </div>
+
+      {/* Modal de confirmação */}
+      {showConfirm && plan && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowConfirm(false)}
+            aria-hidden="true"
+          />
+          <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary active:scale-95"
+              aria-label="Fechar"
+            >
+              <X className="size-5" aria-hidden="true" />
+            </button>
+
+            <div className="bg-gradient-to-br from-primary/20 to-primary/5 px-5 pb-5 pt-6 text-center">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/20">
+                <Rocket className="size-7 text-primary" aria-hidden="true" />
+              </div>
+              <h2 className="mt-3 text-lg font-bold text-foreground">Confirmar impulsionamento</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Geraremos um PIX no valor do seu plano
+              </p>
+            </div>
+
+            <div className="px-5 py-5">
+              <div className="rounded-2xl border border-border bg-secondary/50 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Duração do destaque</span>
+                  <span className="text-sm font-bold text-foreground">{plan.days} dias</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2">
+                  <span className="text-sm text-muted-foreground">Valor por dia</span>
+                  <span className="text-sm font-semibold text-foreground">{brl(plan.pricePerDay)}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2">
+                  <span className="text-sm font-semibold text-foreground">Total via PIX</span>
+                  <span className="text-xl font-bold text-primary">{brl(plan.price)}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-3">
+                <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                  Seu perfil ficará em destaque por{' '}
+                  <span className="font-semibold text-foreground">{plan.days} dias</span> assim que o
+                  pagamento for confirmado. O tempo restante aparecerá aqui no topo.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleConfirmBoost}
+                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                <Zap className="size-5" aria-hidden="true" />
+                Gerar PIX de {brl(plan.price)}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                className="mt-2 w-full rounded-xl py-3 text-sm font-medium text-muted-foreground transition hover:bg-secondary"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Animação de processamento */}
+      {processing && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" aria-hidden="true" />
+          <div className="animate-pop relative flex w-full max-w-xs flex-col items-center rounded-3xl border border-border bg-card px-6 py-8 text-center shadow-2xl">
+            <div className="relative flex size-20 items-center justify-center">
+              <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+              <Rocket className="size-8 text-primary" aria-hidden="true" />
+            </div>
+            <p className="mt-5 text-base font-bold text-foreground">Gerando seu PIX...</p>
+            <p className="mt-1 text-sm text-muted-foreground">Preparando o impulsionamento do seu perfil</p>
+          </div>
+        </div>
+      )}
+
+      {/* PIX do impulsionamento */}
+      {showPix && plan && (
+        <PixModal
+          isOpen={showPix}
+          onClose={() => setShowPix(false)}
+          email={userEmail}
+          amount={plan.price}
+          userName={userName}
+          type="boost"
+          boostDays={plan.days}
+          title="Impulsionar perfil"
+          subtitle={`Destaque por ${plan.days} dias`}
+          onPaymentConfirmed={() => {
+            setShowPix(false)
+            setSelectedPlan(null)
+            onBoostActivated()
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -1596,7 +1809,7 @@ function relativeTime(dateStr: string) {
   return `${Math.floor(h / 24)}d`
 }
 
-// ──────────────────────────────────────��─────────────────���────────���───────────
+// ───────────────────────────��──────────��─────────────────���────────���───────────
 // StatCard
 // ─────────────────────────────────────────────────────────────────────────────
 

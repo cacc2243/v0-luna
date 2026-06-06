@@ -148,6 +148,63 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Se for um pagamento de Impulsionamento confirmado, cria o boost ativo da usuaria
+    if (newStatus === 'paid' && invite.type === 'boost') {
+      let boostUserId: string | null = invite.user_id || null
+
+      if (!boostUserId && invite.email) {
+        const { data: authList } = await supabase.auth.admin.listUsers()
+        const matched = authList?.users?.find(
+          (u) => (u.email || '').toLowerCase() === invite.email.toLowerCase(),
+        )
+        boostUserId = matched?.id || null
+      }
+
+      if (boostUserId) {
+        const days = Number(invite.boost_days) || 2
+        const startsAt = new Date()
+        const endsAt = new Date(startsAt.getTime() + days * 24 * 60 * 60 * 1000)
+
+        // Evita duplicar o boost caso o webhook chegue mais de uma vez
+        const { data: existingBoost } = await supabase
+          .from('boosts')
+          .select('id')
+          .eq('user_id', boostUserId)
+          .eq('boost_type', 'profile')
+          .eq('is_active', true)
+          .gte('ends_at', new Date().toISOString())
+          .maybeSingle()
+
+        if (!existingBoost) {
+          const { error: boostErr } = await supabase.from('boosts').insert({
+            user_id: boostUserId,
+            boost_type: 'profile',
+            plan_name: `${days} dias`,
+            amount: invite.amount,
+            duration_days: days,
+            starts_at: startsAt.toISOString(),
+            ends_at: endsAt.toISOString(),
+            is_active: true,
+          })
+
+          if (boostErr) {
+            console.error('[v0] Erro ao criar boost:', boostErr)
+          } else {
+            console.log('[v0] Impulsionamento ativado para usuaria:', boostUserId, `(${days} dias)`)
+            await supabase.from('notifications').insert({
+              user_id: boostUserId,
+              type: 'message',
+              title: 'Impulsionamento ativado',
+              description: `Seu perfil está em destaque por ${days} dias. Aproveite o aumento de visibilidade!`,
+              reference_id: invite.id,
+            })
+          }
+        }
+      } else {
+        console.error('[v0] Nao foi possivel identificar a usuaria para o impulsionamento:', invite.id)
+      }
+    }
+
     console.log('[v0] Convite atualizado:', invite.id, 'Status:', newStatus)
 
     return NextResponse.json({

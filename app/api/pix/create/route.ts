@@ -101,7 +101,7 @@ async function createBynetTransaction(
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, amount, name, document, phone, type } = await request.json()
+    const { userId, email, amount, name, document, phone, type, boostDays } = await request.json()
 
     if (!email || !amount) {
       return NextResponse.json(
@@ -110,15 +110,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo) ou 'gift_unlock' (habilitacao de presentes)
+    // Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo), 'gift_unlock' (presentes) ou 'boost' (impulsionamento)
     const inviteType =
-      type === 'chat' ? 'chat' : type === 'gift_unlock' ? 'gift_unlock' : 'invite'
+      type === 'chat'
+        ? 'chat'
+        : type === 'gift_unlock'
+          ? 'gift_unlock'
+          : type === 'boost'
+            ? 'boost'
+            : 'invite'
     const itemTitle =
       inviteType === 'chat'
         ? 'Chat Exclusivo Luna Privé'
         : inviteType === 'gift_unlock'
           ? 'Habilitação de Presentes Luna Privé'
-          : 'Convite Luna Privé'
+          : inviteType === 'boost'
+            ? `Impulsionamento ${boostDays || ''} dias Luna Privé`.replace(/\s+/g, ' ').trim()
+            : 'Convite Luna Privé'
 
     const apiKey = process.env.BYNET_API_KEY
     if (!apiKey) {
@@ -228,6 +236,7 @@ export async function POST(request: NextRequest) {
           transaction_id: transactionData.id || `luna-${Date.now()}`,
           pix_code: pixCode,
           pix_qrcode: null,
+          boost_days: inviteType === 'boost' ? Number(boostDays) || null : existingInvite.boost_days ?? null,
           pix_expiration: pixExpirationDate.toISOString(),
         })
         .eq('id', existingInvite.id)
@@ -247,6 +256,7 @@ export async function POST(request: NextRequest) {
           email,
           amount,
           type: inviteType,
+          boost_days: inviteType === 'boost' ? Number(boostDays) || null : null,
           status: 'pending',
           transaction_id: transactionData.id || `luna-${Date.now()}`,
           pix_code: pixCode,

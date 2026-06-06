@@ -12,14 +12,16 @@ interface PixModalProps {
   amount: number
   userName?: string
   onPaymentConfirmed?: () => void
-  /** Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo) ou 'gift_unlock' (habilitação de presentes) */
-  type?: 'invite' | 'chat' | 'gift_unlock'
+  /** Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo), 'gift_unlock' (presentes) ou 'boost' (impulsionamento) */
+  type?: 'invite' | 'chat' | 'gift_unlock' | 'boost'
+  /** Dias de impulsionamento (apenas para type='boost') */
+  boostDays?: number
   /** Titulo exibido no header e subtitulo opcional */
   title?: string
   subtitle?: string
 }
 
-export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', title, subtitle }: PixModalProps) {
+export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle }: PixModalProps) {
   const headerTitle = title || 'Pagamento PIX'
   const headerSubtitle = subtitle || (type === 'chat' ? 'Chat Exclusivo Luna Privé' : 'Convite Luna Privé')
   const [loading, setLoading] = useState(true)
@@ -86,6 +88,7 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
           amount,
           name: userName || 'Cliente Luna',
           type,
+          boostDays,
         }),
       })
 
