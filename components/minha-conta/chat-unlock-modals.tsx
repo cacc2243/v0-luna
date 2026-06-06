@@ -1,6 +1,6 @@
 'use client'
 
-import { Lock, MessageCircleHeart, Sparkles, ShieldCheck, BadgeCheck, X, Wallet, Crown } from 'lucide-react'
+import { Lock, MessageCircleHeart, Sparkles, ShieldCheck, BadgeCheck, X, Wallet, Crown, Gift, MessagesSquare, HandCoins } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal 1: Pedido bloqueado — venda personalizada exige Chat Exclusivo
