@@ -12,11 +12,13 @@ import {
   Loader2,
   Sparkles,
   ChevronDown,
+  ImageIcon,
 } from 'lucide-react'
 import { logoutAction } from '@/app/painel/actions'
 import { SummaryTab } from './summary-tab'
 import { ClientsTab } from './clients-tab'
 import { GatewayTestTab } from './gateway-test-tab'
+import { ImagesTab } from './images-tab'
 import {
   PERIOD_LABELS,
   type InviteRow,
@@ -38,12 +40,13 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'pix' | 'gateways'
+type TabKey = 'resumo' | 'clientes' | 'pix' | 'imagens' | 'gateways'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
   { key: 'clientes', label: 'Clientes', icon: Users },
   { key: 'pix', label: 'Transações', icon: Receipt },
+  { key: 'imagens', label: 'Imagens', icon: ImageIcon },
   { key: 'gateways', label: 'Gateways', icon: FlaskConical },
 ]
 
@@ -211,7 +214,7 @@ export function AdminDashboard() {
             </div>
           ) : (
             <>
-              {tab !== 'gateways' && (
+              {tab !== 'gateways' && tab !== 'imagens' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
                   {tab !== 'clientes' && (
@@ -239,6 +242,7 @@ export function AdminDashboard() {
                 />
               )}
               {tab === 'clientes' && <ClientsTab profiles={profiles} invites={invites} />}
+              {tab === 'imagens' && <ImagesTab />}
               {tab === 'gateways' && <GatewayTestTab />}
             </>
           )}

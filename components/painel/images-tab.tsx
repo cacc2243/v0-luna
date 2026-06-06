@@ -1,0 +1,374 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import useSWR from 'swr'
+import {
+  Search,
+  Trash2,
+  Loader2,
+  ImageOff,
+  Clock,
+  UserRound,
+  Mail,
+  X,
+  ImageIcon,
+  ShieldAlert,
+} from 'lucide-react'
+import type { AdminImage } from '@/app/api/admin/images/route'
+import { formatDateTime } from '@/lib/painel/metrics'
+import { cn } from '@/lib/utils'
+
+const fetcher = async (url: string) => {
+  const r = await fetch(url)
+  if (!r.ok) {
+    const err = new Error('fetch_failed') as Error & { status?: number }
+    err.status = r.status
+    throw err
+  }
+  const json = await r.json()
+  if (json?.error) throw new Error(json.error)
+  return json
+}
+
+type ImageFilter = 'all' | 'cover' | 'pack_image'
+
+export function ImagesTab() {
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<ImageFilter>('all')
+  const [preview, setPreview] = useState<AdminImage | null>(null)
+  const [toDelete, setToDelete] = useState<AdminImage | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const { data, error, isLoading, mutate } = useSWR<{
+    images: AdminImage[]
+    fetchedAt: string
+  }>('/api/admin/images', fetcher, {
+    refreshInterval: 15000,
+    keepPreviousData: true,
+  })
+
+  const images = data?.images || []
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return images.filter((img) => {
+      if (filter !== 'all' && img.type !== filter) return false
+      if (!q) return true
+      return (
+        (img.ownerEmail || '').toLowerCase().includes(q) ||
+        (img.ownerUsername || '').toLowerCase().includes(q) ||
+        (img.ownerName || '').toLowerCase().includes(q) ||
+        (img.packTitle || '').toLowerCase().includes(q)
+      )
+    })
+  }, [images, query, filter])
+
+  const coverCount = images.filter((i) => i.type === 'cover').length
+  const packImgCount = images.filter((i) => i.type === 'pack_image').length
+
+  const FILTERS: { key: ImageFilter; label: string; count: number }[] = [
+    { key: 'all', label: 'Todas', count: images.length },
+    { key: 'cover', label: 'Capas', count: coverCount },
+    { key: 'pack_image', label: 'Imagens dos packs', count: packImgCount },
+  ]
+
+  async function confirmDelete() {
+    if (!toDelete) return
+    setDeleting(true)
+    // Otimista: remove da lista imediatamente
+    const removedKey = toDelete.key
+    mutate(
+      (current) =>
+        current
+          ? { ...current, images: current.images.filter((i) => i.key !== removedKey) }
+          : current,
+      { revalidate: false },
+    )
+    try {
+      const res = await fetch('/api/admin/images', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: toDelete.type,
+          rowId: toDelete.rowId,
+          imageUrl: toDelete.imageUrl,
+        }),
+      })
+      if (!res.ok) throw new Error('delete_failed')
+    } catch {
+      // Reverte revalidando do servidor em caso de erro
+      mutate()
+    } finally {
+      setDeleting(false)
+      setToDelete(null)
+      // Confirma estado real com o servidor
+      mutate()
+    }
+  }
+
+  const sessionExpired = (error as (Error & { status?: number }) | undefined)?.status === 401
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Busca */}
+      <div className="flex items-center rounded-xl border border-border bg-card px-3 focus-within:border-primary/60">
+        <Search className="size-4 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por email, usuária ou pack..."
+          className="w-full bg-transparent px-2 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
+        />
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition',
+              filter === f.key
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-card text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {f.label}
+            <span
+              className={cn(
+                'rounded-full px-1.5 text-xs tabular-nums',
+                filter === f.key ? 'bg-primary-foreground/20' : 'bg-secondary',
+              )}
+            >
+              {f.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Conteudo */}
+      {isLoading && !data ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <Loader2 className="size-7 animate-spin text-primary" />
+          <p className="mt-3 text-sm text-muted-foreground">Carregando imagens...</p>
+        </div>
+      ) : sessionExpired ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+          <ShieldAlert className="size-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            Sessão expirada. Faça login novamente.
+          </p>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+          <ImageOff className="size-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Erro ao carregar as imagens.</p>
+          <button
+            onClick={() => mutate()}
+            className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+          <ImageIcon className="size-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Nenhuma imagem encontrada.</p>
+        </div>
+      ) : (
+        <>
+          <p className="text-xs text-muted-foreground">
+            {filtered.length} imagem{filtered.length === 1 ? '' : 's'}
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {filtered.map((img) => (
+              <ImageCard
+                key={img.key}
+                image={img}
+                onView={() => setPreview(img)}
+                onDelete={() => setToDelete(img)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Modal de visualizacao */}
+      {preview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 p-4 backdrop-blur-sm"
+          onClick={() => setPreview(null)}
+        >
+          <div
+            className="relative flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setPreview(null)}
+              aria-label="Fechar"
+              className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full bg-background/70 text-foreground backdrop-blur transition hover:bg-background"
+            >
+              <X className="size-4" />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={preview.imageUrl || '/placeholder.svg'}
+              alt={preview.packTitle || 'Imagem'}
+              className="max-h-[55dvh] w-full bg-background object-contain"
+              crossOrigin="anonymous"
+            />
+            <div className="flex flex-col gap-3 p-5">
+              <OwnerInfo image={preview} />
+              <button
+                onClick={() => {
+                  setToDelete(preview)
+                  setPreview(null)
+                }}
+                className="flex items-center justify-center gap-2 rounded-xl bg-destructive/90 px-4 py-2.5 text-sm font-semibold text-destructive-foreground transition hover:bg-destructive"
+              >
+                <Trash2 className="size-4" />
+                Excluir imagem
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmacao de exclusao */}
+      {toDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5">
+            <div className="mb-3 flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-destructive/15">
+                <Trash2 className="size-5 text-destructive" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Excluir imagem?</h3>
+                <p className="text-xs text-muted-foreground">Esta ação não pode ser desfeita.</p>
+              </div>
+            </div>
+            <p className="mb-4 text-sm text-muted-foreground">
+              {toDelete.type === 'cover'
+                ? 'A capa será removida do pack e do armazenamento.'
+                : 'A imagem será removida do pack e do armazenamento.'}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setToDelete(null)}
+                disabled={deleting}
+                className="flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-secondary disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-destructive px-4 py-2.5 text-sm font-semibold text-destructive-foreground transition hover:opacity-90 disabled:opacity-50"
+              >
+                {deleting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Trash2 className="size-4" />
+                )}
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ImageCard({
+  image,
+  onView,
+  onDelete,
+}: {
+  image: AdminImage
+  onView: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card">
+      <button
+        onClick={onView}
+        className="relative aspect-square w-full overflow-hidden bg-background"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={image.imageUrl || '/placeholder.svg'}
+          alt={image.packTitle || 'Imagem do pack'}
+          className="size-full object-cover transition group-hover:scale-105"
+          loading="lazy"
+          crossOrigin="anonymous"
+        />
+        <span
+          className={cn(
+            'absolute left-2 top-2 rounded-md px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide backdrop-blur',
+            image.type === 'cover'
+              ? 'bg-primary/80 text-primary-foreground'
+              : 'bg-background/70 text-foreground',
+          )}
+        >
+          {image.type === 'cover' ? 'Capa' : 'Pack'}
+        </span>
+      </button>
+
+      <div className="flex flex-col gap-2 p-2.5">
+        <OwnerInfo image={image} compact />
+        <button
+          onClick={onDelete}
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-destructive/10 px-2 py-1.5 text-xs font-semibold text-destructive transition hover:bg-destructive/20"
+        >
+          <Trash2 className="size-3.5" />
+          Excluir
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function OwnerInfo({ image, compact }: { image: AdminImage; compact?: boolean }) {
+  const name = image.ownerName || image.ownerUsername || 'Sem nome'
+  return (
+    <div className="flex flex-col gap-1 text-left">
+      {image.packTitle && (
+        <p className={cn('truncate font-medium text-foreground', compact ? 'text-xs' : 'text-sm')}>
+          {image.packTitle}
+        </p>
+      )}
+      <p
+        className={cn(
+          'flex items-center gap-1 truncate text-muted-foreground',
+          compact ? 'text-[0.7rem]' : 'text-sm',
+        )}
+      >
+        <UserRound className="size-3 shrink-0" />
+        {name}
+        {image.ownerUsername ? ` · @${image.ownerUsername}` : ''}
+      </p>
+      {image.ownerEmail && (
+        <p
+          className={cn(
+            'flex items-center gap-1 truncate text-muted-foreground',
+            compact ? 'text-[0.7rem]' : 'text-sm',
+          )}
+        >
+          <Mail className="size-3 shrink-0" />
+          {image.ownerEmail}
+        </p>
+      )}
+      <p
+        className={cn(
+          'flex items-center gap-1 truncate text-muted-foreground/80',
+          compact ? 'text-[0.7rem]' : 'text-xs',
+        )}
+      >
+        <Clock className="size-3 shrink-0" />
+        {formatDateTime(image.createdAt)}
+      </p>
+    </div>
+  )
+}
