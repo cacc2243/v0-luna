@@ -29,6 +29,8 @@ export type Profile = {
   pix_key_type: string | null
   chat_unlocked: boolean
   chat_unlocked_at: string | null
+  gifts_enabled: boolean
+  gifts_enabled_at: string | null
   created_at: string
 }
 
@@ -1003,6 +1005,61 @@ export async function rejectSale(saleId: string) {
 
   revalidatePath('/minha-conta')
   return { success: true }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Presentes (Chat) — resgate de presente vira saldo
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Resgata um presente recebido no chat, creditando o valor no saldo da usuaria.
+// Requer que a conta tenha a habilitacao de presentes ativa (gifts_enabled).
+export async function claimGift(params: {
+  amount: number
+  senderName?: string | null
+  giftType?: string | null
+}) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { error: 'not_authenticated' as const }
+
+  // Valor seguro: presentes simulados variam entre R$ 200 e R$ 600
+  const amount = Math.round(Number(params.amount))
+  if (!Number.isFinite(amount) || amount < 200 || amount > 600) {
+    return { error: 'invalid_amount' as const }
+  }
+
+  // Verifica perfil e habilitacao de presentes
+  const { data: profile, error: profErr } = await supabase
+    .from('profiles')
+    .select('balance, total_earned, gifts_enabled')
+    .eq('id', user.id)
+    .single()
+
+  if (profErr || !profile) return { error: 'profile_not_found' as const }
+  if (!profile.gifts_enabled) return { error: 'gifts_locked' as const }
+
+  const newBalance = Number(profile.balance) + amount
+  const newEarned = Number(profile.total_earned) + amount
+
+  const { error: updErr } = await supabase
+    .from('profiles')
+    .update({ balance: newBalance, total_earned: newEarned })
+    .eq('id', user.id)
+
+  if (updErr) return { error: updErr.message }
+
+  await supabase.from('transactions').insert({
+    user_id: user.id,
+    type: 'gift',
+    amount,
+    description: params.senderName
+      ? `Presente de ${params.senderName}`
+      : 'Presente recebido no chat',
+    balance_after: newBalance,
+  })
+
+  revalidatePath('/minha-conta')
+  return { success: true as const, newBalance }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -12,8 +12,8 @@ interface PixModalProps {
   amount: number
   userName?: string
   onPaymentConfirmed?: () => void
-  /** Tipo de pagamento: 'invite' (convite) ou 'chat' (chat exclusivo) */
-  type?: 'invite' | 'chat'
+  /** Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo) ou 'gift_unlock' (habilitação de presentes) */
+  type?: 'invite' | 'chat' | 'gift_unlock'
   /** Titulo exibido no header e subtitulo opcional */
   title?: string
   subtitle?: string

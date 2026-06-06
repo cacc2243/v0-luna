@@ -69,6 +69,7 @@ import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost,
 import { generatePackActivity, acceptSale, rejectSale } from './actions'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PersonalizedSaleModal, UnlockChatModal } from '@/components/minha-conta/chat-unlock-modals'
+import { ChatsActive } from '@/components/minha-conta/chats-active'
 
 // Valor do Chat Exclusivo (pagamento unico)
 const CHAT_PRICE = 99.0
@@ -265,7 +266,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -833,7 +834,11 @@ function AppDashboard() {
         <ChatsScreen
           balance={animatedBalance}
           chatUnlocked={!!profile?.chat_unlocked}
+          giftsEnabled={!!profile?.gifts_enabled}
+          userName={profile?.display_name || 'Criadora Luna'}
+          userEmail={userEmail}
           onUnlock={() => setShowUnlockChat(true)}
+          onProfileRefresh={mutateProfile}
         />
       ) : (
                 <HomeScreen
@@ -1116,7 +1121,36 @@ function AppDashboard() {
 // Tela Chats
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ChatsScreen({ balance, chatUnlocked, onUnlock }: { balance: number; chatUnlocked: boolean; onUnlock: () => void }) {
+function ChatsScreen({
+  balance,
+  chatUnlocked,
+  giftsEnabled,
+  userName,
+  userEmail,
+  onUnlock,
+  onProfileRefresh,
+}: {
+  balance: number
+  chatUnlocked: boolean
+  giftsEnabled: boolean
+  userName: string
+  userEmail: string
+  onUnlock: () => void
+  onProfileRefresh: () => void
+}) {
+  // Chat ativo: lista de conversas com fluxo de presentes
+  if (chatUnlocked) {
+    return (
+      <ChatsActive
+        balance={balance}
+        giftsEnabled={giftsEnabled}
+        userName={userName}
+        userEmail={userEmail}
+        onProfileRefresh={onProfileRefresh}
+      />
+    )
+  }
+
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
@@ -1142,69 +1176,48 @@ function ChatsScreen({ balance, chatUnlocked, onUnlock }: { balance: number; cha
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
-              {chatUnlocked && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-positive/15 px-2 py-0.5 text-[0.65rem] font-semibold text-positive">
-                  <BadgeCheck className="size-3.5" aria-hidden="true" />
-                  Ativo
-                </span>
-              )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              {chatUnlocked ? '0 conversas' : 'Chat Exclusivo bloqueado'}
-            </p>
+            <p className="text-sm text-muted-foreground">Chat Exclusivo bloqueado</p>
           </div>
         </div>
       </div>
 
-      {!chatUnlocked ? (
-        /* Estado bloqueado — CTA para liberar o Chat Exclusivo */
-        <div className="mt-6">
-          <div className="luna-border overflow-hidden rounded-3xl bg-card">
-            <div className="bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 py-6 text-center">
-              <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
-                <Lock className="size-7 text-primary-foreground" aria-hidden="true" />
-              </div>
-              <h2 className="mt-3 text-lg font-bold text-foreground">Libere seu Chat Exclusivo</h2>
-              <p className="mx-auto mt-1 max-w-xs text-pretty text-sm text-muted-foreground">
-                Converse com seus clientes, aceite vendas e receba no seu saldo. Pagamento único, acesso vitalício.
-              </p>
+      {/* Estado bloqueado — CTA para liberar o Chat Exclusivo */}
+      <div className="mt-6">
+        <div className="luna-border overflow-hidden rounded-3xl bg-card">
+          <div className="bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 py-6 text-center">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
+              <Lock className="size-7 text-primary-foreground" aria-hidden="true" />
             </div>
-            <div className="px-5 py-5">
-              <ul className="flex flex-col gap-2.5">
-                {[
-                  'Aceite pedidos e receba por suas vendas',
-                  'Atendimento personalizado com cada cliente',
-                  'Perfil verificado em destaque',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2.5">
-                    <BadgeCheck className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
-                    <span className="text-sm text-foreground">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <button
-                type="button"
-                onClick={onUnlock}
-                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
-              >
-                <Sparkles className="size-4" aria-hidden="true" />
-                Liberar Chat Privé · {brl(99)}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Chat ativo — lista de conversas (vazia por enquanto) */
-        <div className="mt-6">
-          <div className="rounded-2xl border border-border bg-card/60 px-4 py-10 text-center">
-            <MessageCircle className="mx-auto size-12 text-muted-foreground/30" aria-hidden="true" />
-            <p className="mt-4 text-sm font-medium text-foreground">Nenhuma conversa ainda</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Suas mensagens com compradores aparecerão aqui
+            <h2 className="mt-3 text-lg font-bold text-foreground">Libere seu Chat Exclusivo</h2>
+            <p className="mx-auto mt-1 max-w-xs text-pretty text-sm text-muted-foreground">
+              Converse com seus clientes, aceite vendas e receba no seu saldo. Pagamento único, acesso vitalício.
             </p>
           </div>
+          <div className="px-5 py-5">
+            <ul className="flex flex-col gap-2.5">
+              {[
+                'Aceite pedidos e receba por suas vendas',
+                'Atendimento personalizado com cada cliente',
+                'Perfil verificado em destaque',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2.5">
+                  <BadgeCheck className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+                  <span className="text-sm text-foreground">{item}</span>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={onUnlock}
+              className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+            >
+              <Sparkles className="size-4" aria-hidden="true" />
+              Liberar Chat Privé · {brl(99)}
+            </button>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -1212,7 +1225,7 @@ function ChatsScreen({ balance, chatUnlocked, onUnlock }: { balance: number; cha
 
 // ─────────────────────────────────────────────────�����────�����─────────────────────
 // Tela Impulsionar
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────��──────────────────
 
 const boostPlans = [
   { days: 2, price: 28.0, pricePerDay: 14.0, discount: 0 },

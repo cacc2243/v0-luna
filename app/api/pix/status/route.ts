@@ -69,6 +69,32 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Safety net (presentes): se a habilitacao de presentes foi confirmada,
+    // garante que o perfil esteja com gifts_enabled (caso o webhook falhe)
+    if (paidInvite && paidInvite.type === 'gift_unlock') {
+      let giftUserId: string | null = paidInvite.user_id || null
+      if (!giftUserId && paidInvite.email) {
+        const { data: authList } = await supabase.auth.admin.listUsers()
+        const matched = authList?.users?.find(
+          (u) => (u.email || '').toLowerCase() === paidInvite.email.toLowerCase(),
+        )
+        giftUserId = matched?.id || null
+      }
+      if (giftUserId) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('gifts_enabled')
+          .eq('id', giftUserId)
+          .single()
+        if (prof && !prof.gifts_enabled) {
+          await supabase
+            .from('profiles')
+            .update({ gifts_enabled: true, gifts_enabled_at: new Date().toISOString() })
+            .eq('id', giftUserId)
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       hasPaidInvite: !!paidInvite,

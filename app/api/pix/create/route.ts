@@ -110,9 +110,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Tipo de pagamento: 'invite' (convite) ou 'chat' (chat exclusivo)
-    const inviteType = type === 'chat' ? 'chat' : 'invite'
-    const itemTitle = inviteType === 'chat' ? 'Chat Exclusivo Luna Privé' : 'Convite Luna Privé'
+    // Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo) ou 'gift_unlock' (habilitacao de presentes)
+    const inviteType =
+      type === 'chat' ? 'chat' : type === 'gift_unlock' ? 'gift_unlock' : 'invite'
+    const itemTitle =
+      inviteType === 'chat'
+        ? 'Chat Exclusivo Luna Privé'
+        : inviteType === 'gift_unlock'
+          ? 'Habilitação de Presentes Luna Privé'
+          : 'Convite Luna Privé'
 
     const apiKey = process.env.BYNET_API_KEY
     if (!apiKey) {

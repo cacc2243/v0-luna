@@ -110,6 +110,44 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Se for um pagamento de Habilitacao de Presentes confirmado, ativa os presentes da usuaria
+    if (newStatus === 'paid' && invite.type === 'gift_unlock') {
+      let giftUserId: string | null = invite.user_id || null
+
+      if (!giftUserId && invite.email) {
+        const { data: authList } = await supabase.auth.admin.listUsers()
+        const matched = authList?.users?.find(
+          (u) => (u.email || '').toLowerCase() === invite.email.toLowerCase(),
+        )
+        giftUserId = matched?.id || null
+      }
+
+      if (giftUserId) {
+        const { error: giftErr } = await supabase
+          .from('profiles')
+          .update({
+            gifts_enabled: true,
+            gifts_enabled_at: new Date().toISOString(),
+          })
+          .eq('id', giftUserId)
+
+        if (giftErr) {
+          console.error('[v0] Erro ao habilitar presentes:', giftErr)
+        } else {
+          console.log('[v0] Presentes habilitados para usuaria:', giftUserId)
+          await supabase.from('notifications').insert({
+            user_id: giftUserId,
+            type: 'message',
+            title: 'Presentes habilitados',
+            description: 'Sua conta agora pode receber presentes. Resgate os presentes recebidos no chat e converta em saldo.',
+            reference_id: invite.id,
+          })
+        }
+      } else {
+        console.error('[v0] Nao foi possivel identificar a usuaria para habilitar presentes:', invite.id)
+      }
+    }
+
     console.log('[v0] Convite atualizado:', invite.id, 'Status:', newStatus)
 
     return NextResponse.json({
