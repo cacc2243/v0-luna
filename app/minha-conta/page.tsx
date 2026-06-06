@@ -255,7 +255,7 @@ async function fetchNotifications() {
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ────────────────────────────────────────────────────────────────────────────���
+// ────────────────────────────────────────────────────────────────────────────����
 // Componente Principal
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -288,9 +288,14 @@ export default function MinhaContaPage() {
   if (authState === 'checking') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="size-10 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Carregando...</p>
+        <div className="relative flex size-24 items-center justify-center">
+          <span className="luna-logo-ring absolute inset-0 rounded-full border border-primary/40" />
+          <span className="luna-logo-ring absolute inset-0 rounded-full border border-primary/30 [animation-delay:0.5s]" />
+          <img
+            src="/images/luna-icon-logo.png"
+            alt="Luna Prive"
+            className="luna-logo-breathe relative size-16 object-contain"
+          />
         </div>
       </div>
     )
@@ -469,7 +474,7 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Dashboard do App (com dados reais do Supabase)
-// ─��������─────────────────────────────────────────────────────────────────────────������
+// �����������─────────────────────────────────────────────────────────────────────────������
 
 function AppDashboard() {
   const router = useRouter()

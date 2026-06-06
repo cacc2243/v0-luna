@@ -648,3 +648,35 @@
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* Logo de carregamento (Luna Prive) */
+@keyframes luna-logo-breathe {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes luna-logo-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.luna-logo-breathe {
+  animation: luna-logo-breathe 1.6s ease-in-out infinite;
+}
+
+.luna-logo-ring {
+  animation: luna-logo-ring 1.6s ease-out infinite;
+}
