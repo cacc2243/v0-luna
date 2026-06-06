@@ -67,6 +67,11 @@ import {
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
 import { generatePackActivity, acceptSale, rejectSale } from './actions'
+import { PixModal } from '@/components/convite/pix-modal'
+import { PersonalizedSaleModal, UnlockChatModal } from '@/components/minha-conta/chat-unlock-modals'
+
+// Valor do Chat Exclusivo (pagamento unico)
+const CHAT_PRICE = 99.0
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -498,6 +503,13 @@ function AppDashboard() {
   const [balanceFlash, setBalanceFlash] = useState(false)
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null)
 
+  // Fluxo do Chat Exclusivo (condicao para aceitar vendas)
+  const [showPersonalizedSale, setShowPersonalizedSale] = useState(false)
+  const [showUnlockChat, setShowUnlockChat] = useState(false)
+  const [showChatPix, setShowChatPix] = useState(false)
+  const [pendingSaleContext, setPendingSaleContext] = useState<{ buyerName?: string | null; packTitle?: string | null; amount?: number } | null>(null)
+  const [userEmail, setUserEmail] = useState('')
+
   // Fetch dados reais do Supabase usando SWR
   const { data: profile, mutate: mutateProfile } = useSWR('profile', fetchProfile)
   const { data: packs = [], mutate: mutatePacks } = useSWR('packs', fetchPacks)
@@ -543,6 +555,14 @@ function AppDashboard() {
     mutateTransactions()
   }, [mutatePacks, mutateSales, mutateNotifications, mutateProfile, mutateTransactions])
 
+  // Carrega o e-mail do usuario logado (necessario para o PIX do Chat Exclusivo)
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) setUserEmail(data.user.email)
+    })
+  }, [])
+
   // Versao com debounce: ao aceitar varios pedidos em sequencia, agrupamos
   // todas as revalidacoes numa unica no fim, evitando dezenas de requisicoes
   // simultaneas que travavam a UI. A atualizacao otimista ja deixa tudo instantaneo.
@@ -569,6 +589,18 @@ function AppDashboard() {
   async function handleAcceptSale(saleId: string) {
     const sale = sales.find(s => s.id === saleId)
     if (!sale || sale.status !== 'pending') return
+
+    // Gate: sem Chat Exclusivo ativo, nao pode aceitar vendas.
+    if (!profile?.chat_unlocked) {
+      setPendingSaleContext({
+        buyerName: sale.buyer_name,
+        packTitle: sale.pack?.title ?? null,
+        amount: Number(sale.amount),
+      })
+      setShowPersonalizedSale(true)
+      return
+    }
+
     const net = Number(sale.net_amount)
 
     // Atualiza a UI imediatamente usando updaters funcionais para que
@@ -594,7 +626,31 @@ function AppDashboard() {
     setTimeout(() => setBalanceFlash(false), 1200)
 
     // Persiste no servidor em segundo plano; revalidacao agrupada (debounce)
-    acceptSale(saleId).then(() => refreshActivityDebounced())
+    acceptSale(saleId).then((res) => {
+      // Defesa extra: se o servidor recusar por falta de chat, reverte a UI
+      if (res && (res as { error?: string }).error === 'chat_locked') {
+        mutateSales(
+          (current = []) => current.map(s => (s.id === saleId ? { ...s, status: 'pending' } : s)),
+          { revalidate: false },
+        )
+        mutateProfile(
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  balance: Number(current.balance) - net,
+                  total_earned: Number(current.total_earned) - net,
+                  sales_count: Math.max(0, Number(current.sales_count) - 1),
+                }
+              : current,
+          { revalidate: false },
+        )
+        setPendingSaleContext({ buyerName: sale.buyer_name, packTitle: sale.pack?.title ?? null, amount: Number(sale.amount) })
+        setShowPersonalizedSale(true)
+        return
+      }
+      refreshActivityDebounced()
+    })
   }
   async function handleRejectSale(saleId: string) {
     // Remove da lista imediatamente
@@ -774,7 +830,11 @@ function AppDashboard() {
       ) : activeTab === 'Impulsionar' ? (
         <ImpulsionarScreen balance={animatedBalance} boosts={boosts} />
       ) : activeTab === 'Chats' ? (
-        <ChatsScreen balance={animatedBalance} />
+        <ChatsScreen
+          balance={animatedBalance}
+          chatUnlocked={!!profile?.chat_unlocked}
+          onUnlock={() => setShowUnlockChat(true)}
+        />
       ) : (
                 <HomeScreen
                   balance={animatedBalance}
@@ -829,6 +889,48 @@ function AppDashboard() {
           </button>
         ))}
       </nav>
+
+      {/* Fluxo do Chat Exclusivo */}
+      <PersonalizedSaleModal
+        isOpen={showPersonalizedSale}
+        onClose={() => setShowPersonalizedSale(false)}
+        buyerName={pendingSaleContext?.buyerName}
+        packTitle={pendingSaleContext?.packTitle}
+        amount={pendingSaleContext?.amount}
+        onUnlock={() => {
+          setShowPersonalizedSale(false)
+          setShowUnlockChat(true)
+        }}
+      />
+      <UnlockChatModal
+        isOpen={showUnlockChat}
+        onClose={() => setShowUnlockChat(false)}
+        price={CHAT_PRICE}
+        onConfirm={() => {
+          setShowUnlockChat(false)
+          setShowChatPix(true)
+        }}
+      />
+      {showChatPix && (
+        <PixModal
+          isOpen={showChatPix}
+          onClose={() => setShowChatPix(false)}
+          email={userEmail}
+          amount={CHAT_PRICE}
+          userName={profile?.display_name || 'Criadora Luna'}
+          type="chat"
+          title="Chat Exclusivo"
+          subtitle="Pagamento único · Acesso vitalício"
+          onPaymentConfirmed={() => {
+            // Atualiza o perfil para refletir o desbloqueio imediatamente
+            mutateProfile(
+              (current) => (current ? { ...current, chat_unlocked: true } : current),
+              { revalidate: true },
+            )
+            setShowChatPix(false)
+          }}
+        />
+      )}
 
       {/* Modal — Criar Pack */}
       {selectedPackId && (
@@ -1014,7 +1116,7 @@ function AppDashboard() {
 // Tela Chats
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ChatsScreen({ balance }: { balance: number }) {
+function ChatsScreen({ balance, chatUnlocked, onUnlock }: { balance: number; chatUnlocked: boolean; onUnlock: () => void }) {
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
@@ -1037,25 +1139,72 @@ function ChatsScreen({ balance }: { balance: number }) {
           <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/30">
             <MessageCircle className="size-6 text-primary-foreground" aria-hidden="true" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
+              {chatUnlocked && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-positive/15 px-2 py-0.5 text-[0.65rem] font-semibold text-positive">
+                  <BadgeCheck className="size-3.5" aria-hidden="true" />
+                  Ativo
+                </span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">
-              0 conversas
+              {chatUnlocked ? '0 conversas' : 'Chat Exclusivo bloqueado'}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Lista de Chats - Estado vazio */}
-      <div className="mt-6">
-        <div className="rounded-2xl border border-border bg-card/60 px-4 py-10 text-center">
-          <MessageCircle className="mx-auto size-12 text-muted-foreground/30" aria-hidden="true" />
-          <p className="mt-4 text-sm font-medium text-foreground">Nenhuma conversa ainda</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Suas mensagens com compradores aparecerão aqui
-          </p>
+      {!chatUnlocked ? (
+        /* Estado bloqueado — CTA para liberar o Chat Exclusivo */
+        <div className="mt-6">
+          <div className="luna-border overflow-hidden rounded-3xl bg-card">
+            <div className="bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 py-6 text-center">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
+                <Lock className="size-7 text-primary-foreground" aria-hidden="true" />
+              </div>
+              <h2 className="mt-3 text-lg font-bold text-foreground">Libere seu Chat Exclusivo</h2>
+              <p className="mx-auto mt-1 max-w-xs text-pretty text-sm text-muted-foreground">
+                Converse com seus clientes, aceite vendas e receba no seu saldo. Pagamento único, acesso vitalício.
+              </p>
+            </div>
+            <div className="px-5 py-5">
+              <ul className="flex flex-col gap-2.5">
+                {[
+                  'Aceite pedidos e receba por suas vendas',
+                  'Atendimento personalizado com cada cliente',
+                  'Perfil verificado em destaque',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5">
+                    <BadgeCheck className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+                    <span className="text-sm text-foreground">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={onUnlock}
+                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                <Sparkles className="size-4" aria-hidden="true" />
+                Liberar Chat Privé · {brl(99)}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Chat ativo — lista de conversas (vazia por enquanto) */
+        <div className="mt-6">
+          <div className="rounded-2xl border border-border bg-card/60 px-4 py-10 text-center">
+            <MessageCircle className="mx-auto size-12 text-muted-foreground/30" aria-hidden="true" />
+            <p className="mt-4 text-sm font-medium text-foreground">Nenhuma conversa ainda</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Suas mensagens com compradores aparecerão aqui
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

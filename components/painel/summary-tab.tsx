@@ -12,6 +12,9 @@ import {
   Instagram,
   Facebook,
   ShieldCheck,
+  Layers,
+  Ticket,
+  MessageCircle,
 } from 'lucide-react'
 import { StatCard } from './stat-card'
 import { ConversionFunnel } from './conversion-funnel'
@@ -178,12 +181,51 @@ export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryT
         </div>
       </section>
 
+      {/* Receita por produto */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <Layers className="size-4 text-muted-foreground" />
+          <h2 className="text-base font-bold text-foreground">Receita por Produto</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-border/60 bg-background/40 p-4">
+            <div className="flex items-center gap-2">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15">
+                <Ticket className="size-4 text-primary" />
+              </span>
+              <p className="text-sm font-semibold text-foreground">Convite</p>
+            </div>
+            <p className="mt-3 text-2xl font-bold tabular-nums text-foreground">
+              {formatBRL(metrics.inviteRevenue)}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {metrics.invitePaidCount} venda{metrics.invitePaidCount === 1 ? '' : 's'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-emerald-600/30 bg-emerald-500/5 p-4">
+            <div className="flex items-center gap-2">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/15">
+                <MessageCircle className="size-4 text-emerald-400" />
+              </span>
+              <p className="text-sm font-semibold text-foreground">Chat Exclusivo</p>
+            </div>
+            <p className="mt-3 text-2xl font-bold tabular-nums text-foreground">
+              {formatBRL(metrics.chatRevenue)}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {metrics.chatPaidCount} desbloqueio{metrics.chatPaidCount === 1 ? '' : 's'}
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Funil */}
       <ConversionFunnel
         signups={metrics.funnel.signups}
         viewedCheckout={metrics.funnel.viewedCheckout}
         pixGenerated={metrics.funnel.pixGenerated}
         invitePaid={metrics.funnel.invitePaid}
+        chatUnlocked={metrics.funnel.chatUnlocked}
       />
 
       {/* Origem das vendas */}

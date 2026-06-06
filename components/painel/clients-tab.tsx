@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Search, UserRound, CheckCircle2, Mail, Clock } from 'lucide-react'
+import { Search, UserRound, CheckCircle2, Mail, Clock, MessageCircle } from 'lucide-react'
 import {
   buildLeads,
   formatBRL,
@@ -16,7 +16,7 @@ interface ClientsTabProps {
   invites: InviteRow[]
 }
 
-type ClientFilter = 'all' | 'buyers' | 'leads'
+type ClientFilter = 'all' | 'buyers' | 'leads' | 'chat'
 
 export function ClientsTab({ profiles, invites }: ClientsTabProps) {
   const [query, setQuery] = useState('')
@@ -29,6 +29,7 @@ export function ClientsTab({ profiles, invites }: ClientsTabProps) {
     return leads.filter((l) => {
       if (filter === 'buyers' && l.paidCount === 0) return false
       if (filter === 'leads' && l.paidCount > 0) return false
+      if (filter === 'chat' && !(l.chatPaid || l.chatUnlocked)) return false
       if (!q) return true
       return (
         (l.email || '').toLowerCase().includes(q) ||
@@ -39,11 +40,13 @@ export function ClientsTab({ profiles, invites }: ClientsTabProps) {
   }, [leads, query, filter])
 
   const buyersCount = leads.filter((l) => l.paidCount > 0).length
+  const chatCount = leads.filter((l) => l.chatPaid || l.chatUnlocked).length
 
   const FILTERS: { key: ClientFilter; label: string; count: number }[] = [
     { key: 'all', label: 'Todos', count: leads.length },
     { key: 'buyers', label: 'Compradores', count: buyersCount },
     { key: 'leads', label: 'Leads', count: leads.length - buyersCount },
+    { key: 'chat', label: 'Chat Exclusivo', count: chatCount },
   ]
 
   return (
@@ -127,11 +130,22 @@ export function ClientsTab({ profiles, invites }: ClientsTabProps) {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="flex items-center gap-1.5 truncate text-sm font-medium text-foreground">
+                      <p className="flex flex-wrap items-center gap-1.5 truncate text-sm font-medium text-foreground">
                         {title}
                         {lead.hasAccount && (
                           <span className="rounded bg-sky-500/15 px-1 py-0.5 text-[0.6rem] font-semibold text-sky-400">
                             CONTA
+                          </span>
+                        )}
+                        {lead.invitePaid && (
+                          <span className="rounded bg-primary/15 px-1 py-0.5 text-[0.6rem] font-semibold text-primary">
+                            CONVITE
+                          </span>
+                        )}
+                        {(lead.chatPaid || lead.chatUnlocked) && (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-emerald-500/15 px-1 py-0.5 text-[0.6rem] font-semibold text-emerald-400">
+                            <MessageCircle className="size-2.5" />
+                            CHAT
                           </span>
                         )}
                       </p>
