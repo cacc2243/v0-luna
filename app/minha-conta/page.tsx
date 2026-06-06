@@ -1398,12 +1398,12 @@ function StatCard({
   value: string
 }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3.5 text-center">
-      <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+    <div className="flex min-w-0 flex-col items-center gap-1.5 rounded-2xl border border-border bg-card px-1.5 py-3.5 text-center">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
         <Icon className="size-5 text-primary" aria-hidden="true" />
       </span>
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-lg font-bold text-foreground">{value}</span>
+      <span className="w-full truncate px-0.5 text-base font-bold leading-tight text-foreground">{value}</span>
     </div>
   )
 }
