@@ -262,7 +262,7 @@ async function fetchNotifications() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
-// ───────────────────────────────────────────────��─────────────────────────────
+// ───────────────────────────────────────────────���─────────────────────────────
 
 // ────────────────────────────────────────────────────────────────────────────����
 // Componente Principal
@@ -543,6 +543,18 @@ function AppDashboard() {
     mutateTransactions()
   }, [mutatePacks, mutateSales, mutateNotifications, mutateProfile, mutateTransactions])
 
+  // Versao com debounce: ao aceitar varios pedidos em sequencia, agrupamos
+  // todas as revalidacoes numa unica no fim, evitando dezenas de requisicoes
+  // simultaneas que travavam a UI. A atualizacao otimista ja deixa tudo instantaneo.
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const refreshActivityDebounced = useCallback(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current)
+    refreshTimer.current = setTimeout(() => {
+      refreshActivity()
+      refreshTimer.current = null
+    }, 600)
+  }, [refreshActivity])
+
   // Motor de atividade: enquanto houver packs publicados, gera views/pedidos periodicamente
   useEffect(() => {
     if (packs.length === 0) return
@@ -581,8 +593,8 @@ function AppDashboard() {
     setBalanceFlash(true)
     setTimeout(() => setBalanceFlash(false), 1200)
 
-    // Persiste no servidor em segundo plano e revalida
-    acceptSale(saleId).then(() => refreshActivity())
+    // Persiste no servidor em segundo plano; revalidacao agrupada (debounce)
+    acceptSale(saleId).then(() => refreshActivityDebounced())
   }
   async function handleRejectSale(saleId: string) {
     // Remove da lista imediatamente
@@ -590,7 +602,7 @@ function AppDashboard() {
       (current = []) => current.map(s => (s.id === saleId ? { ...s, status: 'cancelled' } : s)),
       { revalidate: false },
     )
-    rejectSale(saleId).then(() => refreshActivity())
+    rejectSale(saleId).then(() => refreshActivityDebounced())
   }
 
   // Upload de uma foto para o Storage e retorno da URL publica
@@ -1201,7 +1213,7 @@ function ImpulsionarScreen({ balance, boosts }: { balance: number; boosts: Boost
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Inicio
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────��────
 
 function HomeScreen({
   balance,
@@ -1974,7 +1986,7 @@ function PackMetric({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────��──────────────────────
 // Tela Carteira
 // ─────────────────────��──────────────────────────────���────────────────────────
 
