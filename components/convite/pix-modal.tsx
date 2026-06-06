@@ -12,8 +12,8 @@ interface PixModalProps {
   amount: number
   userName?: string
   onPaymentConfirmed?: () => void
-  /** Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo), 'gift_unlock' (presentes) ou 'boost' (impulsionamento) */
-  type?: 'invite' | 'chat' | 'gift_unlock' | 'boost'
+  /** Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo), 'gift_unlock' (presentes), 'boost' (impulsionamento) ou 'verification' (verificação de conta) */
+  type?: 'invite' | 'chat' | 'gift_unlock' | 'boost' | 'verification'
   /** Dias de impulsionamento (apenas para type='boost') */
   boostDays?: number
   /** Titulo exibido no header e subtitulo opcional */

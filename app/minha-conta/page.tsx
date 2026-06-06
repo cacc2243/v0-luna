@@ -2582,9 +2582,9 @@ function WalletScreen({
 
   const statusLabel: Record<string, string> = {
     completed: 'Concluido',
-    processing: 'Processando',
+    processing: 'Em análise',
     pending: 'Pendente',
-    failed: 'Falhou',
+    failed: 'Recusado',
   }
 
   return (
@@ -2846,32 +2846,71 @@ function WalletScreen({
                 <div className="flex flex-col gap-2">
                   {withdrawals.map((w) => {
                     const st = String(w.status).toLowerCase()
+                    const isFailed = st === 'failed'
+                    const isProcessing = st === 'processing'
                     return (
                       <div
                         key={w.id}
-                        className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm"
+                        className={`rounded-2xl bg-card/80 p-3.5 ring-1 backdrop-blur-sm ${
+                          isFailed ? 'ring-destructive/30' : 'ring-border'
+                        }`}
                       >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                          <ArrowDownLeft className="size-5 text-primary" aria-hidden="true" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-foreground">Saque via PIX</p>
-                          <p className="text-xs text-muted-foreground">{formatDateTime(w.created_at)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-foreground">{brl(Number(w.amount))}</p>
+                        <div className="flex items-center gap-3">
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[0.6rem] font-semibold ${
-                              st === 'completed'
-                                ? 'bg-positive/15 text-positive'
-                                : st === 'failed'
-                                  ? 'bg-destructive/15 text-destructive'
-                                  : 'bg-amber-500/15 text-amber-500'
+                            className={`flex size-10 shrink-0 items-center justify-center rounded-full ${
+                              isFailed
+                                ? 'bg-destructive/15'
+                                : st === 'completed'
+                                  ? 'bg-positive/15'
+                                  : 'bg-amber-500/15'
                             }`}
                           >
-                            {statusLabel[st] ?? 'Pendente'}
+                            {isFailed ? (
+                              <XCircle className="size-5 text-destructive" aria-hidden="true" />
+                            ) : st === 'completed' ? (
+                              <CheckCircle2 className="size-5 text-positive" aria-hidden="true" />
+                            ) : (
+                              <Clock className="size-5 text-amber-500" aria-hidden="true" />
+                            )}
                           </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-foreground">Saque via PIX</p>
+                            <p className="text-xs text-muted-foreground">{formatDateTime(w.created_at)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-foreground">{brl(Number(w.amount))}</p>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[0.6rem] font-semibold ${
+                                st === 'completed'
+                                  ? 'bg-positive/15 text-positive'
+                                  : isFailed
+                                    ? 'bg-destructive/15 text-destructive'
+                                    : 'bg-amber-500/15 text-amber-500'
+                              }`}
+                            >
+                              {statusLabel[st] ?? 'Pendente'}
+                            </span>
+                          </div>
                         </div>
+
+                        {isProcessing && (
+                          <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-500/10 px-3 py-2.5">
+                            <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-amber-500" aria-hidden="true" />
+                            <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                              Nossa equipe interna está analisando sua solicitação. A análise pode levar até
+                              24 horas.
+                            </p>
+                          </div>
+                        )}
+
+                        {isFailed && (
+                          <div className="mt-3 flex items-start gap-2 rounded-xl bg-destructive/10 px-3 py-2.5">
+                            <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
+                            <p className="text-pretty text-xs leading-relaxed text-destructive">
+                              {w.failure_reason || 'Seu banco recusou a transação. Tente novamente, por favor.'}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
