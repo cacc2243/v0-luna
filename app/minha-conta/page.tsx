@@ -1601,7 +1601,7 @@ function ImpulsionarScreen({
   )
 }
 
-// ─────────────────────────────────────────────���───────────────────────────────
+// ─────────────────────────────────────────────���──────────────────────────────��
 // Tela Inicio
 // ────────────────────────────────────────────────────────────────────────��────
 
@@ -1636,12 +1636,15 @@ function HomeScreen({
   const viewNotifs = notifications.filter(n => n.type === 'like' || n.type === 'follow').slice(0, 3)
 
   function handleAccept(id: string) {
+    // Trava: enquanto um pedido esta sendo aceito, nenhum outro pode ser aceito.
+    // Evita "aceitar tudo" em sequencia e da tempo do saldo (total e do dia) atualizar.
+    if (accepting) return
     setAccepting(id)
-    // Deixa a animacao de saida rodar antes de remover da lista
+    // Animacao de "Aceitando..." (1,5s) antes de confirmar e creditar o saldo
     setTimeout(() => {
       onAccept(id)
       setAccepting(null)
-    }, 450)
+    }, 1500)
   }
 
   return (
@@ -1725,8 +1728,8 @@ function HomeScreen({
         {pendingSales.map((sale) => (
           <div
             key={`pending-${sale.id}`}
-            className={`luna-border relative mb-2 rounded-2xl bg-card px-3 py-3 ${
-              accepting === sale.id ? 'animate-accept-out' : 'overflow-hidden'
+            className={`luna-border relative mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3 transition ${
+              accepting === sale.id ? 'ring-1 ring-positive/40' : accepting ? 'opacity-50' : ''
             }`}
           >
             <div className="flex items-center gap-2.5">
@@ -1753,7 +1756,7 @@ function HomeScreen({
             <div className="mt-2.5 flex gap-2">
               <button
                 type="button"
-                disabled={accepting === sale.id}
+                disabled={accepting !== null}
                 onClick={() => onReject(sale.id)}
                 className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98] disabled:opacity-60"
               >
@@ -1762,16 +1765,25 @@ function HomeScreen({
               </button>
               <button
                 type="button"
-                disabled={accepting === sale.id}
+                disabled={accepting !== null}
                 onClick={() => handleAccept(sale.id)}
                 style={{
                   backgroundImage:
                     'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
                 }}
-                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
               >
-                <Check className="size-3.5" aria-hidden="true" />
-                Aceitar venda
+                {accepting === sale.id ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                    Aceitando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="size-3.5" aria-hidden="true" />
+                    Aceitar venda
+                  </>
+                )}
               </button>
             </div>
           </div>
