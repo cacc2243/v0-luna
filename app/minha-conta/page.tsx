@@ -465,6 +465,7 @@ function AppDashboard() {
   const [showWelcome, setShowWelcome] = useState(false)
   const [welcomeClosing, setWelcomeClosing] = useState(false)
   const [balanceFlash, setBalanceFlash] = useState(false)
+  const [selectedPackId, setSelectedPackId] = useState<string | null>(null)
 
   // Fetch dados reais do Supabase usando SWR
   const { data: profile, mutate: mutateProfile } = useSWR('profile', fetchProfile)
@@ -716,6 +717,7 @@ function AppDashboard() {
           balance={animatedBalance}
           packs={packs}
           onCreate={() => setShowCreate(true)}
+          onSelect={(id) => setSelectedPackId(id)}
         />
       ) : activeTab === 'Perfil' ? (
         <ProfileScreen profile={profile} highlights={highlights} onLogout={handleLogout} onProfileUpdated={mutateProfile} onHighlightsUpdated={mutateHighlights} />
@@ -779,6 +781,15 @@ function AppDashboard() {
       </nav>
 
       {/* Modal — Criar Pack */}
+      {selectedPackId && (
+        <PackDetailScreen
+          pack={packs.find((p) => p.id === selectedPackId) ?? null}
+          sales={sales}
+          onClose={() => setSelectedPackId(null)}
+          onUpdated={mutatePacks}
+        />
+      )}
+
       {showCreate && (
         <div className="absolute inset-0 z-[55] flex items-start justify-center px-4 pb-40 pt-6">
           <div
@@ -1405,10 +1416,12 @@ function PacksScreen({
   balance,
   packs,
   onCreate,
+  onSelect,
 }: {
   balance: number
   packs: Pack[]
   onCreate: () => void
+  onSelect: (id: string) => void
 }) {
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
@@ -1462,11 +1475,16 @@ function PacksScreen({
           </div>
         ) : (
           packs.map((pack) => (
-            <article key={pack.id} className="luna-border flex overflow-hidden rounded-2xl bg-card">
+            <button
+              key={pack.id}
+              type="button"
+              onClick={() => onSelect(pack.id)}
+              className="luna-border flex overflow-hidden rounded-2xl bg-card text-left transition active:scale-[0.99]"
+            >
               <div className="h-24 w-24 shrink-0 overflow-hidden bg-secondary">
                 {pack.cover_image_url ? (
                   <img
-                    src={pack.cover_image_url}
+                    src={pack.cover_image_url || "/placeholder.svg"}
                     alt={pack.title}
                     className="h-full w-full object-cover"
                   />
@@ -1487,7 +1505,7 @@ function PacksScreen({
               <div className="flex items-center pr-3">
                 <ChevronRight className="size-5 text-muted-foreground/50" />
               </div>
-            </article>
+            </button>
           ))
         )}
       </div>
@@ -1496,389 +1514,395 @@ function PacksScreen({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tela Carteira
-// ──────────────���────────────��──��─��────────────────────────────────────────────
+// Tela Detalhe do Pack (visualizar, métricas e editar)
+// ─────────────────────────────────────────────────────────────────────────────
 
-function WalletScreen({ 
-  balance,
-  pendingBalance,
-  withdrawals,
-  transactions,
-  profile
-}: { 
-  balance: number
-  pendingBalance: number
-  withdrawals: Withdrawal[]
-  transactions: Transaction[]
-  profile: Profile | null | undefined
+function PackDetailScreen({
+  pack,
+  sales,
+  onClose,
+  onUpdated,
+}: {
+  pack: Pack | null
+  sales: Sale[]
+  onClose: () => void
+  onUpdated: () => void
 }) {
-  const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
-  const [withdrawAmount, setWithdrawAmount] = useState('')
-  const pixKey = profile?.pix_key || ''
+  const [editing, setEditing] = useState(false)
+  const [title, setTitle] = useState(pack?.title ?? '')
+  const [price, setPrice] = useState(pack ? String(pack.price) : '')
+  const [desc, setDesc] = useState(pack?.description ?? '')
+  const [photos, setPhotos] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Calcular dados do grafico baseado em transacoes reais
-  const monthlyData = [
-    { month: 'Jan', value: 0 },
-    { month: 'Fev', value: 0 },
-    { month: 'Mar', value: 0 },
-    { month: 'Abr', value: 0 },
-    { month: 'Mai', value: 0 },
-    { month: 'Jun', value: 0 },
-  ]
-  
-  // Preencher dados dos ultimos meses com transacoes reais
-  transactions.forEach(t => {
-    if (t.type === 'sale' || t.type === 'gift_received') {
-      const date = new Date(t.created_at)
-      const monthIndex = date.getMonth()
-      if (monthIndex >= 0 && monthIndex < 6) {
-        monthlyData[monthIndex].value += Number(t.amount)
+  // Sincroniza o formulário quando o pack muda
+  useEffect(() => {
+    if (!pack) return
+    setTitle(pack.title)
+    setPrice(String(pack.price))
+    setDesc(pack.description ?? '')
+    const imgs = (pack.images ?? [])
+      .slice()
+      .sort((a, b) => a.order_index - b.order_index)
+      .map((i) => i.image_url)
+    setPhotos(imgs.length > 0 ? imgs : pack.cover_image_url ? [pack.cover_image_url] : [])
+    setEditing(false)
+    setConfirmDelete(false)
+    setError(null)
+  }, [pack])
+
+  if (!pack) return null
+
+  // Métricas
+  const views = pack.views_count || 0
+  const vendas = pack.sales_count || 0
+  const likes = pack.likes_count || 0
+  const conversao = views > 0 ? (vendas / views) * 100 : 0
+  const faturamento = sales
+    .filter((s) => s.pack_id === pack.id && s.status === 'completed')
+    .reduce((sum, s) => sum + Number(s.net_amount), 0)
+
+  async function handleAddPhoto(file: File) {
+    if (uploading) return
+    setUploading(true)
+    setError(null)
+    try {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Sessão expirada. Faça login novamente.')
+        return
       }
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `${user.id}/packs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('media')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (upErr) {
+        setError('Não foi possível enviar a foto.')
+        return
+      }
+      const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+      setPhotos((prev) => [...prev, pub.publicUrl])
+    } finally {
+      setUploading(false)
     }
-  })
-  
-  const maxValue = Math.max(...monthlyData.map(d => d.value), 1)
+  }
 
-  // Calcular ganhos de hoje
-  const todayEarnings = transactions
-    .filter(t => {
-      const today = new Date()
-      const tDate = new Date(t.created_at)
-      return tDate.toDateString() === today.toDateString() && t.amount > 0
-    })
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+  async function handleSave() {
+    if (saving || !pack) return
+    if (!title.trim()) {
+      setError('Dê um nome ao seu pack.')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    const supabase = createClient()
+    const priceNum = parseFloat(price.replace(',', '.')) || 0
 
-  // Ganhos do mes atual (transacoes de entrada: vendas e presentes)
-  const now = new Date()
-  const isEarning = (t: Transaction) => t.type === 'sale' || t.type === 'gift_received'
-  const monthEarnings = transactions
-    .filter(t => {
-      const d = new Date(t.created_at)
-      return isEarning(t) && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    })
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+    const { error: upErr } = await supabase
+      .from('packs')
+      .update({
+        title: title.trim(),
+        description: desc.trim() || null,
+        price: priceNum,
+        cover_image_url: photos[0] || null,
+      })
+      .eq('id', pack.id)
 
-  // Ganhos do mes anterior, para calcular a variacao percentual real
-  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const prevMonthEarnings = transactions
-    .filter(t => {
-      const d = new Date(t.created_at)
-      return isEarning(t) && d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear()
-    })
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+    if (upErr) {
+      setError('Não foi possível salvar. Tente novamente.')
+      setSaving(false)
+      return
+    }
 
-  const monthDeltaPct =
-    prevMonthEarnings > 0
-      ? Math.round(((monthEarnings - prevMonthEarnings) / prevMonthEarnings) * 100)
-      : null
+    // Recria as imagens do pack para refletir adições/remoções/ordem
+    await supabase.from('pack_images').delete().eq('pack_id', pack.id)
+    if (photos.length > 0) {
+      await supabase.from('pack_images').insert(
+        photos.map((url, i) => ({
+          pack_id: pack.id,
+          image_url: url,
+          is_preview: i === 0,
+          order_index: i,
+        })),
+      )
+    }
 
-  // Total sacado (somente saques concluidos)
-  const totalWithdrawn = withdrawals
-    .filter(w => ['completed', 'approved', 'paid', 'done'].includes(String(w.status).toLowerCase()))
-    .reduce((sum, w) => sum + Number(w.amount), 0)
+    setSaving(false)
+    setEditing(false)
+    onUpdated()
+  }
+
+  async function handleDelete() {
+    if (deleting || !pack) return
+    setDeleting(true)
+    const supabase = createClient()
+    await supabase.from('pack_images').delete().eq('pack_id', pack.id)
+    await supabase.from('packs').delete().eq('id', pack.id)
+    setDeleting(false)
+    onUpdated()
+    onClose()
+  }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Header fixo */}
-      <header className="shrink-0 px-4 pt-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
-          </div>
+    <div className="absolute inset-0 z-[55] flex flex-col bg-background">
+      {/* Cabeçalho */}
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 pb-3 pt-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary active:scale-95"
+          aria-label="Voltar"
+        >
+          <ArrowLeft className="size-5" aria-hidden="true" />
+        </button>
+        <h2 className="flex-1 truncate text-center text-base font-bold text-foreground">
+          {editing ? 'Editar pack' : pack.title}
+        </h2>
+        {editing ? (
           <button
             type="button"
-            onClick={() => setShowWithdrawModal(true)}
-            className="luna-gradient flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95"
+            onClick={() => {
+              setEditing(false)
+              setError(null)
+            }}
+            className="text-sm font-semibold text-muted-foreground"
           >
-            <ArrowUpRight className="size-4" />
-            Sacar
+            Cancelar
           </button>
-        </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="flex size-9 items-center justify-center rounded-full text-primary transition hover:bg-secondary active:scale-95"
+            aria-label="Editar"
+          >
+            <Edit3 className="size-5" aria-hidden="true" />
+          </button>
+        )}
       </header>
 
-      {/* Card de saldo principal */}
-      <div className="shrink-0 px-4 pt-5">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-5 ring-1 ring-primary/20">
-          <div className="absolute -right-8 -top-8 size-32 rounded-full bg-primary/10 blur-2xl" />
-          <div className="absolute -bottom-8 -left-8 size-32 rounded-full bg-primary/5 blur-2xl" />
-          
-          <div className="relative">
-            <p className="text-xs font-medium text-muted-foreground">Saldo disponivel</p>
-            <p className="mt-1 text-4xl font-bold tracking-tight text-foreground">{brl(balance)}</p>
-
-            {pendingBalance > 0 && (
-              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1">
-                <Loader2 className="size-3.5 text-amber-500" />
-                <span className="text-xs font-semibold text-amber-500">
-                  {brl(pendingBalance)} pendente · aceite os pedidos
-                </span>
-              </div>
-            )}
-            
-            <div className="mt-4 flex items-center gap-4">
-              {todayEarnings > 0 && (
-                <div className="flex items-center gap-1.5 rounded-full bg-positive/15 px-3 py-1">
-                  <TrendingUp className="size-3.5 text-positive" />
-                  <span className="text-xs font-semibold text-positive">+{brl(todayEarnings)} hoje</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-positive animate-pulse" />
-                <span className="text-xs text-muted-foreground">Atualizado agora</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="shrink-0 mt-5 px-4">
-        <div className="flex rounded-2xl bg-card/60 p-1 ring-1 ring-border">
-          {(['resumo', 'extrato', 'saques'] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
-                activeTab === tab
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/30'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {tab === 'resumo' ? 'Resumo' : tab === 'extrato' ? 'Extrato' : 'Saques'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Conteudo scrollavel */}
-      <div className="flex-1 overflow-y-auto px-4 pb-6 pt-5">
-        {activeTab === 'resumo' && (
-          <>
-            {/* Stats rápidos */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
-                <div className="flex items-center gap-2">
-                  <span className="flex size-8 items-center justify-center rounded-full bg-positive/15">
-                    <TrendingUp className="size-4 text-positive" />
+      <div className="flex-1 overflow-y-auto px-4 pb-32 pt-4">
+        {/* Galeria de imagens */}
+        {photos.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2.5">
+            {photos.map((src, i) => (
+              <div
+                key={src}
+                className={`relative overflow-hidden rounded-2xl border border-border ${
+                  i === 0 ? 'col-span-2 aspect-video' : 'aspect-square'
+                }`}
+              >
+                <img src={src || '/placeholder.svg'} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
+                {i === 0 && (
+                  <span className="absolute left-2 top-2 rounded-full bg-background/80 px-2 py-0.5 text-[0.65rem] font-semibold text-foreground backdrop-blur-sm">
+                    Capa
                   </span>
-                  <span className="text-xs font-medium text-muted-foreground">Ganhos do mes</span>
-                </div>
-                <p className="mt-2 text-2xl font-bold text-foreground">{brl(monthEarnings)}</p>
-                {monthDeltaPct !== null ? (
-                  <p className={`mt-1 text-xs ${monthDeltaPct >= 0 ? 'text-positive' : 'text-destructive'}`}>
-                    {monthDeltaPct >= 0 ? '+' : ''}{monthDeltaPct}% vs mes anterior
-                  </p>
-                ) : (
-                  <p className="mt-1 text-xs text-muted-foreground">Neste mes</p>
                 )}
-              </div>
-              <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
-                <div className="flex items-center gap-2">
-                  <span className="flex size-8 items-center justify-center rounded-full bg-primary/15">
-                    <Wallet className="size-4 text-primary" />
-                  </span>
-                  <span className="text-xs font-medium text-muted-foreground">Total sacado</span>
-                </div>
-                <p className="mt-2 text-2xl font-bold text-foreground">{brl(totalWithdrawn)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Desde o inicio</p>
-              </div>
-            </div>
-
-            {/* Grafico de barras */}
-            <div className="mt-5 rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground">Ganhos mensais</h3>
-                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">2024</span>
-              </div>
-              <div className="flex h-32 items-end justify-between gap-2">
-                {monthlyData.map((d, i) => (
-                  <div key={d.month} className="flex flex-1 flex-col items-center gap-1.5">
-                    <div 
-                      className={`w-full rounded-lg transition-all ${
-                        i === monthlyData.length - 1 ? 'bg-primary shadow-md shadow-primary/30' : 'bg-primary/30'
-                      }`}
-                      style={{ height: `${(d.value / maxValue) * 100}%`, minHeight: '8px' }}
-                    />
-                    <span className="text-[0.6rem] text-muted-foreground">{d.month}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Ultimas vendas */}
-            <div className="mt-5">
-              <h3 className="mb-3 text-sm font-semibold text-foreground">Ultimas vendas</h3>
-              <div className="flex flex-col gap-2">
-                {transactions.filter(t => t.type === 'sale').slice(0, 3).map((t) => (
-                  <div key={t.id} className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm">
-                    <span className="flex size-10 items-center justify-center rounded-full bg-positive/15">
-                      <ShoppingBag className="size-5 text-positive" />
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-foreground">{t.desc}</p>
-                      <p className="text-xs text-muted-foreground">{t.date}</p>
-                    </div>
-                    <span className="text-sm font-bold text-positive">+{brl(t.amount)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {activeTab === 'extrato' && (
-          <div className="flex flex-col gap-2">
-            {transactions.map((t) => (
-              <div key={t.id} className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm">
-                <span className={`flex size-10 items-center justify-center rounded-full ${
-                  t.type === 'sale' ? 'bg-positive/15' :
-                  t.type === 'gift' ? 'bg-amber-500/15' :
-                  'bg-primary/15'
-                }`}>
-                  {t.type === 'sale' && <ShoppingBag className="size-5 text-positive" />}
-                  {t.type === 'gift' && <Gift className="size-5 text-amber-500" />}
-                  {t.type === 'withdraw' && <ArrowDownLeft className="size-5 text-primary" />}
-                </span>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground">{t.desc}</p>
-                  <p className="text-xs text-muted-foreground">{t.date}</p>
-                </div>
-                <span className={`text-sm font-bold ${t.amount > 0 ? 'text-positive' : 'text-foreground'}`}>
-                  {t.amount > 0 ? '+' : ''}{brl(Math.abs(t.amount))}
-                </span>
+                {editing && (
+                  <button
+                    type="button"
+                    onClick={() => setPhotos((prev) => prev.filter((u) => u !== src))}
+                    className="absolute right-2 top-2 flex size-6 items-center justify-center rounded-full bg-destructive text-white shadow"
+                    aria-label="Remover foto"
+                  >
+                    <X className="size-3.5" aria-hidden="true" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
+        ) : (
+          <div className="luna-border flex aspect-video items-center justify-center rounded-2xl bg-card">
+            <Package className="size-10 text-muted-foreground/30" aria-hidden="true" />
+          </div>
         )}
 
-        {activeTab === 'saques' && (
-          <div className="flex flex-col gap-4">
-            {/* Info de saque */}
-            <div className="rounded-2xl bg-primary/10 p-4 ring-1 ring-primary/20">
-              <div className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
-                  <Info className="size-5 text-primary" />
+        {editing && (
+          <label
+            className={`mt-2.5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 py-3 text-sm font-semibold text-primary transition active:scale-[0.99] ${
+              uploading ? 'pointer-events-none opacity-70' : ''
+            }`}
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <ImagePlus className="size-4" aria-hidden="true" />
+                Adicionar fotos
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleAddPhoto(file)
+                e.target.value = ''
+              }}
+            />
+          </label>
+        )}
+
+        {editing ? (
+          /* Formulário de edição */
+          <div className="mt-5">
+            <label htmlFor="edit-name" className="mb-1.5 block text-sm font-semibold text-foreground">
+              Nome do pack
+            </label>
+            <input
+              id="edit-name"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="mb-5 w-full rounded-xl border border-border bg-secondary px-3.5 py-3.5 text-base text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+            />
+
+            <label htmlFor="edit-price" className="mb-1.5 block text-sm font-semibold text-foreground">
+              Preço (R$)
+            </label>
+            <div className="mb-5 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+              <span className="text-base font-medium text-muted-foreground">R$</span>
+              <input
+                id="edit-price"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                inputMode="decimal"
+                className="w-full bg-transparent text-base text-foreground outline-none"
+              />
+            </div>
+
+            <label htmlFor="edit-desc" className="mb-1.5 block text-sm font-semibold text-foreground">
+              Descrição <span className="font-normal text-muted-foreground">(opcional)</span>
+            </label>
+            <textarea
+              id="edit-desc"
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              rows={3}
+              className="w-full resize-none rounded-xl border border-border bg-secondary px-3.5 py-3.5 text-base text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+            />
+
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/40 py-3 text-sm font-semibold text-destructive transition active:scale-[0.99]"
+            >
+              <Trash2 className="size-4" aria-hidden="true" />
+              Excluir pack
+            </button>
+          </div>
+        ) : (
+          /* Visualização: preço, descrição e métricas */
+          <div className="mt-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-2xl font-bold text-positive">{brl(pack.price)}</p>
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  pack.is_published ? 'bg-positive/15 text-positive' : 'bg-secondary text-muted-foreground'
+                }`}
+              >
+                {pack.is_published ? 'Publicado' : 'Rascunho'}
+              </span>
+            </div>
+            {pack.description && (
+              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">{pack.description}</p>
+            )}
+
+            <h3 className="mb-2.5 mt-6 text-sm font-semibold text-foreground">Métricas</h3>
+            <div className="grid grid-cols-2 gap-2.5">
+              <PackMetric icon={Eye} label="Visualizações" value={String(views)} />
+              <PackMetric icon={ShoppingBag} label="Vendas" value={String(vendas)} />
+              <PackMetric icon={TrendingUp} label="Conversão" value={`${conversao.toFixed(1)}%`} />
+              <PackMetric icon={Heart} label="Curtidas" value={String(likes)} />
+            </div>
+
+            <div className="luna-border mt-2.5 flex items-center justify-between rounded-2xl bg-card px-4 py-3.5">
+              <div className="flex items-center gap-2.5">
+                <span className="flex size-9 items-center justify-center rounded-full bg-positive/15">
+                  <Wallet className="size-4.5 text-positive" aria-hidden="true" />
                 </span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Saques via PIX</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Saques sao processados em ate 24h uteis. O valor minimo para saque e de R$ 50,00.
-                  </p>
-                </div>
+                <span className="text-sm text-muted-foreground">Faturamento</span>
               </div>
-            </div>
-
-            {/* Chave PIX */}
-            <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
-              <p className="text-xs font-medium text-muted-foreground">Chave PIX cadastrada</p>
-              <div className="mt-2 flex items-center justify-between">
-                <p className="text-sm font-semibold text-foreground">{pixKey}</p>
-                <button type="button" className="text-xs font-semibold text-primary">
-                  Alterar
-                </button>
-              </div>
-            </div>
-
-            {/* Historico de saques */}
-            <div>
-              <h3 className="mb-3 text-sm font-semibold text-foreground">Historico de saques</h3>
-              <div className="flex flex-col gap-2">
-                {withdrawals.map((w, i) => (
-                  <div key={i} className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm">
-                    <span className="flex size-10 items-center justify-center rounded-full bg-primary/15">
-                      <ArrowDownLeft className="size-5 text-primary" />
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-foreground">{w.label}</p>
-                      <p className="text-xs text-muted-foreground">{w.date}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-foreground">{brl(w.amount)}</p>
-                      <span className="rounded-full bg-positive/15 px-2 py-0.5 text-[0.6rem] font-semibold text-positive">
-                        Concluido
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <span className="text-lg font-bold text-positive">{brl(faturamento)}</span>
             </div>
           </div>
         )}
+
+        {error && <p className="mt-3 text-center text-xs font-medium text-destructive">{error}</p>}
       </div>
 
-      {/* Modal de Saque */}
-      {showWithdrawModal && (
-        <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
-            <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
-            <div className="flex items-center justify-between px-5 py-4">
-              <h3 className="text-lg font-bold text-foreground">Solicitar saque</h3>
-              <button
-                type="button"
-                onClick={() => setShowWithdrawModal(false)}
-                className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
-              >
-                <X className="size-5 text-muted-foreground" />
-              </button>
-            </div>
+      {/* Rodapé fixo no modo edição */}
+      {editing && (
+        <div className="shrink-0 border-t border-border/60 bg-card px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3.5">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="luna-gradient flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Check className="size-5" aria-hidden="true" />
+                Salvar alterações
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
-            <div className="px-5">
-              {/* Saldo disponivel */}
-              <div className="rounded-2xl bg-muted/50 p-4 text-center">
-                <p className="text-xs text-muted-foreground">Saldo disponivel para saque</p>
-                <p className="mt-1 text-3xl font-bold text-foreground">{brl(balance)}</p>
-              </div>
-
-              {/* Input de valor */}
-              <div className="mt-5">
-                <label className="mb-2 block text-sm font-medium text-foreground">Valor do saque</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">R$</span>
-                  <input
-                    type="text"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder="0,00"
-                    className="w-full rounded-2xl border-0 bg-muted/50 py-4 pl-12 pr-4 text-2xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-              </div>
-
-              {/* Atalhos de valor */}
-              <div className="mt-3 flex gap-2">
-                {[100, 500, 1000, balance].map((val, i) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => setWithdrawAmount(val.toFixed(2).replace('.', ','))}
-                    className="flex-1 rounded-xl bg-muted/50 py-2 text-xs font-semibold text-foreground transition hover:bg-muted"
-                  >
-                    {i === 3 ? 'Tudo' : brl(val)}
-                  </button>
-                ))}
-              </div>
-
-              {/* Chave PIX */}
-              <div className="mt-5 rounded-2xl bg-muted/30 p-4">
-                <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">{pixKey}</p>
-              </div>
-
-              {/* Botao de saque */}
-              <button
-                type="button"
-                onClick={() => setShowWithdrawModal(false)}
-                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
-              >
-                <ArrowUpRight className="size-5" />
-                Confirmar saque
-              </button>
-
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                O valor sera creditado em ate 24h uteis
+      {/* Confirmação de exclusão */}
+      {confirmDelete && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center px-6">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => !deleting && setConfirmDelete(false)}
+            aria-hidden="true"
+          />
+          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-border bg-card p-5 shadow-2xl">
+            <div className="flex flex-col items-center text-center">
+              <span className="flex size-12 items-center justify-center rounded-full bg-destructive/15">
+                <Trash2 className="size-6 text-destructive" aria-hidden="true" />
+              </span>
+              <h3 className="mt-3 text-base font-bold text-foreground">Excluir este pack?</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Esta ação não pode ser desfeita. As fotos e métricas serão removidas.
               </p>
+            </div>
+            <div className="mt-5 flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="flex-1 rounded-xl border border-border bg-secondary py-3 text-sm font-semibold text-foreground transition active:scale-[0.98]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-destructive py-3 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-70"
+              >
+                {deleting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
+                Excluir
+              </button>
             </div>
           </div>
         </div>
@@ -1887,6 +1911,28 @@ function WalletScreen({
   )
 }
 
+function PackMetric({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Home
+  label: string
+  value: string
+}) {
+  return (
+    <div className="luna-border flex flex-col gap-1.5 rounded-2xl bg-card px-3.5 py-3">
+      <span className="flex size-8 items-center justify-center rounded-full bg-primary/10">
+        <Icon className="size-4 text-primary" aria-hidden="true" />
+      </span>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-lg font-bold text-foreground">{value}</span>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tela Carteira
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Perfil
 // ─────────────────────────────────────────────────────────────────────────────
