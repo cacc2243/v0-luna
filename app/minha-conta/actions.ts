@@ -415,7 +415,7 @@ export async function getTransactions(): Promise<Transaction[]> {
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(500)
   
   if (error) {
     console.error('Error fetching transactions:', error)
@@ -969,71 +969,11 @@ export async function acceptSale(saleId: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Not authenticated' }
 
-  const { data: sale } = await supabase
-    .from('sales')
-    .select('*')
-    .eq('id', saleId)
-    .eq('seller_id', user.id)
-    .single()
-
-  if (!sale) return { error: 'Pedido nao encontrado' }
-  if (sale.status !== 'pending') return { error: 'Pedido ja processado' }
-
-  const profile = await getProfile()
-  if (!profile) return { error: 'Profile not found' }
-
-  const net = Number(sale.net_amount)
-  const newBalance = Number(profile.balance) + net
-
-  // Marca a venda como concluida
-  await supabase
-    .from('sales')
-    .update({ status: 'completed' })
-    .eq('id', saleId)
-    .eq('seller_id', user.id)
-
-  // Atualiza saldo, total ganho e contador de vendas
-  await supabase
-    .from('profiles')
-    .update({
-      balance: newBalance,
-      total_earned: Number(profile.total_earned) + net,
-      sales_count: Number(profile.sales_count) + 1,
-    })
-    .eq('id', user.id)
-
-  // Incrementa vendas do pack
-  const { data: pack } = await supabase
-    .from('packs')
-    .select('sales_count, title')
-    .eq('id', sale.pack_id)
-    .single()
-  if (pack) {
-    await supabase
-      .from('packs')
-      .update({ sales_count: (pack.sales_count || 0) + 1 })
-      .eq('id', sale.pack_id)
-      .eq('user_id', user.id)
-  }
-
-  // Registra transacao
-  await supabase.from('transactions').insert({
-    user_id: user.id,
-    type: 'sale',
-    amount: net,
-    description: `Venda confirmada - ${sale.buyer_name || 'Comprador'}`,
-    reference_id: saleId,
-    balance_after: newBalance,
-  })
-
-  // Notificacao
-  await supabase.from('notifications').insert({
-    user_id: user.id,
-    type: 'sale',
-    title: 'Venda confirmada',
-    description: `Voce recebeu ${formatBRL(net)} pela venda${pack ? ` de "${pack.title}"` : ''}`,
-    reference_id: saleId,
-  })
+  // Processa tudo atomicamente no banco (com lock de linha) para evitar
+  // corridas que fazem o saldo "voltar" ao aceitar pedidos rapidamente.
+  const { data, error } = await supabase.rpc('accept_sale_atomic', { p_sale_id: saleId })
+  if (error) return { error: error.message }
+  if (data && (data as { error?: string }).error) return { error: (data as { error?: string }).error }
 
   revalidatePath('/minha-conta')
   return { success: true }

@@ -255,7 +255,7 @@ async function fetchNotifications() {
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────��
 // Componente Principal
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -469,7 +469,7 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Dashboard do App (com dados reais do Supabase)
-// ──���─────────────────────────────────────────────────────────────────────────������
+// ──�����─────────────────────────────────────────────────────────────────────────������
 
 function AppDashboard() {
   const router = useRouter()
@@ -542,23 +542,25 @@ function AppDashboard() {
   // Aceitar / recusar pedidos (atualizacao otimista = instantaneo)
   async function handleAcceptSale(saleId: string) {
     const sale = sales.find(s => s.id === saleId)
-    if (!sale) return
+    if (!sale || sale.status !== 'pending') return
     const net = Number(sale.net_amount)
 
-    // Atualiza a UI imediatamente, sem esperar o servidor
+    // Atualiza a UI imediatamente usando updaters funcionais para que
+    // multiplos aceites rapidos se acumulem em vez de se sobrescreverem.
     mutateSales(
-      sales.map(s => (s.id === saleId ? { ...s, status: 'completed' } : s)),
+      (current = []) => current.map(s => (s.id === saleId ? { ...s, status: 'completed' } : s)),
       { revalidate: false },
     )
     mutateProfile(
-      profile
-        ? {
-            ...profile,
-            balance: Number(profile.balance) + net,
-            total_earned: Number(profile.total_earned) + net,
-            sales_count: Number(profile.sales_count) + 1,
-          }
-        : profile,
+      (current) =>
+        current
+          ? {
+              ...current,
+              balance: Number(current.balance) + net,
+              total_earned: Number(current.total_earned) + net,
+              sales_count: Number(current.sales_count) + 1,
+            }
+          : current,
       { revalidate: false },
     )
     // Dispara destaque no saldo
@@ -571,7 +573,7 @@ function AppDashboard() {
   async function handleRejectSale(saleId: string) {
     // Remove da lista imediatamente
     mutateSales(
-      sales.map(s => (s.id === saleId ? { ...s, status: 'cancelled' } : s)),
+      (current = []) => current.map(s => (s.id === saleId ? { ...s, status: 'cancelled' } : s)),
       { revalidate: false },
     )
     rejectSale(saleId).then(() => refreshActivity())
@@ -1031,7 +1033,7 @@ function ChatsScreen({ balance }: { balance: number }) {
 }
 
 
-// ─────────────────────────────────────────────────���─────�����─────────────────────
+// ─────────────────────────────────────────────────�����────�����─────────────────────
 // Tela Impulsionar
 // ─────────────────────────────────────────────────────────────────────────────
 
