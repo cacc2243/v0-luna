@@ -787,15 +787,45 @@ export async function updateSettings(updates: Partial<UserSettings>) {
 // Pack Activity Engine (views, pedidos pendentes, notificacoes)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BUYER_NAMES = [
-  'Rafael Mendes', 'Lucas Oliveira', 'Bruno Costa', 'Thiago Almeida',
-  'Gabriel Santos', 'Felipe Rocha', 'Matheus Lima', 'Pedro Henrique',
-  'Carlos Eduardo', 'Vinicius Souza', 'Diego Ferreira', 'Andre Martins',
-  'Joao Vitor', 'Leonardo Dias', 'Gustavo Pereira', 'Rodrigo Barbosa',
+const BUYER_FIRST_NAMES = [
+  'Rafael', 'Lucas', 'Bruno', 'Thiago', 'Gabriel', 'Felipe', 'Matheus', 'Pedro',
+  'Carlos', 'Vinicius', 'Diego', 'Andre', 'Joao', 'Leonardo', 'Gustavo', 'Rodrigo',
+  'Eduardo', 'Marcelo', 'Ricardo', 'Fernando', 'Daniel', 'Marcos', 'Paulo', 'Caio',
+  'Henrique', 'Igor', 'Otavio', 'Renato', 'Fabio', 'Alexandre', 'Murilo', 'Luiz',
+  'Guilherme', 'Arthur', 'Enzo', 'Davi', 'Bernardo', 'Samuel', 'Nicolas', 'Vitor',
+  'Cauã', 'Yuri', 'Erick', 'Wesley', 'Danilo', 'Robson', 'Anderson', 'Jonas',
+  'Breno', 'Heitor', 'Lorenzo', 'Theo', 'Miguel', 'Benjamin', 'Joaquim', 'Pietro',
+  'Tomas', 'Emanuel', 'Kaique', 'Ruan', 'Alan', 'Maicon', 'Cristian', 'Jeferson',
+  'Leandro', 'Sergio', 'Adriano', 'Claudio', 'Edson', 'Wagner', 'Roberto', 'Mauricio',
+]
+
+const BUYER_LAST_NAMES = [
+  'Mendes', 'Oliveira', 'Costa', 'Almeida', 'Santos', 'Rocha', 'Lima', 'Henrique',
+  'Ferreira', 'Souza', 'Martins', 'Dias', 'Pereira', 'Barbosa', 'Silva', 'Carvalho',
+  'Gomes', 'Ribeiro', 'Araujo', 'Cardoso', 'Teixeira', 'Moreira', 'Nascimento', 'Cavalcanti',
+  'Pinto', 'Moura', 'Freitas', 'Azevedo', 'Correia', 'Cunha', 'Monteiro', 'Nunes',
+  'Vieira', 'Ramos', 'Castro', 'Campos', 'Machado', 'Lopes', 'Fernandes', 'Borges',
+  'Duarte', 'Reis', 'Tavares', 'Andrade', 'Farias', 'Pacheco', 'Siqueira', 'Brito',
+  'Macedo', 'Sampaio', 'Magalhaes', 'Figueiredo', 'Antunes', 'Caldeira', 'Bezerra', 'Aguiar',
 ]
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
+}
+
+// Gera um nome completo unico (primeiro + sobrenome), evitando os que ja estao em `used`.
+function generateBuyerName(used: Set<string>): string {
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const name = `${pick(BUYER_FIRST_NAMES)} ${pick(BUYER_LAST_NAMES)}`
+    if (!used.has(name)) {
+      used.add(name)
+      return name
+    }
+  }
+  // Fallback extremamente improvavel: adiciona um segundo sobrenome
+  const name = `${pick(BUYER_FIRST_NAMES)} ${pick(BUYER_LAST_NAMES)} ${pick(BUYER_LAST_NAMES)}`
+  used.add(name)
+  return name
 }
 function randInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
@@ -815,6 +845,18 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
     .eq('is_published', true)
 
   if (!packs || packs.length === 0) return { success: true, newOrders: 0 }
+
+  // Carrega os nomes ja usados recentemente (vendas e seguidores) para nao repetir
+  const usedNames = new Set<string>()
+  const { data: recentSales } = await supabase
+    .from('sales')
+    .select('buyer_name')
+    .eq('seller_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(250)
+  for (const s of recentSales ?? []) {
+    if (s.buyer_name) usedNames.add(s.buyer_name)
+  }
 
   const initial = opts?.initial
   let newOrders = 0
@@ -849,7 +891,7 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
       if (remainingViews >= threshold) {
         remainingViews -= threshold
         followersGained++
-        const follower = pick(BUYER_NAMES)
+        const follower = generateBuyerName(usedNames)
         await supabase.from('followers').insert({
           creator_id: user.id,
           follower_name: follower,
@@ -871,7 +913,7 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
       const amount = Number(pack.price) || 0
       // A pessoa recebe o valor total da venda, sem desconto de taxa
       const netAmount = amount
-      const buyer = pick(BUYER_NAMES)
+      const buyer = generateBuyerName(usedNames)
 
       const { data: sale } = await supabase
         .from('sales')
