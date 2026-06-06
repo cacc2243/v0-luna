@@ -255,7 +255,7 @@ async function fetchNotifications() {
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ────────────────────────────────────────────────────────────────────────────��
+// ────────────────────────────────────────────────────────────────────────────���
 // Componente Principal
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -469,7 +469,7 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Dashboard do App (com dados reais do Supabase)
-// ──�����─────────────────────────────────────────────────────────────────────────������
+// ─��������─────────────────────────────────────────────────────────────────────────������
 
 function AppDashboard() {
   const router = useRouter()
@@ -1234,14 +1234,14 @@ function HomeScreen({
           <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
         </div>
         <div
-          className={`luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 ${
+          className={`luna-border relative flex items-center gap-2 rounded-xl bg-card px-3 py-2 ${
             balanceFlash ? 'animate-balance-pop' : ''
           }`}
         >
-          <Wallet className="size-6 text-primary" aria-hidden="true" />
+          <Wallet className="size-5 text-primary" aria-hidden="true" />
           <div className="leading-tight">
-            <p className="text-xs text-muted-foreground">Saldo</p>
-            <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
+            <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
+            <p className="text-base font-bold text-foreground">{brl(balance)}</p>
           </div>
         </div>
       </header>
