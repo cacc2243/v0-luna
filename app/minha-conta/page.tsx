@@ -482,16 +482,22 @@ function AppDashboard() {
   const pendingSales = sales.filter(s => s.status === 'pending')
   const pendingBalance = pendingSales.reduce((sum, s) => sum + Number(s.net_amount), 0)
   const completedSales = sales.filter(s => s.status === 'completed')
-  const todaySales = completedSales.filter(s => {
-    const saleDate = new Date(s.created_at)
-    const today = new Date()
-    return saleDate.toDateString() === today.toDateString()
-  })
-  const todayEarnings = todaySales.reduce((sum, s) => sum + Number(s.net_amount), 0)
+  // "Hoje" = ganhos confirmados hoje (transacoes de venda criadas hoje no aceite)
+  const isToday = (dateStr: string) => {
+    const d = new Date(dateStr)
+    const now = new Date()
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    )
+  }
+  const todayEarnings = transactions
+    .filter(t => t.type === 'sale' && isToday(t.created_at))
+    .reduce((sum, t) => sum + Number(t.amount), 0)
   const totalViews = packs.reduce((sum, p) => sum + p.views_count, 0)
 
   const animatedBalance = useCountUp(balance)
-  const animatedToday = useCountUp(todayEarnings)
 
   // Revalida tudo que muda com a atividade
   const refreshActivity = useCallback(() => {
@@ -720,7 +726,7 @@ function AppDashboard() {
       ) : (
                 <HomeScreen
                   balance={animatedBalance}
-                  today={animatedToday}
+                  today={todayEarnings}
                   views={totalViews}
                   vendas={profile?.sales_count || 0}
                   profile={profile}
@@ -1209,7 +1215,7 @@ function HomeScreen({
 
       {/* Stats */}
       <div className="mt-4 grid grid-cols-3 gap-2.5">
-        <StatCard icon={CalendarDays} label="Hoje" value={brl(today)} accent="positive" />
+        <StatCard icon={CalendarDays} label="Hoje" value={brl(today)} />
         <StatCard icon={Eye} label="Views" value={String(views)} />
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
       </div>
@@ -1375,21 +1381,18 @@ function StatCard({
   icon: Icon,
   label,
   value,
-  accent,
 }: {
   icon: typeof Home
   label: string
   value: string
-  accent?: 'positive'
 }) {
-  const isPositive = accent === 'positive'
   return (
     <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3.5 text-center">
-      <span className={`flex size-10 items-center justify-center rounded-full ${isPositive ? 'bg-positive/15' : 'bg-primary/10'}`}>
-        <Icon className={`size-5 ${isPositive ? 'text-positive' : 'text-primary'}`} aria-hidden="true" />
+      <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+        <Icon className="size-5 text-primary" aria-hidden="true" />
       </span>
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className={`text-lg font-bold ${isPositive ? 'text-positive' : 'text-foreground'}`}>{value}</span>
+      <span className="text-lg font-bold text-foreground">{value}</span>
     </div>
   )
 }
