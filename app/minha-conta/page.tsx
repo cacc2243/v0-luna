@@ -1205,9 +1205,9 @@ function HomeScreen({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
-      {/* Header */}
-      <header className="flex items-center justify-between gap-3">
+    <div className="flex-1 overflow-y-auto px-4 pb-6">
+      {/* Header fixo */}
+      <header className="sticky top-0 z-30 -mx-4 flex items-center justify-between gap-3 border-b border-border/40 bg-background/85 px-4 py-3 backdrop-blur-md">
         <div className="flex items-center gap-2.5">
           <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
         </div>
@@ -1384,7 +1384,7 @@ function relativeTime(dateStr: string) {
   return `${Math.floor(h / 24)}d`
 }
 
-// ────────────────────────────────────────────────────────���────────────────────
+// ────────────────────────────────────────────────────────���────────���───────────
 // StatCard
 // ─────────────────────────────────────────────────────────────────────────────
 
