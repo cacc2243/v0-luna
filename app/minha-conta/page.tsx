@@ -469,7 +469,7 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Dashboard do App (com dados reais do Supabase)
-// ────────────────────────────────────────────────────────────────────────────������
+// ──���─────────────────────────────────────────────────────────────────────────������
 
 function AppDashboard() {
   const router = useRouter()
@@ -1582,9 +1582,14 @@ function PackDetailScreen({
   const vendas = pack.sales_count || 0
   const likes = pack.likes_count || 0
   const conversao = views > 0 ? (vendas / views) * 100 : 0
-  const faturamento = sales
-    .filter((s) => s.pack_id === pack.id && s.status === 'completed')
-    .reduce((sum, s) => sum + Number(s.net_amount), 0)
+
+  // Vendas reais registradas deste pack (podem ser menos que o contador agregado)
+  const packSales = sales.filter((s) => s.pack_id === pack.id && s.status === 'completed')
+  const realRevenue = packSales.reduce((sum, s) => sum + Number(s.net_amount), 0)
+  // Valor liquido por venda: media das vendas reais ou, na ausencia delas, o preco do pack
+  const netPerSale = packSales.length > 0 ? realRevenue / packSales.length : Number(pack.price) || 0
+  // Faturamento sempre corresponde ao numero de vendas exibido
+  const faturamento = Math.max(realRevenue, vendas * netPerSale)
 
   async function handleAddPhoto(file: File) {
     if (uploading) return
