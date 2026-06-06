@@ -15,6 +15,13 @@ import {
   Lock,
   Search,
   User,
+  Smile,
+  ImageIcon,
+  Mic,
+  X,
+  Plus,
+  Play,
+  Pause,
 } from 'lucide-react'
 import { claimGift } from '@/app/minha-conta/actions'
 import { PixModal } from '@/components/convite/pix-modal'
@@ -108,9 +115,13 @@ type ChatMessage = {
   id: string
   from: 'buyer' | 'creator'
   text?: string
-  kind?: 'text' | 'gift'
+  kind?: 'text' | 'gift' | 'image' | 'audio'
   giftAmount?: number
   giftClaimed?: boolean
+  /** URL (object URL) para imagem ou áudio enviado pela criadora */
+  mediaUrl?: string
+  /** duração do áudio em segundos */
+  audioDuration?: number
   time?: string
 }
 
@@ -170,6 +181,17 @@ export function ChatsActive({
 }: ChatsActiveProps) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  // conversas que já foram abertas (some o badge de não lida)
+  const [readIds, setReadIds] = useState<Set<string>>(() => new Set())
+
+  function openConversation(id: string) {
+    setReadIds((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+    setOpenId(id)
+  }
 
   // Lista que cresce com o tempo (novas conversas chegando sempre)
   const [shown, setShown] = useState<BuyerSeed[]>(() => BUYERS.slice(0, 4))
@@ -267,30 +289,41 @@ export function ChatsActive({
 
       {/* Lista de conversas */}
       <ul className="mt-5 flex flex-col gap-2.5">
-        {filtered.map((b) => (
-          <li key={b.id} className="animate-item">
-            <button
-              type="button"
-              onClick={() => setOpenId(b.id)}
-              className="luna-border-soft flex w-full items-center gap-3 rounded-2xl bg-card px-3.5 py-3.5 text-left transition hover:bg-card/70 active:scale-[0.99]"
-            >
-              <BuyerAvatar online={b.online} size="lg" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
-                    {b.name}
-                    <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+        {filtered.map((b) => {
+          const isRead = readIds.has(b.id)
+          return (
+            <li key={b.id} className="animate-item">
+              <button
+                type="button"
+                onClick={() => openConversation(b.id)}
+                className="luna-border-soft flex w-full items-center gap-3 rounded-2xl bg-card px-3.5 py-3.5 text-left transition hover:bg-card/70 active:scale-[0.99]"
+              >
+                <BuyerAvatar online={b.online} size="lg" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
+                      {b.name}
+                      <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                    </p>
+                    <span className="shrink-0 text-[0.65rem] text-muted-foreground">{b.lastTime}</span>
+                  </div>
+                  <p
+                    className={`mt-0.5 truncate text-xs ${
+                      isRead ? 'text-muted-foreground' : 'font-medium text-foreground'
+                    }`}
+                  >
+                    {b.greeting}
                   </p>
-                  <span className="shrink-0 text-[0.65rem] text-muted-foreground">{b.lastTime}</span>
                 </div>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">{b.greeting}</p>
-              </div>
-              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[0.6rem] font-bold text-primary-foreground">
-                1
-              </span>
-            </button>
-          </li>
-        ))}
+                {!isRead && (
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[0.6rem] font-bold text-primary-foreground">
+                    1
+                  </span>
+                )}
+              </button>
+            </li>
+          )
+        })}
         {filtered.length === 0 && (
           <li className="rounded-2xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
             Nenhuma conversa encontrada.
@@ -333,6 +366,17 @@ function ChatConversation({
   const [showEnable, setShowEnable] = useState(false)
   const [showPix, setShowPix] = useState(false)
 
+  // Recursos do compositor: emojis, anexos, presente e áudio
+  const [showEmoji, setShowEmoji] = useState(false)
+  const [showAttach, setShowAttach] = useState(false)
+  const [showGiftComposer, setShowGiftComposer] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const [recordSeconds, setRecordSeconds] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recordChunksRef = useRef<Blob[]>([])
+  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const scrollRef = useRef<HTMLDivElement>(null)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const lockedMsgSent = useRef(false)
@@ -350,6 +394,10 @@ function ChatConversation({
   useEffect(() => {
     return () => {
       timers.current.forEach(clearTimeout)
+      if (recordTimerRef.current) clearInterval(recordTimerRef.current)
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop()
+      }
     }
   }, [])
 
@@ -362,51 +410,102 @@ function ChatConversation({
     timers.current.push(t)
   }
 
-  function handleSend() {
-    const text = input.trim()
-    if (!text || step >= 3) return
-
-    setMessages((prev) => [...prev, { id: `c-${Date.now()}`, from: 'creator', text, kind: 'text', time: nowTime() }])
-    setInput('')
-
+  // Avança o fluxo do comprador após qualquer mensagem enviada pela criadora
+  function advanceFlow() {
     if (step === 0) {
-      // comprador pergunta sobre o presente
       setStep(1)
       pushBuyerMessage(
-        {
-          id: `b-${Date.now()}`,
-          from: 'buyer',
-          text: pick(ASK_GIFT_MESSAGES),
-          kind: 'text',
-        },
+        { id: `b-${Date.now()}`, from: 'buyer', text: pick(ASK_GIFT_MESSAGES), kind: 'text' },
         1800,
       )
     } else if (step === 1) {
-      // comprador anuncia e envia o presente
       setStep(2)
       const amount = randomGiftAmount()
       pushBuyerMessage(
-        {
-          id: `g-${Date.now()}`,
-          from: 'buyer',
-          text: pick(SEND_GIFT_MESSAGES),
-          kind: 'text',
-        },
+        { id: `g-${Date.now()}`, from: 'buyer', text: pick(SEND_GIFT_MESSAGES), kind: 'text' },
         1500,
       )
       pushBuyerMessage(
-        {
-          id: `gift-${Date.now()}`,
-          from: 'buyer',
-          kind: 'gift',
-          giftAmount: amount,
-          giftClaimed: false,
-        },
+        { id: `gift-${Date.now()}`, from: 'buyer', kind: 'gift', giftAmount: amount, giftClaimed: false },
         3200,
       )
       const t = setTimeout(() => setStep(3), 3300)
       timers.current.push(t)
     }
+  }
+
+  // Envia uma mensagem da criadora (texto, imagem ou áudio) e avança o fluxo
+  function pushCreatorMessage(msg: Omit<ChatMessage, 'from' | 'time'>) {
+    setMessages((prev) => [...prev, { ...msg, from: 'creator', time: nowTime() }])
+    advanceFlow()
+  }
+
+  function handleSend() {
+    const text = input.trim()
+    if (!text || step >= 3) return
+    setInput('')
+    setShowEmoji(false)
+    pushCreatorMessage({ id: `c-${Date.now()}`, text, kind: 'text' })
+  }
+
+  function handleEmoji(emoji: string) {
+    setInput((prev) => prev + emoji)
+  }
+
+  function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    setShowAttach(false)
+    if (!file || step >= 3) return
+    const url = URL.createObjectURL(file)
+    pushCreatorMessage({ id: `img-${Date.now()}`, kind: 'image', mediaUrl: url })
+  }
+
+  async function startRecording() {
+    if (step >= 3) return
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      recordChunksRef.current = []
+      recorder.ondataavailable = (ev) => {
+        if (ev.data.size > 0) recordChunksRef.current.push(ev.data)
+      }
+      recorder.onstop = () => {
+        const duration = recordSeconds
+        const blob = new Blob(recordChunksRef.current, { type: 'audio/webm' })
+        const url = URL.createObjectURL(blob)
+        stream.getTracks().forEach((t) => t.stop())
+        if (recordChunksRef.current.length > 0) {
+          pushCreatorMessage({ id: `aud-${Date.now()}`, kind: 'audio', mediaUrl: url, audioDuration: duration })
+        }
+        setRecordSeconds(0)
+      }
+      mediaRecorderRef.current = recorder
+      recorder.start()
+      setRecording(true)
+      setRecordSeconds(0)
+      recordTimerRef.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000)
+    } catch {
+      // permissão negada ou indisponível — ignora silenciosamente
+      setRecording(false)
+    }
+  }
+
+  function stopRecording(send: boolean) {
+    if (recordTimerRef.current) clearInterval(recordTimerRef.current)
+    const recorder = mediaRecorderRef.current
+    if (recorder && recorder.state !== 'inactive') {
+      if (!send) recordChunksRef.current = [] // descarta
+      recorder.stop()
+    }
+    setRecording(false)
+  }
+
+  // Envia um presente em dinheiro para o comprador
+  function handleSendGift(amount: number) {
+    setShowGiftComposer(false)
+    if (step >= 3) return
+    pushCreatorMessage({ id: `cgift-${Date.now()}`, kind: 'text', text: `Te enviei um presente de ${brl(amount)} 🎁` })
   }
 
   function openGiftModal(amount: number) {
@@ -487,6 +586,10 @@ function ChatConversation({
                 senderName={buyer.name}
                 onOpen={() => openGiftModal(m.giftAmount || 0)}
               />
+            ) : m.kind === 'image' ? (
+              <ImageBubble key={m.id} from={m.from} url={m.mediaUrl || ''} time={m.time} />
+            ) : m.kind === 'audio' ? (
+              <AudioBubble key={m.id} from={m.from} url={m.mediaUrl || ''} duration={m.audioDuration || 0} time={m.time} />
             ) : (
               <MessageBubble key={m.id} from={m.from} text={m.text || ''} time={m.time} />
             ),
@@ -496,29 +599,144 @@ function ChatConversation({
         </div>
       </div>
 
-      {/* Input */}
-      <div className="shrink-0 border-t border-border bg-card/95 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSend()
-            }}
-            placeholder={step >= 3 ? 'Conversa em andamento...' : 'Escreva uma mensagem...'}
-            className="flex-1 rounded-full border border-border bg-secondary px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/60 focus:border-primary/60"
-          />
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={!input.trim()}
-            aria-label="Enviar"
-            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-50"
-          >
-            <Send className="size-5" />
-          </button>
-        </div>
+      {/* Input + recursos */}
+      <div className="relative shrink-0 border-t border-border bg-card/95 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+        {/* Seletor de emojis */}
+        {showEmoji && (
+          <EmojiPicker onPick={handleEmoji} onClose={() => setShowEmoji(false)} />
+        )}
+
+        {/* Menu de anexos */}
+        {showAttach && (
+          <div className="absolute bottom-full left-3 mb-2 flex gap-2 rounded-2xl border border-border bg-card p-2 shadow-xl animate-in fade-in slide-in-from-bottom-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center gap-1 rounded-xl px-4 py-2.5 text-xs font-medium text-foreground transition hover:bg-muted"
+            >
+              <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+                <ImageIcon className="size-5" />
+              </span>
+              Imagem
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAttach(false)
+                setShowGiftComposer(true)
+              }}
+              className="flex flex-col items-center gap-1 rounded-xl px-4 py-2.5 text-xs font-medium text-foreground transition hover:bg-muted"
+            >
+              <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+                <Gift className="size-5" />
+              </span>
+              Presente
+            </button>
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelected}
+        />
+
+        {recording ? (
+          // Barra de gravação de áudio
+          <div className="flex items-center gap-3 rounded-full border border-destructive/40 bg-destructive/10 px-4 py-2.5">
+            <span className="flex items-center gap-2 text-sm font-semibold text-destructive">
+              <span className="size-2.5 animate-pulse rounded-full bg-destructive" />
+              {formatDuration(recordSeconds)}
+            </span>
+            <span className="flex-1 text-xs text-muted-foreground">Gravando áudio...</span>
+            <button
+              type="button"
+              onClick={() => stopRecording(false)}
+              aria-label="Cancelar gravação"
+              className="flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => stopRecording(true)}
+              aria-label="Enviar áudio"
+              className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-95"
+            >
+              <Send className="size-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAttach((v) => !v)
+                setShowEmoji(false)
+              }}
+              aria-label="Anexar"
+              disabled={step >= 3}
+              className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
+            >
+              <Plus className="size-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowEmoji((v) => !v)
+                setShowAttach(false)
+              }}
+              aria-label="Emojis"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
+              <Smile className="size-5" />
+            </button>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onFocus={() => {
+                setShowEmoji(false)
+                setShowAttach(false)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSend()
+              }}
+              placeholder={step >= 3 ? 'Conversa em andamento...' : 'Escreva uma mensagem...'}
+              className="min-w-0 flex-1 rounded-full border border-border bg-secondary px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/60 focus:border-primary/60"
+            />
+            {input.trim() ? (
+              <button
+                type="button"
+                onClick={handleSend}
+                aria-label="Enviar"
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95"
+              >
+                <Send className="size-5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={startRecording}
+                aria-label="Gravar áudio"
+                disabled={step >= 3}
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-50"
+              >
+                <Mic className="size-5" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Compositor de presente (criadora envia dinheiro) */}
+      {showGiftComposer && (
+        <GiftComposerModal
+          onClose={() => setShowGiftComposer(false)}
+          onSend={handleSendGift}
+        />
+      )}
 
       {/* Modal de presente recebido */}
       <GiftReceivedModal
@@ -570,7 +788,7 @@ function ChatConversation({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Subcomponentes de bolha
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────��────────────────────────────────
 
 function MessageBubble({ from, text, time }: { from: 'buyer' | 'creator'; text: string; time?: string }) {
   const isCreator = from === 'creator'
@@ -697,6 +915,243 @@ function GiftBubble({
               Vira saldo imediato na sua conta
             </p>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Recursos do compositor: emojis, mídia e presente
+// ─────────────────────────────────────────────────────────────────────────────
+
+function formatDuration(s: number) {
+  const m = Math.floor(s / 60)
+  const sec = s % 60
+  return `${m}:${sec.toString().padStart(2, '0')}`
+}
+
+const EMOJIS = [
+  '😀', '😍', '🥰', '😘', '😏', '😜', '🤩', '😈',
+  '❤️', '🔥', '💋', '💕', '😻', '🌹', '✨', '💎',
+  '🎁', '💰', '💸', '🥂', '🍓', '🍑', '👑', '😇',
+  '😉', '🤤', '💖', '💞', '🙈', '👅', '💃', '🫦',
+]
+
+function EmojiPicker({ onPick, onClose }: { onPick: (e: string) => void; onClose: () => void }) {
+  return (
+    <div className="absolute bottom-full left-3 right-3 mb-2 rounded-2xl border border-border bg-card p-3 shadow-xl animate-in fade-in slide-in-from-bottom-2">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-xs font-semibold text-muted-foreground">Emojis</p>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar emojis"
+          className="rounded-full p-1 text-muted-foreground transition hover:text-foreground"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+      <div className="grid grid-cols-8 gap-1">
+        {EMOJIS.map((e) => (
+          <button
+            key={e}
+            type="button"
+            onClick={() => onPick(e)}
+            className="flex aspect-square items-center justify-center rounded-lg text-xl transition hover:bg-muted active:scale-90"
+          >
+            {e}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ImageBubble({ from, url, time }: { from: 'buyer' | 'creator'; url: string; time?: string }) {
+  const isCreator = from === 'creator'
+  return (
+    <div className={`flex animate-speech-enter ${isCreator ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`overflow-hidden rounded-2xl p-1 shadow-sm ${
+          isCreator ? 'rounded-br-md bg-primary' : 'rounded-bl-md border border-border bg-card'
+        }`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url || '/placeholder.svg'}
+          alt="Imagem enviada"
+          className="max-h-60 w-full max-w-[240px] rounded-xl object-cover"
+        />
+        <span
+          className={`mt-1 flex items-center justify-end gap-0.5 px-1 pb-0.5 text-[0.6rem] ${
+            isCreator ? 'text-primary-foreground/80' : 'text-muted-foreground'
+          }`}
+        >
+          {time}
+          {isCreator && <CheckCheck className="size-3" />}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function AudioBubble({
+  from,
+  url,
+  duration,
+  time,
+}: {
+  from: 'buyer' | 'creator'
+  url: string
+  duration: number
+  time?: string
+}) {
+  const isCreator = from === 'creator'
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const [playing, setPlaying] = useState(false)
+
+  function toggle() {
+    const a = audioRef.current
+    if (!a) return
+    if (playing) {
+      a.pause()
+    } else {
+      a.play().catch(() => {})
+    }
+  }
+
+  return (
+    <div className={`flex animate-speech-enter ${isCreator ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 shadow-sm ${
+          isCreator ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border border-border bg-card text-foreground'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={playing ? 'Pausar' : 'Reproduzir'}
+          className={`flex size-9 shrink-0 items-center justify-center rounded-full ${
+            isCreator ? 'bg-primary-foreground/20' : 'bg-primary/15 text-primary'
+          }`}
+        >
+          {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+        </button>
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: 16 }).map((_, i) => (
+            <span
+              key={i}
+              className={`w-0.5 rounded-full ${isCreator ? 'bg-primary-foreground/60' : 'bg-primary/50'}`}
+              style={{ height: `${6 + ((i * 7) % 16)}px` }}
+            />
+          ))}
+        </div>
+        <span className={`text-[0.65rem] ${isCreator ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+          {formatDuration(duration)}
+        </span>
+        <audio
+          ref={audioRef}
+          src={url}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => setPlaying(false)}
+          className="hidden"
+        />
+        <span className={`ml-1 text-[0.6rem] ${isCreator ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+          {time}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// Modal para a criadora enviar um presente em dinheiro (R$ 50 a R$ 10.000)
+const GIFT_MIN = 50
+const GIFT_MAX = 10000
+const GIFT_PRESETS = [50, 100, 250, 500, 1000, 5000]
+
+function GiftComposerModal({
+  onClose,
+  onSend,
+}: {
+  onClose: () => void
+  onSend: (amount: number) => void
+}) {
+  const [value, setValue] = useState('')
+  const amount = Number(value)
+  const valid = amount >= GIFT_MIN && amount <= GIFT_MAX
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm sm:p-4">
+      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        <button
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute right-3 top-3 z-10 rounded-full bg-black/20 p-2 text-white/90 transition hover:bg-black/40"
+        >
+          <X className="size-5" />
+        </button>
+
+        <div className="relative overflow-hidden bg-gradient-to-br from-primary/30 via-primary/10 to-transparent px-5 pb-5 pt-7 text-center">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-3xl bg-primary shadow-xl shadow-primary/40">
+            <Gift className="size-8 text-primary-foreground" />
+          </div>
+          <h2 className="mt-3 text-lg font-bold text-foreground">Enviar presente</h2>
+          <p className="mt-1 text-xs text-muted-foreground">Escolha um valor entre {brl(GIFT_MIN)} e {brl(GIFT_MAX)}</p>
+        </div>
+
+        <div className="px-5 py-5">
+          {/* Valores rápidos */}
+          <div className="grid grid-cols-3 gap-2">
+            {GIFT_PRESETS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setValue(String(p))}
+                className={`rounded-xl border py-2.5 text-sm font-semibold transition ${
+                  amount === p
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border bg-background/50 text-foreground hover:bg-muted'
+                }`}
+              >
+                {brl(p)}
+              </button>
+            ))}
+          </div>
+
+          {/* Valor personalizado */}
+          <div className="mt-4">
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Outro valor</label>
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-background/50 px-4 py-3">
+              <span className="text-sm font-semibold text-muted-foreground">R$</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                min={GIFT_MIN}
+                max={GIFT_MAX}
+                placeholder="0,00"
+                className="w-full bg-transparent text-base font-semibold text-foreground outline-none placeholder:text-muted-foreground/50"
+              />
+            </div>
+            {value !== '' && !valid && (
+              <p className="mt-1.5 text-xs text-destructive">
+                O valor deve estar entre {brl(GIFT_MIN)} e {brl(GIFT_MAX)}.
+              </p>
+            )}
+          </div>
+
+          <button
+            type="button"
+            disabled={!valid}
+            onClick={() => onSend(amount)}
+            className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
+          >
+            <Gift className="size-4" />
+            {valid ? `Enviar ${brl(amount)}` : 'Enviar presente'}
+          </button>
         </div>
       </div>
     </div>
