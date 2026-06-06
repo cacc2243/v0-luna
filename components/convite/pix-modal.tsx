@@ -240,7 +240,7 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
                   Ou copie o código PIX
                 </p>
                 <div className="rounded-xl bg-muted/50 border border-border px-4 py-3">
-                  <p className="text-xs font-mono text-foreground break-all leading-relaxed">
+                  <p className="text-xs font-mono text-foreground truncate leading-relaxed">
                     {pixCode || ''}
                   </p>
                 </div>
