@@ -401,7 +401,7 @@ function ChatConversation({
     }
   }, [])
 
-  function pushBuyerMessage(msg: ChatMessage, delay = 1600) {
+  function pushBuyerMessage(msg: ChatMessage, delay = 2800) {
     setTyping(true)
     const t = setTimeout(() => {
       setTyping(false)
@@ -416,20 +416,20 @@ function ChatConversation({
       setStep(1)
       pushBuyerMessage(
         { id: `b-${Date.now()}`, from: 'buyer', text: pick(ASK_GIFT_MESSAGES), kind: 'text' },
-        1800,
+        3000,
       )
     } else if (step === 1) {
       setStep(2)
       const amount = randomGiftAmount()
       pushBuyerMessage(
         { id: `g-${Date.now()}`, from: 'buyer', text: pick(SEND_GIFT_MESSAGES), kind: 'text' },
-        1500,
+        2800,
       )
       pushBuyerMessage(
         { id: `gift-${Date.now()}`, from: 'buyer', kind: 'gift', giftAmount: amount, giftClaimed: false },
-        3200,
+        5400,
       )
-      const t = setTimeout(() => setStep(3), 3300)
+      const t = setTimeout(() => setStep(3), 5500)
       timers.current.push(t)
     }
   }
