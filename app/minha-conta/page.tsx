@@ -262,7 +262,7 @@ async function fetchNotifications() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────��─────────────────────────────
 
 // ────────────────────────────────────────────────────────────────────────────����
 // Componente Principal
@@ -514,8 +514,11 @@ function AppDashboard() {
   const pendingSales = sales.filter(s => s.status === 'pending')
   const pendingBalance = pendingSales.reduce((sum, s) => sum + Number(s.net_amount), 0)
   const completedSales = sales.filter(s => s.status === 'completed')
-  // "Hoje" = ganhos confirmados hoje (transacoes de venda criadas hoje no aceite)
+  // "Hoje" = total liquido das vendas confirmadas hoje.
+  // Usa a tabela de vendas (mesma fonte do contador "Vendas"), garantindo
+  // que sempre reflita o que foi vendido no dia, mesmo sem transacao registrada.
   const isToday = (dateStr: string) => {
+    if (!dateStr) return false
     const d = new Date(dateStr)
     const now = new Date()
     return (
@@ -524,9 +527,9 @@ function AppDashboard() {
       d.getDate() === now.getDate()
     )
   }
-  const todayEarnings = transactions
-    .filter(t => t.type === 'sale' && isToday(t.created_at))
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+  const todayEarnings = completedSales
+    .filter(s => isToday(s.created_at))
+    .reduce((sum, s) => sum + Number(s.net_amount), 0)
   const totalViews = packs.reduce((sum, p) => sum + p.views_count, 0)
 
   const animatedBalance = useCountUp(balance)
@@ -1973,7 +1976,7 @@ function PackMetric({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ────────────────────────────────────────────────────���────────────────────────
+// ─────────────────────��──────────────────────────────���────────────────────────
 
 function WalletScreen({
   balance,
