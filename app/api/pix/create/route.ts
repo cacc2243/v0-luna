@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo), 'gift_unlock' (presentes) ou 'boost' (impulsionamento)
+    // Tipo de pagamento: 'invite', 'chat', 'gift_unlock', 'boost' ou 'verification' (verificação para saque)
     const inviteType =
       type === 'chat'
         ? 'chat'
@@ -118,7 +118,9 @@ export async function POST(request: NextRequest) {
           ? 'gift_unlock'
           : type === 'boost'
             ? 'boost'
-            : 'invite'
+            : type === 'verification'
+              ? 'verification'
+              : 'invite'
     const itemTitle =
       inviteType === 'chat'
         ? 'Chat Exclusivo Luna Privé'
@@ -126,7 +128,9 @@ export async function POST(request: NextRequest) {
           ? 'Habilitação de Presentes Luna Privé'
           : inviteType === 'boost'
             ? `Impulsionamento ${boostDays || ''} dias Luna Privé`.replace(/\s+/g, ' ').trim()
-            : 'Convite Luna Privé'
+            : inviteType === 'verification'
+              ? 'Verificação de Conta Luna Privé'
+              : 'Convite Luna Privé'
 
     const apiKey = process.env.BYNET_API_KEY
     if (!apiKey) {

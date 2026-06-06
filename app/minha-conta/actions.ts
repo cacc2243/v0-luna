@@ -31,6 +31,8 @@ export type Profile = {
   chat_unlocked_at: string | null
   gifts_enabled: boolean
   gifts_enabled_at: string | null
+  withdrawal_verified: boolean
+  withdrawal_verified_at: string | null
   created_at: string
 }
 
@@ -91,8 +93,10 @@ export type Withdrawal = {
   pix_key_type: string | null
   status: 'pending' | 'processing' | 'completed' | 'failed'
   processed_at: string | null
+  analysis_until: string | null
+  failure_reason: string | null
   created_at: string
-}
+  }
 
 export type Conversation = {
   id: string
@@ -456,63 +460,80 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
 export async function requestWithdrawal(amount: number) {
   const supabase = await createClient()
   const user = await getCurrentUser()
-  
-  if (!user) return { error: 'Not authenticated' }
-  
-  // Get profile to check balance and PIX key
+
+  if (!user) return { error: 'not_authenticated' as const }
+
   const profile = await getProfile()
-  if (!profile) return { error: 'Profile not found' }
-  
+  if (!profile) return { error: 'profile_not_found' as const }
+
   if (amount > profile.balance) {
-    return { error: 'Saldo insuficiente' }
+    return { error: 'Saldo insuficiente' as const }
   }
-  
+
   if (amount < 50) {
-    return { error: 'Valor minimo para saque e R$ 50,00' }
+    return { error: 'Valor minimo para saque e R$ 50,00' as const }
   }
-  
+
   if (!profile.pix_key) {
-    return { error: 'Configure sua chave PIX primeiro' }
+    return { error: 'no_pix_key' as const }
   }
-  
-  // Create withdrawal
-  const { error: withdrawError } = await supabase
-    .from('withdrawals')
-    .insert({
-      user_id: user.id,
-      amount,
-      pix_key: profile.pix_key,
-      pix_key_type: profile.pix_key_type,
-    })
-  
+
+  // Saque so pode ser solicitado se a conta estiver verificada
+  if (!profile.withdrawal_verified) {
+    return { error: 'not_verified' as const }
+  }
+
+  // Cria o saque em analise (24h). O saldo nao e deduzido enquanto a analise corre.
+  const analysisUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+  const { error: withdrawError } = await supabase.from('withdrawals').insert({
+    user_id: user.id,
+    amount,
+    pix_key: profile.pix_key,
+    pix_key_type: profile.pix_key_type,
+    status: 'processing',
+    analysis_until: analysisUntil,
+  })
+
   if (withdrawError) {
     return { error: withdrawError.message }
   }
-  
-  // Update balance
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({
-      balance: profile.balance - amount,
-      total_withdrawn: profile.total_withdrawn + amount,
-    })
-    .eq('id', user.id)
-  
-  if (updateError) {
-    return { error: updateError.message }
-  }
-  
-  // Create transaction record
-  await supabase.from('transactions').insert({
-    user_id: user.id,
-    type: 'withdrawal',
-    amount: -amount,
-    description: `Saque PIX - ${profile.pix_key}`,
-    balance_after: profile.balance - amount,
-  })
-  
+
   revalidatePath('/minha-conta')
-  return { success: true }
+  return { success: true as const }
+}
+
+// Marca como "falhado" os saques cuja janela de analise de 24h ja passou.
+// O motivo informado e a recusa do banco — o saldo permanece intacto.
+export async function settleExpiredWithdrawals() {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { settled: 0 }
+
+  const { data: expired } = await supabase
+    .from('withdrawals')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('status', 'processing')
+    .lt('analysis_until', new Date().toISOString())
+
+  if (!expired || expired.length === 0) return { settled: 0 }
+
+  const { error } = await supabase
+    .from('withdrawals')
+    .update({
+      status: 'failed',
+      failure_reason: 'Seu banco recusou a transação. Tente novamente, por favor.',
+      processed_at: new Date().toISOString(),
+    })
+    .in(
+      'id',
+      expired.map((w) => w.id),
+    )
+
+  if (error) return { settled: 0 }
+
+  revalidatePath('/minha-conta')
+  return { settled: expired.length }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

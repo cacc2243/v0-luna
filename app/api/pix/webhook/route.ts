@@ -148,6 +148,44 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Se for um pagamento de Verificacao de Conta confirmado, libera os saques da usuaria
+    if (newStatus === 'paid' && invite.type === 'verification') {
+      let verifyUserId: string | null = invite.user_id || null
+
+      if (!verifyUserId && invite.email) {
+        const { data: authList } = await supabase.auth.admin.listUsers()
+        const matched = authList?.users?.find(
+          (u) => (u.email || '').toLowerCase() === invite.email.toLowerCase(),
+        )
+        verifyUserId = matched?.id || null
+      }
+
+      if (verifyUserId) {
+        const { error: verifyErr } = await supabase
+          .from('profiles')
+          .update({
+            withdrawal_verified: true,
+            withdrawal_verified_at: new Date().toISOString(),
+          })
+          .eq('id', verifyUserId)
+
+        if (verifyErr) {
+          console.error('[v0] Erro ao verificar conta:', verifyErr)
+        } else {
+          console.log('[v0] Conta verificada para saques:', verifyUserId)
+          await supabase.from('notifications').insert({
+            user_id: verifyUserId,
+            type: 'message',
+            title: 'Conta verificada',
+            description: 'Sua conta foi verificada com sucesso. Agora você pode solicitar saques.',
+            reference_id: invite.id,
+          })
+        }
+      } else {
+        console.error('[v0] Nao foi possivel identificar a usuaria para verificar conta:', invite.id)
+      }
+    }
+
     // Se for um pagamento de Impulsionamento confirmado, cria o boost ativo da usuaria
     if (newStatus === 'paid' && invite.type === 'boost') {
       let boostUserId: string | null = invite.user_id || null

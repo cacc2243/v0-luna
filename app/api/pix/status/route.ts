@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('email', email)
     }
 
-    if (type === 'chat' || type === 'invite' || type === 'gift_unlock' || type === 'boost') {
+    if (type === 'chat' || type === 'invite' || type === 'gift_unlock' || type === 'boost' || type === 'verification') {
       query = query.eq('type', type)
     }
 
@@ -91,6 +91,32 @@ export async function GET(request: NextRequest) {
             .from('profiles')
             .update({ gifts_enabled: true, gifts_enabled_at: new Date().toISOString() })
             .eq('id', giftUserId)
+        }
+      }
+    }
+
+    // Safety net (verificacao): se o pagamento de verificacao foi confirmado,
+    // garante que o perfil esteja com withdrawal_verified (caso o webhook falhe)
+    if (paidInvite && paidInvite.type === 'verification') {
+      let verifyUserId: string | null = paidInvite.user_id || null
+      if (!verifyUserId && paidInvite.email) {
+        const { data: authList } = await supabase.auth.admin.listUsers()
+        const matched = authList?.users?.find(
+          (u) => (u.email || '').toLowerCase() === paidInvite.email.toLowerCase(),
+        )
+        verifyUserId = matched?.id || null
+      }
+      if (verifyUserId) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('withdrawal_verified')
+          .eq('id', verifyUserId)
+          .single()
+        if (prof && !prof.withdrawal_verified) {
+          await supabase
+            .from('profiles')
+            .update({ withdrawal_verified: true, withdrawal_verified_at: new Date().toISOString() })
+            .eq('id', verifyUserId)
         }
       }
     }

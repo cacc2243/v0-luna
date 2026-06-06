@@ -50,6 +50,9 @@ import {
   Instagram,
   Edit3,
   Shield,
+  ShieldCheck,
+  XCircle,
+  CheckCircle2,
   CreditCard,
   Globe,
   Moon,
@@ -67,7 +70,7 @@ import {
   Clock,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
-import { generatePackActivity, acceptSale, rejectSale } from './actions'
+  import { generatePackActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals } from './actions'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PersonalizedSaleModal, UnlockChatModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
@@ -517,7 +520,7 @@ function AppDashboard() {
   const { data: packs = [], mutate: mutatePacks } = useSWR('packs', fetchPacks)
   const { data: sales = [], mutate: mutateSales } = useSWR('sales', fetchSales)
   const { data: transactions = [], mutate: mutateTransactions } = useSWR('transactions', fetchTransactions)
-  const { data: withdrawals = [] } = useSWR('withdrawals', fetchWithdrawals)
+  const { data: withdrawals = [], mutate: mutateWithdrawals } = useSWR('withdrawals', fetchWithdrawals)
   const { data: conversations = [] } = useSWR('conversations', fetchConversations)
   const { data: boosts = [], mutate: mutateBoosts } = useSWR('boosts', fetchBoosts)
   const { data: highlights = [], mutate: mutateHighlights } = useSWR('highlights', fetchHighlights)
@@ -819,7 +822,19 @@ function AppDashboard() {
       {/* Conteudo rolavel do app */}
       <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
       {activeTab === 'Carteira' ? (
-                <WalletScreen balance={animatedBalance} pendingBalance={pendingBalance} withdrawals={withdrawals} transactions={transactions} profile={profile} />
+                <WalletScreen
+          balance={animatedBalance}
+          pendingBalance={pendingBalance}
+          withdrawals={withdrawals}
+          transactions={transactions}
+          profile={profile}
+          userEmail={userEmail}
+          userName={profile?.display_name || 'Criadora Luna'}
+          onWithdrawalsChange={() => {
+            mutateWithdrawals()
+            mutateProfile()
+          }}
+        />
       ) : activeTab === 'Packs' ? (
         <PacksScreen
           balance={animatedBalance}
@@ -1586,7 +1601,7 @@ function ImpulsionarScreen({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────���───────────────────────────────
 // Tela Inicio
 // ────────────────────────────────────────────────────────────────────────��────
 
@@ -2371,17 +2386,33 @@ function WalletScreen({
   withdrawals,
   transactions,
   profile,
+  userEmail,
+  userName,
+  onWithdrawalsChange,
 }: {
   balance: number
   pendingBalance: number
   withdrawals: Withdrawal[]
   transactions: Transaction[]
   profile: Profile | null | undefined
+  userEmail: string
+  userName: string
+  onWithdrawalsChange: () => void
 }) {
+  // Etapas do fluxo de saque:
+  // 'form' -> 'processing' (5s) -> 'new_account' (conta nova) -> 'verify_info' -> 'verify_processing' -> PIX
+  // ou, se ja verificada: 'form' -> 'processing' -> 'requested' (saque solicitado / em analise)
+  const [withdrawStep, setWithdrawStep] = useState<
+    'form' | 'processing' | 'new_account' | 'verify_info' | 'verify_processing' | 'requested'
+  >('form')
+  const [showVerifyPix, setShowVerifyPix] = useState(false)
+  const isVerified = !!profile?.withdrawal_verified
+  const VERIFICATION_PRICE = 49
   const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [barsReady, setBarsReady] = useState(false)
+  const [withdrawError, setWithdrawError] = useState<string | null>(null)
   const pixKey = profile?.pix_key || 'Nao cadastrada'
 
   const isEarning = (t: Transaction) => t.type === 'sale' || t.type === 'gift_received' || t.type === 'bonus'
@@ -2391,6 +2422,82 @@ function WalletScreen({
     const id = requestAnimationFrame(() => setBarsReady(true))
     return () => cancelAnimationFrame(id)
   }, [])
+
+  // Liquidacao automatica: ao montar e a cada 60s, marca como falhos os saques
+  // cuja janela de analise de 24h ja expirou (recusa do banco).
+  useEffect(() => {
+    let mounted = true
+    const run = async () => {
+      const res = await settleExpiredWithdrawals()
+      if (mounted && res.settled > 0) onWithdrawalsChange()
+    }
+    run()
+    const interval = setInterval(run, 60_000)
+    return () => {
+      mounted = false
+      clearInterval(interval)
+    }
+  }, [onWithdrawalsChange])
+
+  // Abre o modal de saque resetando o fluxo
+  function openWithdraw() {
+    setWithdrawStep('form')
+    setWithdrawAmount('')
+    setWithdrawError(null)
+    setShowWithdrawModal(true)
+  }
+
+  function closeWithdraw() {
+    setShowWithdrawModal(false)
+    setWithdrawStep('form')
+  }
+
+  // Confirma o saque: roda 5s de animacao e decide o proximo passo
+  function handleConfirmWithdraw() {
+    const parsed = Number(withdrawAmount.replace(/\./g, '').replace(',', '.'))
+    if (!parsed || parsed < 50) {
+      setWithdrawError('O valor mínimo para saque é R$ 50,00.')
+      return
+    }
+    if (parsed > balance) {
+      setWithdrawError('Saldo insuficiente para este saque.')
+      return
+    }
+    setWithdrawError(null)
+    setWithdrawStep('processing')
+
+    // Animacao de 5 segundos analisando a solicitacao
+    setTimeout(async () => {
+      if (isVerified) {
+        // Conta verificada: registra o saque (entra em analise de 24h)
+        const res = await requestWithdrawal(parsed)
+        if (res?.error) {
+          setWithdrawError(
+            res.error === 'not_verified'
+              ? 'Sua conta ainda não foi verificada.'
+              : typeof res.error === 'string'
+                ? res.error
+                : 'Não foi possível solicitar o saque.',
+          )
+          setWithdrawStep('form')
+          return
+        }
+        onWithdrawalsChange()
+        setWithdrawStep('requested')
+      } else {
+        // Conta nova: exige verificacao
+        setWithdrawStep('new_account')
+      }
+    }, 5000)
+  }
+
+  // Inicia a verificacao: animacao curta e abre o PIX de R$ 49
+  function handleStartVerification() {
+    setWithdrawStep('verify_processing')
+    setTimeout(() => {
+      setShowVerifyPix(true)
+    }, 1600)
+  }
 
   // Grafico: 6 meses comecando no mes atual (2026) e seguindo para os proximos
   const now = new Date()
@@ -2488,7 +2595,7 @@ function WalletScreen({
           <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
           <button
             type="button"
-            onClick={() => setShowWithdrawModal(true)}
+            onClick={openWithdraw}
             className="luna-gradient flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95"
           >
             <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -2780,74 +2887,256 @@ function WalletScreen({
         <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
             <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
+
+            {/* Header dinamico */}
             <div className="flex items-center justify-between px-5 py-4">
-              <h3 className="text-lg font-bold text-foreground">Solicitar saque</h3>
-              <button
-                type="button"
-                onClick={() => setShowWithdrawModal(false)}
-                className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
-                aria-label="Fechar"
-              >
-                <X className="size-5 text-muted-foreground" aria-hidden="true" />
-              </button>
+              <h3 className="text-lg font-bold text-foreground">
+                {withdrawStep === 'form' && 'Solicitar saque'}
+                {withdrawStep === 'processing' && 'Processando saque'}
+                {withdrawStep === 'new_account' && 'Verificação necessária'}
+                {withdrawStep === 'verify_info' && 'Verificação completa'}
+                {withdrawStep === 'verify_processing' && 'Gerando verificação'}
+                {withdrawStep === 'requested' && 'Saque solicitado'}
+              </h3>
+              {(withdrawStep === 'form' ||
+                withdrawStep === 'new_account' ||
+                withdrawStep === 'verify_info' ||
+                withdrawStep === 'requested') && (
+                <button
+                  type="button"
+                  onClick={closeWithdraw}
+                  className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
+                  aria-label="Fechar"
+                >
+                  <X className="size-5 text-muted-foreground" aria-hidden="true" />
+                </button>
+              )}
             </div>
 
             <div className="px-5">
-              <div className="rounded-2xl bg-muted/50 p-4 text-center">
-                <p className="text-xs text-muted-foreground">Saldo disponivel para saque</p>
-                <p className="mt-1 text-3xl font-bold text-foreground">{brl(balance)}</p>
-              </div>
+              {/* Etapa 1: Formulario de saque */}
+              {withdrawStep === 'form' && (
+                <>
+                  <div className="rounded-2xl bg-muted/50 p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Saldo disponivel para saque</p>
+                    <p className="mt-1 text-3xl font-bold text-foreground">{brl(balance)}</p>
+                  </div>
 
-              <div className="mt-5">
-                <label className="mb-2 block text-sm font-medium text-foreground">Valor do saque</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">
-                    R$
-                  </span>
-                  <input
-                    type="text"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder="0,00"
-                    inputMode="decimal"
-                    className="w-full rounded-2xl border-0 bg-muted/50 py-4 pl-12 pr-4 text-2xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-              </div>
+                  <div className="mt-5">
+                    <label className="mb-2 block text-sm font-medium text-foreground">Valor do saque</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">
+                        R$
+                      </span>
+                      <input
+                        type="text"
+                        value={withdrawAmount}
+                        onChange={(e) => {
+                          setWithdrawAmount(e.target.value)
+                          setWithdrawError(null)
+                        }}
+                        placeholder="0,00"
+                        inputMode="decimal"
+                        className="w-full rounded-2xl border-0 bg-muted/50 py-4 pl-12 pr-4 text-2xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                  </div>
 
-              <div className="mt-3 flex gap-2">
-                {[100, 500, 1000, balance].map((val, i) => (
+                  <div className="mt-3 flex gap-2">
+                    {[100, 500, 1000, balance].map((val, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setWithdrawAmount(val.toFixed(2).replace('.', ','))
+                          setWithdrawError(null)
+                        }}
+                        className="flex-1 rounded-xl bg-muted/50 py-2 text-xs font-semibold text-foreground transition hover:bg-muted"
+                      >
+                        {i === 3 ? 'Tudo' : brl(val)}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 rounded-2xl bg-muted/30 p-4">
+                    <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{pixKey}</p>
+                  </div>
+
+                  {withdrawError && (
+                    <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-destructive">
+                      <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+                      {withdrawError}
+                    </p>
+                  )}
+
                   <button
-                    key={i}
                     type="button"
-                    onClick={() => setWithdrawAmount(val.toFixed(2).replace('.', ','))}
-                    className="flex-1 rounded-xl bg-muted/50 py-2 text-xs font-semibold text-foreground transition hover:bg-muted"
+                    onClick={handleConfirmWithdraw}
+                    className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
                   >
-                    {i === 3 ? 'Tudo' : brl(val)}
+                    <ArrowUpRight className="size-5" aria-hidden="true" />
+                    Confirmar saque
                   </button>
-                ))}
-              </div>
 
-              <div className="mt-5 rounded-2xl bg-muted/30 p-4">
-                <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">{pixKey}</p>
-              </div>
+                  <p className="mt-3 text-center text-xs text-muted-foreground">
+                    O valor sera creditado em ate 24h uteis
+                  </p>
+                </>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setShowWithdrawModal(false)}
-                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
-              >
-                <ArrowUpRight className="size-5" aria-hidden="true" />
-                Confirmar saque
-              </button>
+              {/* Etapa 2: Animacao de 5 segundos */}
+              {withdrawStep === 'processing' && (
+                <div className="flex flex-col items-center py-10 text-center">
+                  <div className="relative flex size-20 items-center justify-center">
+                    <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+                    <ArrowUpRight className="size-8 text-primary" aria-hidden="true" />
+                  </div>
+                  <p className="mt-6 text-base font-bold text-foreground">Analisando sua solicitação...</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Aguarde enquanto validamos seu saque</p>
+                </div>
+              )}
 
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                O valor sera creditado em ate 24h uteis
-              </p>
+              {/* Etapa 3: Conta nova — precisa verificar */}
+              {withdrawStep === 'new_account' && (
+                <div className="pb-2">
+                  <div className="flex flex-col items-center text-center">
+                    <span className="flex size-16 items-center justify-center rounded-full bg-amber-500/15">
+                      <Shield className="size-8 text-amber-500" aria-hidden="true" />
+                    </span>
+                    <h4 className="mt-4 text-balance text-lg font-bold text-foreground">
+                      Sua conta ainda é muito nova para realizar saques!
+                    </h4>
+                    <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                      Faça a verificação completa em sua conta para sacar imediatamente, ou aguarde 30 dias
+                      para realizar seu primeiro saque. Após isso, todos os seus saques acontecerão de forma
+                      imediata.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawStep('verify_info')}
+                    className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                  >
+                    <ShieldCheck className="size-5" aria-hidden="true" />
+                    Fazer verificação completa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeWithdraw}
+                    className="mt-2 w-full rounded-2xl py-3 text-sm font-medium text-muted-foreground transition hover:bg-muted/50"
+                  >
+                    Aguardar 30 dias
+                  </button>
+                </div>
+              )}
+
+              {/* Etapa 4: Detalhes da verificacao (R$ 49) */}
+              {withdrawStep === 'verify_info' && (
+                <div className="pb-2">
+                  <div className="flex flex-col items-center text-center">
+                    <span className="flex size-16 items-center justify-center rounded-full bg-primary/15">
+                      <ShieldCheck className="size-8 text-primary" aria-hidden="true" />
+                    </span>
+                    <h4 className="mt-4 text-lg font-bold text-foreground">Verificação completa</h4>
+                    <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                      A verificação completa habilita a total segurança da sua conta e libera seus saques
+                      de forma imediata e definitiva.
+                    </p>
+                  </div>
+
+                  <ul className="mt-5 flex flex-col gap-2.5">
+                    {[
+                      'Saques imediatos liberados na hora',
+                      'Conta protegida com verificação de identidade',
+                      'Selo de conta verificada no seu perfil',
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+                        <span className="text-sm text-foreground">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-5 flex items-center justify-between rounded-2xl bg-muted/50 p-4">
+                    <span className="text-sm font-medium text-foreground">Valor da verificação</span>
+                    <span className="text-xl font-bold text-primary">{brl(VERIFICATION_PRICE)}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleStartVerification}
+                    className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                  >
+                    <Zap className="size-5" aria-hidden="true" />
+                    Gerar PIX de verificação
+                  </button>
+                </div>
+              )}
+
+              {/* Etapa 5: Animacao de geracao da verificacao */}
+              {withdrawStep === 'verify_processing' && (
+                <div className="flex flex-col items-center py-10 text-center">
+                  <div className="relative flex size-20 items-center justify-center">
+                    <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+                    <ShieldCheck className="size-8 text-primary" aria-hidden="true" />
+                  </div>
+                  <p className="mt-6 text-base font-bold text-foreground">Gerando seu PIX...</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Preparando a verificação da sua conta</p>
+                </div>
+              )}
+
+              {/* Etapa 6: Saque solicitado (conta ja verificada) */}
+              {withdrawStep === 'requested' && (
+                <div className="pb-2">
+                  <div className="flex flex-col items-center text-center">
+                    <span className="flex size-16 items-center justify-center rounded-full bg-positive/15">
+                      <CheckCircle2 className="size-8 text-positive" aria-hidden="true" />
+                    </span>
+                    <h4 className="mt-4 text-lg font-bold text-foreground">Saque solicitado!</h4>
+                    <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                      Nossa equipe interna está analisando sua solicitação. A análise pode levar até 24
+                      horas. Você poderá acompanhar o status na aba <span className="font-semibold text-foreground">Saques</span>.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeWithdraw()
+                      setActiveTab('saques')
+                    }}
+                    className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                  >
+                    Acompanhar saque
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* PIX de verificacao da conta */}
+      {showVerifyPix && (
+        <PixModal
+          isOpen={showVerifyPix}
+          onClose={() => {
+            setShowVerifyPix(false)
+            setWithdrawStep('verify_info')
+          }}
+          email={userEmail}
+          amount={VERIFICATION_PRICE}
+          userName={userName}
+          type="verification"
+          title="Verificação de conta"
+          subtitle="Libere seus saques imediatos"
+          onPaymentConfirmed={() => {
+            setShowVerifyPix(false)
+            closeWithdraw()
+            onWithdrawalsChange()
+          }}
+        />
       )}
     </div>
   )
