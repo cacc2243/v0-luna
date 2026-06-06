@@ -840,39 +840,17 @@ function GiftBubble({
   senderName: string
   onOpen: () => void
 }) {
-  // posições/atrasos fixos para as partículas de confete (não recalcular a cada render)
-  const confetti = [
-    { left: '12%', delay: '0s', color: 'bg-primary' },
-    { left: '28%', delay: '0.15s', color: 'bg-positive' },
-    { left: '46%', delay: '0.05s', color: 'bg-accent' },
-    { left: '64%', delay: '0.22s', color: 'bg-primary' },
-    { left: '82%', delay: '0.1s', color: 'bg-positive' },
-  ]
-
   return (
     <div className="flex animate-speech-enter justify-start">
       <div className="relative w-[88%] max-w-[320px] overflow-hidden rounded-3xl rounded-bl-md p-[1.5px]">
         {/* moldura em gradiente */}
         <div className="luna-gradient absolute inset-0 rounded-3xl rounded-bl-md opacity-90" aria-hidden="true" />
 
-        <div className="animate-gift-shimmer relative overflow-hidden rounded-[1.4rem] rounded-bl-md bg-gradient-to-br from-card via-card to-primary/10">
-          {/* confete decorativo no topo (apenas quando ainda não resgatado) */}
-          {!claimed && (
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 overflow-hidden" aria-hidden="true">
-              {confetti.map((c, i) => (
-                <span
-                  key={i}
-                  className={`animate-confetti absolute top-0 size-1.5 rounded-[2px] ${c.color}`}
-                  style={{ left: c.left, animationDelay: c.delay }}
-                />
-              ))}
-            </div>
-          )}
-
+        <div className="relative overflow-hidden rounded-[1.4rem] rounded-bl-md bg-card">
           {/* cabeçalho com ícone */}
           <div className="relative flex items-center gap-3 px-4 pt-4">
             <div className="relative shrink-0">
-              <span className="animate-gift-glow absolute -inset-1.5 rounded-2xl bg-primary/40 blur-md" aria-hidden="true" />
+              <span className="absolute -inset-1 rounded-2xl bg-primary/15 blur-sm" aria-hidden="true" />
               <div className="relative flex size-12 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/40">
                 <Gift className="animate-gift-wiggle size-6 text-primary-foreground" />
               </div>
