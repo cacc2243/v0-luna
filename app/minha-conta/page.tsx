@@ -125,7 +125,8 @@ function useCountUpOnMount(target: number, duration = 900) {
 
 async function fetchProfile() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return null
   
   const { data } = await supabase
@@ -139,7 +140,8 @@ async function fetchProfile() {
 
 async function fetchPacks() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return []
   
   const { data } = await supabase
@@ -153,7 +155,8 @@ async function fetchPacks() {
 
 async function fetchSales() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return []
   
   const { data } = await supabase
@@ -167,7 +170,8 @@ async function fetchSales() {
 
 async function fetchTransactions() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return []
   
   const { data } = await supabase
@@ -175,14 +179,15 @@ async function fetchTransactions() {
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(500)
   
   return (data || []) as Transaction[]
 }
 
 async function fetchWithdrawals() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return []
   
   const { data } = await supabase
@@ -196,7 +201,8 @@ async function fetchWithdrawals() {
 
 async function fetchConversations() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return []
   
   const { data } = await supabase
@@ -210,7 +216,8 @@ async function fetchConversations() {
 
 async function fetchBoosts() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return []
   
   const { data } = await supabase
@@ -224,7 +231,8 @@ async function fetchBoosts() {
 
 async function fetchHighlights() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return []
   
   const { data } = await supabase
@@ -238,7 +246,8 @@ async function fetchHighlights() {
 
 async function fetchNotifications() {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return []
   
   const { data } = await supabase
@@ -267,7 +276,8 @@ export default function MinhaContaPage() {
     const supabase = createClient()
     
     async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       setAuthState(user ? 'logged_in' : 'logged_out')
     }
     
@@ -288,15 +298,11 @@ export default function MinhaContaPage() {
   if (authState === 'checking') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="relative flex size-24 items-center justify-center">
-          <span className="luna-logo-ring absolute inset-0 rounded-full border border-primary/40" />
-          <span className="luna-logo-ring absolute inset-0 rounded-full border border-primary/30 [animation-delay:0.5s]" />
-          <img
-            src="/images/luna-icon-logo.png"
-            alt="Luna Prive"
-            className="luna-logo-breathe relative size-16 object-contain"
-          />
-        </div>
+        <img
+          src="/images/luna-icon-logo.png"
+          alt="Luna Prive"
+          className="luna-logo-breathe size-20 object-contain"
+        />
       </div>
     )
   }
@@ -591,7 +597,8 @@ function AppDashboard() {
     setPackError(null)
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
       if (!user) {
         setPackError('Sessão expirada. Faça login novamente.')
         return
@@ -635,7 +642,8 @@ function AppDashboard() {
     setPackError(null)
 
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
 
     if (!user) {
       setPackError('Sessão expirada. Faça login novamente.')
@@ -1965,7 +1973,7 @@ function PackMetric({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela Carteira
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────���────────────────────────
 
 function WalletScreen({
   balance,
@@ -2520,7 +2528,8 @@ function ProfileScreen({
     setProfileError(null)
 
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
 
     if (!user) {
       setProfileError('Sessão expirada. Faça login novamente.')
@@ -2556,7 +2565,8 @@ function ProfileScreen({
     setProfileError(null)
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
       if (!user) {
         setProfileError('Sessão expirada. Faça login novamente.')
         return
