@@ -20,8 +20,6 @@ import {
   Loader2,
   ArrowUpRight,
   ArrowDownLeft,
-  ArrowDownRight,
-  Receipt,
   ChevronRight,
   Lock,
 } from 'lucide-react'
@@ -188,12 +186,12 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     return () => clearTimeout(t)
   }, [phase, tourStep])
 
-  // Mostra o primeiro pedido ao entrar no modo de vendas + rola para o topo
+  // Mostra o primeiro pedido ao entrar no modo de vendas.
+  // Não rolamos a tela aqui: o pedido aparece sozinho sem mover a página.
   useEffect(() => {
     if (phase !== 'selling' && phase !== 'selling2') return
     const t = setTimeout(() => {
       setActiveSale(saleIndex)
-      ordersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 500)
     return () => clearTimeout(t)
   }, [phase, saleIndex])
@@ -379,22 +377,22 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           />
         </div>
       ) : (
-      <div key="home-screen" ref={scrollRef} className="animate-screen flex-1 overflow-y-auto px-4 pb-6 pt-6">
-        {/* Header */}
+      <div key="home-screen" ref={scrollRef} className="animate-screen flex-1 overflow-y-auto px-4 pb-6">
+        {/* Header fixo */}
         <header
           ref={headerRef}
-          className={`flex items-center justify-between gap-3 transition-opacity duration-300 ${dim('balance')}`}
+          className={`sticky top-0 z-30 -mx-4 flex items-center justify-between gap-3 border-b border-border/40 bg-background/85 px-4 py-3 backdrop-blur-md transition-opacity duration-300 ${dim('balance')}`}
         >
           <div className="flex items-center gap-2.5">
-            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
+            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
           </div>
           <div
-            className={`luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 transition-all duration-300 ${ring('balance')}`}
+            className={`luna-border relative flex items-center gap-2 rounded-xl bg-card px-3 py-2 transition-all duration-300 ${ring('balance')}`}
           >
-            <Wallet className="size-6 text-primary" aria-hidden="true" />
+            <Wallet className="size-5 text-primary" aria-hidden="true" />
             <div className="leading-tight">
-              <p className="text-xs text-muted-foreground">Saldo</p>
-              <p className="text-xl font-bold text-foreground">{brl(animatedBalance)}</p>
+              <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
+              <p className="text-base font-bold text-foreground">{brl(animatedBalance)}</p>
             </div>
             {floats.map((f) => (
               <span
@@ -944,15 +942,15 @@ function StatCard({
 }) {
   return (
   <div
-  className={`flex flex-col items-center gap-1.5 rounded-2xl border bg-card px-2 py-3.5 text-center transition-all duration-300 ${
+  className={`flex min-w-0 flex-col items-center gap-1.5 rounded-2xl border bg-card px-1.5 py-3.5 text-center transition-all duration-300 ${
   highlighted ? 'border-primary/50' : 'border-border'
   }`}
   >
-  <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
   <Icon className="size-5 text-primary" aria-hidden="true" />
   </span>
   <span className="text-xs text-muted-foreground">{label}</span>
-  <span className="text-lg font-bold text-foreground">{value}</span>
+  <span className="w-full truncate px-0.5 text-base font-bold leading-tight text-foreground">{value}</span>
   </div>
   )
 }
@@ -974,20 +972,13 @@ function PacksScreen({
       {/* Header */}
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
-          <div className="leading-tight">
-            <p className="text-sm font-semibold text-foreground">@voce</p>
-            <span className="flex items-center gap-1 text-xs text-positive">
-              <span className="size-1.5 rounded-full bg-positive" />
-              Online
-            </span>
-          </div>
+          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
         </div>
-        <div className="luna-border flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
-          <Wallet className="size-5 text-primary" aria-hidden="true" />
+        <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
+          <Wallet className="size-6 text-primary" aria-hidden="true" />
           <div className="leading-tight">
-            <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
-            <p className="text-base font-bold text-foreground">{brl(balance)}</p>
+            <p className="text-xs text-muted-foreground">Saldo</p>
+            <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
           </div>
         </div>
       </header>
@@ -1011,49 +1002,55 @@ function PacksScreen({
       </div>
 
       {/* Vitrine */}
-      <div className="mt-5 grid grid-cols-2 gap-3">
+      <div className="mt-5 flex flex-col gap-3">
         {createdPack && (
-          <article className="luna-border animate-pop overflow-hidden rounded-2xl bg-card ring-1 ring-primary/30">
-            <div className="relative aspect-square overflow-hidden">
+          <article className="luna-border animate-pop flex overflow-hidden rounded-2xl bg-card ring-1 ring-primary/30">
+            <div className="relative h-24 w-24 shrink-0 overflow-hidden bg-secondary">
               <img
                 src="/images/pack-photo-1.png"
                 alt={createdPack}
                 className="h-full w-full object-cover"
               />
-              <span className="luna-gradient absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
+              <span className="luna-gradient absolute left-1.5 top-1.5 rounded-full px-2 py-0.5 text-[0.55rem] font-bold text-primary-foreground">
                 Novo
               </span>
             </div>
-            <div className="p-3">
+            <div className="flex flex-1 flex-col justify-center px-3 py-2">
               <p className="truncate text-sm font-semibold text-foreground">{createdPack}</p>
-              <p className="text-sm font-bold text-positive">R$ {packPrice}</p>
-              <p className="mt-1 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
+              <p className="text-base font-bold text-positive">R$ {packPrice}</p>
+              <p className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
                 <Eye className="size-3" aria-hidden="true" />
                 0 views · 0 vendas
               </p>
             </div>
+            <div className="flex items-center pr-3">
+              <ChevronRight className="size-5 text-muted-foreground/50" aria-hidden="true" />
+            </div>
           </article>
         )}
         {examplePacks.map((pack, i) => (
-          <article 
-            key={pack.name} 
-            className="luna-border animate-card-enter overflow-hidden rounded-2xl bg-card"
+          <article
+            key={pack.name}
+            className="luna-border animate-card-enter flex overflow-hidden rounded-2xl bg-card"
             style={{ animationDelay: `${(createdPack ? i + 1 : i) * 100}ms` }}
           >
-            <div className="aspect-square overflow-hidden">
+            <div className="h-24 w-24 shrink-0 overflow-hidden bg-secondary">
               <img
                 src={pack.photo || "/placeholder.svg"}
                 alt={pack.name}
                 className="h-full w-full object-cover"
               />
             </div>
-            <div className="p-3">
+            <div className="flex flex-1 flex-col justify-center px-3 py-2">
               <p className="truncate text-sm font-semibold text-foreground">{pack.name}</p>
-              <p className="text-sm font-bold text-positive">{pack.price}</p>
-              <p className="mt-1 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
+              <p className="text-base font-bold text-positive">{pack.price}</p>
+              <p className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
                 <Eye className="size-3" aria-hidden="true" />
                 {pack.views} · {pack.sales}
               </p>
+            </div>
+            <div className="flex items-center pr-3">
+              <ChevronRight className="size-5 text-muted-foreground/50" aria-hidden="true" />
             </div>
           </article>
         ))}
@@ -1134,77 +1131,75 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
 
   return (
     <div className="relative flex-1 overflow-hidden">
-      <div className="h-full overflow-y-auto px-4 pb-6 pt-6">
+      <div className="flex h-full flex-col overflow-y-auto pb-6">
         {/* Header */}
-        <header className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
-          </div>
-          <div className="luna-border flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
-            <Wallet className="size-5 text-primary" aria-hidden="true" />
-            <div className="leading-tight">
-              <p className="text-[0.65rem] text-muted-foreground">Saldo</p>
-              <p className="text-base font-bold text-foreground">{brl(available)}</p>
-            </div>
+        <header className="shrink-0 px-4 pt-6">
+          <div className="flex items-center justify-between gap-3">
+            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
           </div>
         </header>
 
-        {/* Título */}
-        <div className="mt-5 leading-tight">
-          <h1 className="text-xl font-bold text-foreground">Carteira</h1>
-          <p className="text-xs text-muted-foreground">Saldo, ganhos e transferências</p>
+        {/* Card de saldo principal */}
+        <div className="shrink-0 px-4 pt-5">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-5 ring-1 ring-primary/20">
+            <div className="absolute -right-8 -top-8 size-32 rounded-full bg-primary/10 blur-2xl" />
+            <div className="absolute -bottom-8 -left-8 size-32 rounded-full bg-primary/5 blur-2xl" />
+            <div className="relative">
+              <p className="text-xs font-medium text-muted-foreground">Saldo disponível</p>
+              <p className="mt-1 text-4xl font-bold tracking-tight text-foreground">{brl(available)}</p>
+              <div className="mt-4 flex items-center gap-4">
+                <div className="flex items-center gap-1.5 rounded-full bg-positive/15 px-3 py-1">
+                  <ArrowUpRight className="size-3.5 text-positive" aria-hidden="true" />
+                  <span className="text-xs font-semibold text-positive">+{brl(1664.97)} hoje</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="size-2 animate-pulse rounded-full bg-positive" />
+                  <span className="text-xs text-muted-foreground">Atualizado agora</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Card saldo disponível */}
-        <div className="luna-border mt-4 rounded-3xl bg-card px-5 py-6 text-center shadow-lg shadow-primary/10">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
-            Saldo disponível
-          </p>
-          <p className="mt-1.5 text-4xl font-bold text-foreground">{brl(available)}</p>
-          <p className="mt-1.5 flex items-center justify-center gap-1 text-sm font-semibold text-positive">
-            <ArrowUpRight className="size-4" aria-hidden="true" />
-            {brl(1664.97)} hoje
-          </p>
-        </div>
-
-        {/* Ações */}
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        {/* Botão de saque principal */}
+        <div className="shrink-0 px-4 pt-4">
           <button
             type="button"
-            className="luna-gradient flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30"
+            className="luna-gradient flex w-full items-center justify-center gap-2.5 rounded-2xl py-5 text-lg font-bold text-primary-foreground shadow-xl shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
           >
-            <ArrowUpRight className="size-4" aria-hidden="true" />
-            Transferir PIX
-          </button>
-          <button
-            type="button"
-            className="luna-border flex items-center justify-center gap-2 rounded-2xl bg-card py-3.5 text-sm font-semibold text-foreground"
-          >
-            <Receipt className="size-4 text-primary" aria-hidden="true" />
-            Extrato
+            <ArrowUpRight className="size-6" aria-hidden="true" />
+            Sacar saldo
           </button>
         </div>
 
         {/* Stats */}
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <div className="luna-border rounded-2xl bg-card p-3.5">
-            <p className="flex items-center gap-1 text-[0.6rem] font-semibold uppercase tracking-wider text-muted-foreground">
-              <ArrowUpRight className="size-3 text-positive" aria-hidden="true" />
-              Ganhos mês
-            </p>
-            <p className="mt-1 text-lg font-bold text-foreground">{brl(18541.67)}</p>
-          </div>
-          <div className="luna-border rounded-2xl bg-card p-3.5">
-            <p className="flex items-center gap-1 text-[0.6rem] font-semibold uppercase tracking-wider text-muted-foreground">
-              <ArrowDownRight className="size-3 text-primary" aria-hidden="true" />
-              Sacado
-            </p>
-            <p className="mt-1 text-lg font-bold text-foreground">{brl(94614.76)}</p>
+        <div className="shrink-0 px-4 pt-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <span className="flex size-8 items-center justify-center rounded-full bg-positive/15">
+                  <ArrowUpRight className="size-4 text-positive" aria-hidden="true" />
+                </span>
+                <span className="text-xs font-medium text-muted-foreground">Ganhos do mês</span>
+              </div>
+              <p className="mt-2 text-2xl font-bold text-foreground">{brl(18541.67)}</p>
+              <p className="mt-1 text-xs text-positive">+24% vs mês anterior</p>
+            </div>
+            <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <span className="flex size-8 items-center justify-center rounded-full bg-primary/15">
+                  <Wallet className="size-4 text-primary" aria-hidden="true" />
+                </span>
+                <span className="text-xs font-medium text-muted-foreground">Total sacado</span>
+              </div>
+              <p className="mt-2 text-2xl font-bold text-foreground">{brl(94614.76)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Desde o início</p>
+            </div>
           </div>
         </div>
 
         {/* Saques realizados */}
-        <div className="mt-5">
+        <div className="px-4 pt-5">
           <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <ArrowDownLeft className="size-4 text-primary" aria-hidden="true" />
             Saques realizados
