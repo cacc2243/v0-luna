@@ -22,8 +22,21 @@ import {
   Plus,
   Play,
   Pause,
+  Loader2,
 } from 'lucide-react'
-import { claimGift } from '@/app/minha-conta/actions'
+import {
+  claimGift,
+  seedConversations,
+  getConversations,
+  getMessages,
+  markConversationRead,
+  sendCreatorMessage,
+  sendLockedMessage,
+  markGiftClaimed,
+  type Conversation,
+  type Message,
+} from '@/app/minha-conta/actions'
+import { createClient } from '@/lib/supabase/client'
 import { PixModal } from '@/components/convite/pix-modal'
 import { GiftReceivedModal, GiftEnableModal } from '@/components/minha-conta/gift-modals'
 
@@ -38,77 +51,23 @@ function nowTime() {
   return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
+
+// rótulo "agora", "5 min", "2 h"... a partir do horário da última mensagem
+function relativeLabel(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return 'agora'
+  if (min < 60) return `${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h} h`
+  return `${Math.floor(h / 24)} d`
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Compradores simulados (iniciam a conversa com um elogio)
-// ─────────────────────────────────────────────────────────────────────────────
-
-type BuyerSeed = {
-  id: string
-  name: string
-  greeting: string
-  online: boolean
-  lastTime: string
-}
-
-const BUYERS: BuyerSeed[] = [
-  { id: 'b1', name: 'Rafael Augusto', greeting: 'Boa noite, meu amor. Te achei linda demais aqui', online: true, lastTime: 'agora' },
-  { id: 'b2', name: 'Bruno Carvalho', greeting: 'Oi meu anjo, tudo bem com você? Adorei seu perfil', online: true, lastTime: 'agora' },
-  { id: 'b3', name: 'Lucas Ferreira', greeting: 'Olá bebê, você é simplesmente perfeita', online: false, lastTime: '2 min' },
-  { id: 'b4', name: 'Diego Martins', greeting: 'Bom dia, gata. Não consegui parar de olhar seu perfil', online: true, lastTime: '5 min' },
-  { id: 'b5', name: 'Felipe Andrade', greeting: 'Oi linda, fiquei encantado com você agora mesmo', online: true, lastTime: 'agora' },
-  { id: 'b6', name: 'Gustavo Lima', greeting: 'Que mulher maravilhosa, preciso te conhecer melhor', online: true, lastTime: 'agora' },
-  { id: 'b7', name: 'Thiago Souza', greeting: 'Boa tarde, gata. Seu sorriso me ganhou na hora', online: false, lastTime: '8 min' },
-  { id: 'b8', name: 'Marcelo Rocha', greeting: 'Oi amor, você é a coisa mais linda que vi hoje', online: true, lastTime: 'agora' },
-  { id: 'b9', name: 'André Nogueira', greeting: 'Olá meu bem, fiquei impressionado com você', online: true, lastTime: 'agora' },
-  { id: 'b10', name: 'Vinícius Costa', greeting: 'Oi gata, posso te conhecer melhor? Adorei tudo aqui', online: true, lastTime: 'agora' },
-  { id: 'b11', name: 'Eduardo Pires', greeting: 'Boa noite, princesa. Você me deixou sem palavras', online: false, lastTime: '12 min' },
-  { id: 'b12', name: 'Henrique Alves', greeting: 'Oi linda, seu perfil é o melhor que já vi', online: true, lastTime: 'agora' },
-  { id: 'b13', name: 'Rodrigo Mendes', greeting: 'Olá amor, você é simplesmente deslumbrante', online: true, lastTime: 'agora' },
-  { id: 'b14', name: 'Caio Barbosa', greeting: 'Oi gata, fiquei completamente encantado com você', online: true, lastTime: 'agora' },
-]
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Variações de mensagens do comprador
-// ─────────────────────────────────────────────────────────────────────────────
-
-// 1ª mensagem do comprador após a resposta dela: pergunta sobre enviar presente
-const ASK_GIFT_MESSAGES = [
-  'Que delícia conversar com você. Posso te mandar um presente? Seu perfil já tá aceitando?',
-  'Adorei te conhecer, gata. Queria te dar um mimo... sua conta já aceita presente?',
-  'Você é maravilhosa mesmo. Posso te enviar um presente em dinheiro? Já consegue receber?',
-  'Tô encantado com você. Deixa eu te mandar um agrado, seu perfil já libera presente?',
-]
-
-// 2ª mensagem do comprador: anuncia que está enviando o presente (com variações)
-const SEND_GIFT_MESSAGES = [
-  'Pronto, acabei de te mandar um presente. Espero que goste, linda!',
-  'Te enviei um mimo agora mesmo, meu amor. É só pra te ver feliz.',
-  'Olha só, deixei uma surpresa pra você aqui. Aproveita, você merece!',
-  'Mandei um presentinho pra você. Pega que é todo seu, gata.',
-  'Te mandei um agrado especial. Espero te ver sorrindo com ele!',
-]
-
-// Mensagem quando ela tenta resgatar mas a conta não tem presentes ativos
-const LOCKED_MESSAGES = [
-  'Poxa, mandei o presente mas acho que não chegou pra você... sua conta ainda não tem presentes ativos. Se você ativar, a gente continua conversando?',
-  'Te enviei aqui, mas parece que você não recebeu porque seu perfil não tem presentes ativados. Consegue ativar? Aí seguimos a conversa.',
-  'Mandei sim, só que acho que não caiu aí porque sua conta não aceita presentes ainda. Se conseguir ativar me avisa que continuamos!',
-]
-
-// gera um valor de presente entre R$ 200 e R$ 600 (múltiplos de 10)
-function randomGiftAmount() {
-  const min = 20
-  const max = 60
-  const v = Math.floor(Math.random() * (max - min + 1)) + min
-  return v * 10
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tipos de mensagem
+// Tipos de mensagem (UI)
 // ─────────────────────────────────────────────────────────────────────────────
 
 type ChatMessage = {
@@ -118,19 +77,27 @@ type ChatMessage = {
   kind?: 'text' | 'gift' | 'image' | 'audio'
   giftAmount?: number
   giftClaimed?: boolean
-  /** URL (object URL) para imagem ou áudio enviado pela criadora */
+  /** URL pública (Supabase Storage) para imagem ou áudio enviado pela criadora */
   mediaUrl?: string
   /** duração do áudio em segundos */
   audioDuration?: number
   time?: string
 }
 
-// passos do fluxo de cada conversa
-// 0: saudação enviada, aguardando 1ª resposta da criadora
-// 1: comprador perguntou sobre presente, aguardando 2ª resposta
-// 2: comprador enviou o presente
-// 3: encerrado
-type FlowStep = 0 | 1 | 2 | 3
+// Converte uma mensagem persistida (banco) para o formato de UI
+function toChatMessage(m: Message): ChatMessage {
+  return {
+    id: m.id,
+    from: m.is_from_creator ? 'creator' : 'buyer',
+    text: m.content ?? undefined,
+    kind: m.message_type,
+    giftAmount: m.gift_amount ?? undefined,
+    giftClaimed: m.gift_claimed,
+    mediaUrl: m.media_url ?? undefined,
+    audioDuration: m.audio_duration ?? undefined,
+    time: formatTime(m.created_at),
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Avatar genérico (ícone, sem foto do usuário)
@@ -181,58 +148,61 @@ export function ChatsActive({
 }: ChatsActiveProps) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  // conversas que já foram abertas (some o badge de não lida)
-  const [readIds, setReadIds] = useState<Set<string>>(() => new Set())
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [loading, setLoading] = useState(true)
 
-  function openConversation(id: string) {
-    setReadIds((prev) => {
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
-    setOpenId(id)
-  }
-
-  // Lista que cresce com o tempo (novas conversas chegando sempre)
-  const [shown, setShown] = useState<BuyerSeed[]>(() => BUYERS.slice(0, 4))
-  const nextIndex = useRef(4)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShown((prev) => {
-        const idx = nextIndex.current
-        const base = BUYERS[idx % BUYERS.length]
-        nextIndex.current = idx + 1
-        const incoming: BuyerSeed = {
-          ...base,
-          id: idx < BUYERS.length ? base.id : `${base.id}-${idx}`,
-          lastTime: 'agora',
-          online: true,
-        }
-        // novas conversas entram no topo; mantém no máximo 30
-        return [incoming, ...prev].slice(0, 30)
-      })
-    }, 15000)
-    return () => clearInterval(interval)
+  // Carrega (e semeia na primeira vez) as conversas do banco
+  const loadConversations = useCallback(async () => {
+    const list = await getConversations()
+    if (list.length === 0) {
+      const seeded = await seedConversations()
+      setConversations(seeded)
+    } else {
+      setConversations(list)
+    }
+    setLoading(false)
   }, [])
 
-  const activeBuyer = shown.find((b) => b.id === openId) || null
+  useEffect(() => {
+    loadConversations()
+  }, [loadConversations])
 
-  if (activeBuyer) {
+  async function openConversation(id: string) {
+    // marca como lida no servidor e zera o badge localmente
+    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unread_count: 0 } : c)))
+    setOpenId(id)
+    await markConversationRead(id)
+  }
+
+  // Atualiza a prévia da conversa na lista após enviar/receber mensagens
+  function handleConversationUpdate(updated: Conversation) {
+    setConversations((prev) =>
+      prev
+        .map((c) => (c.id === updated.id ? updated : c))
+        .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()),
+    )
+  }
+
+  const activeConversation = conversations.find((c) => c.id === openId) || null
+
+  if (activeConversation) {
     return (
       <ChatConversation
-        buyer={activeBuyer}
+        conversation={activeConversation}
         giftsEnabled={giftsEnabled}
         userName={userName}
         userEmail={userEmail}
         onBack={() => setOpenId(null)}
         onProfileRefresh={onProfileRefresh}
+        onConversationUpdate={handleConversationUpdate}
       />
     )
   }
 
-  const filtered = shown.filter((b) => b.name.toLowerCase().includes(query.toLowerCase()))
-  const onlineCount = shown.filter((b) => b.online).length
+  const filtered = conversations.filter((c) =>
+    (c.participant_name || '').toLowerCase().includes(query.toLowerCase()),
+  )
+  const onlineCount = conversations.filter((c) => c.is_online).length
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
@@ -262,7 +232,7 @@ export function ChatsActive({
             </span>
           </div>
           <p className="text-sm text-muted-foreground">
-            {shown.length} conversas · <span className="text-positive">{onlineCount} online agora</span>
+            {conversations.length} conversas · <span className="text-positive">{onlineCount} online agora</span>
           </p>
         </div>
       </div>
@@ -288,81 +258,94 @@ export function ChatsActive({
       </div>
 
       {/* Lista de conversas */}
-      <ul className="mt-5 flex flex-col gap-2.5">
-        {filtered.map((b) => {
-          const isRead = readIds.has(b.id)
-          return (
-            <li key={b.id} className="animate-item">
-              <button
-                type="button"
-                onClick={() => openConversation(b.id)}
-                className="luna-border-soft flex w-full items-center gap-3 rounded-2xl bg-card px-3.5 py-3.5 text-left transition hover:bg-card/70 active:scale-[0.99]"
-              >
-                <BuyerAvatar online={b.online} size="lg" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
-                      {b.name}
-                      <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+      {loading ? (
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
+          <p className="text-sm">Carregando suas conversas...</p>
+        </div>
+      ) : (
+        <ul className="mt-5 flex flex-col gap-2.5">
+          {filtered.map((c) => {
+            const isRead = c.unread_count === 0
+            return (
+              <li key={c.id} className="animate-item">
+                <button
+                  type="button"
+                  onClick={() => openConversation(c.id)}
+                  className="luna-border-soft flex w-full items-center gap-3 rounded-2xl bg-card px-3.5 py-3.5 text-left transition hover:bg-card/70 active:scale-[0.99]"
+                >
+                  <BuyerAvatar online={c.is_online} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
+                        {c.participant_name}
+                        <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                      </p>
+                      <span className="shrink-0 text-[0.65rem] text-muted-foreground">
+                        {relativeLabel(c.last_message_at)}
+                      </span>
+                    </div>
+                    <p
+                      className={`mt-0.5 truncate text-xs ${
+                        isRead ? 'text-muted-foreground' : 'font-medium text-foreground'
+                      }`}
+                    >
+                      {c.last_message}
                     </p>
-                    <span className="shrink-0 text-[0.65rem] text-muted-foreground">{b.lastTime}</span>
                   </div>
-                  <p
-                    className={`mt-0.5 truncate text-xs ${
-                      isRead ? 'text-muted-foreground' : 'font-medium text-foreground'
-                    }`}
-                  >
-                    {b.greeting}
-                  </p>
-                </div>
-                {!isRead && (
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[0.6rem] font-bold text-primary-foreground">
-                    1
-                  </span>
-                )}
-              </button>
+                  {!isRead && (
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[0.6rem] font-bold text-primary-foreground">
+                      {c.unread_count}
+                    </span>
+                  )}
+                </button>
+              </li>
+            )
+          })}
+          {filtered.length === 0 && (
+            <li className="rounded-2xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+              Nenhuma conversa encontrada.
             </li>
-          )
-        })}
-        {filtered.length === 0 && (
-          <li className="rounded-2xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
-            Nenhuma conversa encontrada.
-          </li>
-        )}
-      </ul>
+          )}
+        </ul>
+      )}
     </div>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tela de conversa individual (com fluxo automático)
+// Tela de conversa individual (com fluxo automático persistido)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ChatConversation({
-  buyer,
+  conversation,
   giftsEnabled,
   userName,
   userEmail,
   onBack,
   onProfileRefresh,
+  onConversationUpdate,
 }: {
-  buyer: BuyerSeed
+  conversation: Conversation
   giftsEnabled: boolean
   userName: string
   userEmail: string
   onBack: () => void
   onProfileRefresh: () => void
+  onConversationUpdate: (c: Conversation) => void
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 'm0', from: 'buyer', text: buyer.greeting, kind: 'text', time: nowTime() },
-  ])
-  const [step, setStep] = useState<FlowStep>(0)
+  const buyerName = conversation.participant_name || 'Cliente'
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [loadingMessages, setLoadingMessages] = useState(true)
+  const [step, setStep] = useState<number>(conversation.flow_step)
+  const [sending, setSending] = useState(false)
   const [typing, setTyping] = useState(false)
   const [input, setInput] = useState('')
 
   // Modais
   const [showGift, setShowGift] = useState(false)
   const [activeGiftAmount, setActiveGiftAmount] = useState(0)
+  const [activeGiftMessageId, setActiveGiftMessageId] = useState<string | null>(null)
   const [showEnable, setShowEnable] = useState(false)
   const [showPix, setShowPix] = useState(false)
 
@@ -387,9 +370,22 @@ function ChatConversation({
     })
   }, [])
 
+  // Carrega o histórico persistido da conversa
+  useEffect(() => {
+    let active = true
+    getMessages(conversation.id).then((rows) => {
+      if (!active) return
+      setMessages(rows.map(toChatMessage))
+      setLoadingMessages(false)
+    })
+    return () => {
+      active = false
+    }
+  }, [conversation.id])
+
   useEffect(() => {
     scrollToBottom()
-  }, [messages, typing, scrollToBottom])
+  }, [messages, typing, loadingMessages, scrollToBottom])
 
   useEffect(() => {
     return () => {
@@ -401,64 +397,105 @@ function ChatConversation({
     }
   }, [])
 
-  function pushBuyerMessage(msg: ChatMessage, delay = 2800) {
-    setTyping(true)
-    const t = setTimeout(() => {
-      setTyping(false)
-      setMessages((prev) => [...prev, { ...msg, time: nowTime() }])
-    }, delay)
-    timers.current.push(t)
-  }
-
-  // Avança o fluxo do comprador após qualquer mensagem enviada pela criadora
-  function advanceFlow() {
-    if (step === 0) {
-      setStep(1)
-      pushBuyerMessage(
-        { id: `b-${Date.now()}`, from: 'buyer', text: pick(ASK_GIFT_MESSAGES), kind: 'text' },
-        3000,
-      )
-    } else if (step === 1) {
-      setStep(2)
-      const amount = randomGiftAmount()
-      pushBuyerMessage(
-        { id: `g-${Date.now()}`, from: 'buyer', text: pick(SEND_GIFT_MESSAGES), kind: 'text' },
-        2800,
-      )
-      pushBuyerMessage(
-        { id: `gift-${Date.now()}`, from: 'buyer', kind: 'gift', giftAmount: amount, giftClaimed: false },
-        5400,
-      )
-      const t = setTimeout(() => setStep(3), 5500)
-      timers.current.push(t)
+  // Faz upload de um arquivo de mídia para o Supabase Storage e devolve a URL pública
+  async function uploadMedia(file: Blob, ext: string): Promise<string | null> {
+    try {
+      const supabase = createClient()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const user = session?.user
+      if (!user) return null
+      const path = `${user.id}/chat/${conversation.id}/${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.${ext}`
+      const { error } = await supabase.storage
+        .from('media')
+        .upload(path, file, { upsert: true, contentType: (file as File).type || undefined })
+      if (error) return null
+      const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+      return pub.publicUrl
+    } catch {
+      return null
     }
   }
 
-  // Envia uma mensagem da criadora (texto, imagem ou áudio) e avança o fluxo
-  function pushCreatorMessage(msg: Omit<ChatMessage, 'from' | 'time'>) {
-    setMessages((prev) => [...prev, { ...msg, from: 'creator', time: nowTime() }])
-    advanceFlow()
+  // Envia a mensagem da criadora ao servidor e revela as respostas do comprador
+  async function dispatchCreatorMessage(input: {
+    kind: 'text' | 'image' | 'audio'
+    content?: string
+    mediaUrl?: string
+    audioDuration?: number
+  }) {
+    setSending(true)
+    // Mostra a mensagem da criadora imediatamente (otimista)
+    const optimisticId = `local-${Date.now()}`
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: optimisticId,
+        from: 'creator',
+        kind: input.kind,
+        text: input.content,
+        mediaUrl: input.mediaUrl,
+        audioDuration: input.audioDuration,
+        time: nowTime(),
+      },
+    ])
+
+    const res = await sendCreatorMessage(conversation.id, input)
+    setSending(false)
+    if (!res || 'error' in res) return
+
+    setStep(res.flowStep)
+
+    // Revela as respostas do comprador com o indicador de "digitando..."
+    const buyerMsgs = res.buyerMessages || []
+    let delay = 0
+    buyerMsgs.forEach((bm, i) => {
+      delay += i === 0 ? 1200 : 2600
+      const tStart = setTimeout(() => setTyping(true), delay - 1100)
+      const tEnd = setTimeout(() => {
+        if (i === buyerMsgs.length - 1) setTyping(false)
+        setMessages((prev) => [...prev, toChatMessage(bm)])
+      }, delay)
+      timers.current.push(tStart, tEnd)
+    })
+
+    // Atualiza a prévia na lista
+    onConversationUpdate({
+      ...conversation,
+      last_message:
+        buyerMsgs.length > 0
+          ? buyerMsgs[buyerMsgs.length - 1].content ?? 'Presente recebido'
+          : input.content ?? (input.kind === 'image' ? 'Imagem' : 'Áudio'),
+      last_message_at: new Date().toISOString(),
+      flow_step: res.flowStep,
+      unread_count: 0,
+    })
   }
 
   function handleSend() {
     const text = input.trim()
-    if (!text || step >= 3) return
+    if (!text || step >= 3 || sending) return
     setInput('')
     setShowEmoji(false)
-    pushCreatorMessage({ id: `c-${Date.now()}`, text, kind: 'text' })
+    dispatchCreatorMessage({ kind: 'text', content: text })
   }
 
   function handleEmoji(emoji: string) {
     setInput((prev) => prev + emoji)
   }
 
-  function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
     setShowAttach(false)
-    if (!file || step >= 3) return
-    const url = URL.createObjectURL(file)
-    pushCreatorMessage({ id: `img-${Date.now()}`, kind: 'image', mediaUrl: url })
+    if (!file || step >= 3 || sending) return
+    const ext = file.name.split('.').pop() || 'jpg'
+    const url = await uploadMedia(file, ext)
+    if (!url) return
+    dispatchCreatorMessage({ kind: 'image', mediaUrl: url })
   }
 
   async function startRecording() {
@@ -470,13 +507,15 @@ function ChatConversation({
       recorder.ondataavailable = (ev) => {
         if (ev.data.size > 0) recordChunksRef.current.push(ev.data)
       }
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         const duration = recordSeconds
         const blob = new Blob(recordChunksRef.current, { type: 'audio/webm' })
-        const url = URL.createObjectURL(blob)
         stream.getTracks().forEach((t) => t.stop())
         if (recordChunksRef.current.length > 0) {
-          pushCreatorMessage({ id: `aud-${Date.now()}`, kind: 'audio', mediaUrl: url, audioDuration: duration })
+          const url = await uploadMedia(blob, 'webm')
+          if (url) {
+            dispatchCreatorMessage({ kind: 'audio', mediaUrl: url, audioDuration: duration })
+          }
         }
         setRecordSeconds(0)
       }
@@ -501,40 +540,43 @@ function ChatConversation({
     setRecording(false)
   }
 
-  // Envia um presente em dinheiro para o comprador
+  // Envia um presente em dinheiro para o comprador (texto)
   function handleSendGift(amount: number) {
     setShowGiftComposer(false)
-    if (step >= 3) return
-    pushCreatorMessage({ id: `cgift-${Date.now()}`, kind: 'text', text: `Te enviei um presente de ${brl(amount)} 🎁` })
+    if (step >= 3 || sending) return
+    dispatchCreatorMessage({ kind: 'text', content: `Te enviei um presente de ${brl(amount)} 🎁` })
   }
 
-  function openGiftModal(amount: number) {
+  function openGiftModal(amount: number, messageId: string) {
     setActiveGiftAmount(amount)
+    setActiveGiftMessageId(messageId)
     setShowGift(true)
   }
 
   // Disparada quando ela tenta resgatar sem ter presentes ativos
-  function handleLockedAttempt() {
+  async function handleLockedAttempt() {
     if (lockedMsgSent.current) return
     lockedMsgSent.current = true
-    pushBuyerMessage(
-      {
-        id: `lock-${Date.now()}`,
-        from: 'buyer',
-        text: pick(LOCKED_MESSAGES),
-        kind: 'text',
-      },
-      1400,
-    )
+    setTyping(true)
+    const res = await sendLockedMessage(conversation.id)
+    setTimeout(() => {
+      setTyping(false)
+      if (res && 'message' in res && res.message) {
+        setMessages((prev) => [...prev, toChatMessage(res.message as Message)])
+      }
+    }, 1400)
   }
 
   async function handleClaim(): Promise<boolean> {
-    const res = await claimGift({ amount: activeGiftAmount, senderName: buyer.name, giftType: 'chat' })
+    const res = await claimGift({ amount: activeGiftAmount, senderName: buyerName, giftType: 'chat' })
     if (res?.success) {
-      // marca o presente como resgatado na conversa
-      setMessages((prev) =>
-        prev.map((m) => (m.kind === 'gift' && m.giftAmount === activeGiftAmount ? { ...m, giftClaimed: true } : m)),
-      )
+      // marca o presente como resgatado na conversa (local + banco)
+      if (activeGiftMessageId) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === activeGiftMessageId ? { ...m, giftClaimed: true } : m)),
+        )
+        await markGiftClaimed(activeGiftMessageId)
+      }
       onProfileRefresh()
       return true
     }
@@ -553,14 +595,14 @@ function ChatConversation({
         >
           <ArrowLeft className="size-5" />
         </button>
-        <BuyerAvatar online={buyer.online} size="md" />
+        <BuyerAvatar online={conversation.is_online} size="md" />
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
-            {buyer.name}
+            {buyerName}
             <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
           </p>
           <p className="text-xs text-positive">
-            {typing ? 'digitando...' : buyer.online ? 'online' : 'visto recentemente'}
+            {typing ? 'digitando...' : conversation.is_online ? 'online' : 'visto recentemente'}
           </p>
         </div>
         <span className="flex items-center gap-1 rounded-full bg-positive/10 px-2.5 py-1 text-[0.6rem] font-semibold text-positive">
@@ -577,22 +619,28 @@ function ChatConversation({
             Conversa protegida pelo Luna Privé
           </p>
 
-          {messages.map((m) =>
-            m.kind === 'gift' ? (
-              <GiftBubble
-                key={m.id}
-                amount={m.giftAmount || 0}
-                claimed={!!m.giftClaimed}
-                senderName={buyer.name}
-                onOpen={() => openGiftModal(m.giftAmount || 0)}
-              />
-            ) : m.kind === 'image' ? (
-              <ImageBubble key={m.id} from={m.from} url={m.mediaUrl || ''} time={m.time} />
-            ) : m.kind === 'audio' ? (
-              <AudioBubble key={m.id} from={m.from} url={m.mediaUrl || ''} duration={m.audioDuration || 0} time={m.time} />
-            ) : (
-              <MessageBubble key={m.id} from={m.from} text={m.text || ''} time={m.time} />
-            ),
+          {loadingMessages ? (
+            <div className="mt-8 flex justify-center">
+              <Loader2 className="size-5 animate-spin text-primary" aria-hidden="true" />
+            </div>
+          ) : (
+            messages.map((m) =>
+              m.kind === 'gift' ? (
+                <GiftBubble
+                  key={m.id}
+                  amount={m.giftAmount || 0}
+                  claimed={!!m.giftClaimed}
+                  senderName={buyerName}
+                  onOpen={() => openGiftModal(m.giftAmount || 0, m.id)}
+                />
+              ) : m.kind === 'image' ? (
+                <ImageBubble key={m.id} from={m.from} url={m.mediaUrl || ''} time={m.time} />
+              ) : m.kind === 'audio' ? (
+                <AudioBubble key={m.id} from={m.from} url={m.mediaUrl || ''} duration={m.audioDuration || 0} time={m.time} />
+              ) : (
+                <MessageBubble key={m.id} from={m.from} text={m.text || ''} time={m.time} />
+              ),
+            )
           )}
 
           {typing && <TypingBubble />}
@@ -677,7 +725,7 @@ function ChatConversation({
                 setShowEmoji(false)
               }}
               aria-label="Anexar"
-              disabled={step >= 3}
+              disabled={step >= 3 || sending}
               className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
             >
               <Plus className="size-5" />
@@ -711,16 +759,17 @@ function ChatConversation({
                 type="button"
                 onClick={handleSend}
                 aria-label="Enviar"
-                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95"
+                disabled={sending}
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-60"
               >
-                <Send className="size-5" />
+                {sending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" />}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={startRecording}
                 aria-label="Gravar áudio"
-                disabled={step >= 3}
+                disabled={step >= 3 || sending}
                 className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-50"
               >
                 <Mic className="size-5" />
@@ -742,7 +791,7 @@ function ChatConversation({
       <GiftReceivedModal
         isOpen={showGift}
         onClose={() => setShowGift(false)}
-        senderName={buyer.name}
+        senderName={buyerName}
         senderAvatar={null}
         amount={activeGiftAmount}
         giftsEnabled={giftsEnabled}

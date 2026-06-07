@@ -270,7 +270,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ──────────��─────────────────────────────────��──────────────────────��─────────
+// ──────────���─────────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -710,8 +710,16 @@ function AppDashboard() {
   // Publicar pack real
   async function publishPack() {
     if (publishing) return
+    if (uploadingPhoto) {
+      setPackError('Aguarde a foto terminar de carregar.')
+      return
+    }
     if (!packName.trim()) {
       setPackError('Dê um nome ao seu pack.')
+      return
+    }
+    if (packPhotos.length === 0) {
+      setPackError('Adicione pelo menos 1 foto ao seu pack.')
       return
     }
     setPublishing(true)
@@ -1118,13 +1126,18 @@ function AppDashboard() {
               <button
                 type="button"
                 onClick={publishPack}
-                disabled={publishing}
+                disabled={publishing || uploadingPhoto || packPhotos.length === 0}
                 className="luna-gradient flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
               >
                 {publishing ? (
                   <>
                     <Loader2 className="size-5 animate-spin" aria-hidden="true" />
                     Publicando...
+                  </>
+                ) : uploadingPhoto ? (
+                  <>
+                    <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                    Carregando foto...
                   </>
                 ) : (
                   <>
@@ -1247,7 +1260,7 @@ function ChatsScreen({
 }
 
 
-// ─────────────────────────────────────────────────�����─��──�����─────────────────────
+// ─────────────────────────────────────────────────���������──�����─────────────────────
 // Tela Impulsionar
 // ──────────────────────────────────────────────────────────��──────────────────
 
@@ -1601,7 +1614,7 @@ function ImpulsionarScreen({
   )
 }
 
-// ─────────────────────────────────────────────���──────────────────────────────��
+// ─────────────────────────────────────────────���──────────────────────────────���
 // Tela Inicio
 // ────────────────────────────────────────────────────────────────────────��────
 
@@ -1836,7 +1849,7 @@ function relativeTime(dateStr: string) {
   return `${Math.floor(h / 24)}d`
 }
 
-// ───────────────────────────��──────────��─────────────────���────────���───────────
+// ───────────────────────────��──────────��─────────────���───���────────���───────────
 // StatCard
 // ─────────────────────────────────────────────────────────────────────────────
 
