@@ -110,6 +110,11 @@ export type Conversation = {
   unread_count: number
   is_online: boolean
   flow_step: number
+  pack_id?: string | null
+  pack_title?: string | null
+  pack_price?: number | null
+  purchase_status?: 'pending' | 'purchased'
+  is_follower?: boolean
   created_at: string
 }
 
@@ -544,7 +549,7 @@ export async function settleExpiredWithdrawals() {
 
 // ───────���─────────────────────────────────────────────────────────────────────
 // Conversation Actions
-// ───────────────────────────────────────────────────────────────────────────���─
+// ───────────────────────────────────────────────────────────────────────────�����─
 
 // Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
 const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
@@ -903,6 +908,16 @@ export async function generateChatActivity() {
   const greeting = pickRandom(NEW_CHAT_GREETINGS)
   const nowIso = new Date().toISOString()
 
+  // Escolhe um pack publicado da criadora para vincular ao novo fã.
+  const { data: packs } = await supabase
+    .from('packs')
+    .select('id, title, price')
+    .eq('user_id', user.id)
+    .eq('is_published', true)
+  const chosenPack = packs && packs.length > 0 ? pickRandom(packs) : null
+  // ~30% dos fãs já compraram o pack; o restante está com a compra pendente.
+  const alreadyPurchased = Math.random() < 0.3
+
   const { data: conversation, error: convErr } = await supabase
     .from('conversations')
     .insert({
@@ -915,6 +930,11 @@ export async function generateChatActivity() {
       unread_count: 1,
       is_online: true,
       flow_step: 0,
+      pack_id: chosenPack?.id ?? null,
+      pack_title: chosenPack?.title ?? null,
+      pack_price: chosenPack ? Number(chosenPack.price) : null,
+      purchase_status: alreadyPurchased ? 'purchased' : 'pending',
+      is_follower: true,
     })
     .select('*')
     .single()
@@ -928,6 +948,28 @@ export async function generateChatActivity() {
     content: greeting,
     message_type: 'text',
     is_read: false,
+  })
+
+  // O fã que abriu o chat também passa a seguir a criadora.
+  await supabase.from('followers').insert({
+    creator_id: user.id,
+    follower_name: buyer,
+  })
+  const { data: prof } = await supabase
+    .from('profiles')
+    .select('followers_count')
+    .eq('id', user.id)
+    .single()
+  await supabase
+    .from('profiles')
+    .update({ followers_count: (prof?.followers_count || 0) + 1 })
+    .eq('id', user.id)
+
+  await supabase.from('notifications').insert({
+    user_id: user.id,
+    type: 'follow',
+    title: 'Novo seguidor',
+    description: `${buyer} começou a seguir você`,
   })
 
   // Notificacao de mensagem (alimenta o toast no topo do app)
@@ -1005,7 +1047,7 @@ export async function getActiveBoosts(): Promise<Boost[]> {
   return data || []
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────���──
 // Notification Actions
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1445,7 +1487,7 @@ export async function claimGift(params: {
   return { success: true as const, newBalance }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────��─────────────────────────────────────────────
 // Dashboard Stats
 // ─────────────────────────────────────────────────────────────────────────────
 

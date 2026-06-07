@@ -23,6 +23,9 @@ import {
   Play,
   Pause,
   Loader2,
+  UserPlus,
+  CheckCircle2,
+  ShoppingBag,
 } from 'lucide-react'
 import {
   claimGift,
@@ -629,6 +632,32 @@ function ChatConversation({
           Protegido
         </span>
       </header>
+
+      {/* Contexto do fã: seguiu a criadora e status do pedido do pack */}
+      {(conversation.is_follower || conversation.pack_title) && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-card/60 px-3 py-2">
+          {conversation.is_follower && (
+            <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[0.65rem] font-medium text-primary">
+              <UserPlus className="size-3" />
+              Começou a seguir você
+            </span>
+          )}
+          {conversation.pack_title && (
+            conversation.purchase_status === 'purchased' ? (
+              <span className="flex items-center gap-1 rounded-full bg-positive/10 px-2.5 py-1 text-[0.65rem] font-medium text-positive">
+                <CheckCircle2 className="size-3" />
+                Comprou “{conversation.pack_title}”
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-[0.65rem] font-medium text-amber-500">
+                <ShoppingBag className="size-3" />
+                Pedido pendente · “{conversation.pack_title}”
+                {conversation.pack_price ? ` · ${brl(Number(conversation.pack_price))}` : ''}
+              </span>
+            )
+          )}
+        </div>
+      )}
 
       {/* Mensagens */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto bg-background px-4 py-4">
