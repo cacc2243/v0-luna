@@ -212,7 +212,7 @@ export function ChatsActive({
         // novas conversas entram no topo; mantém no máximo 30
         return [incoming, ...prev].slice(0, 30)
       })
-    }, 4500)
+    }, 15000)
     return () => clearInterval(interval)
   }, [])
 
