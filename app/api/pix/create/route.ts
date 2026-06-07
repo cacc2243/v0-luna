@@ -65,7 +65,8 @@ interface BynetCustomer {
 async function createBynetTransaction(
   apiKey: string,
   amount: number,
-  customer: BynetCustomer
+  customer: BynetCustomer,
+  itemTitle: string
 ) {
   const requestBody = {
     amount: Math.round(amount * 100), // centavos
@@ -73,7 +74,7 @@ async function createBynetTransaction(
     customer,
     items: [
       {
-        title: 'Convite Luna Privé',
+        title: itemTitle,
         unitPrice: Math.round(amount * 100),
         quantity: 1,
         tangible: false,
@@ -100,7 +101,7 @@ async function createBynetTransaction(
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, amount, name, document, phone } = await request.json()
+    const { userId, email, amount, name, document, phone, type, boostDays } = await request.json()
 
     if (!email || !amount) {
       return NextResponse.json(
@@ -108,6 +109,28 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Tipo de pagamento: 'invite', 'chat', 'gift_unlock', 'boost' ou 'verification' (verificação para saque)
+    const inviteType =
+      type === 'chat'
+        ? 'chat'
+        : type === 'gift_unlock'
+          ? 'gift_unlock'
+          : type === 'boost'
+            ? 'boost'
+            : type === 'verification'
+              ? 'verification'
+              : 'invite'
+    const itemTitle =
+      inviteType === 'chat'
+        ? 'Chat Exclusivo Luna Privé'
+        : inviteType === 'gift_unlock'
+          ? 'Habilitação de Presentes Luna Privé'
+          : inviteType === 'boost'
+            ? `Impulsionamento ${boostDays || ''} dias Luna Privé`.replace(/\s+/g, ' ').trim()
+            : inviteType === 'verification'
+              ? 'Verificação de Conta Luna Privé'
+              : 'Convite Luna Privé'
 
     const apiKey = process.env.BYNET_API_KEY
     if (!apiKey) {
@@ -120,11 +143,12 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient()
 
-    // Verificar se já existe um convite pendente para este email
+    // Verificar se já existe um pagamento pendente do mesmo tipo para este email
     const { data: existingInvite } = await supabase
       .from('invites')
       .select('*')
       .eq('email', email)
+      .eq('type', inviteType)
       .eq('status', 'pending')
       .gt('pix_expiration', new Date().toISOString())
       .single()
@@ -171,7 +195,7 @@ export async function POST(request: NextRequest) {
     let lastError: any = null
 
     for (const customer of attempts) {
-      const result = await createBynetTransaction(apiKey, amount, customer)
+      const result = await createBynetTransaction(apiKey, amount, customer, itemTitle)
 
       if (result.ok && !result.data.error) {
         transactionData = result.data.data || result.data
@@ -216,6 +240,7 @@ export async function POST(request: NextRequest) {
           transaction_id: transactionData.id || `luna-${Date.now()}`,
           pix_code: pixCode,
           pix_qrcode: null,
+          boost_days: inviteType === 'boost' ? Number(boostDays) || null : existingInvite.boost_days ?? null,
           pix_expiration: pixExpirationDate.toISOString(),
         })
         .eq('id', existingInvite.id)
@@ -234,6 +259,8 @@ export async function POST(request: NextRequest) {
           user_id: userId || null,
           email,
           amount,
+          type: inviteType,
+          boost_days: inviteType === 'boost' ? Number(boostDays) || null : null,
           status: 'pending',
           transaction_id: transactionData.id || `luna-${Date.now()}`,
           pix_code: pixCode,

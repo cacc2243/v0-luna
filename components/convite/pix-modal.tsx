@@ -12,9 +12,18 @@ interface PixModalProps {
   amount: number
   userName?: string
   onPaymentConfirmed?: () => void
+  /** Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo), 'gift_unlock' (presentes), 'boost' (impulsionamento) ou 'verification' (verificação de conta) */
+  type?: 'invite' | 'chat' | 'gift_unlock' | 'boost' | 'verification'
+  /** Dias de impulsionamento (apenas para type='boost') */
+  boostDays?: number
+  /** Titulo exibido no header e subtitulo opcional */
+  title?: string
+  subtitle?: string
 }
 
-export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentConfirmed }: PixModalProps) {
+export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle }: PixModalProps) {
+  const headerTitle = title || 'Pagamento PIX'
+  const headerSubtitle = subtitle || (type === 'chat' ? 'Chat Exclusivo Luna Privé' : 'Convite Luna Privé')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pixCode, setPixCode] = useState<string | null>(null)
@@ -78,6 +87,8 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
           email,
           amount,
           name: userName || 'Cliente Luna',
+          type,
+          boostDays,
         }),
       })
 
@@ -124,7 +135,7 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
 
     setCheckingPayment(true)
     try {
-      const response = await fetch(`/api/pix/status?id=${inviteId}`)
+      const response = await fetch(`/api/pix/status?id=${inviteId}&type=${type}`)
       const data = await response.json()
 
       if (data.paidInvite) {
@@ -162,8 +173,8 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
               <QrCode className="size-5 sm:size-6 text-primary" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold text-foreground truncate">Pagamento PIX</h2>
-              <p className="text-sm text-muted-foreground truncate">Convite Luna Privé</p>
+              <h2 className="text-lg sm:text-xl font-bold text-foreground truncate">{headerTitle}</h2>
+              <p className="text-sm text-muted-foreground truncate">{headerSubtitle}</p>
             </div>
           </div>
         </div>
@@ -229,7 +240,7 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
                   Ou copie o código PIX
                 </p>
                 <div className="rounded-xl bg-muted/50 border border-border px-4 py-3">
-                  <p className="text-xs font-mono text-foreground break-all leading-relaxed">
+                  <p className="text-xs font-mono text-foreground truncate leading-relaxed">
                     {pixCode || ''}
                   </p>
                 </div>

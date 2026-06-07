@@ -13,6 +13,7 @@ import {
   X,
   ImageIcon,
   ShieldAlert,
+  Package,
 } from 'lucide-react'
 import type { AdminImage } from '@/app/api/admin/images/route'
 import { formatDateTime } from '@/lib/painel/metrics'
@@ -31,6 +32,16 @@ const fetcher = async (url: string) => {
 }
 
 type ImageFilter = 'all' | 'cover' | 'pack_image'
+
+interface PackGroup {
+  packId: string
+  packTitle: string | null
+  ownerName: string | null
+  ownerUsername: string | null
+  ownerEmail: string | null
+  images: AdminImage[]
+  latestAt: string
+}
 
 export function ImagesTab() {
   const [query, setQuery] = useState('')
@@ -62,6 +73,42 @@ export function ImagesTab() {
       )
     })
   }, [images, query, filter])
+
+  // Agrupa as imagens por pack — cada grupo vira uma "linha" com todas as imagens do pack
+  const groups = useMemo(() => {
+    const map = new Map<string, PackGroup>()
+    for (const img of filtered) {
+      const groupKey = img.packId || `sem-pack:${img.key}`
+      let g = map.get(groupKey)
+      if (!g) {
+        g = {
+          packId: groupKey,
+          packTitle: img.packTitle,
+          ownerName: img.ownerName,
+          ownerUsername: img.ownerUsername,
+          ownerEmail: img.ownerEmail,
+          images: [],
+          latestAt: img.createdAt,
+        }
+        map.set(groupKey, g)
+      }
+      g.images.push(img)
+      if (new Date(img.createdAt).getTime() > new Date(g.latestAt).getTime()) {
+        g.latestAt = img.createdAt
+      }
+    }
+    const list = Array.from(map.values())
+    // Dentro de cada pack: capa primeiro, depois mais recentes
+    for (const g of list) {
+      g.images.sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'cover' ? -1 : 1
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      })
+    }
+    // Packs com a imagem mais recente primeiro
+    list.sort((a, b) => new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime())
+    return list
+  }, [filtered])
 
   const coverCount = images.filter((i) => i.type === 'cover').length
   const packImgCount = images.filter((i) => i.type === 'pack_image').length
@@ -171,7 +218,7 @@ export function ImagesTab() {
             Tentar novamente
           </button>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : groups.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
           <ImageIcon className="size-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Nenhuma imagem encontrada.</p>
@@ -179,15 +226,16 @@ export function ImagesTab() {
       ) : (
         <>
           <p className="text-xs text-muted-foreground">
-            {filtered.length} imagem{filtered.length === 1 ? '' : 's'}
+            {groups.length} pack{groups.length === 1 ? '' : 's'} · {filtered.length} imagem
+            {filtered.length === 1 ? '' : 's'}
           </p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {filtered.map((img) => (
-              <ImageCard
-                key={img.key}
-                image={img}
-                onView={() => setPreview(img)}
-                onDelete={() => setToDelete(img)}
+          <div className="flex flex-col gap-4">
+            {groups.map((group) => (
+              <PackRow
+                key={group.packId}
+                group={group}
+                onView={(img) => setPreview(img)}
+                onDelete={(img) => setToDelete(img)}
               />
             ))}
           </div>
@@ -281,7 +329,64 @@ export function ImagesTab() {
   )
 }
 
-function ImageCard({
+function PackRow({
+  group,
+  onView,
+  onDelete,
+}: {
+  group: PackGroup
+  onView: (img: AdminImage) => void
+  onDelete: (img: AdminImage) => void
+}) {
+  const name = group.ownerName || group.ownerUsername || 'Sem nome'
+  return (
+    <section className="overflow-hidden rounded-2xl border border-border bg-card">
+      {/* Cabecalho do pack */}
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-secondary/40 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <Package className="size-4" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-bold text-foreground">
+              {group.packTitle || 'Pack sem título'}
+            </h3>
+            <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+              <UserRound className="size-3 shrink-0" />
+              {name}
+              {group.ownerUsername ? ` · @${group.ownerUsername}` : ''}
+            </p>
+          </div>
+        </div>
+        <span className="shrink-0 rounded-full bg-background px-2.5 py-1 text-xs font-medium tabular-nums text-muted-foreground">
+          {group.images.length} imagem{group.images.length === 1 ? '' : 's'}
+        </span>
+      </header>
+
+      {/* Email do dono, se houver */}
+      {group.ownerEmail && (
+        <div className="flex items-center gap-1 border-b border-border px-4 py-2 text-xs text-muted-foreground">
+          <Mail className="size-3 shrink-0" />
+          <span className="truncate">{group.ownerEmail}</span>
+        </div>
+      )}
+
+      {/* Imagens do pack */}
+      <div className="grid grid-cols-3 gap-2 p-3 sm:grid-cols-4 lg:grid-cols-6">
+        {group.images.map((img) => (
+          <PackImageThumb
+            key={img.key}
+            image={img}
+            onView={() => onView(img)}
+            onDelete={() => onDelete(img)}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function PackImageThumb({
   image,
   onView,
   onDelete,
@@ -291,11 +396,8 @@ function ImageCard({
   onDelete: () => void
 }) {
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card">
-      <button
-        onClick={onView}
-        className="relative aspect-square w-full overflow-hidden bg-background"
-      >
+    <div className="group relative overflow-hidden rounded-lg border border-border bg-background">
+      <button onClick={onView} className="relative block aspect-square w-full overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={image.imageUrl || '/placeholder.svg'}
@@ -306,7 +408,7 @@ function ImageCard({
         />
         <span
           className={cn(
-            'absolute left-2 top-2 rounded-md px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide backdrop-blur',
+            'absolute left-1.5 top-1.5 rounded-md px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide backdrop-blur',
             image.type === 'cover'
               ? 'bg-primary/80 text-primary-foreground'
               : 'bg-background/70 text-foreground',
@@ -315,17 +417,13 @@ function ImageCard({
           {image.type === 'cover' ? 'Capa' : 'Pack'}
         </span>
       </button>
-
-      <div className="flex flex-col gap-2 p-2.5">
-        <OwnerInfo image={image} compact />
-        <button
-          onClick={onDelete}
-          className="flex items-center justify-center gap-1.5 rounded-lg bg-destructive/10 px-2 py-1.5 text-xs font-semibold text-destructive transition hover:bg-destructive/20"
-        >
-          <Trash2 className="size-3.5" />
-          Excluir
-        </button>
-      </div>
+      <button
+        onClick={onDelete}
+        aria-label="Excluir imagem"
+        className="absolute right-1.5 top-1.5 flex size-7 items-center justify-center rounded-md bg-background/70 text-destructive opacity-0 backdrop-blur transition hover:bg-destructive hover:text-destructive-foreground group-hover:opacity-100"
+      >
+        <Trash2 className="size-3.5" />
+      </button>
     </div>
   )
 }

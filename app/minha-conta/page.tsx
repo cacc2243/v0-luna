@@ -50,6 +50,9 @@ import {
   Instagram,
   Edit3,
   Shield,
+  ShieldCheck,
+  XCircle,
+  CheckCircle2,
   CreditCard,
   Globe,
   Moon,
@@ -64,9 +67,17 @@ import {
   ToggleRight,
   AlertCircle,
   Gift,
+  Clock,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
-import { generatePackActivity, acceptSale, rejectSale } from './actions'
+  import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals } from './actions'
+import { PixModal } from '@/components/convite/pix-modal'
+import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
+import { ChatsActive } from '@/components/minha-conta/chats-active'
+import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
+
+// Valor do Chat Exclusivo (pagamento unico)
+const CHAT_PRICE = 99.0
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -260,7 +271,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────����─────────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -498,14 +509,25 @@ function AppDashboard() {
   const [balanceFlash, setBalanceFlash] = useState(false)
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null)
 
+  // Fluxo do Chat Exclusivo (condicao para aceitar vendas)
+  const [showPersonalizedSale, setShowPersonalizedSale] = useState(false)
+  const [showUnlockChat, setShowUnlockChat] = useState(false)
+  const [showChatPix, setShowChatPix] = useState(false)
+  const [pendingSaleContext, setPendingSaleContext] = useState<{ buyerName?: string | null; packTitle?: string | null; amount?: number } | null>(null)
+  const [userEmail, setUserEmail] = useState('')
+
+  // Modal "conta bombando": aparece quando ha mais de 6 chats abertos
+  const [showFansWaiting, setShowFansWaiting] = useState(false)
+  const fansModalShown = useRef(false)
+
   // Fetch dados reais do Supabase usando SWR
   const { data: profile, mutate: mutateProfile } = useSWR('profile', fetchProfile)
   const { data: packs = [], mutate: mutatePacks } = useSWR('packs', fetchPacks)
   const { data: sales = [], mutate: mutateSales } = useSWR('sales', fetchSales)
   const { data: transactions = [], mutate: mutateTransactions } = useSWR('transactions', fetchTransactions)
-  const { data: withdrawals = [] } = useSWR('withdrawals', fetchWithdrawals)
-  const { data: conversations = [] } = useSWR('conversations', fetchConversations)
-  const { data: boosts = [] } = useSWR('boosts', fetchBoosts)
+  const { data: withdrawals = [], mutate: mutateWithdrawals } = useSWR('withdrawals', fetchWithdrawals)
+  const { data: conversations = [], mutate: mutateConversations } = useSWR('conversations', fetchConversations)
+  const { data: boosts = [], mutate: mutateBoosts } = useSWR('boosts', fetchBoosts)
   const { data: highlights = [], mutate: mutateHighlights } = useSWR('highlights', fetchHighlights)
   const { data: notifications = [], mutate: mutateNotifications } = useSWR('notifications', fetchNotifications)
 
@@ -543,6 +565,24 @@ function AppDashboard() {
     mutateTransactions()
   }, [mutatePacks, mutateSales, mutateNotifications, mutateProfile, mutateTransactions])
 
+  // Carrega o e-mail do usuario logado (necessario para o PIX do Chat Exclusivo)
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) setUserEmail(data.user.email)
+    })
+  }, [])
+
+  // Quando a criadora acumula mais de 6 chats, mostramos o modal "conta bombando"
+  // uma unica vez por sessao, convidando a responder os fas.
+  useEffect(() => {
+    if (fansModalShown.current) return
+    if (conversations.length > 6 && activeTab !== 'Chats') {
+      fansModalShown.current = true
+      setShowFansWaiting(true)
+    }
+  }, [conversations.length, activeTab])
+
   // Versao com debounce: ao aceitar varios pedidos em sequencia, agrupamos
   // todas as revalidacoes numa unica no fim, evitando dezenas de requisicoes
   // simultaneas que travavam a UI. A atualizacao otimista ja deixa tudo instantaneo.
@@ -565,10 +605,34 @@ function AppDashboard() {
     return () => clearInterval(interval)
   }, [packs.length, refreshActivity])
 
+  // Motor de chat: novos clientes mandam mensagem periodicamente (gera toast)
+  useEffect(() => {
+    if (packs.length === 0) return
+    const interval = setInterval(async () => {
+      await generateChatActivity()
+      mutateConversations()
+      mutateNotifications()
+    }, 38000)
+    return () => clearInterval(interval)
+  }, [packs.length, mutateConversations, mutateNotifications])
+
   // Aceitar / recusar pedidos (atualizacao otimista = instantaneo)
   async function handleAcceptSale(saleId: string) {
     const sale = sales.find(s => s.id === saleId)
     if (!sale || sale.status !== 'pending') return
+
+    // Gate: sem Chat Exclusivo ativo, nao pode aceitar vendas COM chat.
+    // Pedidos diretos podem ser aceitos por qualquer conta com convite pago.
+    if (!sale.is_direct && !profile?.chat_unlocked) {
+      setPendingSaleContext({
+        buyerName: sale.buyer_name,
+        packTitle: sale.pack?.title ?? null,
+        amount: Number(sale.amount),
+      })
+      setShowPersonalizedSale(true)
+      return
+    }
+
     const net = Number(sale.net_amount)
 
     // Atualiza a UI imediatamente usando updaters funcionais para que
@@ -594,7 +658,31 @@ function AppDashboard() {
     setTimeout(() => setBalanceFlash(false), 1200)
 
     // Persiste no servidor em segundo plano; revalidacao agrupada (debounce)
-    acceptSale(saleId).then(() => refreshActivityDebounced())
+    acceptSale(saleId).then((res) => {
+      // Defesa extra: se o servidor recusar por falta de chat, reverte a UI
+      if (res && (res as { error?: string }).error === 'chat_locked') {
+        mutateSales(
+          (current = []) => current.map(s => (s.id === saleId ? { ...s, status: 'pending' } : s)),
+          { revalidate: false },
+        )
+        mutateProfile(
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  balance: Number(current.balance) - net,
+                  total_earned: Number(current.total_earned) - net,
+                  sales_count: Math.max(0, Number(current.sales_count) - 1),
+                }
+              : current,
+          { revalidate: false },
+        )
+        setPendingSaleContext({ buyerName: sale.buyer_name, packTitle: sale.pack?.title ?? null, amount: Number(sale.amount) })
+        setShowPersonalizedSale(true)
+        return
+      }
+      refreshActivityDebounced()
+    })
   }
   async function handleRejectSale(saleId: string) {
     // Remove da lista imediatamente
@@ -649,8 +737,16 @@ function AppDashboard() {
   // Publicar pack real
   async function publishPack() {
     if (publishing) return
+    if (uploadingPhoto) {
+      setPackError('Aguarde a foto terminar de carregar.')
+      return
+    }
     if (!packName.trim()) {
       setPackError('Dê um nome ao seu pack.')
+      return
+    }
+    if (packPhotos.length === 0) {
+      setPackError('Adicione pelo menos 1 foto ao seu pack.')
       return
     }
     setPublishing(true)
@@ -727,6 +823,9 @@ function AppDashboard() {
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-background">
+      {/* Toaster de notificacoes (vendas e mensagens) sobre todo o conteudo */}
+      <NotificationToaster notifications={notifications} />
+
       {/* Imagem de fundo */}
       <div 
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -761,7 +860,19 @@ function AppDashboard() {
       {/* Conteudo rolavel do app */}
       <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
       {activeTab === 'Carteira' ? (
-                <WalletScreen balance={animatedBalance} pendingBalance={pendingBalance} withdrawals={withdrawals} transactions={transactions} profile={profile} />
+                <WalletScreen
+          balance={animatedBalance}
+          pendingBalance={pendingBalance}
+          withdrawals={withdrawals}
+          transactions={transactions}
+          profile={profile}
+          userEmail={userEmail}
+          userName={profile?.display_name || 'Criadora Luna'}
+          onWithdrawalsChange={() => {
+            mutateWithdrawals()
+            mutateProfile()
+          }}
+        />
       ) : activeTab === 'Packs' ? (
         <PacksScreen
           balance={animatedBalance}
@@ -772,9 +883,25 @@ function AppDashboard() {
       ) : activeTab === 'Perfil' ? (
         <ProfileScreen profile={profile} highlights={highlights} onLogout={handleLogout} onProfileUpdated={mutateProfile} onHighlightsUpdated={mutateHighlights} />
       ) : activeTab === 'Impulsionar' ? (
-        <ImpulsionarScreen balance={animatedBalance} boosts={boosts} />
+        <ImpulsionarScreen
+          balance={animatedBalance}
+          boosts={boosts}
+          userEmail={userEmail}
+          userName={profile?.display_name || 'Criadora Luna'}
+          onBoostActivated={() => {
+            mutateBoosts()
+          }}
+        />
       ) : activeTab === 'Chats' ? (
-        <ChatsScreen balance={animatedBalance} />
+        <ChatsScreen
+          balance={animatedBalance}
+          chatUnlocked={!!profile?.chat_unlocked}
+          giftsEnabled={!!profile?.gifts_enabled}
+          userName={profile?.display_name || 'Criadora Luna'}
+          userEmail={userEmail}
+          onUnlock={() => setShowUnlockChat(true)}
+          onProfileRefresh={mutateProfile}
+        />
       ) : (
                 <HomeScreen
                   balance={animatedBalance}
@@ -829,6 +956,61 @@ function AppDashboard() {
           </button>
         ))}
       </nav>
+
+      {/* Fluxo do Chat Exclusivo */}
+      <PersonalizedSaleModal
+        isOpen={showPersonalizedSale}
+        onClose={() => setShowPersonalizedSale(false)}
+        buyerName={pendingSaleContext?.buyerName}
+        packTitle={pendingSaleContext?.packTitle}
+        amount={pendingSaleContext?.amount}
+        onUnlock={() => {
+          setShowPersonalizedSale(false)
+          setShowUnlockChat(true)
+        }}
+      />
+      <UnlockChatModal
+        isOpen={showUnlockChat}
+        onClose={() => setShowUnlockChat(false)}
+        price={CHAT_PRICE}
+        onConfirm={() => {
+          setShowUnlockChat(false)
+          setShowChatPix(true)
+        }}
+      />
+      {showChatPix && (
+        <PixModal
+          isOpen={showChatPix}
+          onClose={() => setShowChatPix(false)}
+          email={userEmail}
+          amount={CHAT_PRICE}
+          userName={profile?.display_name || 'Criadora Luna'}
+          type="chat"
+          title="Chat Exclusivo"
+          subtitle="Pagamento único · Acesso vitalício"
+          onPaymentConfirmed={() => {
+            // Atualiza o perfil para refletir o desbloqueio imediatamente
+            mutateProfile(
+              (current) => (current ? { ...current, chat_unlocked: true } : current),
+              { revalidate: true },
+            )
+            setShowChatPix(false)
+          }}
+        />
+      )}
+
+      {/* Modal — conta bombando (fas querendo conversar) */}
+      <FansWaitingModal
+        isOpen={showFansWaiting}
+        onClose={() => setShowFansWaiting(false)}
+        chatCount={conversations.length}
+        totalViews={totalViews}
+        pendingAmount={pendingBalance}
+        onRespond={() => {
+          setShowFansWaiting(false)
+          setActiveTab('Chats')
+        }}
+      />
 
       {/* Modal — Criar Pack */}
       {selectedPackId && (
@@ -987,13 +1169,18 @@ function AppDashboard() {
               <button
                 type="button"
                 onClick={publishPack}
-                disabled={publishing}
+                disabled={publishing || uploadingPhoto || packPhotos.length === 0}
                 className="luna-gradient flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
               >
                 {publishing ? (
                   <>
                     <Loader2 className="size-5 animate-spin" aria-hidden="true" />
                     Publicando...
+                  </>
+                ) : uploadingPhoto ? (
+                  <>
+                    <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                    Carregando foto...
                   </>
                 ) : (
                   <>
@@ -1014,7 +1201,36 @@ function AppDashboard() {
 // Tela Chats
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ChatsScreen({ balance }: { balance: number }) {
+function ChatsScreen({
+  balance,
+  chatUnlocked,
+  giftsEnabled,
+  userName,
+  userEmail,
+  onUnlock,
+  onProfileRefresh,
+}: {
+  balance: number
+  chatUnlocked: boolean
+  giftsEnabled: boolean
+  userName: string
+  userEmail: string
+  onUnlock: () => void
+  onProfileRefresh: () => void
+}) {
+  // Chat ativo: lista de conversas com fluxo de presentes
+  if (chatUnlocked) {
+    return (
+      <ChatsActive
+        balance={balance}
+        giftsEnabled={giftsEnabled}
+        userName={userName}
+        userEmail={userEmail}
+        onProfileRefresh={onProfileRefresh}
+      />
+    )
+  }
+
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
@@ -1037,23 +1253,49 @@ function ChatsScreen({ balance }: { balance: number }) {
           <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/30">
             <MessageCircle className="size-6 text-primary-foreground" aria-hidden="true" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
-            <p className="text-sm text-muted-foreground">
-              0 conversas
-            </p>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
+            </div>
+            <p className="text-sm text-muted-foreground">Chat Exclusivo bloqueado</p>
           </div>
         </div>
       </div>
 
-      {/* Lista de Chats - Estado vazio */}
+      {/* Estado bloqueado — CTA para liberar o Chat Exclusivo */}
       <div className="mt-6">
-        <div className="rounded-2xl border border-border bg-card/60 px-4 py-10 text-center">
-          <MessageCircle className="mx-auto size-12 text-muted-foreground/30" aria-hidden="true" />
-          <p className="mt-4 text-sm font-medium text-foreground">Nenhuma conversa ainda</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Suas mensagens com compradores aparecerão aqui
-          </p>
+        <div className="luna-border overflow-hidden rounded-3xl bg-card">
+          <div className="bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 py-6 text-center">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
+              <Lock className="size-7 text-primary-foreground" aria-hidden="true" />
+            </div>
+            <h2 className="mt-3 text-lg font-bold text-foreground">Libere seu Chat Exclusivo</h2>
+            <p className="mx-auto mt-1 max-w-xs text-pretty text-sm text-muted-foreground">
+              Converse com seus clientes, aceite vendas e receba no seu saldo. Pagamento único, acesso vitalício.
+            </p>
+          </div>
+          <div className="px-5 py-5">
+            <ul className="flex flex-col gap-2.5">
+              {[
+                'Aceite pedidos e receba por suas vendas',
+                'Atendimento personalizado com cada cliente',
+                'Perfil verificado em destaque',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2.5">
+                  <BadgeCheck className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+                  <span className="text-sm text-foreground">{item}</span>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={onUnlock}
+              className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+            >
+              <Sparkles className="size-4" aria-hidden="true" />
+              Liberar Chat Privé · {brl(99)}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1061,9 +1303,9 @@ function ChatsScreen({ balance }: { balance: number }) {
 }
 
 
-// ─────────────────────────────────────────────────�����────�����─────────────────────
+// ─────────────────────────────────────────────────���������──�����─────────────────────
 // Tela Impulsionar
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────��──────────────────
 
 const boostPlans = [
   { days: 2, price: 28.0, pricePerDay: 14.0, discount: 0 },
@@ -1073,8 +1315,60 @@ const boostPlans = [
   { days: 30, price: 99.0, pricePerDay: 3.3, discount: 76, popular: true },
 ]
 
-function ImpulsionarScreen({ balance, boosts }: { balance: number; boosts: Boost[] }) {
+function ImpulsionarScreen({
+  balance,
+  boosts,
+  userEmail,
+  userName,
+  onBoostActivated,
+}: {
+  balance: number
+  boosts: Boost[]
+  userEmail: string
+  userName: string
+  onBoostActivated: () => void
+}) {
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [processing, setProcessing] = useState(false)
+  const [showPix, setShowPix] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
+
+  // Boost ativo (perfil) que ainda nao expirou
+  const activeBoost = boosts
+    .filter((b) => b.boost_type === 'profile' && b.is_active && new Date(b.ends_at).getTime() > now)
+    .sort((a, b) => new Date(b.ends_at).getTime() - new Date(a.ends_at).getTime())[0]
+
+  // Atualiza o contador regressivo a cada segundo enquanto houver boost ativo
+  useEffect(() => {
+    if (!activeBoost) return
+    const interval = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [activeBoost])
+
+  const plan = boostPlans.find((p) => p.days === selectedPlan)
+
+  function formatRemaining(endsAt: string) {
+    const diff = new Date(endsAt).getTime() - now
+    if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0, total: 0 }
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    const s = Math.floor((diff % (1000 * 60)) / 1000)
+    return { d, h, m, s, total: diff }
+  }
+
+  function handleConfirmBoost() {
+    setShowConfirm(false)
+    setProcessing(true)
+    // Pequena animacao antes de abrir o PIX
+    setTimeout(() => {
+      setProcessing(false)
+      setShowPix(true)
+    }, 1600)
+  }
+
+  const remaining = activeBoost ? formatRemaining(activeBoost.ends_at) : null
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
@@ -1104,6 +1398,49 @@ function ImpulsionarScreen({ balance, boosts }: { balance: number; boosts: Boost
           </div>
         </div>
       </div>
+
+      {/* Impulsionamento ativo — contador regressivo */}
+      {activeBoost && remaining && (
+        <div className="animate-pop mt-5 overflow-hidden rounded-2xl border border-positive/40 bg-gradient-to-br from-positive/15 to-positive/5">
+          <div className="flex items-center gap-2.5 border-b border-positive/20 px-4 py-3">
+            <span className="relative flex size-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-positive opacity-75" />
+              <span className="relative inline-flex size-2.5 rounded-full bg-positive" />
+            </span>
+            <p className="text-sm font-bold text-foreground">Impulsionamento ativo</p>
+            <span className="ml-auto rounded-full bg-positive/20 px-2 py-0.5 text-[0.6rem] font-bold text-positive">
+              {activeBoost.plan_name}
+            </span>
+          </div>
+          <div className="px-4 py-4">
+            <p className="mb-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="size-3.5 text-positive" aria-hidden="true" />
+              Tempo restante de destaque
+            </p>
+            <div className="flex items-stretch gap-2">
+              {[
+                { v: remaining.d, l: 'dias' },
+                { v: remaining.h, l: 'horas' },
+                { v: remaining.m, l: 'min' },
+                { v: remaining.s, l: 'seg' },
+              ].map((seg, i) => (
+                <div
+                  key={seg.l}
+                  className="flex flex-1 flex-col items-center rounded-xl border border-border bg-card py-2.5"
+                >
+                  <span className="text-2xl font-bold tabular-nums text-foreground">
+                    {seg.v.toString().padStart(2, '0')}
+                  </span>
+                  <span className="text-[0.6rem] uppercase tracking-wide text-muted-foreground">{seg.l}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Seu perfil está em destaque para mais compradores. Você pode renovar a qualquer momento.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Benefícios */}
       <div className="mt-5 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-4">
@@ -1196,22 +1533,131 @@ function ImpulsionarScreen({ balance, boosts }: { balance: number; boosts: Boost
         <button
           type="button"
           disabled={!selectedPlan}
+          onClick={() => selectedPlan && setShowConfirm(true)}
           className="luna-gradient flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-50"
         >
           <Zap className="size-5" aria-hidden="true" />
           {selectedPlan
-            ? `Impulsionar por ${brl(boostPlans.find((p) => p.days === selectedPlan)?.price || 0)}`
+            ? `${activeBoost ? 'Renovar' : 'Impulsionar'} por ${brl(plan?.price || 0)}`
             : 'Selecione um plano'}
         </button>
         <p className="mt-3 text-center text-xs text-muted-foreground">
           O impulsionamento começa imediatamente após a confirmação
         </p>
       </div>
+
+      {/* Modal de confirmação */}
+      {showConfirm && plan && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowConfirm(false)}
+            aria-hidden="true"
+          />
+          <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary active:scale-95"
+              aria-label="Fechar"
+            >
+              <X className="size-5" aria-hidden="true" />
+            </button>
+
+            <div className="bg-gradient-to-br from-primary/20 to-primary/5 px-5 pb-5 pt-6 text-center">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/20">
+                <Rocket className="size-7 text-primary" aria-hidden="true" />
+              </div>
+              <h2 className="mt-3 text-lg font-bold text-foreground">Confirmar impulsionamento</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Geraremos um PIX no valor do seu plano
+              </p>
+            </div>
+
+            <div className="px-5 py-5">
+              <div className="rounded-2xl border border-border bg-secondary/50 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Duração do destaque</span>
+                  <span className="text-sm font-bold text-foreground">{plan.days} dias</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2">
+                  <span className="text-sm text-muted-foreground">Valor por dia</span>
+                  <span className="text-sm font-semibold text-foreground">{brl(plan.pricePerDay)}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2">
+                  <span className="text-sm font-semibold text-foreground">Total via PIX</span>
+                  <span className="text-xl font-bold text-primary">{brl(plan.price)}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-3">
+                <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                  Seu perfil ficará em destaque por{' '}
+                  <span className="font-semibold text-foreground">{plan.days} dias</span> assim que o
+                  pagamento for confirmado. O tempo restante aparecerá aqui no topo.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleConfirmBoost}
+                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                <Zap className="size-5" aria-hidden="true" />
+                Gerar PIX de {brl(plan.price)}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                className="mt-2 w-full rounded-xl py-3 text-sm font-medium text-muted-foreground transition hover:bg-secondary"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Animação de processamento */}
+      {processing && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" aria-hidden="true" />
+          <div className="animate-pop relative flex w-full max-w-xs flex-col items-center rounded-3xl border border-border bg-card px-6 py-8 text-center shadow-2xl">
+            <div className="relative flex size-20 items-center justify-center">
+              <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+              <Rocket className="size-8 text-primary" aria-hidden="true" />
+            </div>
+            <p className="mt-5 text-base font-bold text-foreground">Gerando seu PIX...</p>
+            <p className="mt-1 text-sm text-muted-foreground">Preparando o impulsionamento do seu perfil</p>
+          </div>
+        </div>
+      )}
+
+      {/* PIX do impulsionamento */}
+      {showPix && plan && (
+        <PixModal
+          isOpen={showPix}
+          onClose={() => setShowPix(false)}
+          email={userEmail}
+          amount={plan.price}
+          userName={userName}
+          type="boost"
+          boostDays={plan.days}
+          title="Impulsionar perfil"
+          subtitle={`Destaque por ${plan.days} dias`}
+          onPaymentConfirmed={() => {
+            setShowPix(false)
+            setSelectedPlan(null)
+            onBoostActivated()
+          }}
+        />
+      )}
     </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────���──────────────────────────────���
 // Tela Inicio
 // ────────────────────────────────────────────────────────────────────────��────
 
@@ -1246,12 +1692,15 @@ function HomeScreen({
   const viewNotifs = notifications.filter(n => n.type === 'like' || n.type === 'follow').slice(0, 3)
 
   function handleAccept(id: string) {
+    // Trava: enquanto um pedido esta sendo aceito, nenhum outro pode ser aceito.
+    // Evita "aceitar tudo" em sequencia e da tempo do saldo (total e do dia) atualizar.
+    if (accepting) return
     setAccepting(id)
-    // Deixa a animacao de saida rodar antes de remover da lista
+    // Animacao de "Aceitando..." (1,5s) antes de confirmar e creditar o saldo
     setTimeout(() => {
       onAccept(id)
       setAccepting(null)
-    }, 450)
+    }, 1500)
   }
 
   return (
@@ -1335,8 +1784,8 @@ function HomeScreen({
         {pendingSales.map((sale) => (
           <div
             key={`pending-${sale.id}`}
-            className={`luna-border relative mb-2 rounded-2xl bg-card px-3 py-3 ${
-              accepting === sale.id ? 'animate-accept-out' : 'overflow-hidden'
+            className={`luna-border relative mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3 transition ${
+              accepting === sale.id ? 'ring-1 ring-positive/40' : accepting ? 'opacity-50' : ''
             }`}
           >
             <div className="flex items-center gap-2.5">
@@ -1344,9 +1793,16 @@ function HomeScreen({
                 <Bell className="size-4 text-primary" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1 leading-snug">
-                <p className="truncate text-[0.8rem] font-semibold text-foreground">
-                  {sale.buyer_name} quer {sale.pack?.title || 'seu pack'}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-[0.8rem] font-semibold text-foreground">
+                    {sale.buyer_name} quer {sale.pack?.title || 'seu pack'}
+                  </p>
+                  {sale.is_direct && (
+                    <span className="shrink-0 rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Direto
+                    </span>
+                  )}
+                </div>
                 <p className="text-[0.65rem] text-muted-foreground">
                   {relativeTime(sale.created_at)} · você recebe {brl(Number(sale.net_amount))}
                 </p>
@@ -1363,7 +1819,7 @@ function HomeScreen({
             <div className="mt-2.5 flex gap-2">
               <button
                 type="button"
-                disabled={accepting === sale.id}
+                disabled={accepting !== null}
                 onClick={() => onReject(sale.id)}
                 className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98] disabled:opacity-60"
               >
@@ -1372,16 +1828,25 @@ function HomeScreen({
               </button>
               <button
                 type="button"
-                disabled={accepting === sale.id}
+                disabled={accepting !== null}
                 onClick={() => handleAccept(sale.id)}
                 style={{
                   backgroundImage:
                     'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
                 }}
-                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
               >
-                <Check className="size-3.5" aria-hidden="true" />
-                Aceitar venda
+                {accepting === sale.id ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                    Aceitando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="size-3.5" aria-hidden="true" />
+                    Aceitar venda
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1434,7 +1899,7 @@ function relativeTime(dateStr: string) {
   return `${Math.floor(h / 24)}d`
 }
 
-// ──────────────────────────────────────��─────────────────���────────���───────────
+// ───────────────────────────��──────────��─────────────���───���────────���───────────
 // StatCard
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1996,17 +2461,33 @@ function WalletScreen({
   withdrawals,
   transactions,
   profile,
+  userEmail,
+  userName,
+  onWithdrawalsChange,
 }: {
   balance: number
   pendingBalance: number
   withdrawals: Withdrawal[]
   transactions: Transaction[]
   profile: Profile | null | undefined
+  userEmail: string
+  userName: string
+  onWithdrawalsChange: () => void
 }) {
+  // Etapas do fluxo de saque:
+  // 'form' -> 'processing' (5s) -> 'new_account' (conta nova) -> 'verify_info' -> 'verify_processing' -> PIX
+  // ou, se ja verificada: 'form' -> 'processing' -> 'requested' (saque solicitado / em analise)
+  const [withdrawStep, setWithdrawStep] = useState<
+    'form' | 'processing' | 'new_account' | 'verify_info' | 'verify_processing' | 'requested'
+  >('form')
+  const [showVerifyPix, setShowVerifyPix] = useState(false)
+  const isVerified = !!profile?.withdrawal_verified
+  const VERIFICATION_PRICE = 49
   const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [barsReady, setBarsReady] = useState(false)
+  const [withdrawError, setWithdrawError] = useState<string | null>(null)
   const pixKey = profile?.pix_key || 'Nao cadastrada'
 
   const isEarning = (t: Transaction) => t.type === 'sale' || t.type === 'gift_received' || t.type === 'bonus'
@@ -2016,6 +2497,82 @@ function WalletScreen({
     const id = requestAnimationFrame(() => setBarsReady(true))
     return () => cancelAnimationFrame(id)
   }, [])
+
+  // Liquidacao automatica: ao montar e a cada 60s, marca como falhos os saques
+  // cuja janela de analise de 24h ja expirou (recusa do banco).
+  useEffect(() => {
+    let mounted = true
+    const run = async () => {
+      const res = await settleExpiredWithdrawals()
+      if (mounted && res.settled > 0) onWithdrawalsChange()
+    }
+    run()
+    const interval = setInterval(run, 60_000)
+    return () => {
+      mounted = false
+      clearInterval(interval)
+    }
+  }, [onWithdrawalsChange])
+
+  // Abre o modal de saque resetando o fluxo
+  function openWithdraw() {
+    setWithdrawStep('form')
+    setWithdrawAmount('')
+    setWithdrawError(null)
+    setShowWithdrawModal(true)
+  }
+
+  function closeWithdraw() {
+    setShowWithdrawModal(false)
+    setWithdrawStep('form')
+  }
+
+  // Confirma o saque: roda 5s de animacao e decide o proximo passo
+  function handleConfirmWithdraw() {
+    const parsed = Number(withdrawAmount.replace(/\./g, '').replace(',', '.'))
+    if (!parsed || parsed < 50) {
+      setWithdrawError('O valor mínimo para saque é R$ 50,00.')
+      return
+    }
+    if (parsed > balance) {
+      setWithdrawError('Saldo insuficiente para este saque.')
+      return
+    }
+    setWithdrawError(null)
+    setWithdrawStep('processing')
+
+    // Animacao de 5 segundos analisando a solicitacao
+    setTimeout(async () => {
+      if (isVerified) {
+        // Conta verificada: registra o saque (entra em analise de 24h)
+        const res = await requestWithdrawal(parsed)
+        if (res?.error) {
+          setWithdrawError(
+            res.error === 'not_verified'
+              ? 'Sua conta ainda não foi verificada.'
+              : typeof res.error === 'string'
+                ? res.error
+                : 'Não foi possível solicitar o saque.',
+          )
+          setWithdrawStep('form')
+          return
+        }
+        onWithdrawalsChange()
+        setWithdrawStep('requested')
+      } else {
+        // Conta nova: exige verificacao
+        setWithdrawStep('new_account')
+      }
+    }, 5000)
+  }
+
+  // Inicia a verificacao: animacao curta e abre o PIX de R$ 49
+  function handleStartVerification() {
+    setWithdrawStep('verify_processing')
+    setTimeout(() => {
+      setShowVerifyPix(true)
+    }, 1600)
+  }
 
   // Grafico: 6 meses comecando no mes atual (2026) e seguindo para os proximos
   const now = new Date()
@@ -2100,9 +2657,9 @@ function WalletScreen({
 
   const statusLabel: Record<string, string> = {
     completed: 'Concluido',
-    processing: 'Processando',
+    processing: 'Em análise',
     pending: 'Pendente',
-    failed: 'Falhou',
+    failed: 'Recusado',
   }
 
   return (
@@ -2111,14 +2668,6 @@ function WalletScreen({
       <header className="shrink-0 px-4 pt-6">
         <div className="flex items-center justify-between gap-3">
           <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
-          <button
-            type="button"
-            onClick={() => setShowWithdrawModal(true)}
-            className="luna-gradient flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95"
-          >
-            <ArrowUpRight className="size-4" aria-hidden="true" />
-            Sacar
-          </button>
         </div>
       </header>
 
@@ -2154,6 +2703,25 @@ function WalletScreen({
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Botao de saque principal */}
+      <div className="shrink-0 px-4 pt-4">
+        <button
+          type="button"
+          onClick={openWithdraw}
+          className="luna-gradient flex w-full items-center justify-center gap-2.5 rounded-2xl py-5 text-lg font-bold text-primary-foreground shadow-xl shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
+        >
+          <ArrowUpRight className="size-6" aria-hidden="true" />
+          Sacar saldo
+        </button>
+        <div className="mt-3 flex items-start gap-2 rounded-2xl border border-border bg-card/60 px-4 py-3">
+          <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Saque mínimo de <span className="font-semibold text-foreground">R$ 50,00</span>. É descontada uma
+            taxa de <span className="font-semibold text-foreground">R$ 1,99</span> por saque realizado.
+          </p>
         </div>
       </div>
 
@@ -2364,32 +2932,71 @@ function WalletScreen({
                 <div className="flex flex-col gap-2">
                   {withdrawals.map((w) => {
                     const st = String(w.status).toLowerCase()
+                    const isFailed = st === 'failed'
+                    const isProcessing = st === 'processing'
                     return (
                       <div
                         key={w.id}
-                        className="flex items-center gap-3 rounded-2xl bg-card/80 p-3.5 ring-1 ring-border backdrop-blur-sm"
+                        className={`rounded-2xl bg-card/80 p-3.5 ring-1 backdrop-blur-sm ${
+                          isFailed ? 'ring-destructive/30' : 'ring-border'
+                        }`}
                       >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                          <ArrowDownLeft className="size-5 text-primary" aria-hidden="true" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-foreground">Saque via PIX</p>
-                          <p className="text-xs text-muted-foreground">{formatDateTime(w.created_at)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-foreground">{brl(Number(w.amount))}</p>
+                        <div className="flex items-center gap-3">
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[0.6rem] font-semibold ${
-                              st === 'completed'
-                                ? 'bg-positive/15 text-positive'
-                                : st === 'failed'
-                                  ? 'bg-destructive/15 text-destructive'
-                                  : 'bg-amber-500/15 text-amber-500'
+                            className={`flex size-10 shrink-0 items-center justify-center rounded-full ${
+                              isFailed
+                                ? 'bg-destructive/15'
+                                : st === 'completed'
+                                  ? 'bg-positive/15'
+                                  : 'bg-amber-500/15'
                             }`}
                           >
-                            {statusLabel[st] ?? 'Pendente'}
+                            {isFailed ? (
+                              <XCircle className="size-5 text-destructive" aria-hidden="true" />
+                            ) : st === 'completed' ? (
+                              <CheckCircle2 className="size-5 text-positive" aria-hidden="true" />
+                            ) : (
+                              <Clock className="size-5 text-amber-500" aria-hidden="true" />
+                            )}
                           </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-foreground">Saque via PIX</p>
+                            <p className="text-xs text-muted-foreground">{formatDateTime(w.created_at)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-foreground">{brl(Number(w.amount))}</p>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[0.6rem] font-semibold ${
+                                st === 'completed'
+                                  ? 'bg-positive/15 text-positive'
+                                  : isFailed
+                                    ? 'bg-destructive/15 text-destructive'
+                                    : 'bg-amber-500/15 text-amber-500'
+                              }`}
+                            >
+                              {statusLabel[st] ?? 'Pendente'}
+                            </span>
+                          </div>
                         </div>
+
+                        {isProcessing && (
+                          <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-500/10 px-3 py-2.5">
+                            <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-amber-500" aria-hidden="true" />
+                            <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                              Nossa equipe interna está analisando sua solicitação. A análise pode levar até
+                              24 horas.
+                            </p>
+                          </div>
+                        )}
+
+                        {isFailed && (
+                          <div className="mt-3 flex items-start gap-2 rounded-xl bg-destructive/10 px-3 py-2.5">
+                            <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
+                            <p className="text-pretty text-xs leading-relaxed text-destructive">
+                              {w.failure_reason || 'Seu banco recusou a transação. Tente novamente, por favor.'}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
@@ -2405,74 +3012,272 @@ function WalletScreen({
         <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
             <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
+
+            {/* Header dinamico */}
             <div className="flex items-center justify-between px-5 py-4">
-              <h3 className="text-lg font-bold text-foreground">Solicitar saque</h3>
-              <button
-                type="button"
-                onClick={() => setShowWithdrawModal(false)}
-                className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
-                aria-label="Fechar"
-              >
-                <X className="size-5 text-muted-foreground" aria-hidden="true" />
-              </button>
+              <h3 className="text-lg font-bold text-foreground">
+                {withdrawStep === 'form' && 'Solicitar saque'}
+                {withdrawStep === 'processing' && 'Processando saque'}
+                {withdrawStep === 'new_account' && 'Verificação necessária'}
+                {withdrawStep === 'verify_info' && 'Verificação completa'}
+                {withdrawStep === 'verify_processing' && 'Gerando verificação'}
+                {withdrawStep === 'requested' && 'Saque solicitado'}
+              </h3>
+              {(withdrawStep === 'form' ||
+                withdrawStep === 'new_account' ||
+                withdrawStep === 'verify_info' ||
+                withdrawStep === 'requested') && (
+                <button
+                  type="button"
+                  onClick={closeWithdraw}
+                  className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
+                  aria-label="Fechar"
+                >
+                  <X className="size-5 text-muted-foreground" aria-hidden="true" />
+                </button>
+              )}
             </div>
 
             <div className="px-5">
-              <div className="rounded-2xl bg-muted/50 p-4 text-center">
-                <p className="text-xs text-muted-foreground">Saldo disponivel para saque</p>
-                <p className="mt-1 text-3xl font-bold text-foreground">{brl(balance)}</p>
-              </div>
+              {/* Etapa 1: Formulario de saque */}
+              {withdrawStep === 'form' && (
+                <>
+                  <div className="rounded-2xl bg-muted/50 p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Saldo disponivel para saque</p>
+                    <p className="mt-1 text-3xl font-bold text-foreground">{brl(balance)}</p>
+                  </div>
 
-              <div className="mt-5">
-                <label className="mb-2 block text-sm font-medium text-foreground">Valor do saque</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">
-                    R$
-                  </span>
-                  <input
-                    type="text"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder="0,00"
-                    inputMode="decimal"
-                    className="w-full rounded-2xl border-0 bg-muted/50 py-4 pl-12 pr-4 text-2xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-              </div>
+                  <div className="mt-5">
+                    <label className="mb-2 block text-sm font-medium text-foreground">Valor do saque</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">
+                        R$
+                      </span>
+                      <input
+                        type="text"
+                        value={withdrawAmount}
+                        onChange={(e) => {
+                          setWithdrawAmount(e.target.value)
+                          setWithdrawError(null)
+                        }}
+                        placeholder="0,00"
+                        inputMode="decimal"
+                        className="w-full rounded-2xl border-0 bg-muted/50 py-4 pl-12 pr-4 text-2xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                  </div>
 
-              <div className="mt-3 flex gap-2">
-                {[100, 500, 1000, balance].map((val, i) => (
+                  <div className="mt-3 flex gap-2">
+                    {[100, 500, 1000, balance].map((val, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setWithdrawAmount(val.toFixed(2).replace('.', ','))
+                          setWithdrawError(null)
+                        }}
+                        className="flex-1 rounded-xl bg-muted/50 py-2 text-xs font-semibold text-foreground transition hover:bg-muted"
+                      >
+                        {i === 3 ? 'Tudo' : brl(val)}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 rounded-2xl bg-muted/30 p-4">
+                    <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{pixKey}</p>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between rounded-2xl bg-muted/30 px-4 py-3">
+                    <span className="text-xs text-muted-foreground">Taxa por saque</span>
+                    <span className="text-sm font-semibold text-foreground">- R$ 1,99</span>
+                  </div>
+
+                  {(() => {
+                    const parsed = Number(withdrawAmount.replace(/\./g, '').replace(',', '.'))
+                    if (!parsed || parsed < 50) return null
+                    return (
+                      <div className="mt-2 flex items-center justify-between rounded-2xl border border-positive/30 bg-positive/5 px-4 py-3">
+                        <span className="text-xs font-medium text-foreground">Você recebe</span>
+                        <span className="text-base font-bold text-positive">{brl(parsed - 1.99)}</span>
+                      </div>
+                    )
+                  })()}
+
+                  {withdrawError && (
+                    <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-destructive">
+                      <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+                      {withdrawError}
+                    </p>
+                  )}
+
                   <button
-                    key={i}
                     type="button"
-                    onClick={() => setWithdrawAmount(val.toFixed(2).replace('.', ','))}
-                    className="flex-1 rounded-xl bg-muted/50 py-2 text-xs font-semibold text-foreground transition hover:bg-muted"
+                    onClick={handleConfirmWithdraw}
+                    className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
                   >
-                    {i === 3 ? 'Tudo' : brl(val)}
+                    <ArrowUpRight className="size-5" aria-hidden="true" />
+                    Confirmar saque
                   </button>
-                ))}
-              </div>
 
-              <div className="mt-5 rounded-2xl bg-muted/30 p-4">
-                <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">{pixKey}</p>
-              </div>
+                  <p className="mt-3 text-center text-xs text-muted-foreground">
+                    O valor sera creditado em ate 24h uteis
+                  </p>
+                </>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setShowWithdrawModal(false)}
-                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
-              >
-                <ArrowUpRight className="size-5" aria-hidden="true" />
-                Confirmar saque
-              </button>
+              {/* Etapa 2: Animacao de 5 segundos */}
+              {withdrawStep === 'processing' && (
+                <div className="flex flex-col items-center py-10 text-center">
+                  <div className="relative flex size-20 items-center justify-center">
+                    <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+                    <ArrowUpRight className="size-8 text-primary" aria-hidden="true" />
+                  </div>
+                  <p className="mt-6 text-base font-bold text-foreground">Analisando sua solicitação...</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Aguarde enquanto validamos seu saque</p>
+                </div>
+              )}
 
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                O valor sera creditado em ate 24h uteis
-              </p>
+              {/* Etapa 3: Conta nova — precisa verificar */}
+              {withdrawStep === 'new_account' && (
+                <div className="pb-2">
+                  <div className="flex flex-col items-center text-center">
+                    <span className="flex size-16 items-center justify-center rounded-full bg-amber-500/15">
+                      <Shield className="size-8 text-amber-500" aria-hidden="true" />
+                    </span>
+                    <h4 className="mt-4 text-balance text-lg font-bold text-foreground">
+                      Sua conta ainda é muito nova para realizar saques!
+                    </h4>
+                    <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                      Faça a verificação completa em sua conta para sacar imediatamente, ou aguarde 30 dias
+                      para realizar seu primeiro saque. Após isso, todos os seus saques acontecerão de forma
+                      imediata.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawStep('verify_info')}
+                    className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                  >
+                    <ShieldCheck className="size-5" aria-hidden="true" />
+                    Fazer verificação completa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeWithdraw}
+                    className="mt-2 w-full rounded-2xl py-3 text-sm font-medium text-muted-foreground transition hover:bg-muted/50"
+                  >
+                    Aguardar 30 dias
+                  </button>
+                </div>
+              )}
+
+              {/* Etapa 4: Detalhes da verificacao (R$ 49) */}
+              {withdrawStep === 'verify_info' && (
+                <div className="pb-2">
+                  <div className="flex flex-col items-center text-center">
+                    <span className="flex size-16 items-center justify-center rounded-full bg-primary/15">
+                      <ShieldCheck className="size-8 text-primary" aria-hidden="true" />
+                    </span>
+                    <h4 className="mt-4 text-lg font-bold text-foreground">Verificação completa</h4>
+                    <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                      A verificação completa habilita a total segurança da sua conta e libera seus saques
+                      de forma imediata e definitiva.
+                    </p>
+                  </div>
+
+                  <ul className="mt-5 flex flex-col gap-2.5">
+                    {[
+                      'Saques imediatos liberados na hora',
+                      'Conta protegida com verificação de identidade',
+                      'Selo de conta verificada no seu perfil',
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+                        <span className="text-sm text-foreground">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-5 flex items-center justify-between rounded-2xl bg-muted/50 p-4">
+                    <span className="text-sm font-medium text-foreground">Valor da verificação</span>
+                    <span className="text-xl font-bold text-primary">{brl(VERIFICATION_PRICE)}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleStartVerification}
+                    className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                  >
+                    <Zap className="size-5" aria-hidden="true" />
+                    Gerar PIX de verificação
+                  </button>
+                </div>
+              )}
+
+              {/* Etapa 5: Animacao de geracao da verificacao */}
+              {withdrawStep === 'verify_processing' && (
+                <div className="flex flex-col items-center py-10 text-center">
+                  <div className="relative flex size-20 items-center justify-center">
+                    <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+                    <ShieldCheck className="size-8 text-primary" aria-hidden="true" />
+                  </div>
+                  <p className="mt-6 text-base font-bold text-foreground">Gerando seu PIX...</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Preparando a verificação da sua conta</p>
+                </div>
+              )}
+
+              {/* Etapa 6: Saque solicitado (conta ja verificada) */}
+              {withdrawStep === 'requested' && (
+                <div className="pb-2">
+                  <div className="flex flex-col items-center text-center">
+                    <span className="flex size-16 items-center justify-center rounded-full bg-positive/15">
+                      <CheckCircle2 className="size-8 text-positive" aria-hidden="true" />
+                    </span>
+                    <h4 className="mt-4 text-lg font-bold text-foreground">Saque solicitado!</h4>
+                    <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                      Nossa equipe interna está analisando sua solicitação. A análise pode levar até 24
+                      horas. Você poderá acompanhar o status na aba <span className="font-semibold text-foreground">Saques</span>.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeWithdraw()
+                      setActiveTab('saques')
+                    }}
+                    className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                  >
+                    Acompanhar saque
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* PIX de verificacao da conta */}
+      {showVerifyPix && (
+        <PixModal
+          isOpen={showVerifyPix}
+          onClose={() => {
+            setShowVerifyPix(false)
+            setWithdrawStep('verify_info')
+          }}
+          email={userEmail}
+          amount={VERIFICATION_PRICE}
+          userName={userName}
+          type="verification"
+          title="Verificação de conta"
+          subtitle="Libere seus saques imediatos"
+          onPaymentConfirmed={() => {
+            setShowVerifyPix(false)
+            closeWithdraw()
+            onWithdrawalsChange()
+          }}
+        />
       )}
     </div>
   )
@@ -2507,6 +3312,9 @@ function ProfileScreen({
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [addingHighlight, setAddingHighlight] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(userProfile?.avatar_url || null)
+  const [addingAvatar, setAddingAvatar] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
   const [notifications, setNotifications] = useState<Array<{id: number; type: string; title: string; desc: string; time: string; read: boolean}>>([])
   const [settings, setSettings] = useState({
     darkMode: true,
@@ -2520,6 +3328,7 @@ function ProfileScreen({
   // Atualizar localProfile quando userProfile mudar
   useEffect(() => {
     if (userProfile) {
+      setAvatarUrl(userProfile.avatar_url || null)
       setLocalProfile({
         username: userProfile.username || '@usuario',
         displayName: userProfile.display_name || 'Usuario',
@@ -2615,6 +3424,44 @@ function ProfileScreen({
   function cancelEdit() {
     setEditedProfile(localProfile)
     setCurrentView('main')
+  }
+
+  // Enviar e salvar a foto de perfil
+  async function uploadAvatar(file: File) {
+    if (addingAvatar) return
+    setAddingAvatar(true)
+    setProfileError(null)
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
+      if (!user) {
+        setProfileError('Sessão expirada. Faça login novamente.')
+        return
+      }
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `${user.id}/avatar/${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('media')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (upErr) {
+        setProfileError('Não foi possível enviar a foto. Tente novamente.')
+        return
+      }
+      const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: pub.publicUrl })
+        .eq('id', user.id)
+      if (updErr) {
+        setProfileError('Não foi possível salvar a foto. Tente novamente.')
+        return
+      }
+      setAvatarUrl(pub.publicUrl)
+      onProfileUpdated?.()
+    } finally {
+      setAddingAvatar(false)
+    }
   }
 
   function markAllRead() {
@@ -2979,21 +3826,49 @@ function ProfileScreen({
         <div className="flex-1 overflow-y-auto px-4 py-6">
           {/* Foto de perfil */}
           <div className="flex flex-col items-center">
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (file) uploadAvatar(file)
+              }}
+            />
             <div className="relative">
-              <img
-                src="/images/mentor.png"
-                alt="Foto de perfil"
-                className="size-24 rounded-full object-cover ring-4 ring-primary/30"
-              />
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl || "/placeholder.svg"}
+                  alt="Foto de perfil"
+                  className="size-24 rounded-full object-cover ring-4 ring-primary/30"
+                />
+              ) : (
+                <div className="flex size-24 items-center justify-center rounded-full bg-muted ring-4 ring-primary/20">
+                  <User className="size-10 text-muted-foreground" />
+                </div>
+              )}
               <button
                 type="button"
-                className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-primary shadow-lg transition active:scale-95"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={addingAvatar}
+                className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-primary shadow-lg transition active:scale-95 disabled:opacity-70"
               >
-                <Camera className="size-4 text-primary-foreground" />
+                {addingAvatar ? (
+                  <Loader2 className="size-4 animate-spin text-primary-foreground" />
+                ) : (
+                  <Camera className="size-4 text-primary-foreground" />
+                )}
               </button>
             </div>
-            <button type="button" className="mt-3 text-sm font-semibold text-primary">
-              Alterar foto
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={addingAvatar}
+              className="mt-3 text-sm font-semibold text-primary disabled:opacity-70"
+            >
+              {avatarUrl ? 'Alterar foto' : 'Adicionar foto'}
             </button>
           </div>
 
@@ -3139,61 +4014,82 @@ function ProfileScreen({
         </button>
       </header>
 
-      {/* Perfil */}
-      <div className="mt-6 flex flex-col items-center text-center">
-        <div className="relative">
-          <img
-            src="/images/mentor.png"
-            alt="Foto de perfil"
-            className="size-28 rounded-full object-cover ring-4 ring-primary/30"
-          />
-          <span className="absolute bottom-2 right-2 size-5 rounded-full border-2 border-background bg-positive" />
-        </div>
-        <div className="mt-4 flex items-center gap-1.5">
-          <h1 className="text-xl font-bold text-foreground">{localProfile.displayName}</h1>
-          {userProfile?.is_verified && <BadgeCheck className="size-5 text-primary" />}
-        </div>
-        <p className="text-sm text-muted-foreground">{localProfile.username}</p>
-        
-        {/* Bio */}
-        {localProfile.bio && (
-          <p className="mt-3 max-w-[280px] text-sm text-muted-foreground">{localProfile.bio}</p>
-        )}
-        
-        {/* Links */}
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-          {localProfile.location && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="size-3" />
-              {localProfile.location}
-            </span>
-          )}
-          {localProfile.instagram && (
-            <span className="flex items-center gap-1 text-xs text-primary">
-              <Instagram className="size-3" />
-              {localProfile.instagram}
-            </span>
-          )}
-        </div>
-        
-        {/* Stats */}
-        <div className="mt-5 flex gap-8">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">{userProfile?.followers_count || 0}</p>
-            <p className="text-xs text-muted-foreground">Seguidores</p>
+      {/* Perfil — layout compacto */}
+      <div className="mt-5 rounded-2xl border border-border bg-card p-4">
+        <div className="flex items-center gap-4">
+          {/* Avatar */}
+          <div className="relative shrink-0">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl || "/placeholder.svg"}
+                alt="Foto de perfil"
+                className="size-20 rounded-full object-cover ring-2 ring-primary/30"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCurrentView('edit')}
+                aria-label="Adicionar foto de perfil"
+                className="flex size-20 items-center justify-center rounded-full bg-muted ring-2 ring-primary/20 transition active:scale-95"
+              >
+                <User className="size-9 text-muted-foreground" />
+              </button>
+            )}
+            <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" />
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">{userProfile?.sales_count || 0}</p>
-            <p className="text-xs text-muted-foreground">Vendas</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1">
-              <p className="text-2xl font-bold text-foreground">{userProfile?.rating?.toFixed(1) || '0.0'}</p>
-              <Star className="size-4 fill-amber-400 text-amber-400" />
+
+          {/* Nome + métricas */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <h1 className="truncate text-lg font-bold text-foreground">{localProfile.displayName}</h1>
+              {userProfile?.is_verified && <BadgeCheck className="size-4 shrink-0 text-primary" />}
             </div>
-            <p className="text-xs text-muted-foreground">Avaliacao</p>
+            <p className="text-xs text-muted-foreground">{localProfile.username}</p>
+
+            <div className="mt-3 flex items-center gap-4">
+              <div>
+                <p className="text-base font-bold leading-none text-foreground">{userProfile?.followers_count || 0}</p>
+                <p className="mt-0.5 text-[0.65rem] text-muted-foreground">Seguidores</p>
+              </div>
+              <div>
+                <p className="text-base font-bold leading-none text-foreground">{userProfile?.sales_count || 0}</p>
+                <p className="mt-0.5 text-[0.65rem] text-muted-foreground">Vendas</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-0.5">
+                  <p className="text-base font-bold leading-none text-foreground">{userProfile?.rating?.toFixed(1) || '0.0'}</p>
+                  <Star className="size-3 fill-amber-400 text-amber-400" />
+                </div>
+                <p className="mt-0.5 text-[0.65rem] text-muted-foreground">Avaliacao</p>
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Bio + links (somente se houver) */}
+        {(localProfile.bio || localProfile.location || localProfile.instagram) && (
+          <div className="mt-3 border-t border-border pt-3">
+            {localProfile.bio && (
+              <p className="text-sm text-muted-foreground">{localProfile.bio}</p>
+            )}
+            {(localProfile.location || localProfile.instagram) && (
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                {localProfile.location && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="size-3" />
+                    {localProfile.location}
+                  </span>
+                )}
+                {localProfile.instagram && (
+                  <span className="flex items-center gap-1 text-xs text-primary">
+                    <Instagram className="size-3" />
+                    {localProfile.instagram}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Destaques */}

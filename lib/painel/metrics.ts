@@ -4,6 +4,7 @@ export interface InviteRow {
   email: string | null
   amount: number | null
   status: string | null
+  type: string | null
   transaction_id: string | null
   pix_code: string | null
   created_at: string
@@ -16,6 +17,8 @@ export interface ProfileRow {
   username: string | null
   display_name: string | null
   created_at: string
+  chat_unlocked?: boolean | null
+  chat_unlocked_at?: string | null
 }
 
 export type PeriodKey = 'today' | 'yesterday' | '7d' | '14d' | '30d' | 'all'
@@ -119,6 +122,18 @@ export function isPending(status: string | null): boolean {
   return status === 'pending'
 }
 
+// Tipo de pagamento de um invite: 'chat' = Chat Exclusivo, qualquer outro = convite
+export function isChatInvite(type: string | null): boolean {
+  return type === 'chat'
+}
+
+export function isInviteType(type: string | null): boolean {
+  return type !== 'chat'
+}
+
+// Valor padrao do Chat Exclusivo
+export const CHAT_PRICE = 99.0
+
 export function formatBRL(value: number): string {
   return value.toLocaleString('pt-BR', {
     style: 'currency',
@@ -147,11 +162,17 @@ export interface DashboardMetrics {
   pendingCount: number
   conversionRate: number
   avgTicket: number
+  // Receita separada por produto
+  inviteRevenue: number
+  chatRevenue: number
+  invitePaidCount: number
+  chatPaidCount: number
   funnel: {
     signups: number
     viewedCheckout: number
     pixGenerated: number
     invitePaid: number
+    chatUnlocked: number
   }
 }
 
@@ -169,6 +190,12 @@ export interface Lead {
   paidCount: number
   totalPaid: number
   pendingCount: number
+  // Produtos adquiridos
+  invitePaid: boolean // pagou o convite
+  chatPaid: boolean // pagou o chat exclusivo (via invite type=chat)
+  chatUnlocked: boolean // chat liberado no profile
+  invitePaidAmount: number
+  chatPaidAmount: number
 }
 
 function normalizeEmail(email: string | null): string | null {
@@ -199,6 +226,11 @@ export function buildLeads(invites: InviteRow[], profiles: ProfileRow[]): Lead[]
       paidCount: 0,
       totalPaid: 0,
       pendingCount: 0,
+      invitePaid: false,
+      chatPaid: false,
+      chatUnlocked: !!p.chat_unlocked,
+      invitePaidAmount: 0,
+      chatPaidAmount: 0,
     })
   }
 
@@ -227,6 +259,11 @@ export function buildLeads(invites: InviteRow[], profiles: ProfileRow[]): Lead[]
           paidCount: 0,
           totalPaid: 0,
           pendingCount: 0,
+          invitePaid: false,
+          chatPaid: false,
+          chatUnlocked: false,
+          invitePaidAmount: 0,
+          chatPaidAmount: 0,
         }
         byKey.set(key, lead)
       }
@@ -238,6 +275,13 @@ export function buildLeads(invites: InviteRow[], profiles: ProfileRow[]): Lead[]
     if (isPaid(inv.status)) {
       lead.paidCount += 1
       lead.totalPaid += Number(inv.amount) || 0
+      if (isChatInvite(inv.type)) {
+        lead.chatPaid = true
+        lead.chatPaidAmount += Number(inv.amount) || 0
+      } else {
+        lead.invitePaid = true
+        lead.invitePaidAmount += Number(inv.amount) || 0
+      }
     }
     if (isPending(inv.status)) lead.pendingCount += 1
     // firstSeen = data mais antiga
@@ -267,6 +311,12 @@ export function computeMetrics(
   const revenue = paid.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
   const pendingRevenue = pending.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
 
+  // Receita separada por produto (convite vs chat exclusivo)
+  const paidInvitesOnly = paid.filter((i) => isInviteType(i.type))
+  const paidChats = paid.filter((i) => isChatInvite(i.type))
+  const inviteRevenue = paidInvitesOnly.reduce((s, i) => s + (Number(i.amount) || 0), 0)
+  const chatRevenue = paidChats.reduce((s, i) => s + (Number(i.amount) || 0), 0)
+
   const generatedCount = periodInvites.length
   const paidCount = paid.length
 
@@ -274,6 +324,9 @@ export function computeMetrics(
   const allLeads = buildLeads(invites, profiles)
   const periodLeads = allLeads.filter((l) => isInRange(l.firstSeen, range))
   const signups = periodLeads.length
+
+  // Numero de chats exclusivos confirmados no periodo
+  const chatUnlockedCount = paidChats.length
 
   const conversionRate = signups > 0 ? (paidCount / signups) * 100 : 0
   const avgTicket = paidCount > 0 ? revenue / paidCount : 0
@@ -288,11 +341,16 @@ export function computeMetrics(
     pendingCount: pending.length,
     conversionRate,
     avgTicket,
+    inviteRevenue,
+    chatRevenue,
+    invitePaidCount: paidInvitesOnly.length,
+    chatPaidCount: paidChats.length,
     funnel: {
       signups,
       viewedCheckout: generatedCount,
       pixGenerated: withPixCode.length,
-      invitePaid: paidCount,
+      invitePaid: paidInvitesOnly.length,
+      chatUnlocked: chatUnlockedCount,
     },
   }
 }

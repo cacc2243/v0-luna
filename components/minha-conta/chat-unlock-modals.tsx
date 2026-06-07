@@ -1,0 +1,374 @@
+'use client'
+
+import { Lock, MessageCircleHeart, Sparkles, ShieldCheck, BadgeCheck, X, Wallet, Crown, Gift, MessagesSquare, HandCoins, Zap, Flame, Eye } from 'lucide-react'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal 1: Pedido bloqueado — venda personalizada exige Chat Exclusivo
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface PersonalizedSaleModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onUnlock: () => void
+  buyerName?: string | null
+  packTitle?: string | null
+  amount?: number
+}
+
+function brl(value: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+}
+
+export function PersonalizedSaleModal({
+  isOpen,
+  onClose,
+  onUnlock,
+  buyerName,
+  packTitle,
+  amount,
+}: PersonalizedSaleModalProps) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
+      <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        {/* Header */}
+        <div className="relative shrink-0 overflow-hidden border-b border-border bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 py-5">
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <X className="size-5" />
+          </button>
+          <div className="flex items-center gap-3 pr-10">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/20 ring-1 ring-primary/30">
+              <MessagesSquare className="size-6 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold leading-tight text-foreground">Pedido de venda personalizado</h2>
+              <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Lock className="size-3.5" />
+                Requer Chat Exclusivo ativo
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="overflow-y-auto px-5 py-5">
+          {/* Card da venda */}
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-primary">
+              Novo pedido recebido
+            </p>
+            <div className="mt-2 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm leading-snug text-foreground">
+                  {buyerName ? (
+                    <>
+                      <span className="font-bold">{buyerName}</span> quer comprar{' '}
+                      {packTitle ? <span className="font-semibold">{packTitle}</span> : 'um pack seu'}
+                    </>
+                  ) : (
+                    'Um cliente quer comprar um pack seu'
+                  )}
+                </p>
+              </div>
+              {typeof amount === 'number' && (
+                <div className="shrink-0 text-right">
+                  <p className="text-[0.65rem] text-muted-foreground">Valor</p>
+                  <p className="text-lg font-bold leading-none text-foreground">{brl(amount)}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <p className="mt-4 text-pretty text-sm leading-relaxed text-muted-foreground">
+            Para <span className="font-semibold text-foreground">aceitar este pedido</span> e receber o
+            valor no seu saldo, você precisa ter o{' '}
+            <span className="font-semibold text-foreground">Chat Exclusivo</span> ativo. É por ele que
+            você conversa, combina os detalhes e fecha cada venda com seus clientes.
+          </p>
+
+          {/* Destaque: presentes */}
+          <div className="mt-4 overflow-hidden rounded-2xl border border-positive/30 bg-positive/5 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-positive/15">
+                <Gift className="size-5 text-positive" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-foreground">
+                  Receba até <span className="text-positive">R$ 10 mil</span> em presentes
+                </p>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Com o chat ativo, compradores podem te enviar presentes exclusivos que viram saldo na
+                  hora.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <ul className="mt-4 flex flex-col gap-2.5">
+            {[
+              { icon: MessagesSquare, text: 'Converse diretamente com seus compradores' },
+              { icon: HandCoins, text: 'Aceite e receba por todas as suas vendas' },
+              { icon: BadgeCheck, text: 'Atendimento personalizado que aumenta a conversão' },
+            ].map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-start gap-2.5">
+                <Icon className="mt-0.5 size-4 shrink-0 text-positive" />
+                <span className="text-sm text-foreground">{text}</span>
+              </li>
+            ))}
+          </ul>
+
+          <button
+            onClick={onUnlock}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
+          >
+            <Sparkles className="size-4" />
+            Liberar Chat Privé
+          </button>
+          <button
+            onClick={onClose}
+            className="mt-2 w-full rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+          >
+            Agora não
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal 2: Detalhes do Chat Exclusivo — leva ao pagamento
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface UnlockChatModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: () => void
+  price: number
+}
+
+export function UnlockChatModal({ isOpen, onClose, onConfirm, price }: UnlockChatModalProps) {
+  if (!isOpen) return null
+
+  const benefits = [
+    {
+      icon: MessageCircleHeart,
+      title: 'Chat direto com clientes',
+      desc: 'Converse em tempo real e feche vendas personalizadas.',
+    },
+    {
+      icon: Wallet,
+      title: 'Receba por suas vendas',
+      desc: 'Aceite pedidos e veja o valor cair no seu saldo na hora.',
+    },
+    {
+      icon: Crown,
+      title: 'Perfil em destaque',
+      desc: 'Criadoras com chat ativo aparecem como verificadas.',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Acesso vitalício',
+      desc: 'Pagamento único. Sem mensalidade, sem renovação.',
+    },
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
+      <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        {/* Header */}
+        <div className="relative border-b border-border bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 py-6">
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <X className="size-5" />
+          </button>
+          <div className="flex flex-col items-center text-center">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
+              <MessageCircleHeart className="size-7 text-primary-foreground" />
+            </div>
+            <h2 className="mt-3 text-xl font-bold text-foreground">Chat Exclusivo Luna Privé</h2>
+            <p className="mt-1 text-pretty text-sm text-muted-foreground">
+              Desbloqueie as conversas e comece a vender de verdade
+            </p>
+          </div>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="overflow-y-auto px-5 py-5">
+          <ul className="flex flex-col gap-3">
+            {benefits.map((b) => {
+              const Icon = b.icon
+              return (
+                <li key={b.title} className="flex items-start gap-3 rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/15">
+                    <Icon className="size-4 text-primary" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">{b.title}</p>
+                    <p className="text-xs leading-relaxed text-muted-foreground">{b.desc}</p>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+
+          {/* Preço */}
+          <div className="mt-5 flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3.5">
+            <div>
+              <p className="text-xs text-muted-foreground">Valor único</p>
+              <p className="text-2xl font-bold text-foreground">{brl(price)}</p>
+            </div>
+            <span className="rounded-full bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive">
+              Acesso vitalício
+            </span>
+          </div>
+
+          <button
+            onClick={onConfirm}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
+          >
+            <Sparkles className="size-4" />
+            Liberar Chat Privé · {brl(price)}
+          </button>
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[0.7rem] text-muted-foreground">
+            <ShieldCheck className="size-3.5 text-positive" />
+            Pagamento seguro via PIX
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal 3: Conta bombando — fãs querendo conversar agora (leva à aba de Chats)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface FansWaitingModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onRespond: () => void
+  chatCount: number
+  totalViews: number
+  pendingAmount: number
+}
+
+export function FansWaitingModal({
+  isOpen,
+  onClose,
+  onRespond,
+  chatCount,
+  totalViews,
+  pendingAmount,
+}: FansWaitingModalProps) {
+  if (!isOpen) return null
+
+  const initials = ['L', 'P', 'B']
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
+      <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        {/* Header */}
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 pb-5 pt-7 text-center">
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <X className="size-5" />
+          </button>
+
+          <div className="relative mx-auto flex size-20 items-center justify-center rounded-full bg-primary/15 ring-2 ring-primary/40">
+            <Zap className="size-9 text-primary" />
+            <span className="absolute -right-1 -top-1 flex min-w-7 items-center justify-center rounded-full bg-positive px-2 py-0.5 text-xs font-bold text-background ring-2 ring-card">
+              {chatCount}
+            </span>
+          </div>
+
+          <h2 className="mt-4 flex items-center justify-center gap-2 text-xl font-bold text-foreground">
+            Sua conta está bombando!
+            <Flame className="size-5 text-primary" />
+          </h2>
+          <p className="mt-1 text-sm font-medium text-primary">
+            {chatCount} {chatCount === 1 ? 'fã quer' : 'fãs querem'} conversar com você agora
+          </p>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="overflow-y-auto px-5 pb-5">
+          {/* Métricas */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-center">
+              <p className="flex items-center justify-center gap-1 text-xl font-bold text-primary">
+                <Eye className="size-4" />
+                {totalViews.toLocaleString('pt-BR')}
+              </p>
+              <p className="text-xs text-muted-foreground">visualizações</p>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-center">
+              <p className="text-xl font-bold text-positive">{brl(pendingAmount)}</p>
+              <p className="text-xs text-muted-foreground">em pedidos pendentes</p>
+            </div>
+          </div>
+
+          {/* Destaque */}
+          <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <div className="flex items-start gap-3">
+              <MessageCircleHeart className="mt-0.5 size-5 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="text-sm leading-relaxed text-foreground">
+                  Seus fãs estão{' '}
+                  <span className="font-semibold text-primary">esperando uma resposta</span>. Quanto antes
+                  você responder, mais vendas você fecha.
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  Conversas ativas convertem em{' '}
+                  <span className="font-semibold text-foreground">média 3x mais</span> presentes e pedidos.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Avatares */}
+          <div className="mt-4 flex items-center gap-3">
+            <div className="flex -space-x-2">
+              {initials.map((ini, i) => (
+                <span
+                  key={i}
+                  className="flex size-9 items-center justify-center rounded-full border-2 border-card bg-primary/25 text-xs font-bold text-primary"
+                >
+                  {ini}
+                </span>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Compradores esperando para conversar com você
+            </p>
+          </div>
+
+          <button
+            onClick={onRespond}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
+          >
+            <MessagesSquare className="size-5" />
+            Responder fãs
+          </button>
+          <button
+            onClick={onClose}
+            className="mt-2 w-full rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+          >
+            Agora não
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
