@@ -70,6 +70,7 @@ export type Sale = {
   platform_fee: number
   net_amount: number
   status: string
+  is_direct?: boolean
   created_at: string
   pack?: Pack
 }
@@ -541,7 +542,7 @@ export async function settleExpiredWithdrawals() {
   return { settled: expired.length }
 }
 
-// ───────��─────────────────────────────────────────────────────────────────────
+// ───────���─────────────────────────────────────────────────────────────────────
 // Conversation Actions
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1217,6 +1218,14 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
     if (s.buyer_name) usedNames.add(s.buyer_name)
   }
 
+  // Contagem total de pedidos ja gerados (para a regra de pedido direto).
+  // Regra: a cada 15 pedidos com chat exclusivo, 1 pedido direto (o 16o).
+  const { count: existingOrders } = await supabase
+    .from('sales')
+    .select('id', { count: 'exact', head: true })
+    .eq('seller_id', user.id)
+  let orderIndex = existingOrders ?? 0
+
   const initial = opts?.initial
   let newOrders = 0
   let followersGained = 0
@@ -1274,6 +1283,10 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
       const netAmount = amount
       const buyer = generateBuyerName(usedNames)
 
+      // Regra: a cada 15 pedidos com chat, o 16o e um pedido direto.
+      orderIndex++
+      const isDirect = orderIndex % 16 === 0
+
       const { data: sale } = await supabase
         .from('sales')
         .insert({
@@ -1284,6 +1297,7 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
           platform_fee: 0,
           net_amount: netAmount,
           status: 'pending',
+          is_direct: isDirect,
         })
         .select()
         .single()
@@ -1293,7 +1307,7 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
         await supabase.from('notifications').insert({
           user_id: user.id,
           type: 'sale',
-          title: 'Novo pedido de venda',
+          title: isDirect ? 'Novo pedido direto' : 'Novo pedido de venda',
           description: `${buyer} quer comprar "${pack.title}" por ${formatBRL(amount)}`,
           reference_id: sale.id,
         })

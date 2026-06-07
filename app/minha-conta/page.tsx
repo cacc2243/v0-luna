@@ -607,8 +607,9 @@ function AppDashboard() {
     const sale = sales.find(s => s.id === saleId)
     if (!sale || sale.status !== 'pending') return
 
-    // Gate: sem Chat Exclusivo ativo, nao pode aceitar vendas.
-    if (!profile?.chat_unlocked) {
+    // Gate: sem Chat Exclusivo ativo, nao pode aceitar vendas COM chat.
+    // Pedidos diretos podem ser aceitos por qualquer conta com convite pago.
+    if (!sale.is_direct && !profile?.chat_unlocked) {
       setPendingSaleContext({
         buyerName: sale.buyer_name,
         packTitle: sale.pack?.title ?? null,
@@ -1765,9 +1766,16 @@ function HomeScreen({
                 <Bell className="size-4 text-primary" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1 leading-snug">
-                <p className="truncate text-[0.8rem] font-semibold text-foreground">
-                  {sale.buyer_name} quer {sale.pack?.title || 'seu pack'}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-[0.8rem] font-semibold text-foreground">
+                    {sale.buyer_name} quer {sale.pack?.title || 'seu pack'}
+                  </p>
+                  {sale.is_direct && (
+                    <span className="shrink-0 rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Direto
+                    </span>
+                  )}
+                </div>
                 <p className="text-[0.65rem] text-muted-foreground">
                   {relativeTime(sale.created_at)} · você recebe {brl(Number(sale.net_amount))}
                 </p>
