@@ -2641,14 +2641,6 @@ function WalletScreen({
       <header className="shrink-0 px-4 pt-6">
         <div className="flex items-center justify-between gap-3">
           <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
-          <button
-            type="button"
-            onClick={openWithdraw}
-            className="luna-gradient flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95"
-          >
-            <ArrowUpRight className="size-4" aria-hidden="true" />
-            Sacar
-          </button>
         </div>
       </header>
 
@@ -2685,6 +2677,22 @@ function WalletScreen({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Botao de saque principal */}
+      <div className="shrink-0 px-4 pt-4">
+        <button
+          type="button"
+          onClick={openWithdraw}
+          className="luna-gradient flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+        >
+          <ArrowUpRight className="size-5" aria-hidden="true" />
+          Sacar
+        </button>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Saque mínimo de <span className="font-semibold text-foreground">R$ 50,00</span>. É descontada uma taxa de{' '}
+          <span className="font-semibold text-foreground">R$ 1,99</span> por saque realizado.
+        </p>
       </div>
 
       {/* Tabs */}
@@ -3048,6 +3056,11 @@ function WalletScreen({
                   <div className="mt-5 rounded-2xl bg-muted/30 p-4">
                     <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
                     <p className="mt-1 text-sm font-semibold text-foreground">{pixKey}</p>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between rounded-2xl bg-muted/30 px-4 py-3">
+                    <span className="text-xs text-muted-foreground">Taxa por saque</span>
+                    <span className="text-sm font-semibold text-foreground">R$ 1,99</span>
                   </div>
 
                   {withdrawError && (
