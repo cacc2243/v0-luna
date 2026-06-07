@@ -70,10 +70,11 @@ import {
   Clock,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
-  import { generatePackActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals } from './actions'
+  import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals } from './actions'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PersonalizedSaleModal, UnlockChatModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
+import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
 
 // Valor do Chat Exclusivo (pagamento unico)
 const CHAT_PRICE = 99.0
@@ -270,7 +271,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ──────────���─────────────────────────────────��──────────────────────��─────────
+// ──────────����─────────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -521,7 +522,7 @@ function AppDashboard() {
   const { data: sales = [], mutate: mutateSales } = useSWR('sales', fetchSales)
   const { data: transactions = [], mutate: mutateTransactions } = useSWR('transactions', fetchTransactions)
   const { data: withdrawals = [], mutate: mutateWithdrawals } = useSWR('withdrawals', fetchWithdrawals)
-  const { data: conversations = [] } = useSWR('conversations', fetchConversations)
+  const { data: conversations = [], mutate: mutateConversations } = useSWR('conversations', fetchConversations)
   const { data: boosts = [], mutate: mutateBoosts } = useSWR('boosts', fetchBoosts)
   const { data: highlights = [], mutate: mutateHighlights } = useSWR('highlights', fetchHighlights)
   const { data: notifications = [], mutate: mutateNotifications } = useSWR('notifications', fetchNotifications)
@@ -589,6 +590,17 @@ function AppDashboard() {
     }, 25000)
     return () => clearInterval(interval)
   }, [packs.length, refreshActivity])
+
+  // Motor de chat: novos clientes mandam mensagem periodicamente (gera toast)
+  useEffect(() => {
+    if (packs.length === 0) return
+    const interval = setInterval(async () => {
+      await generateChatActivity()
+      mutateConversations()
+      mutateNotifications()
+    }, 38000)
+    return () => clearInterval(interval)
+  }, [packs.length, mutateConversations, mutateNotifications])
 
   // Aceitar / recusar pedidos (atualizacao otimista = instantaneo)
   async function handleAcceptSale(saleId: string) {
@@ -796,6 +808,9 @@ function AppDashboard() {
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-background">
+      {/* Toaster de notificacoes (vendas e mensagens) sobre todo o conteudo */}
+      <NotificationToaster notifications={notifications} />
+
       {/* Imagem de fundo */}
       <div 
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"

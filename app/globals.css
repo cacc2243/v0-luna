@@ -375,6 +375,40 @@
   }
 }
 
+/* Toast estilo notificacao de app: desce do topo e recolhe suavemente */
+@keyframes toast-enter {
+  from {
+    transform: translateY(-120%) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes toast-leave {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-120%) scale(0.96);
+    opacity: 0;
+  }
+}
+.animate-toast-enter {
+  animation: toast-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-toast-leave {
+  animation: toast-leave 0.32s cubic-bezier(0.55, 0, 0.55, 0.2) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-toast-enter,
+  .animate-toast-leave {
+    animation: none;
+  }
+}
+
 /* Step transitions - slide in/out */
 @keyframes slide-in-right {
   from {

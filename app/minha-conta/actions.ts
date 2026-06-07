@@ -541,7 +541,7 @@ export async function settleExpiredWithdrawals() {
   return { settled: expired.length }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────��─────────────────────────────────────────────────────────────────────
 // Conversation Actions
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -850,6 +850,82 @@ export async function sendLockedMessage(conversationId: string) {
     .eq('id', conversationId)
 
   return { success: true as const, message: inserted as Message | null }
+}
+
+// Mensagens espontâneas de novos clientes chegando ao chat
+const NEW_CHAT_GREETINGS = [
+  'Oi linda, acabei de ver seu perfil e fiquei encantado',
+  'Boa noite, gata. Posso te conhecer melhor?',
+  'Oi amor, você é simplesmente maravilhosa',
+  'Olá meu bem, adorei tudo que vi no seu perfil',
+  'Oi princesa, fiquei sem palavras agora mesmo',
+  'Bom dia, linda. Seu sorriso me ganhou na hora',
+  'Oi gata, preciso muito conversar com você',
+  'Olá amor, você é a mulher mais linda que vi hoje',
+]
+
+// Gera atividade de chat: novos clientes mandando a primeira mensagem.
+// Cada nova conversa vira uma notificacao do tipo "message" (para o toast).
+// Tudo persiste no banco, sobrevivendo ao refresh.
+export async function generateChatActivity() {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { error: 'not_authenticated' as const }
+
+  // Evita repetir nomes já presentes nas conversas existentes
+  const usedNames = new Set<string>()
+  const { data: existingConvos } = await supabase
+    .from('conversations')
+    .select('participant_name')
+    .eq('creator_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(120)
+  for (const c of existingConvos ?? []) {
+    if (c.participant_name) usedNames.add(c.participant_name)
+  }
+
+  const buyer = generateBuyerName(usedNames)
+  const greeting = pickRandom(NEW_CHAT_GREETINGS)
+  const nowIso = new Date().toISOString()
+
+  const { data: conversation, error: convErr } = await supabase
+    .from('conversations')
+    .insert({
+      creator_id: user.id,
+      participant_id: null,
+      participant_name: buyer,
+      participant_avatar: null,
+      last_message: greeting,
+      last_message_at: nowIso,
+      unread_count: 1,
+      is_online: true,
+      flow_step: 0,
+    })
+    .select('*')
+    .single()
+
+  if (convErr || !conversation) return { error: convErr?.message ?? 'insert_failed' }
+
+  await supabase.from('messages').insert({
+    conversation_id: conversation.id,
+    sender_id: null,
+    is_from_creator: false,
+    content: greeting,
+    message_type: 'text',
+    is_read: false,
+  })
+
+  // Notificacao de mensagem (alimenta o toast no topo do app)
+  await supabase.from('notifications').insert({
+    user_id: user.id,
+    type: 'message',
+    title: `Nova mensagem de ${buyer}`,
+    description: greeting,
+    reference_id: conversation.id,
+  })
+
+  revalidatePath('/minha-conta')
+  return { success: true as const, buyerName: buyer }
 }
 
 // Marca uma mensagem de presente como resgatada (após claimGift creditar o saldo)
