@@ -573,15 +573,29 @@ function AppDashboard() {
     })
   }, [])
 
-  // Quando a criadora acumula mais de 6 chats, mostramos o modal "conta bombando"
-  // uma unica vez por sessao, convidando a responder os fas.
+  // Modal "conta bombando": aparece quando a criadora acumula mais de 6 chats e
+  // volta a aparecer a cada 4 minutos ate que o chat exclusivo seja pago E os
+  // presentes estejam habilitados.
+  const chatUnlocked = !!profile?.chat_unlocked
+  const giftsEnabled = !!profile?.gifts_enabled
   useEffect(() => {
-    if (fansModalShown.current) return
-    if (conversations.length > 6 && activeTab !== 'Chats') {
+    // Enquanto faltar pagar o chat ou habilitar presentes, mantemos o lembrete ativo
+    if (chatUnlocked && giftsEnabled) return
+    if (conversations.length <= 6) return
+
+    // Primeira aparicao logo ao atingir o gatilho (uma vez por sessao)
+    if (!fansModalShown.current) {
       fansModalShown.current = true
       setShowFansWaiting(true)
     }
-  }, [conversations.length, activeTab])
+
+    // Reaparece a cada 4 minutos
+    const interval = setInterval(() => {
+      setShowFansWaiting(true)
+    }, 4 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [conversations.length, chatUnlocked, giftsEnabled])
 
   // Versao com debounce: ao aceitar varios pedidos em sequencia, agrupamos
   // todas as revalidacoes numa unica no fim, evitando dezenas de requisicoes
@@ -1657,7 +1671,7 @@ function ImpulsionarScreen({
   )
 }
 
-// ─────────────────────────────────────────────���──────────────────────────────���
+// ─────────────────────────────────────────────���─────────────────────��────────���
 // Tela Inicio
 // ────────────────────────────────────────────────────────────────────────��────
 
