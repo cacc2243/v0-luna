@@ -770,6 +770,8 @@ export async function sendCreatorMessage(
         is_from_creator: false,
         content: line,
         message_type: 'text',
+        gift_amount: null,
+        gift_claimed: false,
         is_read: false,
         created_at: new Date(Date.now() + (i + 1) * 80).toISOString(),
       })
@@ -784,6 +786,8 @@ export async function sendCreatorMessage(
         is_from_creator: false,
         content: line,
         message_type: 'text',
+        gift_amount: null,
+        gift_claimed: false,
         is_read: false,
         created_at: new Date(Date.now() + (i + 1) * 80).toISOString(),
       })
@@ -803,10 +807,11 @@ export async function sendCreatorMessage(
 
   let buyerMessages: Message[] = []
   if (buyerInserts.length > 0) {
-    const { data: insertedBuyer } = await supabase
+    const { data: insertedBuyer, error: buyerErr } = await supabase
       .from('messages')
       .insert(buyerInserts)
       .select('*')
+    if (buyerErr) return { error: buyerErr.message }
     buyerMessages = (insertedBuyer as Message[]) || []
   }
 
@@ -1001,7 +1006,7 @@ export async function markGiftClaimed(messageId: string) {
   return { success: true as const }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────��
 // Boost Actions
 // ─────────────────────────────────────────────────────────────────────────────
 
