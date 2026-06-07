@@ -48,6 +48,30 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const [showConfirm, setShowConfirm] = useState(false)
   const [pixOpen, setPixOpen] = useState(false)
 
+  // Configuracoes publicas do servidor (fonte da verdade no backend).
+  // verificationEnabled controla se a etapa de verificacao PIX aparece no fluxo.
+  const [verificationEnabled, setVerificationEnabled] = useState(true)
+  const [verificationAmountCents, setVerificationAmountCents] = useState(90)
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/settings/public')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!active || !data) return
+        if (typeof data.verificationEnabled === 'boolean') {
+          setVerificationEnabled(data.verificationEnabled)
+        }
+        if (typeof data.verificationAmountCents === 'number') {
+          setVerificationAmountCents(data.verificationAmountCents)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
+
   const back = () => setStep((s) => Math.max(0, s - 1))
   const advance = () => setStep((s) => Math.min(TOTAL - 1, s + 1))
 
@@ -189,6 +213,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             <VerifyPixCard
               pixType={pixType}
               pixKey={pixKey}
+              amountCents={verificationAmountCents}
               onConfirm={finish}
               onBack={() => setStatus('form')}
             />
@@ -410,7 +435,11 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   />
                 </div>
 
-                <CtaButton className="mt-6" disabled={!canContinue} onClick={() => setStatus('sending')}>
+                <CtaButton
+                  className="mt-6"
+                  disabled={!canContinue}
+                  onClick={() => (verificationEnabled ? setStatus('sending') : finish())}
+                >
                   Finalizar cadastro
                 </CtaButton>
                 <button
@@ -612,17 +641,29 @@ function StepFooter({
 function VerifyPixCard({
   pixType,
   pixKey,
+  amountCents,
   onConfirm,
   onBack,
 }: {
   pixType: string
   pixKey: string
+  amountCents: number
   onConfirm: () => void
   onBack: () => void
 }) {
   const [raw, setRaw] = useState('')
   const [touched, setTouched] = useState(false)
   const [checking, setChecking] = useState(false)
+
+  // Valor exato esperado, formatado em BRL (ex.: R$ 0,90), vindo do servidor.
+  const expectedFormatted = useMemo(
+    () =>
+      (amountCents / 100).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }),
+    [amountCents],
+  )
 
   // Formata os digitos como moeda: 1 -> R$ 0,01 / 123 -> R$ 1,23
   const formatted = useMemo(() => {
@@ -634,8 +675,8 @@ function VerifyPixCard({
     })
   }, [raw])
 
-  // Confere se o valor digitado e exatamente R$ 0,90 (90 centavos)
-  const isCorrect = raw.replace(/\D/g, '').replace(/^0+/, '') === '90'
+  // Confere se o valor digitado e exatamente o valor esperado (em centavos)
+  const isCorrect = (Number.parseInt(raw.replace(/\D/g, ''), 10) || 0) === amountCents
 
   const handleConfirm = () => {
     if (checking) return
@@ -706,7 +747,7 @@ function VerifyPixCard({
         <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
         <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
           Digite o valor com <span className="font-semibold text-primary">todos os números certinhos</span>,
-          exatamente como você recebeu (ex.: R$ 0,90).
+          exatamente como você recebeu (ex.: {expectedFormatted}).
         </p>
       </div>
 

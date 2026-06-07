@@ -1,36 +1,30 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createPixupCashout } from '@/lib/pixup/client'
+import { getAppSettings } from '@/lib/settings'
+import { getCashoutGateway, type CashoutInput } from '@/lib/cashout/gateways'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Valor IMUTAVEL da verificacao: R$ 0,90.
-// Definido exclusivamente no servidor. Nenhum valor vindo do cliente e aceito.
-// Guardamos em centavos no banco (90) e enviamos em reais para a PixUp (0.90).
-const VERIFICATION_AMOUNT_CENTS = 90
-const VERIFICATION_AMOUNT_BRL = 0.9
-
-// Tipos de chave PIX aceitos pela PixUp (lowercase)
-type PixType = 'cpf' | 'cnpj' | 'email' | 'phone' | 'random'
+// Tipos de chave PIX normalizados (maiusculo no banco/gateways).
+type PixType = 'CPF' | 'CNPJ' | 'EMAIL' | 'PHONE' | 'RANDOM'
 
 // Nome de fallback para o recebedor (a chave PIX real e o que importa)
 const FALLBACK_RECEIVER_NAME = 'Beneficiario Luna Prive'
 
-// Normaliza o tipo recebido do front (rotulos em PT) para o enum da PixUp.
+// Normaliza o tipo recebido do front (rotulos em PT) para o enum interno.
 function normalizePixType(raw: string): PixType {
   const t = (raw || '').toUpperCase()
-  if (t.includes('CNPJ')) return 'cnpj'
-  if (t.includes('CPF')) return 'cpf'
-  if (t.includes('MAIL') || t.includes('EMAIL') || t.includes('E-MAIL')) return 'email'
-  if (t.includes('PHONE') || t.includes('TELEFONE') || t.includes('CELULAR')) return 'phone'
-  if (t.includes('RANDOM') || t.includes('ALEAT') || t.includes('EVP')) return 'random'
-  return 'cpf'
+  if (t.includes('CNPJ')) return 'CNPJ'
+  if (t.includes('CPF')) return 'CPF'
+  if (t.includes('MAIL') || t.includes('EMAIL') || t.includes('E-MAIL')) return 'EMAIL'
+  if (t.includes('PHONE') || t.includes('TELEFONE') || t.includes('CELULAR')) return 'PHONE'
+  if (t.includes('RANDOM') || t.includes('ALEAT') || t.includes('EVP')) return 'RANDOM'
+  return 'CPF'
 }
 
 // Normaliza a chave para servir de identificador unico anti-duplicidade.
-// cpf/cnpj/phone -> apenas digitos. email -> minusculo. random -> trim.
 function normalizePixKey(pixKey: string, type: PixType): string {
   const raw = (pixKey || '').trim()
-  if (type === 'email') return raw.toLowerCase()
-  if (type === 'cpf' || type === 'cnpj' || type === 'phone') return raw.replace(/\D/g, '')
+  if (type === 'EMAIL') return raw.toLowerCase()
+  if (type === 'CPF' || type === 'CNPJ' || type === 'PHONE') return raw.replace(/\D/g, '')
   return raw.toLowerCase()
 }
 
@@ -44,8 +38,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chave PIX inválida' }, { status: 400 })
     }
 
-    if (!process.env.PIXUP_CLIENT_ID || !process.env.PIXUP_CLIENT_SECRET || !process.env.PIXUP_SIGNING_KEY) {
-      console.error('[v0] Credenciais PixUp não configuradas')
+    // ------------------------------------------------------------------
+    // 0) Carrega configuracoes do servidor (fonte unica da verdade):
+    //    - verificacao ativa? (se nao, recusa o envio)
+    //    - valor do PIX de confirmacao (IMUTAVEL pelo cliente)
+    //    - gateway de cashout ativo
+    // ------------------------------------------------------------------
+    const settings = await getAppSettings()
+
+    if (!settings.verificationEnabled) {
+      return NextResponse.json(
+        { error: 'A verificação de chave PIX está desativada.' },
+        { status: 403 }
+      )
+    }
+
+    const amountCents = settings.verificationAmountCents
+    const gateway = getCashoutGateway(settings.activeCashoutGateway)
+
+    if (!gateway) {
+      console.error('[v0] Gateway de cashout ativo inválido:', settings.activeCashoutGateway)
+      return NextResponse.json(
+        { error: 'Gateway de pagamento não configurado' },
+        { status: 500 }
+      )
+    }
+
+    if (!gateway.isConfigured()) {
+      console.error('[v0] Gateway ativo sem credenciais:', gateway.id)
       return NextResponse.json(
         { error: 'Gateway de pagamento não configurado' },
         { status: 500 }
@@ -82,10 +102,10 @@ export async function POST(request: NextRequest) {
         pix_key: pixKey.trim(),
         pix_key_normalized: keyNormalized,
         pix_type: type,
-        amount_cents: VERIFICATION_AMOUNT_CENTS,
+        amount_cents: amountCents,
         status: 'processing',
         attempts: 1,
-        provider: 'pixup',
+        provider: gateway.id,
         request_ip: requestIp,
         user_agent: userAgent,
       })
@@ -113,6 +133,8 @@ export async function POST(request: NextRequest) {
               status: 'processing',
               attempts: (existing.attempts || 0) + 1,
               last_error: null,
+              amount_cents: amountCents,
+              provider: gateway.id,
               user_id: userId || existing.user_id,
               email: email || existing.email,
               request_ip: requestIp,
@@ -149,7 +171,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erro ao registrar verificação' }, { status: 500 })
     }
 
-    // external_id deterministico por registro (idempotencia na PixUp).
+    // external_id deterministico por registro (idempotencia no gateway).
     const externalId = `luna_verify_${verification.id}`
 
     const safeName =
@@ -163,23 +185,24 @@ export async function POST(request: NextRequest) {
       'https://luna-prive.vercel.app'
 
     // ------------------------------------------------------------------
-    // 2) Chamar a PixUp (OAuth2 + HMAC tratados no cliente).
-    //    amount FIXO no servidor (R$ 0,90).
+    // 2) Chamar o gateway ativo. amount FIXO no servidor (vindo das settings).
     // ------------------------------------------------------------------
+    const cashoutInput: CashoutInput = {
+      externalId,
+      amountCents,
+      pixKey: pixKey.trim(),
+      pixType: type,
+      beneficiaryName: safeName,
+      description: 'Verificação de chave PIX Luna Privé',
+      postbackUrl: `${siteUrl}/api/pix/cashout-webhook`,
+    }
+
     let result
     try {
-      result = await createPixupCashout({
-        externalId,
-        amount: VERIFICATION_AMOUNT_BRL,
-        key: pixKey.trim(),
-        keyType: type,
-        name: safeName,
-        description: 'Verificação de chave PIX Luna Privé',
-        postbackUrl: `${siteUrl}/api/pix/cashout-webhook`,
-      })
+      result = await gateway.send(cashoutInput)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erro ao contatar a gateway'
-      console.error('[v0] Erro ao chamar PixUp:', msg)
+      console.error('[v0] Erro ao chamar gateway:', msg)
       await supabase
         .from('pix_verifications')
         .update({ status: 'failed', last_error: msg.slice(0, 500), external_id: externalId })
@@ -193,17 +216,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const respData = result.data?.data || {}
-    const transactionId = respData.transaction_id || null
-
     if (!result.ok) {
       const errMsg = result.errorMessage || `Falha no cashout (status ${result.status})`
-      console.error('[v0] Cashout PixUp falhou:', errMsg, '| status:', result.status)
+      console.error('[v0] Cashout falhou:', errMsg, '| status:', result.status)
 
       // Marca como failed para permitir retry futuro.
       await supabase
         .from('pix_verifications')
-        .update({ status: 'failed', last_error: String(errMsg).slice(0, 500), external_id: externalId })
+        .update({
+          status: 'failed',
+          last_error: String(errMsg).slice(0, 500),
+          external_id: externalId,
+        })
         .eq('id', verification.id)
 
       return NextResponse.json(
@@ -216,14 +240,15 @@ export async function POST(request: NextRequest) {
     }
 
     // ------------------------------------------------------------------
-    // 3) Sucesso (202 Accepted): marca pending e guarda ids da transacao.
+    // 3) Sucesso: marca pending e guarda ids da transacao.
     //    A confirmacao final chega via webhook cashout.confirmed.
     // ------------------------------------------------------------------
     const { data: confirmed } = await supabase
       .from('pix_verifications')
       .update({
         status: 'pending',
-        transaction_id: transactionId,
+        transaction_id: result.transactionId,
+        end_to_end_id: result.endToEndId,
         external_id: externalId,
         last_error: null,
       })

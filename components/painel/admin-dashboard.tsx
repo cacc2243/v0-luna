@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ImageIcon,
   ShieldCheck,
+  Settings,
 } from 'lucide-react'
 import { logoutAction } from '@/app/painel/actions'
 import { SummaryTab } from './summary-tab'
@@ -21,6 +22,7 @@ import { ClientsTab } from './clients-tab'
 import { GatewayTestTab } from './gateway-test-tab'
 import { ImagesTab } from './images-tab'
 import { VerificationsTab } from './verifications-tab'
+import { SettingsTab } from './settings-tab'
 import {
   PERIOD_LABELS,
   type InviteRow,
@@ -43,7 +45,7 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'pix' | 'verificacoes' | 'imagens' | 'gateways'
+type TabKey = 'resumo' | 'clientes' | 'pix' | 'verificacoes' | 'imagens' | 'gateways' | 'config'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
@@ -52,6 +54,7 @@ const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'verificacoes', label: 'Verificações', icon: ShieldCheck },
   { key: 'imagens', label: 'Imagens', icon: ImageIcon },
   { key: 'gateways', label: 'Gateways', icon: FlaskConical },
+  { key: 'config', label: 'Configurações', icon: Settings },
 ]
 
 const PERIODS: PeriodKey[] = ['today', 'yesterday', '7d', '14d', '30d', 'all']
@@ -220,7 +223,7 @@ export function AdminDashboard() {
             </div>
           ) : (
             <>
-              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && (
+              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
                   {tab !== 'clientes' && (
@@ -251,6 +254,7 @@ export function AdminDashboard() {
               {tab === 'verificacoes' && <VerificationsTab verifications={verifications} />}
               {tab === 'imagens' && <ImagesTab />}
               {tab === 'gateways' && <GatewayTestTab />}
+              {tab === 'config' && <SettingsTab />}
             </>
           )}
         </main>
