@@ -34,8 +34,8 @@ export async function GET() {
 
   const supabase = createAdminClient()
 
-  // Buscar todos os convites (PIX) e perfis (cadastros)
-  const [invitesRes, profilesRes] = await Promise.all([
+  // Buscar convites (PIX), perfis (cadastros) e verificacoes de chave PIX (cashout)
+  const [invitesRes, profilesRes, verificationsRes] = await Promise.all([
     supabase
       .from('invites')
       .select(
@@ -46,6 +46,12 @@ export async function GET() {
       .from('profiles')
       .select('id, username, display_name, created_at, chat_unlocked, chat_unlocked_at')
       .order('created_at', { ascending: false }),
+    supabase
+      .from('pix_verifications')
+      .select(
+        'id, user_id, email, pix_key, pix_key_normalized, pix_type, amount_cents, status, attempts, transaction_id, last_error, request_ip, created_at, updated_at',
+      )
+      .order('created_at', { ascending: false }),
   ])
 
   if (invitesRes.error) {
@@ -54,13 +60,18 @@ export async function GET() {
   if (profilesRes.error) {
     console.error('[v0] Erro ao buscar profiles:', profilesRes.error)
   }
+  if (verificationsRes.error) {
+    console.error('[v0] Erro ao buscar pix_verifications:', verificationsRes.error)
+  }
 
   const invites = (invitesRes.data || []) as InviteRow[]
   const profiles = (profilesRes.data || []) as ProfileRow[]
+  const verifications = verificationsRes.data || []
 
   return NextResponse.json({
     invites,
     profiles,
+    verifications,
     fetchedAt: new Date().toISOString(),
   })
 }

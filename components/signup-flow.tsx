@@ -177,7 +177,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             <SendingPixCard
               pixType={pixType}
               pixKey={pixKey}
+              email={email}
+              beneficiaryName={username}
               onDone={() => setStatus('verify')}
+              onError={(msg) => {
+                setErrorMessage(msg)
+                setStatus('error')
+              }}
             />
           ) : status === 'verify' ? (
             <VerifyPixCard
@@ -747,28 +753,75 @@ function VerifyPixCard({
 function SendingPixCard({
   pixType,
   pixKey,
+  email,
+  beneficiaryName,
   onDone,
+  onError,
 }: {
   pixType: string
   pixKey: string
+  email: string
+  beneficiaryName: string
   onDone: () => void
+  onError: (message: string) => void
 }) {
   const [progress, setProgress] = useState(0)
   const DURATION = 5000
 
   useEffect(() => {
     const start = Date.now()
+    let active = true
+
     const interval = setInterval(() => {
       const elapsed = Date.now() - start
-      const pct = Math.min(100, Math.round((elapsed / DURATION) * 100))
+      // Trava em 92% ate a resposta do servidor chegar
+      const pct = Math.min(92, Math.round((elapsed / DURATION) * 100))
       setProgress(pct)
     }, 60)
-    const done = setTimeout(onDone, DURATION)
-    return () => {
+
+    // Dispara o envio real do cashout no servidor (valor fixo de R$ 0,01).
+    // Nenhum valor e enviado pelo cliente.
+    const sendPromise = fetch('/api/pix/verify-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email?.trim() || null,
+        pixKey: pixKey?.trim() || '',
+        pixType,
+        beneficiaryName: beneficiaryName?.trim() || null,
+      }),
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}))
+        return { ok: res.ok, data }
+      })
+      .catch(() => ({ ok: false, data: { error: 'Falha de conexão. Tente novamente.' } }))
+
+    // Garante o tempo minimo de exibicao do loading (>= DURATION)
+    const minDelay = new Promise((resolve) => setTimeout(resolve, DURATION))
+
+    Promise.all([sendPromise, minDelay]).then(([result]) => {
+      if (!active) return
       clearInterval(interval)
-      clearTimeout(done)
+      setProgress(100)
+
+      const r = result as { ok: boolean; data: any }
+      if (r.ok && r.data?.success) {
+        setTimeout(() => active && onDone(), 250)
+      } else {
+        const msg =
+          r.data?.error ||
+          'Não foi possível enviar o valor de verificação para esta chave PIX.'
+        setTimeout(() => active && onError(msg), 250)
+      }
+    })
+
+    return () => {
+      active = false
+      clearInterval(interval)
     }
-  }, [onDone])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card px-7 py-9 text-center shadow-2xl shadow-primary/15">

@@ -21,6 +21,23 @@ export interface ProfileRow {
   chat_unlocked_at?: string | null
 }
 
+export interface PixVerificationRow {
+  id: string
+  user_id: string | null
+  email: string | null
+  pix_key: string | null
+  pix_key_normalized: string | null
+  pix_type: string | null
+  amount_cents: number | null
+  status: string | null
+  attempts: number | null
+  transaction_id: string | null
+  last_error: string | null
+  request_ip: string | null
+  created_at: string
+  updated_at: string | null
+}
+
 export type PeriodKey = 'today' | 'yesterday' | '7d' | '14d' | '30d' | 'all'
 export type StatusFilter = 'all' | 'paid' | 'pending'
 
