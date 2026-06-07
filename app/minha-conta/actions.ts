@@ -108,6 +108,7 @@ export type Conversation = {
   last_message_at: string
   unread_count: number
   is_online: boolean
+  flow_step: number
   created_at: string
 }
 
@@ -117,7 +118,11 @@ export type Message = {
   sender_id: string | null
   is_from_creator: boolean
   content: string | null
-  message_type: 'text' | 'image' | 'gift'
+  message_type: 'text' | 'image' | 'gift' | 'audio'
+  media_url: string | null
+  gift_amount: number | null
+  gift_claimed: boolean
+  audio_duration: number | null
   is_read: boolean
   created_at: string
 }
@@ -540,6 +545,55 @@ export async function settleExpiredWithdrawals() {
 // Conversation Actions
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
+const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
+  { name: 'Rafael Augusto', greeting: 'Boa noite, meu amor. Te achei linda demais aqui', online: true },
+  { name: 'Bruno Carvalho', greeting: 'Oi meu anjo, tudo bem com você? Adorei seu perfil', online: true },
+  { name: 'Lucas Ferreira', greeting: 'Olá bebê, você é simplesmente perfeita', online: false },
+  { name: 'Diego Martins', greeting: 'Bom dia, gata. Não consegui parar de olhar seu perfil', online: true },
+  { name: 'Felipe Andrade', greeting: 'Oi linda, fiquei encantado com você agora mesmo', online: true },
+  { name: 'Gustavo Lima', greeting: 'Que mulher maravilhosa, preciso te conhecer melhor', online: true },
+  { name: 'Thiago Souza', greeting: 'Boa tarde, gata. Seu sorriso me ganhou na hora', online: false },
+  { name: 'Marcelo Rocha', greeting: 'Oi amor, você é a coisa mais linda que vi hoje', online: true },
+  { name: 'André Nogueira', greeting: 'Olá meu bem, fiquei impressionado com você', online: true },
+  { name: 'Vinícius Costa', greeting: 'Oi gata, posso te conhecer melhor? Adorei tudo aqui', online: true },
+  { name: 'Eduardo Pires', greeting: 'Boa noite, princesa. Você me deixou sem palavras', online: false },
+  { name: 'Henrique Alves', greeting: 'Oi linda, seu perfil é o melhor que já vi', online: true },
+  { name: 'Rodrigo Mendes', greeting: 'Olá amor, você é simplesmente deslumbrante', online: true },
+  { name: 'Caio Barbosa', greeting: 'Oi gata, fiquei completamente encantado com você', online: true },
+]
+
+const ASK_GIFT_MESSAGES = [
+  'Que delícia conversar com você. Posso te mandar um presente? Seu perfil já tá aceitando?',
+  'Adorei te conhecer, gata. Queria te dar um mimo... sua conta já aceita presente?',
+  'Você é maravilhosa mesmo. Posso te enviar um presente em dinheiro? Já consegue receber?',
+  'Tô encantado com você. Deixa eu te mandar um agrado, seu perfil já libera presente?',
+]
+
+const SEND_GIFT_MESSAGES = [
+  'Pronto, acabei de te mandar um presente. Espero que goste, linda!',
+  'Te enviei um mimo agora mesmo, meu amor. É só pra te ver feliz.',
+  'Olha só, deixei uma surpresa pra você aqui. Aproveita, você merece!',
+  'Mandei um presentinho pra você. Pega que é todo seu, gata.',
+  'Te mandei um agrado especial. Espero te ver sorrindo com ele!',
+]
+
+const LOCKED_MESSAGES = [
+  'Poxa, mandei o presente mas acho que não chegou pra você... sua conta ainda não tem presentes ativos. Se você ativar, a gente continua conversando?',
+  'Te enviei aqui, mas parece que você não recebeu porque seu perfil não tem presentes ativados. Consegue ativar? Aí seguimos a conversa.',
+  'Mandei sim, só que acho que não caiu aí porque sua conta não aceita presentes ainda. Se conseguir ativar me avisa que continuamos!',
+]
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function randomGiftAmount() {
+  // múltiplos de 10 entre R$ 200 e R$ 600 (mesma faixa aceita por claimGift)
+  const v = Math.floor(Math.random() * (60 - 20 + 1)) + 20
+  return v * 10
+}
+
 export async function getConversations(): Promise<Conversation[]> {
   const supabase = await createClient()
   const user = await getCurrentUser()
@@ -560,6 +614,62 @@ export async function getConversations(): Promise<Conversation[]> {
   return data || []
 }
 
+// Cria as conversas iniciais uma única vez por conta. Idempotente: se já existir
+// qualquer conversa, não cria nada e apenas retorna as existentes.
+export async function seedConversations(): Promise<Conversation[]> {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return []
+
+  const { data: existing } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('creator_id', user.id)
+    .limit(1)
+
+  if (existing && existing.length > 0) {
+    return getConversations()
+  }
+
+  const now = Date.now()
+  const conversationsToInsert = BUYER_SEEDS.map((b, i) => ({
+    creator_id: user.id,
+    participant_id: null,
+    participant_name: b.name,
+    participant_avatar: null,
+    last_message: b.greeting,
+    // espaça os horários para preservar a ordem da lista
+    last_message_at: new Date(now - i * 60_000).toISOString(),
+    unread_count: 1,
+    is_online: b.online,
+    flow_step: 0,
+  }))
+
+  const { data: inserted, error } = await supabase
+    .from('conversations')
+    .insert(conversationsToInsert)
+    .select('*')
+
+  if (error || !inserted) {
+    console.error('Error seeding conversations:', error)
+    return getConversations()
+  }
+
+  // insere a mensagem de saudação (do comprador) em cada conversa
+  const greetingMessages = inserted.map((c) => ({
+    conversation_id: c.id,
+    sender_id: null,
+    is_from_creator: false,
+    content: c.last_message,
+    message_type: 'text',
+    is_read: false,
+  }))
+  await supabase.from('messages').insert(greetingMessages)
+
+  revalidatePath('/minha-conta')
+  return getConversations()
+}
+
 export async function getMessages(conversationId: string): Promise<Message[]> {
   const supabase = await createClient()
   
@@ -577,37 +687,185 @@ export async function getMessages(conversationId: string): Promise<Message[]> {
   return data || []
 }
 
-export async function sendMessage(conversationId: string, content: string) {
+export async function markConversationRead(conversationId: string) {
   const supabase = await createClient()
   const user = await getCurrentUser()
-  
-  if (!user) return { error: 'Not authenticated' }
-  
-  const { error } = await supabase
+  if (!user) return { error: 'not_authenticated' as const }
+
+  await supabase
+    .from('conversations')
+    .update({ unread_count: 0 })
+    .eq('id', conversationId)
+    .eq('creator_id', user.id)
+
+  await supabase
     .from('messages')
-    .insert({
+    .update({ is_read: true })
+    .eq('conversation_id', conversationId)
+    .eq('is_from_creator', false)
+
+  return { success: true as const }
+}
+
+type CreatorMessageInput = {
+  kind: 'text' | 'image' | 'audio'
+  content?: string | null
+  mediaUrl?: string | null
+  audioDuration?: number | null
+}
+
+// Envia a mensagem da criadora e avança o fluxo do comprador no servidor,
+// persistindo também as respostas automáticas (texto + presente) para que
+// tudo sobreviva ao refresh. Retorna as mensagens do comprador geradas.
+export async function sendCreatorMessage(
+  conversationId: string,
+  input: CreatorMessageInput,
+) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { error: 'not_authenticated' as const }
+
+  const { data: conversation } = await supabase
+    .from('conversations')
+    .select('id, flow_step, participant_name')
+    .eq('id', conversationId)
+    .eq('creator_id', user.id)
+    .single()
+
+  if (!conversation) return { error: 'conversation_not_found' as const }
+
+  // Insere a mensagem da criadora
+  const { error: insErr } = await supabase.from('messages').insert({
+    conversation_id: conversationId,
+    sender_id: user.id,
+    is_from_creator: true,
+    content: input.kind === 'text' ? (input.content ?? null) : null,
+    message_type: input.kind,
+    media_url: input.mediaUrl ?? null,
+    audio_duration: input.audioDuration ?? null,
+    is_read: true,
+  })
+  if (insErr) return { error: insErr.message }
+
+  const step = conversation.flow_step ?? 0
+  const buyerInserts: Array<Record<string, unknown>> = []
+  let newStep = step
+
+  if (step === 0) {
+    newStep = 1
+    buyerInserts.push({
       conversation_id: conversationId,
-      sender_id: user.id,
-      is_from_creator: true,
-      content,
+      sender_id: null,
+      is_from_creator: false,
+      content: pickRandom(ASK_GIFT_MESSAGES),
       message_type: 'text',
+      is_read: false,
     })
-  
-  if (error) {
-    return { error: error.message }
+  } else if (step === 1) {
+    newStep = 3
+    buyerInserts.push({
+      conversation_id: conversationId,
+      sender_id: null,
+      is_from_creator: false,
+      content: pickRandom(SEND_GIFT_MESSAGES),
+      message_type: 'text',
+      is_read: false,
+    })
+    buyerInserts.push({
+      conversation_id: conversationId,
+      sender_id: null,
+      is_from_creator: false,
+      content: null,
+      message_type: 'gift',
+      gift_amount: randomGiftAmount(),
+      gift_claimed: false,
+      is_read: false,
+    })
   }
-  
-  // Update conversation last message
+
+  let buyerMessages: Message[] = []
+  if (buyerInserts.length > 0) {
+    const { data: insertedBuyer } = await supabase
+      .from('messages')
+      .insert(buyerInserts)
+      .select('*')
+    buyerMessages = (insertedBuyer as Message[]) || []
+  }
+
+  const lastContent =
+    buyerMessages.length > 0
+      ? (buyerMessages[buyerMessages.length - 1].content ?? 'Presente recebido')
+      : input.kind === 'text'
+        ? (input.content ?? '')
+        : input.kind === 'image'
+          ? 'Imagem'
+          : 'Áudio'
+
   await supabase
     .from('conversations')
     .update({
-      last_message: content,
+      last_message: lastContent,
       last_message_at: new Date().toISOString(),
+      flow_step: newStep,
+      unread_count: 0,
     })
     .eq('id', conversationId)
-  
+
   revalidatePath('/minha-conta')
-  return { success: true }
+  return { success: true as const, buyerMessages, flowStep: newStep }
+}
+
+// Envia a mensagem do comprador dizendo que o presente não chegou (conta
+// sem presentes ativos). Persistida para sobreviver ao refresh.
+export async function sendLockedMessage(conversationId: string) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { error: 'not_authenticated' as const }
+
+  const { data: conversation } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('id', conversationId)
+    .eq('creator_id', user.id)
+    .single()
+  if (!conversation) return { error: 'conversation_not_found' as const }
+
+  const content = pickRandom(LOCKED_MESSAGES)
+  const { data: inserted } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id: null,
+      is_from_creator: false,
+      content,
+      message_type: 'text',
+      is_read: false,
+    })
+    .select('*')
+    .single()
+
+  await supabase
+    .from('conversations')
+    .update({ last_message: content, last_message_at: new Date().toISOString() })
+    .eq('id', conversationId)
+
+  return { success: true as const, message: inserted as Message | null }
+}
+
+// Marca uma mensagem de presente como resgatada (após claimGift creditar o saldo)
+export async function markGiftClaimed(messageId: string) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { error: 'not_authenticated' as const }
+
+  const { error } = await supabase
+    .from('messages')
+    .update({ gift_claimed: true })
+    .eq('id', messageId)
+
+  if (error) return { error: error.message }
+  revalidatePath('/minha-conta')
+  return { success: true as const }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
