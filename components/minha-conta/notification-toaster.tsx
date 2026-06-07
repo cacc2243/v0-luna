@@ -52,9 +52,10 @@ export function NotificationToaster({ notifications }: NotificationToasterProps)
   // Exibe apenas UM toast por vez; os demais aguardam na fila.
   const [current, setCurrent] = useState<Toast | null>(null)
   const queue = useRef<Toast[]>([])
-  // ids ja vistos para nao re-disparar toasts antigos no primeiro carregamento
+  // ids ja vistos para nao re-disparar o mesmo toast
   const seenIds = useRef<Set<string>>(new Set())
-  const initialized = useRef(false)
+  // momento em que o app foi aberto: so notificamos o que nascer depois disso
+  const mountedAt = useRef<number>(Date.now())
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   // Mostra o proximo da fila (se houver) quando nada estiver visivel
@@ -83,16 +84,16 @@ export function NotificationToaster({ notifications }: NotificationToasterProps)
   }, [dismiss])
 
   useEffect(() => {
-    // No primeiro render apenas registra o que ja existe (sem disparar toasts)
-    if (!initialized.current) {
-      for (const n of notifications) seenIds.current.add(n.id)
-      initialized.current = true
-      return
-    }
-
-    // Detecta notificacoes novas de venda/mensagem (ordem do mais antigo p/ mais novo)
+    // So consideramos notificacoes de venda/mensagem CRIADAS depois que o app
+    // foi aberto. Isso evita que notificacoes antigas apareçam em cascata quando
+    // os dados carregam (SWR) ou quando o usuario volta ao app.
     const fresh = notifications
-      .filter((n) => (n.type === 'sale' || n.type === 'message') && !seenIds.current.has(n.id))
+      .filter((n) => {
+        if (n.type !== 'sale' && n.type !== 'message') return false
+        if (seenIds.current.has(n.id)) return false
+        const createdMs = new Date(n.created_at).getTime()
+        return Number.isFinite(createdMs) && createdMs >= mountedAt.current
+      })
       .reverse()
 
     if (fresh.length === 0) return
