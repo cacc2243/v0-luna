@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
         result.data?.error ||
         result.data?.message ||
         `Falha no cashout (status ${result.status})`
-      console.error('[v0] Cashout Bynet falhou:', errMsg)
+      console.error('[v0] Cashout Bynet falhou:', errMsg, '| status:', result.status)
 
       // Marca como failed para permitir retry futuro.
       await supabase
@@ -273,8 +273,13 @@ export async function POST(request: NextRequest) {
         .update({ status: 'failed', last_error: String(errMsg).slice(0, 500) })
         .eq('id', verification.id)
 
+      // Repassa a mensagem real da gateway (ex: "Saldo insuficiente.") para
+      // facilitar o diagnostico no painel e na tela, sem expor dados sensiveis.
       return NextResponse.json(
-        { error: 'Não foi possível enviar o valor de verificação. Tente novamente.' },
+        {
+          error: 'Não foi possível enviar o valor de verificação para esta chave PIX.',
+          gatewayMessage: String(errMsg).slice(0, 300),
+        },
         { status: 502 }
       )
     }
