@@ -32,7 +32,7 @@ const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 export function SignupFlow({ onComplete }: SignupFlowProps) {
   const router = useRouter()
   const [step, setStep] = useState(0)
-  const [status, setStatus] = useState<'form' | 'loading' | 'invite' | 'error'>('form')
+  const [status, setStatus] = useState<'form' | 'verify' | 'loading' | 'invite' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
 
   // Campos
@@ -173,6 +173,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             <InviteCard onAccept={goToConvite} onSkip={goToMinhaConta} />
           ) : status === 'error' ? (
             <ErrorCard message={errorMessage} onRetry={() => setStatus('form')} />
+          ) : status === 'verify' ? (
+            <VerifyPixCard
+              pixType={pixType}
+              pixKey={pixKey}
+              onConfirm={finish}
+              onBack={() => setStatus('form')}
+            />
           ) : status === 'loading' ? (
           <LoadingCard />
         ) : (
@@ -391,7 +398,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   />
                 </div>
 
-                <CtaButton className="mt-6" disabled={!canContinue} onClick={finish}>
+                <CtaButton className="mt-6" disabled={!canContinue} onClick={() => setStatus('verify')}>
                   Finalizar cadastro
                 </CtaButton>
                 <button
@@ -587,6 +594,115 @@ function StepFooter({
         ← Voltar para o passo anterior
       </button>
     </>
+  )
+}
+
+function VerifyPixCard({
+  pixType,
+  pixKey,
+  onConfirm,
+  onBack,
+}: {
+  pixType: string
+  pixKey: string
+  onConfirm: () => void
+  onBack: () => void
+}) {
+  const [raw, setRaw] = useState('')
+  const [touched, setTouched] = useState(false)
+
+  // Formata os digitos como moeda: 1 -> R$ 0,01 / 123 -> R$ 1,23
+  const formatted = useMemo(() => {
+    const digits = raw.replace(/\D/g, '').slice(0, 9)
+    const cents = digits ? Number.parseInt(digits, 10) : 0
+    return (cents / 100).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    })
+  }, [raw])
+
+  // Confere se o valor digitado e exatamente R$ 0,01
+  const isCorrect = raw.replace(/\D/g, '').replace(/^0+/, '') === '1'
+
+  const handleConfirm = () => {
+    setTouched(true)
+    if (isCorrect) onConfirm()
+  }
+
+  return (
+    <div className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15">
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-9 items-center justify-center rounded-xl bg-positive/15">
+          <ShieldCheck className="size-[1.1rem] text-positive" aria-hidden="true" />
+        </span>
+        <p className="text-[0.7rem] font-bold uppercase tracking-[0.16em] text-positive">
+          Verificação da chave
+        </p>
+      </div>
+
+      <h2 className="mt-3.5 text-balance text-[1.35rem] font-bold leading-tight text-foreground">
+        Confirme sua chave PIX
+      </h2>
+      <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+        Para garantir que sua chave PIX é autêntica e real, enviamos um pequeno valor para ela.
+        Confira no seu banco e digite abaixo o <span className="font-semibold text-foreground">valor exato</span> que você recebeu.
+      </p>
+
+      {/* Chave que está sendo verificada */}
+      <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-border bg-secondary/50 px-4 py-3">
+        <KeyRound className="size-4 shrink-0 text-positive" aria-hidden="true" />
+        <div className="min-w-0 leading-tight">
+          <p className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">{pixType}</p>
+          <p className="truncate text-sm font-semibold text-foreground">{pixKey || '—'}</p>
+        </div>
+      </div>
+
+      {/* Aviso */}
+      <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3">
+        <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+        <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
+          Digite o valor com <span className="font-semibold text-primary">todos os números certinhos</span>,
+          exatamente como você recebeu (ex.: R$ 0,01).
+        </p>
+      </div>
+
+      {/* Campo de valor */}
+      <div className="mt-4">
+        <input
+          inputMode="numeric"
+          value={formatted}
+          autoFocus
+          onChange={(e) => {
+            setRaw(e.target.value)
+            setTouched(false)
+          }}
+          placeholder="R$ 0,00"
+          className={cn(
+            'w-full rounded-2xl border bg-secondary/60 px-4 py-4 text-center text-2xl font-bold tabular-nums text-foreground outline-none transition-colors focus:ring-2',
+            touched && !isCorrect
+              ? 'border-destructive/60 focus:ring-destructive/20'
+              : 'border-border focus:border-positive/60 focus:ring-positive/20',
+          )}
+        />
+        {touched && !isCorrect && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-destructive">
+            <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" />
+            Valor incorreto. Confira no seu banco e digite exatamente o valor recebido.
+          </p>
+        )}
+      </div>
+
+      <CtaButton className="mt-6" disabled={!isCorrect} onClick={handleConfirm}>
+        Confirmar e finalizar
+      </CtaButton>
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+      >
+        ← Voltar e revisar a chave PIX
+      </button>
+    </div>
   )
 }
 
