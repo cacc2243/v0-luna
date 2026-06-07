@@ -2957,7 +2957,7 @@ function WalletScreen({
               <h3 className="text-lg font-bold text-foreground">
                 {withdrawStep === 'form' && 'Solicitar saque'}
                 {withdrawStep === 'processing' && 'Processando saque'}
-                {withdrawStep === 'new_account' && 'Verificaç��o necessária'}
+                {withdrawStep === 'new_account' && 'Verificação necessária'}
                 {withdrawStep === 'verify_info' && 'Verificação completa'}
                 {withdrawStep === 'verify_processing' && 'Gerando verificação'}
                 {withdrawStep === 'requested' && 'Saque solicitado'}
