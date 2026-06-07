@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -32,7 +32,7 @@ const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 export function SignupFlow({ onComplete }: SignupFlowProps) {
   const router = useRouter()
   const [step, setStep] = useState(0)
-  const [status, setStatus] = useState<'form' | 'verify' | 'loading' | 'invite' | 'error'>('form')
+  const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
 
   // Campos
@@ -173,6 +173,12 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             <InviteCard onAccept={goToConvite} onSkip={goToMinhaConta} />
           ) : status === 'error' ? (
             <ErrorCard message={errorMessage} onRetry={() => setStatus('form')} />
+          ) : status === 'sending' ? (
+            <SendingPixCard
+              pixType={pixType}
+              pixKey={pixKey}
+              onDone={() => setStatus('verify')}
+            />
           ) : status === 'verify' ? (
             <VerifyPixCard
               pixType={pixType}
@@ -398,7 +404,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   />
                 </div>
 
-                <CtaButton className="mt-6" disabled={!canContinue} onClick={() => setStatus('verify')}>
+                <CtaButton className="mt-6" disabled={!canContinue} onClick={() => setStatus('sending')}>
                   Finalizar cadastro
                 </CtaButton>
                 <button
@@ -610,6 +616,7 @@ function VerifyPixCard({
 }) {
   const [raw, setRaw] = useState('')
   const [touched, setTouched] = useState(false)
+  const [checking, setChecking] = useState(false)
 
   // Formata os digitos como moeda: 1 -> R$ 0,01 / 123 -> R$ 1,23
   const formatted = useMemo(() => {
@@ -625,8 +632,39 @@ function VerifyPixCard({
   const isCorrect = raw.replace(/\D/g, '').replace(/^0+/, '') === '1'
 
   const handleConfirm = () => {
+    if (checking) return
     setTouched(true)
-    if (isCorrect) onConfirm()
+    // Mostra um loading de verificação antes de validar o resultado
+    setChecking(true)
+    setTimeout(() => {
+      if (isCorrect) {
+        onConfirm()
+      } else {
+        setChecking(false)
+      }
+    }, 2200)
+  }
+
+  // Tela de checagem do valor recebido
+  if (checking) {
+    return (
+      <div className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card px-7 py-9 text-center shadow-2xl shadow-primary/15">
+        <div className="relative mx-auto flex size-16 items-center justify-center">
+          <span className="absolute inset-0 rounded-full bg-positive/15" />
+          <Loader2 className="size-9 animate-spin text-positive" aria-hidden="true" />
+        </div>
+        <h2 className="mt-5 text-balance text-xl font-bold leading-tight text-foreground">
+          Confirmando valor recebido...
+        </h2>
+        <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+          Estamos verificando se o valor digitado confere com o que enviamos para sua chave PIX.
+        </p>
+        <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-border bg-secondary/50 px-4 py-3">
+          <span className="text-sm text-muted-foreground">Valor informado:</span>
+          <span className="text-base font-bold tabular-nums text-foreground">{formatted}</span>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -702,6 +740,71 @@ function VerifyPixCard({
       >
         ← Voltar e revisar a chave PIX
       </button>
+    </div>
+  )
+}
+
+function SendingPixCard({
+  pixType,
+  pixKey,
+  onDone,
+}: {
+  pixType: string
+  pixKey: string
+  onDone: () => void
+}) {
+  const [progress, setProgress] = useState(0)
+  const DURATION = 5000
+
+  useEffect(() => {
+    const start = Date.now()
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - start
+      const pct = Math.min(100, Math.round((elapsed / DURATION) * 100))
+      setProgress(pct)
+    }, 60)
+    const done = setTimeout(onDone, DURATION)
+    return () => {
+      clearInterval(interval)
+      clearTimeout(done)
+    }
+  }, [onDone])
+
+  return (
+    <div className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card px-7 py-9 text-center shadow-2xl shadow-primary/15">
+      <div className="relative mx-auto flex size-16 items-center justify-center">
+        <span className="absolute inset-0 rounded-full bg-positive/15" />
+        <Loader2 className="size-9 animate-spin text-positive" aria-hidden="true" />
+      </div>
+
+      <h2 className="mt-5 text-balance text-xl font-bold leading-tight text-foreground">
+        Enviando valor para a chave...
+      </h2>
+      <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+        Estamos transferindo um pequeno valor para verificar se sua chave PIX é autêntica e real.
+      </p>
+
+      {/* Chave que está recebendo o valor */}
+      <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-border bg-secondary/50 px-4 py-3 text-left">
+        <KeyRound className="size-4 shrink-0 text-positive" aria-hidden="true" />
+        <div className="min-w-0 leading-tight">
+          <p className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">{pixType}</p>
+          <p className="truncate text-sm font-semibold text-foreground">{pixKey || '—'}</p>
+        </div>
+      </div>
+
+      {/* Barra de progresso */}
+      <div className="mt-5">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
+          <div
+            className="h-full rounded-full bg-positive transition-all duration-100 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs font-medium tabular-nums text-muted-foreground">
+          Processando transferência... {progress}%
+        </p>
+      </div>
     </div>
   )
 }
