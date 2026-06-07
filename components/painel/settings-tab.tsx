@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Server,
   Plug,
+  Gift,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +27,7 @@ interface SettingsPayload {
     verificationEnabled: boolean
     activeCashoutGateway: string
     verificationAmountCents: number
+    inviteAmountCents: number
   }
   gateways: GatewayMeta[]
 }
@@ -51,6 +53,7 @@ export function SettingsTab() {
   const [enabled, setEnabled] = useState(true)
   const [gateway, setGateway] = useState('pixup')
   const [amountReais, setAmountReais] = useState('0,90')
+  const [inviteReais, setInviteReais] = useState('24,80')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -64,6 +67,9 @@ export function SettingsTab() {
         ((data.settings.verificationAmountCents || 0) / 100)
           .toFixed(2)
           .replace('.', ','),
+      )
+      setInviteReais(
+        ((data.settings.inviteAmountCents || 0) / 100).toFixed(2).replace('.', ','),
       )
     }
   }, [data])
@@ -81,13 +87,19 @@ export function SettingsTab() {
     data?.settings &&
     (enabled !== data.settings.verificationEnabled ||
       gateway !== data.settings.activeCashoutGateway ||
-      parseAmountCents(amountReais) !== data.settings.verificationAmountCents)
+      parseAmountCents(amountReais) !== data.settings.verificationAmountCents ||
+      parseAmountCents(inviteReais) !== data.settings.inviteAmountCents)
 
   const save = async () => {
     setSaveError(null)
     const cents = parseAmountCents(amountReais)
     if (cents === null || cents < 1 || cents > 5000) {
-      setSaveError('Valor inválido. Use algo entre R$ 0,01 e R$ 50,00.')
+      setSaveError('Valor de verificação inválido. Use algo entre R$ 0,01 e R$ 50,00.')
+      return
+    }
+    const inviteCents = parseAmountCents(inviteReais)
+    if (inviteCents === null || inviteCents < 100 || inviteCents > 100000) {
+      setSaveError('Valor do convite inválido. Use algo entre R$ 1,00 e R$ 1.000,00.')
       return
     }
 
@@ -100,6 +112,7 @@ export function SettingsTab() {
           verificationEnabled: enabled,
           activeCashoutGateway: gateway,
           verificationAmountCents: cents,
+          inviteAmountCents: inviteCents,
         }),
       })
       const json = await res.json()
@@ -294,6 +307,44 @@ export function SettingsTab() {
           Para adicionar um novo gateway, basta registrá-lo no servidor — ele aparece aqui
           automaticamente como opção selecionável.
         </p>
+      </section>
+
+      {/* Valor do convite (/convite) */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Gift className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">Valor do convite</h2>
+            <p className="text-sm text-muted-foreground">
+              Preço exibido e cobrado na página <span className="font-medium">/convite</span>.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label htmlFor="invite-amount" className="text-sm font-semibold text-foreground">
+            Valor do convite (PIX)
+          </label>
+          <p className="mb-3 mt-1 text-xs text-muted-foreground">
+            Define o preço mostrado no card e o valor do PIX gerado. Aplicado no servidor — o
+            cliente não consegue alterar.
+          </p>
+          <div className="relative max-w-[12rem]">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+              R$
+            </span>
+            <input
+              id="invite-amount"
+              type="text"
+              inputMode="decimal"
+              value={inviteReais}
+              onChange={(e) => setInviteReais(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-sm font-semibold text-foreground outline-none focus:border-primary"
+            />
+          </div>
+        </div>
       </section>
 
       {/* Barra de salvar */}

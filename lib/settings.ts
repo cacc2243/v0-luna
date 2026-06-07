@@ -4,18 +4,21 @@ export interface AppSettings {
   verificationEnabled: boolean
   activeCashoutGateway: string
   verificationAmountCents: number
+  inviteAmountCents: number
 }
 
 const DEFAULTS: AppSettings = {
   verificationEnabled: true,
   activeCashoutGateway: 'pixup',
   verificationAmountCents: 90,
+  inviteAmountCents: 2480,
 }
 
 const KEY_MAP = {
   verificationEnabled: 'verification_enabled',
   activeCashoutGateway: 'active_cashout_gateway',
   verificationAmountCents: 'verification_amount_cents',
+  inviteAmountCents: 'invite_amount_cents',
 } as const
 
 /**
@@ -48,10 +51,17 @@ export async function getAppSettings(): Promise<AppSettings> {
       ? Math.round(rawAmount)
       : DEFAULTS.verificationAmountCents
 
+  const rawInvite = map.get(KEY_MAP.inviteAmountCents)
+  const inviteAmountCents =
+    typeof rawInvite === 'number' && Number.isFinite(rawInvite)
+      ? Math.round(rawInvite)
+      : DEFAULTS.inviteAmountCents
+
   return {
     verificationEnabled,
     activeCashoutGateway,
     verificationAmountCents,
+    inviteAmountCents,
   }
 }
 
@@ -87,6 +97,14 @@ export async function updateAppSettings(
     rows.push({
       key: KEY_MAP.verificationAmountCents,
       value: Math.round(patch.verificationAmountCents),
+      updated_at: now,
+      updated_by: updatedBy,
+    })
+  }
+  if (typeof patch.inviteAmountCents === 'number') {
+    rows.push({
+      key: KEY_MAP.inviteAmountCents,
+      value: Math.round(patch.inviteAmountCents),
       updated_at: now,
       updated_by: updatedBy,
     })

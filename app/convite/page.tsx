@@ -17,7 +17,7 @@ interface SignupData {
   pixKey: string
 }
 
-const INVITE_PRICE = 24.80
+const DEFAULT_INVITE_CENTS = 2480
 
 export default function ConvitePage() {
   const router = useRouter()
@@ -28,6 +28,8 @@ export default function ConvitePage() {
     pixKey: '',
   })
   const [showPixModal, setShowPixModal] = useState(false)
+  // Valor do convite controlado pelo painel (fonte da verdade no servidor).
+  const [inviteCents, setInviteCents] = useState(DEFAULT_INVITE_CENTS)
 
   useEffect(() => {
     try {
@@ -35,6 +37,21 @@ export default function ConvitePage() {
       if (raw) setData(JSON.parse(raw))
     } catch {
       // ignore
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/settings/public')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active && d && typeof d.inviteAmountCents === 'number') {
+          setInviteCents(d.inviteAmountCents)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
     }
   }, [])
 
@@ -107,7 +124,7 @@ export default function ConvitePage() {
         />
 
         {/* Preço + garantia */}
-        <PriceCard onAcquire={handleAcquire} />
+        <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} />
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
@@ -121,7 +138,7 @@ export default function ConvitePage() {
         isOpen={showPixModal}
         onClose={() => setShowPixModal(false)}
         email={data.email}
-        amount={INVITE_PRICE}
+        amount={inviteCents / 100}
         userName={data.username}
         onPaymentConfirmed={handlePaymentConfirmed}
       />

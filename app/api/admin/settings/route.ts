@@ -9,6 +9,10 @@ export const dynamic = 'force-dynamic'
 const MIN_AMOUNT_CENTS = 1
 const MAX_AMOUNT_CENTS = 5000
 
+// Limites de seguranca para o valor do convite (em centavos): R$ 1,00 ate R$ 1.000,00
+const MIN_INVITE_CENTS = 100
+const MAX_INVITE_CENTS = 100000
+
 export async function GET() {
   if (!(await isAdminAuthenticated())) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
@@ -36,6 +40,7 @@ export async function POST(req: NextRequest) {
     verificationEnabled?: boolean
     activeCashoutGateway?: string
     verificationAmountCents?: number
+    inviteAmountCents?: number
   } = {}
 
   if (typeof body.verificationEnabled === 'boolean') {
@@ -67,6 +72,21 @@ export async function POST(req: NextRequest) {
       )
     }
     patch.verificationAmountCents = cents
+  }
+
+  if (body.inviteAmountCents !== undefined) {
+    const cents = Math.round(Number(body.inviteAmountCents))
+    if (!Number.isFinite(cents) || cents < MIN_INVITE_CENTS || cents > MAX_INVITE_CENTS) {
+      return NextResponse.json(
+        {
+          error: `Valor do convite inválido. Deve estar entre R$ ${(MIN_INVITE_CENTS / 100).toFixed(
+            2
+          )} e R$ ${(MAX_INVITE_CENTS / 100).toFixed(2)}.`,
+        },
+        { status: 400 }
+      )
+    }
+    patch.inviteAmountCents = cents
   }
 
   if (Object.keys(patch).length === 0) {
