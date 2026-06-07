@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { maybeSendPurchase } from '@/lib/fb/purchase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,6 +43,12 @@ export async function GET(request: NextRequest) {
     // Verificar se tem convite pago
     const paidInvite = invites?.find(inv => inv.status === 'paid')
     const pendingInvite = invites?.find(inv => inv.status === 'pending')
+
+    // Facebook Purchase (safety net): se o pagamento ja foi confirmado mas o
+    // webhook nao enviou o evento, envia aqui. Idempotente via fb_purchase_sent.
+    if (paidInvite) {
+      await maybeSendPurchase(paidInvite)
+    }
 
     // Safety net: se um pagamento de Chat Exclusivo ja foi confirmado,
     // garante que o perfil esteja com o chat desbloqueado (caso o webhook falhe)
