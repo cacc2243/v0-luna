@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 import { cn } from '@/lib/utils'
+import { fbTrack } from '@/lib/fb/track'
 
 interface SignupFlowProps {
   onComplete: () => void
@@ -148,7 +149,14 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       } catch {
         // ignore storage errors
       }
-      
+
+      // Evento Facebook: cadastro concluido
+      try {
+        fbTrack('CompleteRegistration', { content_name: 'Cadastro Luna Privé' })
+      } catch {
+        // nunca bloquear o fluxo por causa do pixel
+      }
+
       setStatus('invite')
     } catch (err) {
       console.error('[v0] Signup error:', err)

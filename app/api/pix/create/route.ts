@@ -102,7 +102,20 @@ async function createBynetTransaction(
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, amount, name, document, phone, type, boostDays } = await request.json()
+    const {
+      userId,
+      email,
+      amount,
+      name,
+      document,
+      phone,
+      type,
+      boostDays,
+      fbp,
+      fbc,
+      eventSourceUrl,
+      fbEventId,
+    } = await request.json()
 
     if (!email) {
       return NextResponse.json(
@@ -110,6 +123,14 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Sinais de atribuicao do Facebook capturados no browser + IP/UA do request,
+    // persistidos no invite para enviar o Purchase via Conversions API.
+    const clientIp =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      null
+    const clientUa = request.headers.get('user-agent') || null
 
     // Tipo de pagamento: 'invite', 'chat', 'gift_unlock', 'boost' ou 'verification' (verificação para saque)
     const inviteType =
@@ -250,6 +271,17 @@ export async function POST(request: NextRequest) {
 
     // Se ja existia um convite pendente sem pix_code, atualizar; senao inserir
     let invite
+
+    // Sinais de atribuicao do Facebook (persistidos para o Purchase server-side).
+    const fbAttribution = {
+      fbp: fbp || null,
+      fbc: fbc || null,
+      client_ip: clientIp,
+      client_ua: clientUa,
+      event_source_url: eventSourceUrl || null,
+      fb_event_id: fbEventId || null,
+    }
+
     if (existingInvite) {
       const { data: updated, error: updateError } = await supabase
         .from('invites')
@@ -259,6 +291,7 @@ export async function POST(request: NextRequest) {
           pix_qrcode: null,
           boost_days: inviteType === 'boost' ? Number(boostDays) || null : existingInvite.boost_days ?? null,
           pix_expiration: pixExpirationDate.toISOString(),
+          ...fbAttribution,
         })
         .eq('id', existingInvite.id)
         .select()
@@ -283,6 +316,7 @@ export async function POST(request: NextRequest) {
           pix_code: pixCode,
           pix_qrcode: null,
           pix_expiration: pixExpirationDate.toISOString(),
+          ...fbAttribution,
         })
         .select()
         .single()

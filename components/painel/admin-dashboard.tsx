@@ -15,6 +15,7 @@ import {
   ImageIcon,
   ShieldCheck,
   Settings,
+  Facebook,
 } from 'lucide-react'
 import { logoutAction } from '@/app/painel/actions'
 import { SummaryTab } from './summary-tab'
@@ -23,6 +24,7 @@ import { GatewayTestTab } from './gateway-test-tab'
 import { ImagesTab } from './images-tab'
 import { VerificationsTab } from './verifications-tab'
 import { SettingsTab } from './settings-tab'
+import { PixelTab } from './pixel-tab'
 import {
   PERIOD_LABELS,
   type InviteRow,
@@ -45,7 +47,7 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'pix' | 'verificacoes' | 'imagens' | 'gateways' | 'config'
+type TabKey = 'resumo' | 'clientes' | 'pix' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
@@ -54,6 +56,7 @@ const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'verificacoes', label: 'Verificações', icon: ShieldCheck },
   { key: 'imagens', label: 'Imagens', icon: ImageIcon },
   { key: 'gateways', label: 'Gateways', icon: FlaskConical },
+  { key: 'pixel', label: 'Pixel', icon: Facebook },
   { key: 'config', label: 'Configurações', icon: Settings },
 ]
 
@@ -223,7 +226,7 @@ export function AdminDashboard() {
             </div>
           ) : (
             <>
-              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && (
+              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
                   {tab !== 'clientes' && (
@@ -254,6 +257,7 @@ export function AdminDashboard() {
               {tab === 'verificacoes' && <VerificationsTab verifications={verifications} />}
               {tab === 'imagens' && <ImagesTab />}
               {tab === 'gateways' && <GatewayTestTab />}
+              {tab === 'pixel' && <PixelTab />}
               {tab === 'config' && <SettingsTab />}
             </>
           )}

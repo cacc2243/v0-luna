@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, Copy, Check, Clock, QrCode, AlertCircle, RefreshCw } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
+import { fbTrackCustom, newEventId, readCookie } from '@/lib/fb/track'
 
 interface PixModalProps {
   isOpen: boolean
@@ -80,6 +81,15 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
     setError(null)
 
     try {
+      // Sinais de atribuicao capturados no browser para enviar o Purchase
+      // server-side (Conversions API) com a mesma identidade do usuario.
+      const fbp = readCookie('_fbp')
+      const fbc = readCookie('_fbc')
+      const eventSourceUrl = typeof window !== 'undefined' ? window.location.href : null
+      // event_id do Purchase: definido agora e reutilizado no servidor para
+      // deduplicacao entre o Pixel (browser) e a Conversions API.
+      const purchaseEventId = newEventId('purchase')
+
       const response = await fetch('/api/pix/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,14 +99,18 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
           name: userName || 'Cliente Luna',
           type,
           boostDays,
+          fbp,
+          fbc,
+          eventSourceUrl,
+          fbEventId: purchaseEventId,
         }),
       })
 
       const data = await response.json()
 
       if (!response.ok || !data.success) {
-        const errorMessage = typeof data.error === 'string' 
-          ? data.error 
+        const errorMessage = typeof data.error === 'string'
+          ? data.error
           : typeof data.error === 'object' && data.error?.message
             ? data.error.message
             : 'Erro ao gerar PIX'
@@ -106,6 +120,19 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
       setPixCode(data.pixCode)
       setExpiresAt(data.expiresAt)
       setInviteId(data.invite?.id)
+
+      // Evento personalizado "PixGerado" — apenas no fluxo de convite.
+      if (type === 'invite') {
+        try {
+          fbTrackCustom('PixGerado', {
+            content_name: 'Convite Luna Privé',
+            value: amount,
+            currency: 'BRL',
+          })
+        } catch {
+          // nunca bloquear o fluxo por causa do pixel
+        }
+      }
 
       // Gerar QR Code a partir do codigo PIX (a API retorna apenas o codigo EMV)
       if (data.pixCode) {
