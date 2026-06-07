@@ -449,14 +449,25 @@ function ChatConversation({
 
     setStep(res.flowStep)
 
-    // Revela as respostas do comprador com o indicador de "digitando..."
+    // Revela as respostas do comprador com ritmo natural:
+    // pausa para "ler", indicador de digitando proporcional ao tamanho da
+    // mensagem, e a bolha aparecendo ao terminar de digitar.
     const buyerMsgs = res.buyerMessages || []
     let delay = 0
     buyerMsgs.forEach((bm, i) => {
-      delay += i === 0 ? 1200 : 2600
-      const tStart = setTimeout(() => setTyping(true), delay - 1100)
+      const content = bm.content ?? ''
+      // tempo "digitando" proporcional ao tamanho (presentes sao rapidos)
+      const typingMs =
+        bm.message_type === 'gift'
+          ? 700
+          : Math.min(2600, Math.max(700, content.length * 55))
+      // pequena pausa antes de comecar a digitar a proxima bolha
+      const gapMs = i === 0 ? 700 : 500 + Math.random() * 500
+
+      const tStart = setTimeout(() => setTyping(true), delay + gapMs)
+      delay += gapMs + typingMs
       const tEnd = setTimeout(() => {
-        if (i === buyerMsgs.length - 1) setTyping(false)
+        setTyping(false)
         setMessages((prev) => [...prev, toChatMessage(bm)])
       }, delay)
       timers.current.push(tStart, tEnd)
@@ -557,14 +568,22 @@ function ChatConversation({
   async function handleLockedAttempt() {
     if (lockedMsgSent.current) return
     lockedMsgSent.current = true
-    setTyping(true)
     const res = await sendLockedMessage(conversation.id)
-    setTimeout(() => {
-      setTyping(false)
-      if (res && 'message' in res && res.message) {
-        setMessages((prev) => [...prev, toChatMessage(res.message as Message)])
-      }
-    }, 1400)
+    if (!res || !('messages' in res) || !res.messages) return
+    const lockedMsgs = res.messages
+    let delay = 0
+    lockedMsgs.forEach((lm, i) => {
+      const content = lm.content ?? ''
+      const typingMs = Math.min(2600, Math.max(700, content.length * 55))
+      const gapMs = i === 0 ? 600 : 500 + Math.random() * 500
+      const tStart = setTimeout(() => setTyping(true), delay + gapMs)
+      delay += gapMs + typingMs
+      const tEnd = setTimeout(() => {
+        setTyping(false)
+        setMessages((prev) => [...prev, toChatMessage(lm as Message)])
+      }, delay)
+      timers.current.push(tStart, tEnd)
+    })
   }
 
   async function handleClaim(): Promise<boolean> {

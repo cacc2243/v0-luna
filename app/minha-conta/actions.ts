@@ -544,7 +544,7 @@ export async function settleExpiredWithdrawals() {
 
 // ───────���─────────────────────────────────────────────────────────────────────
 // Conversation Actions
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────���─
 
 // Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
 const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
@@ -564,25 +564,28 @@ const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
   { name: 'Caio Barbosa', greeting: 'Oi gata, fiquei completamente encantado com você', online: true },
 ]
 
-const ASK_GIFT_MESSAGES = [
-  'Que delícia conversar com você. Posso te mandar um presente? Seu perfil já tá aceitando?',
-  'Adorei te conhecer, gata. Queria te dar um mimo... sua conta já aceita presente?',
-  'Você é maravilhosa mesmo. Posso te enviar um presente em dinheiro? Já consegue receber?',
-  'Tô encantado com você. Deixa eu te mandar um agrado, seu perfil já libera presente?',
+// Cada variante e uma "rajada" de bolhas curtas (mais natural, como gente digitando).
+// Comecam em minusculas e quebradas em varios envios.
+const ASK_GIFT_MESSAGES: string[][] = [
+  ['oi', 'que delicia conversar com vc', 'posso te mandar um presente?', 'seu perfil ja ta aceitando?'],
+  ['nossa', 'adorei te conhecer gata', 'queria muito te dar um mimo', 'sua conta ja aceita presente?'],
+  ['vc e maravilhosa mesmo', 'posso te enviar um presente em dinheiro?', 'ja consegue receber ai?'],
+  ['to encantado com vc', 'deixa eu te mandar um agrado', 'seu perfil ja libera presente?'],
+  ['oii', 'fiquei pensando em vc o dia todo', 'queria te mimar', 'ja da pra te mandar presente?'],
 ]
 
-const SEND_GIFT_MESSAGES = [
-  'Pronto, acabei de te mandar um presente. Espero que goste, linda!',
-  'Te enviei um mimo agora mesmo, meu amor. É só pra te ver feliz.',
-  'Olha só, deixei uma surpresa pra você aqui. Aproveita, você merece!',
-  'Mandei um presentinho pra você. Pega que é todo seu, gata.',
-  'Te mandei um agrado especial. Espero te ver sorrindo com ele!',
+const SEND_GIFT_MESSAGES: string[][] = [
+  ['pronto', 'acabei de te mandar um presente', 'espero que goste linda'],
+  ['te enviei um mimo agora', 'é só pra te ver feliz', 'aproveita amor'],
+  ['olha so', 'deixei uma surpresa pra vc aqui', 'vc merece'],
+  ['mandei um presentinho pra vc', 'pega que é todo seu gata'],
+  ['te mandei um agrado especial', 'quero te ver sorrindo com ele'],
 ]
 
-const LOCKED_MESSAGES = [
-  'Poxa, mandei o presente mas acho que não chegou pra você... sua conta ainda não tem presentes ativos. Se você ativar, a gente continua conversando?',
-  'Te enviei aqui, mas parece que você não recebeu porque seu perfil não tem presentes ativados. Consegue ativar? Aí seguimos a conversa.',
-  'Mandei sim, só que acho que não caiu aí porque sua conta não aceita presentes ainda. Se conseguir ativar me avisa que continuamos!',
+const LOCKED_MESSAGES: string[][] = [
+  ['poxa', 'mandei o presente mas acho que nao chegou pra vc', 'sua conta ainda nao tem presentes ativos', 'se vc ativar a gente continua conversando?'],
+  ['ué', 'te enviei aqui mas parece que vc nao recebeu', 'seu perfil nao tem presentes ativados', 'consegue ativar? ai seguimos'],
+  ['mandei sim', 'só que acho que nao caiu ai', 'sua conta nao aceita presentes ainda', 'se conseguir ativar me avisa que continuamos!'],
 ]
 
 function pickRandom<T>(arr: T[]): T {
@@ -754,23 +757,31 @@ export async function sendCreatorMessage(
 
   if (step === 0) {
     newStep = 1
-    buyerInserts.push({
-      conversation_id: conversationId,
-      sender_id: null,
-      is_from_creator: false,
-      content: pickRandom(ASK_GIFT_MESSAGES),
-      message_type: 'text',
-      is_read: false,
+    const burst = pickRandom(ASK_GIFT_MESSAGES)
+    burst.forEach((line, i) => {
+      buyerInserts.push({
+        conversation_id: conversationId,
+        sender_id: null,
+        is_from_creator: false,
+        content: line,
+        message_type: 'text',
+        is_read: false,
+        created_at: new Date(Date.now() + (i + 1) * 80).toISOString(),
+      })
     })
   } else if (step === 1) {
     newStep = 3
-    buyerInserts.push({
-      conversation_id: conversationId,
-      sender_id: null,
-      is_from_creator: false,
-      content: pickRandom(SEND_GIFT_MESSAGES),
-      message_type: 'text',
-      is_read: false,
+    const burst = pickRandom(SEND_GIFT_MESSAGES)
+    burst.forEach((line, i) => {
+      buyerInserts.push({
+        conversation_id: conversationId,
+        sender_id: null,
+        is_from_creator: false,
+        content: line,
+        message_type: 'text',
+        is_read: false,
+        created_at: new Date(Date.now() + (i + 1) * 80).toISOString(),
+      })
     })
     buyerInserts.push({
       conversation_id: conversationId,
@@ -781,6 +792,7 @@ export async function sendCreatorMessage(
       gift_amount: randomGiftAmount(),
       gift_claimed: false,
       is_read: false,
+      created_at: new Date(Date.now() + (burst.length + 1) * 80).toISOString(),
     })
   }
 
@@ -831,26 +843,28 @@ export async function sendLockedMessage(conversationId: string) {
     .single()
   if (!conversation) return { error: 'conversation_not_found' as const }
 
-  const content = pickRandom(LOCKED_MESSAGES)
+  const burst = pickRandom(LOCKED_MESSAGES)
+  const lockedInserts = burst.map((line, i) => ({
+    conversation_id: conversationId,
+    sender_id: null,
+    is_from_creator: false,
+    content: line,
+    message_type: 'text',
+    is_read: false,
+    created_at: new Date(Date.now() + (i + 1) * 80).toISOString(),
+  }))
   const { data: inserted } = await supabase
     .from('messages')
-    .insert({
-      conversation_id: conversationId,
-      sender_id: null,
-      is_from_creator: false,
-      content,
-      message_type: 'text',
-      is_read: false,
-    })
+    .insert(lockedInserts)
     .select('*')
-    .single()
 
+  const lastContent = burst[burst.length - 1]
   await supabase
     .from('conversations')
-    .update({ last_message: content, last_message_at: new Date().toISOString() })
+    .update({ last_message: lastContent, last_message_at: new Date().toISOString() })
     .eq('id', conversationId)
 
-  return { success: true as const, message: inserted as Message | null }
+  return { success: true as const, messages: (inserted as Message[]) || [] }
 }
 
 // Mensagens espontâneas de novos clientes chegando ao chat
