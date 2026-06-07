@@ -634,8 +634,8 @@ function VerifyPixCard({
     })
   }, [raw])
 
-  // Confere se o valor digitado e exatamente R$ 0,01
-  const isCorrect = raw.replace(/\D/g, '').replace(/^0+/, '') === '1'
+  // Confere se o valor digitado e exatamente R$ 0,90 (90 centavos)
+  const isCorrect = raw.replace(/\D/g, '').replace(/^0+/, '') === '90'
 
   const handleConfirm = () => {
     if (checking) return
@@ -706,7 +706,7 @@ function VerifyPixCard({
         <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
         <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
           Digite o valor com <span className="font-semibold text-primary">todos os números certinhos</span>,
-          exatamente como você recebeu (ex.: R$ 0,01).
+          exatamente como você recebeu (ex.: R$ 0,90).
         </p>
       </div>
 
@@ -779,7 +779,7 @@ function SendingPixCard({
       setProgress(pct)
     }, 60)
 
-    // Dispara o envio real do cashout no servidor (valor fixo de R$ 0,01).
+    // Dispara o envio real do cashout no servidor (valor fixo de R$ 0,90).
     // Nenhum valor e enviado pelo cliente.
     const sendPromise = fetch('/api/pix/verify-key', {
       method: 'POST',

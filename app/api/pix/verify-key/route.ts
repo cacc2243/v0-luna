@@ -1,107 +1,37 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createPixupCashout } from '@/lib/pixup/client'
 import { NextRequest, NextResponse } from 'next/server'
 
-const BYNET_API_URL = 'https://api-gateway.techbynet.com'
-
-// Valor IMUTAVEL da verificacao: 1 centavo (R$ 0,01).
+// Valor IMUTAVEL da verificacao: R$ 0,90.
 // Definido exclusivamente no servidor. Nenhum valor vindo do cliente e aceito.
-const VERIFICATION_AMOUNT_CENTS = 1
+// Guardamos em centavos no banco (90) e enviamos em reais para a PixUp (0.90).
+const VERIFICATION_AMOUNT_CENTS = 90
+const VERIFICATION_AMOUNT_BRL = 0.9
 
-// Tipos de chave PIX aceitos pela Bynet
-type PixType = 'CPF' | 'CNPJ' | 'EMAIL' | 'PHONE' | 'RANDOM'
+// Tipos de chave PIX aceitos pela PixUp (lowercase)
+type PixType = 'cpf' | 'cnpj' | 'email' | 'phone' | 'random'
 
-// Nome de fallback para o beneficiario (a chave PIX real e o que importa)
-const FALLBACK_BENEFICIARY_NAME = 'Beneficiario Luna Prive'
+// Nome de fallback para o recebedor (a chave PIX real e o que importa)
+const FALLBACK_RECEIVER_NAME = 'Beneficiario Luna Prive'
 
-// Gera um CPF valido (digitos verificadores corretos) para o campo
-// beneficiaryDocument quando a chave nao for um CPF.
-function generateValidCPF(): string {
-  const n = () => Math.floor(Math.random() * 9)
-  const d: number[] = Array.from({ length: 9 }, n)
-
-  let sum = 0
-  for (let i = 0; i < 9; i++) sum += d[i] * (10 - i)
-  let r = (sum * 10) % 11
-  if (r === 10) r = 0
-  d.push(r)
-
-  sum = 0
-  for (let i = 0; i < 10; i++) sum += d[i] * (11 - i)
-  r = (sum * 10) % 11
-  if (r === 10) r = 0
-  d.push(r)
-
-  return d.join('')
-}
-
-function isValidCPF(cpf: string): boolean {
-  const clean = (cpf || '').replace(/\D/g, '')
-  if (clean.length !== 11) return false
-  if (/^(\d)\1{10}$/.test(clean)) return false
-
-  let sum = 0
-  for (let i = 0; i < 9; i++) sum += parseInt(clean[i]) * (10 - i)
-  let r = (sum * 10) % 11
-  if (r === 10) r = 0
-  if (r !== parseInt(clean[9])) return false
-
-  sum = 0
-  for (let i = 0; i < 10; i++) sum += parseInt(clean[i]) * (11 - i)
-  r = (sum * 10) % 11
-  if (r === 10) r = 0
-  if (r !== parseInt(clean[10])) return false
-
-  return true
-}
-
-// Normaliza o tipo recebido do front (rotulos em PT) para o enum da Bynet.
+// Normaliza o tipo recebido do front (rotulos em PT) para o enum da PixUp.
 function normalizePixType(raw: string): PixType {
   const t = (raw || '').toUpperCase()
-  if (t.includes('CNPJ')) return 'CNPJ'
-  if (t.includes('CPF')) return 'CPF'
-  if (t.includes('MAIL') || t.includes('EMAIL') || t.includes('E-MAIL')) return 'EMAIL'
-  if (t.includes('PHONE') || t.includes('TELEFONE') || t.includes('CELULAR')) return 'PHONE'
-  if (t.includes('RANDOM') || t.includes('ALEAT')) return 'RANDOM'
-  // Heuristica pelo formato da chave nao e necessaria aqui; default seguro
-  return 'CPF'
+  if (t.includes('CNPJ')) return 'cnpj'
+  if (t.includes('CPF')) return 'cpf'
+  if (t.includes('MAIL') || t.includes('EMAIL') || t.includes('E-MAIL')) return 'email'
+  if (t.includes('PHONE') || t.includes('TELEFONE') || t.includes('CELULAR')) return 'phone'
+  if (t.includes('RANDOM') || t.includes('ALEAT') || t.includes('EVP')) return 'random'
+  return 'cpf'
 }
 
 // Normaliza a chave para servir de identificador unico anti-duplicidade.
-// CPF/CNPJ/PHONE -> apenas digitos. EMAIL -> minusculo. RANDOM -> trim.
+// cpf/cnpj/phone -> apenas digitos. email -> minusculo. random -> trim.
 function normalizePixKey(pixKey: string, type: PixType): string {
   const raw = (pixKey || '').trim()
-  if (type === 'EMAIL') return raw.toLowerCase()
-  if (type === 'CPF' || type === 'CNPJ' || type === 'PHONE') return raw.replace(/\D/g, '')
+  if (type === 'email') return raw.toLowerCase()
+  if (type === 'cpf' || type === 'cnpj' || type === 'phone') return raw.replace(/\D/g, '')
   return raw.toLowerCase()
-}
-
-interface BynetCashoutResult {
-  ok: boolean
-  status: number
-  data: any
-}
-
-async function createBynetCashout(
-  apiKey: string,
-  body: Record<string, unknown>
-): Promise<BynetCashoutResult> {
-  const response = await fetch(`${BYNET_API_URL}/api/user/cashout`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'User-Agent': 'AtivoB2B/1.0',
-    },
-    body: JSON.stringify(body),
-  })
-
-  let data: any = {}
-  try {
-    data = await response.json()
-  } catch {
-    data = {}
-  }
-  return { ok: response.ok, status: response.status, data }
 }
 
 export async function POST(request: NextRequest) {
@@ -114,9 +44,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chave PIX inválida' }, { status: 400 })
     }
 
-    const apiKey = process.env.BYNET_API_KEY
-    if (!apiKey) {
-      console.error('[v0] BYNET_API_KEY não configurada')
+    if (!process.env.PIXUP_CLIENT_ID || !process.env.PIXUP_CLIENT_SECRET || !process.env.PIXUP_SIGNING_KEY) {
+      console.error('[v0] Credenciais PixUp não configuradas')
       return NextResponse.json(
         { error: 'Gateway de pagamento não configurado' },
         { status: 500 }
@@ -156,6 +85,7 @@ export async function POST(request: NextRequest) {
         amount_cents: VERIFICATION_AMOUNT_CENTS,
         status: 'processing',
         attempts: 1,
+        provider: 'pixup',
         request_ip: requestIp,
         user_agent: userAgent,
       })
@@ -167,7 +97,6 @@ export async function POST(request: NextRequest) {
     if (insertError) {
       // Codigo 23505 = unique_violation -> ja existe verificacao ativa/concluida
       if (insertError.code === '23505') {
-        // Verificar se a unica existente esta 'failed' (permite retry)
         const { data: existing } = await supabase
           .from('pix_verifications')
           .select('*')
@@ -195,7 +124,6 @@ export async function POST(request: NextRequest) {
             .single()
 
           if (retryError || !retried) {
-            // Outra requisicao ja pegou o retry
             return NextResponse.json(
               { error: 'Esta chave PIX já está sendo verificada ou já foi verificada.' },
               { status: 409 }
@@ -203,7 +131,6 @@ export async function POST(request: NextRequest) {
           }
           verification = retried
         } else {
-          // Ja enviado/em andamento com sucesso: BLOQUEIA novo envio.
           return NextResponse.json(
             {
               error: 'Esta chave PIX já recebeu o valor de verificação.',
@@ -222,59 +149,63 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erro ao registrar verificação' }, { status: 500 })
     }
 
-    // ------------------------------------------------------------------
-    // 2) Determinar documento do beneficiario.
-    //    Se a chave for CPF valido, usa a propria chave. Senao, gera um
-    //    CPF valido (a chave PIX real continua sendo o destino do envio).
-    // ------------------------------------------------------------------
-    const docFromKey = keyNormalized.replace(/\D/g, '')
-    const beneficiaryDocument =
-      type === 'CPF' && isValidCPF(docFromKey) ? docFromKey : generateValidCPF()
+    // external_id deterministico por registro (idempotencia na PixUp).
+    const externalId = `luna_verify_${verification.id}`
 
     const safeName =
       typeof beneficiaryName === 'string' && beneficiaryName.trim().length >= 3
         ? beneficiaryName.trim()
-        : FALLBACK_BENEFICIARY_NAME
+        : FALLBACK_RECEIVER_NAME
 
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
       request.headers.get('origin') ||
       'https://luna-prive.vercel.app'
 
-    // Corpo do cashout. amount FIXO no servidor (1 centavo).
-    const cashoutBody: Record<string, unknown> = {
-      amount: VERIFICATION_AMOUNT_CENTS,
-      pixKey: pixKey.trim(),
-      pixKeyType: type,
-      pixType: type,
-      beneficiaryName: safeName,
-      beneficiaryDocument,
-      description: 'Verificação de chave PIX Luna Privé',
-      postbackUrl: `${siteUrl}/api/pix/cashout-webhook`,
+    // ------------------------------------------------------------------
+    // 2) Chamar a PixUp (OAuth2 + HMAC tratados no cliente).
+    //    amount FIXO no servidor (R$ 0,90).
+    // ------------------------------------------------------------------
+    let result
+    try {
+      result = await createPixupCashout({
+        externalId,
+        amount: VERIFICATION_AMOUNT_BRL,
+        key: pixKey.trim(),
+        keyType: type,
+        name: safeName,
+        description: 'Verificação de chave PIX Luna Privé',
+        postbackUrl: `${siteUrl}/api/pix/cashout-webhook`,
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao contatar a gateway'
+      console.error('[v0] Erro ao chamar PixUp:', msg)
+      await supabase
+        .from('pix_verifications')
+        .update({ status: 'failed', last_error: msg.slice(0, 500), external_id: externalId })
+        .eq('id', verification.id)
+      return NextResponse.json(
+        {
+          error: 'Não foi possível enviar o valor de verificação para esta chave PIX.',
+          gatewayMessage: msg.slice(0, 300),
+        },
+        { status: 502 }
+      )
     }
 
-    // ------------------------------------------------------------------
-    // 3) Chamar a Bynet
-    // ------------------------------------------------------------------
-    const result = await createBynetCashout(apiKey, cashoutBody)
-    const respData = result.data?.data || result.data || {}
-    const transactionId = respData.id || respData.transactionId || null
+    const respData = result.data?.data || {}
+    const transactionId = respData.transaction_id || null
 
-    if (!result.ok || result.data?.error) {
-      const errMsg =
-        result.data?.error ||
-        result.data?.message ||
-        `Falha no cashout (status ${result.status})`
-      console.error('[v0] Cashout Bynet falhou:', errMsg, '| status:', result.status)
+    if (!result.ok) {
+      const errMsg = result.errorMessage || `Falha no cashout (status ${result.status})`
+      console.error('[v0] Cashout PixUp falhou:', errMsg, '| status:', result.status)
 
       // Marca como failed para permitir retry futuro.
       await supabase
         .from('pix_verifications')
-        .update({ status: 'failed', last_error: String(errMsg).slice(0, 500) })
+        .update({ status: 'failed', last_error: String(errMsg).slice(0, 500), external_id: externalId })
         .eq('id', verification.id)
 
-      // Repassa a mensagem real da gateway (ex: "Saldo insuficiente.") para
-      // facilitar o diagnostico no painel e na tela, sem expor dados sensiveis.
       return NextResponse.json(
         {
           error: 'Não foi possível enviar o valor de verificação para esta chave PIX.',
@@ -285,13 +216,15 @@ export async function POST(request: NextRequest) {
     }
 
     // ------------------------------------------------------------------
-    // 4) Sucesso: marca pending e guarda o id da transacao.
+    // 3) Sucesso (202 Accepted): marca pending e guarda ids da transacao.
+    //    A confirmacao final chega via webhook cashout.confirmed.
     // ------------------------------------------------------------------
     const { data: confirmed } = await supabase
       .from('pix_verifications')
       .update({
         status: 'pending',
         transaction_id: transactionId,
+        external_id: externalId,
         last_error: null,
       })
       .eq('id', verification.id)
