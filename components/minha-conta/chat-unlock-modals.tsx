@@ -1,6 +1,6 @@
 'use client'
 
-import { Lock, MessageCircleHeart, Sparkles, ShieldCheck, BadgeCheck, X, Wallet, Crown, Gift, MessagesSquare, HandCoins } from 'lucide-react'
+import { Lock, MessageCircleHeart, Sparkles, ShieldCheck, BadgeCheck, X, Wallet, Crown, Gift, MessagesSquare, HandCoins, Zap, Flame, Eye } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal 1: Pedido bloqueado — venda personalizada exige Chat Exclusivo
@@ -242,6 +242,131 @@ export function UnlockChatModal({ isOpen, onClose, onConfirm, price }: UnlockCha
             <ShieldCheck className="size-3.5 text-positive" />
             Pagamento seguro via PIX
           </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal 3: Conta bombando — fãs querendo conversar agora (leva à aba de Chats)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface FansWaitingModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onRespond: () => void
+  chatCount: number
+  totalViews: number
+  pendingAmount: number
+}
+
+export function FansWaitingModal({
+  isOpen,
+  onClose,
+  onRespond,
+  chatCount,
+  totalViews,
+  pendingAmount,
+}: FansWaitingModalProps) {
+  if (!isOpen) return null
+
+  const initials = ['L', 'P', 'B']
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
+      <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        {/* Header */}
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 pb-5 pt-7 text-center">
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <X className="size-5" />
+          </button>
+
+          <div className="relative mx-auto flex size-20 items-center justify-center rounded-full bg-primary/15 ring-2 ring-primary/40">
+            <Zap className="size-9 text-primary" />
+            <span className="absolute -right-1 -top-1 flex min-w-7 items-center justify-center rounded-full bg-positive px-2 py-0.5 text-xs font-bold text-background ring-2 ring-card">
+              {chatCount}
+            </span>
+          </div>
+
+          <h2 className="mt-4 flex items-center justify-center gap-2 text-xl font-bold text-foreground">
+            Sua conta está bombando!
+            <Flame className="size-5 text-primary" />
+          </h2>
+          <p className="mt-1 text-sm font-medium text-primary">
+            {chatCount} {chatCount === 1 ? 'fã quer' : 'fãs querem'} conversar com você agora
+          </p>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="overflow-y-auto px-5 pb-5">
+          {/* Métricas */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-center">
+              <p className="flex items-center justify-center gap-1 text-xl font-bold text-primary">
+                <Eye className="size-4" />
+                {totalViews.toLocaleString('pt-BR')}
+              </p>
+              <p className="text-xs text-muted-foreground">visualizações</p>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-center">
+              <p className="text-xl font-bold text-positive">{brl(pendingAmount)}</p>
+              <p className="text-xs text-muted-foreground">em pedidos pendentes</p>
+            </div>
+          </div>
+
+          {/* Destaque */}
+          <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <div className="flex items-start gap-3">
+              <MessageCircleHeart className="mt-0.5 size-5 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="text-sm leading-relaxed text-foreground">
+                  Seus fãs estão{' '}
+                  <span className="font-semibold text-primary">esperando uma resposta</span>. Quanto antes
+                  você responder, mais vendas você fecha.
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  Conversas ativas convertem em{' '}
+                  <span className="font-semibold text-foreground">média 3x mais</span> presentes e pedidos.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Avatares */}
+          <div className="mt-4 flex items-center gap-3">
+            <div className="flex -space-x-2">
+              {initials.map((ini, i) => (
+                <span
+                  key={i}
+                  className="flex size-9 items-center justify-center rounded-full border-2 border-card bg-primary/25 text-xs font-bold text-primary"
+                >
+                  {ini}
+                </span>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Compradores esperando para conversar com você
+            </p>
+          </div>
+
+          <button
+            onClick={onRespond}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
+          >
+            <MessagesSquare className="size-5" />
+            Responder fãs
+          </button>
+          <button
+            onClick={onClose}
+            className="mt-2 w-full rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+          >
+            Agora não
+          </button>
         </div>
       </div>
     </div>

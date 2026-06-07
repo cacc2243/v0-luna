@@ -72,7 +72,7 @@ import {
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
   import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals } from './actions'
 import { PixModal } from '@/components/convite/pix-modal'
-import { PersonalizedSaleModal, UnlockChatModal } from '@/components/minha-conta/chat-unlock-modals'
+import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
 import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
 
@@ -516,6 +516,10 @@ function AppDashboard() {
   const [pendingSaleContext, setPendingSaleContext] = useState<{ buyerName?: string | null; packTitle?: string | null; amount?: number } | null>(null)
   const [userEmail, setUserEmail] = useState('')
 
+  // Modal "conta bombando": aparece quando ha mais de 6 chats abertos
+  const [showFansWaiting, setShowFansWaiting] = useState(false)
+  const fansModalShown = useRef(false)
+
   // Fetch dados reais do Supabase usando SWR
   const { data: profile, mutate: mutateProfile } = useSWR('profile', fetchProfile)
   const { data: packs = [], mutate: mutatePacks } = useSWR('packs', fetchPacks)
@@ -568,6 +572,16 @@ function AppDashboard() {
       if (data?.user?.email) setUserEmail(data.user.email)
     })
   }, [])
+
+  // Quando a criadora acumula mais de 6 chats, mostramos o modal "conta bombando"
+  // uma unica vez por sessao, convidando a responder os fas.
+  useEffect(() => {
+    if (fansModalShown.current) return
+    if (conversations.length > 6 && activeTab !== 'Chats') {
+      fansModalShown.current = true
+      setShowFansWaiting(true)
+    }
+  }, [conversations.length, activeTab])
 
   // Versao com debounce: ao aceitar varios pedidos em sequencia, agrupamos
   // todas as revalidacoes numa unica no fim, evitando dezenas de requisicoes
@@ -984,6 +998,19 @@ function AppDashboard() {
           }}
         />
       )}
+
+      {/* Modal — conta bombando (fas querendo conversar) */}
+      <FansWaitingModal
+        isOpen={showFansWaiting}
+        onClose={() => setShowFansWaiting(false)}
+        chatCount={conversations.length}
+        totalViews={totalViews}
+        pendingAmount={pendingBalance}
+        onRespond={() => {
+          setShowFansWaiting(false)
+          setActiveTab('Chats')
+        }}
+      />
 
       {/* Modal — Criar Pack */}
       {selectedPackId && (
