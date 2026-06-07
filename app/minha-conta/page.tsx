@@ -2684,15 +2684,18 @@ function WalletScreen({
         <button
           type="button"
           onClick={openWithdraw}
-          className="luna-gradient flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+          className="luna-gradient flex w-full items-center justify-center gap-2.5 rounded-2xl py-5 text-lg font-bold text-primary-foreground shadow-xl shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
         >
-          <ArrowUpRight className="size-5" aria-hidden="true" />
-          Sacar
+          <ArrowUpRight className="size-6" aria-hidden="true" />
+          Sacar saldo
         </button>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          Saque mínimo de <span className="font-semibold text-foreground">R$ 50,00</span>. É descontada uma taxa de{' '}
-          <span className="font-semibold text-foreground">R$ 1,99</span> por saque realizado.
-        </p>
+        <div className="mt-3 flex items-start gap-2 rounded-2xl border border-border bg-card/60 px-4 py-3">
+          <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Saque mínimo de <span className="font-semibold text-foreground">R$ 50,00</span>. É descontada uma
+            taxa de <span className="font-semibold text-foreground">R$ 1,99</span> por saque realizado.
+          </p>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -3060,8 +3063,19 @@ function WalletScreen({
 
                   <div className="mt-3 flex items-center justify-between rounded-2xl bg-muted/30 px-4 py-3">
                     <span className="text-xs text-muted-foreground">Taxa por saque</span>
-                    <span className="text-sm font-semibold text-foreground">R$ 1,99</span>
+                    <span className="text-sm font-semibold text-foreground">- R$ 1,99</span>
                   </div>
+
+                  {(() => {
+                    const parsed = Number(withdrawAmount.replace(/\./g, '').replace(',', '.'))
+                    if (!parsed || parsed < 50) return null
+                    return (
+                      <div className="mt-2 flex items-center justify-between rounded-2xl border border-positive/30 bg-positive/5 px-4 py-3">
+                        <span className="text-xs font-medium text-foreground">Você recebe</span>
+                        <span className="text-base font-bold text-positive">{brl(parsed - 1.99)}</span>
+                      </div>
+                    )
+                  })()}
 
                   {withdrawError && (
                     <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-destructive">

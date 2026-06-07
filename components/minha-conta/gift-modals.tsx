@@ -21,25 +21,6 @@ function brl(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 }
 
-// Partículas de confete reaproveitadas em vários estados
-function Confetti({ count = 14 }: { count?: number }) {
-  const colors = ['bg-primary', 'bg-positive', 'bg-accent', 'bg-amber-400']
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      {Array.from({ length: count }).map((_, i) => (
-        <span
-          key={i}
-          className={`animate-confetti absolute top-0 size-2 rounded-[2px] ${colors[i % colors.length]}`}
-          style={{
-            left: `${(i / count) * 100 + (i % 2 === 0 ? 3 : -3)}%`,
-            animationDelay: `${(i % 5) * 0.12}s`,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal: Presente Recebido
 // Fluxo: "sealed" (caixa fechada, abrir) -> "gift" (valor revelado) -> resgatar
@@ -146,7 +127,6 @@ export function GiftReceivedModal({
                 >
                   <Gift className="size-14 text-primary-foreground" />
                 </div>
-                {view === 'opening' && <Confetti count={16} />}
               </div>
 
               <p className="mx-auto mt-6 max-w-xs text-pretty text-sm leading-relaxed text-muted-foreground">
@@ -179,7 +159,6 @@ export function GiftReceivedModal({
         {view === 'gift' && (
           <>
             <div className="relative overflow-hidden bg-gradient-to-br from-primary/30 via-primary/10 to-transparent px-5 pb-6 pt-8 text-center">
-              <Confetti count={14} />
               <div className="relative mx-auto flex size-20 items-center justify-center">
                 <span className="animate-gift-glow absolute inset-0 rounded-3xl bg-primary/40 blur-lg" aria-hidden="true" />
                 <div className="relative flex size-20 items-center justify-center rounded-3xl bg-primary shadow-xl shadow-primary/40">
@@ -294,7 +273,6 @@ export function GiftReceivedModal({
         {/* ── Estado: Presente resgatado ───────────────────────────────── */}
         {view === 'claimed' && (
           <div className="relative overflow-hidden px-5 py-9 text-center">
-            <Confetti count={18} />
             <div className="relative mx-auto flex size-16 items-center justify-center">
               <span className="animate-gift-glow absolute inset-0 rounded-full bg-positive/30 blur-lg" aria-hidden="true" />
               <div className="relative flex size-16 items-center justify-center rounded-full bg-positive/15">
