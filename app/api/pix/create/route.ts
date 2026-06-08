@@ -15,7 +15,7 @@ function formatBRL(value: number): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, amount, name, document, phone, type, boostDays, fbp, fbc, eventSourceUrl, fbEventId } = await request.json()
+    const { userId, email, amount, name, document, phone, type, boostDays, fbp, fbc, eventSourceUrl, fbEventId, attribution } = await request.json()
 
     if (!email) {
       return NextResponse.json(
@@ -37,6 +37,26 @@ export async function POST(request: NextRequest) {
       client_ua: clientUa,
       event_source_url: typeof eventSourceUrl === 'string' ? eventSourceUrl : null,
       fb_event_id: typeof fbEventId === 'string' ? fbEventId : null,
+    }
+
+    // Atribuicao de marketing (UTMs do Facebook + fbclid). Cada UTM e limitada
+    // a 512 chars por seguranca. Salva junto ao invite para relatorios e para
+    // reenvio no Purchase (Conversions API).
+    const att = (attribution && typeof attribution === 'object' ? attribution : {}) as Record<string, unknown>
+    const cleanAttr = (v: unknown): string | null => {
+      if (typeof v !== 'string') return null
+      const trimmed = v.trim()
+      return trimmed ? trimmed.slice(0, 512) : null
+    }
+    const marketingAttribution = {
+      utm_source: cleanAttr(att.utm_source),
+      utm_campaign: cleanAttr(att.utm_campaign),
+      utm_medium: cleanAttr(att.utm_medium),
+      utm_content: cleanAttr(att.utm_content),
+      utm_term: cleanAttr(att.utm_term),
+      fbclid: cleanAttr(att.fbclid),
+      referrer: cleanAttr(att.referrer),
+      landing_url: cleanAttr(att.landing_url),
     }
 
     // Tipo de pagamento: 'invite', 'chat', 'gift_unlock', 'boost' ou 'verification' (verificação para saque)
@@ -197,6 +217,7 @@ export async function POST(request: NextRequest) {
           boost_days: inviteType === 'boost' ? Number(boostDays) || null : existingInvite.boost_days ?? null,
           pix_expiration: pixExpirationDate.toISOString(),
           ...fbAttribution,
+          ...marketingAttribution,
         })
         .eq('id', existingInvite.id)
         .select()
@@ -223,6 +244,7 @@ export async function POST(request: NextRequest) {
           gateway: usedGateway,
           pix_expiration: pixExpirationDate.toISOString(),
           ...fbAttribution,
+          ...marketingAttribution,
         })
         .select()
         .single()

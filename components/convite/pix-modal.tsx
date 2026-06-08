@@ -5,6 +5,7 @@ import { X, Copy, Check, Clock, QrCode, AlertCircle, RefreshCw } from 'lucide-re
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
+import { getAttributionForCheckout } from '@/lib/fb/attribution'
 
 const PIX_CONTENT_NAME: Record<string, string> = {
   invite: 'Convite Luna Privé',
@@ -94,6 +95,8 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
       const fbp = readCookie('_fbp')
       const fbc = readCookie('_fbc')
       const eventId = newEventId('purchase')
+      // Atribuicao de marketing (UTMs + fbclid) capturada na chegada do lead.
+      const attribution = getAttributionForCheckout()
 
       const response = await fetch('/api/pix/create', {
         method: 'POST',
@@ -108,6 +111,7 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
           fbc,
           eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
           fbEventId: eventId,
+          attribution,
         }),
       })
 
