@@ -193,6 +193,7 @@ export async function POST(request: NextRequest) {
           transaction_id: transactionId,
           pix_code: pixCode,
           pix_qrcode: null,
+          gateway: usedGateway,
           boost_days: inviteType === 'boost' ? Number(boostDays) || null : existingInvite.boost_days ?? null,
           pix_expiration: pixExpirationDate.toISOString(),
           ...fbAttribution,
@@ -219,6 +220,7 @@ export async function POST(request: NextRequest) {
           transaction_id: transactionId,
           pix_code: pixCode,
           pix_qrcode: null,
+          gateway: usedGateway,
           pix_expiration: pixExpirationDate.toISOString(),
           ...fbAttribution,
         })

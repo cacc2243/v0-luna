@@ -46,6 +46,8 @@ interface SummaryTabProps {
   profiles: ProfileRow[]
   period: PeriodKey
   statusFilter: StatusFilter
+  activeCashinGateway?: string
+  gateways?: { id: string; label: string; description: string; configured: boolean }[]
 }
 
 // Estilo visual de cada card de produto (icone + paleta)
@@ -96,12 +98,28 @@ const PRODUCT_STYLES: Record<
   },
 }
 
-export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryTabProps) {
+export function SummaryTab({
+  invites,
+  profiles,
+  period,
+  statusFilter,
+  activeCashinGateway,
+  gateways,
+}: SummaryTabProps) {
   const range = useMemo(() => getPeriodRange(period), [period])
 
+  const knownGateways = useMemo(
+    () => (gateways && gateways.length > 0 ? gateways.map((g) => g.id) : undefined),
+    [gateways],
+  )
+
   const metrics = useMemo(
-    () => computeMetrics(invites, profiles, range),
-    [invites, profiles, range],
+    () =>
+      computeMetrics(invites, profiles, range, {
+        activeGateway: activeCashinGateway,
+        knownGateways,
+      }),
+    [invites, profiles, range, activeCashinGateway, knownGateways],
   )
 
   const series = useMemo(
@@ -206,32 +224,84 @@ export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryT
         />
       </div>
 
-      {/* Gateway ativo (apenas Bynet) */}
+      {/* Gateways de pagamento: ativo + todos os configurados */}
       <section className="rounded-2xl border border-border bg-card p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-positive/15">
-              <ShieldCheck className="size-5 text-positive" />
-            </div>
-            <div>
-              <p className="flex items-center gap-2 text-sm font-bold text-foreground">
-                Bynet
-                <span className="inline-flex items-center gap-1 rounded-full bg-positive/15 px-2 py-0.5 text-[11px] font-semibold text-positive">
-                  <span className="size-1.5 rounded-full bg-positive" />
-                  Ativo
-                </span>
-              </p>
-              <p className="text-xs text-muted-foreground">Gateway de pagamento PIX</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-lg font-bold tabular-nums text-foreground">
-              {formatBRL(metrics.revenue)}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {metrics.paidCount}/{metrics.generatedCount} convertidos
-            </p>
-          </div>
+        <div className="mb-4 flex items-center gap-2">
+          <ShieldCheck className="size-4 text-muted-foreground" />
+          <h2 className="text-base font-bold text-foreground">Gateways de Pagamento</h2>
+        </div>
+        <div className="flex flex-col gap-3">
+          {metrics.gatewayBreakdown.map((gw) => {
+            const meta = gateways?.find((g) => g.id === gw.id)
+            const configured = meta?.configured ?? gw.active
+            return (
+              <div
+                key={gw.id}
+                className={`rounded-xl border p-4 ${
+                  gw.active
+                    ? 'border-positive/40 bg-positive/5'
+                    : 'border-border/60 bg-background/40'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex size-10 items-center justify-center rounded-xl ${
+                        gw.active ? 'bg-positive/15' : 'bg-secondary'
+                      }`}
+                    >
+                      <ShieldCheck
+                        className={`size-5 ${gw.active ? 'text-positive' : 'text-muted-foreground'}`}
+                      />
+                    </div>
+                    <div>
+                      <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-foreground">
+                        {gw.label}
+                        {gw.active ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-positive/15 px-2 py-0.5 text-[11px] font-semibold text-positive">
+                            <span className="size-1.5 rounded-full bg-positive" />
+                            Ativo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                            {configured ? 'Standby' : 'Não configurado'}
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {gw.generated} {gw.generated === 1 ? 'PIX gerado' : 'PIX gerados'} ·{' '}
+                        {gw.paid} {gw.paid === 1 ? 'pago' : 'pagos'} hoje
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold tabular-nums text-foreground">
+                      {formatBRL(gw.revenue)}
+                    </p>
+                    <p
+                      className={`flex items-center justify-end gap-1 text-xs font-semibold ${
+                        gw.conversionRate >= 50
+                          ? 'text-positive'
+                          : gw.conversionRate > 0
+                            ? 'text-amber-500'
+                            : 'text-muted-foreground'
+                      }`}
+                    >
+                      <TrendingUp className="size-3" />
+                      {gw.conversionRate.toFixed(0)}% conversão
+                    </p>
+                  </div>
+                </div>
+                {/* Barra de conversao do gateway */}
+                <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className={gw.active ? 'bg-positive' : 'bg-muted-foreground/50'}
+                    style={{ width: `${Math.min(gw.conversionRate, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )
+          })}
         </div>
       </section>
 

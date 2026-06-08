@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
+import { getAppSettings } from '@/lib/settings'
+import { listCashinGatewayMeta } from '@/lib/cashin/gateways'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -13,6 +15,7 @@ interface InviteRow {
   type: string | null
   transaction_id: string | null
   pix_code: string | null
+  gateway: string | null
   created_at: string
   paid_at: string | null
   pix_expiration: string | null
@@ -39,7 +42,7 @@ export async function GET() {
     supabase
       .from('invites')
       .select(
-        'id, user_id, email, amount, status, type, transaction_id, pix_code, pix_copied_at, created_at, paid_at, pix_expiration',
+        'id, user_id, email, amount, status, type, transaction_id, pix_code, pix_copied_at, gateway, created_at, paid_at, pix_expiration',
       )
       .order('created_at', { ascending: false }),
     supabase
@@ -68,10 +71,17 @@ export async function GET() {
   const profiles = (profilesRes.data || []) as ProfileRow[]
   const verifications = verificationsRes.data || []
 
+  // Gateway de cash-in ativo + lista de todos os gateways configurados,
+  // para o resumo detalhar o desempenho de cada um.
+  const settings = await getAppSettings().catch(() => null)
+  const gateways = listCashinGatewayMeta()
+
   return NextResponse.json({
     invites,
     profiles,
     verifications,
+    activeCashinGateway: settings?.activeCashinGateway ?? 'bynet',
+    gateways,
     fetchedAt: new Date().toISOString(),
   })
 }

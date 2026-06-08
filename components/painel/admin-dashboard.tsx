@@ -90,6 +90,8 @@ export function AdminDashboard() {
     invites: InviteRow[]
     profiles: ProfileRow[]
     verifications: PixVerificationRow[]
+    activeCashinGateway?: string
+    gateways?: { id: string; label: string; description: string; configured: boolean }[]
     fetchedAt: string
   }>('/api/admin/data', fetcher, {
     refreshInterval: 10000,
@@ -103,6 +105,8 @@ export function AdminDashboard() {
   const invites = data?.invites || []
   const profiles = data?.profiles || []
   const verifications = data?.verifications || []
+  const activeCashinGateway = data?.activeCashinGateway || 'bynet'
+  const gateways = data?.gateways || []
 
   const activeNav = NAV.find((n) => n.key === tab)!
 
@@ -257,6 +261,8 @@ export function AdminDashboard() {
                   profiles={profiles}
                   period={period}
                   statusFilter={statusFilter}
+                  activeCashinGateway={activeCashinGateway}
+                  gateways={gateways}
                 />
               )}
               {tab === 'pix' && (
