@@ -20,6 +20,7 @@ import {
 import { logoutAction } from '@/app/painel/actions'
 import { SummaryTab } from './summary-tab'
 import { ClientsTab } from './clients-tab'
+import { TransactionsTab } from './transactions-tab'
 import { GatewayTestTab } from './gateway-test-tab'
 import { ImagesTab } from './images-tab'
 import { VerificationsTab } from './verifications-tab'
@@ -245,8 +246,16 @@ export function AdminDashboard() {
                 </div>
               )}
 
-              {(tab === 'resumo' || tab === 'pix') && (
+              {tab === 'resumo' && (
                 <SummaryTab
+                  invites={invites}
+                  profiles={profiles}
+                  period={period}
+                  statusFilter={statusFilter}
+                />
+              )}
+              {tab === 'pix' && (
+                <TransactionsTab
                   invites={invites}
                   profiles={profiles}
                   period={period}
