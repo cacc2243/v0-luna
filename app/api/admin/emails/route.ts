@@ -20,7 +20,10 @@ export async function GET() {
     html: t.html(t.sampleVars),
   }))
 
-  const from = process.env.EMAIL_FROM || 'Luna Privé <onboarding@resend.dev>'
+  const from =
+    (process.env.EMAIL_FROM || 'Luna Privé <onboarding@resend.dev>')
+      .replace(/[`*]/g, '')
+      .trim()
   const resendConfigured = Boolean(process.env.RESEND_API_KEY)
 
   // Log de envios (pode nao existir ainda se a tabela nao foi criada).

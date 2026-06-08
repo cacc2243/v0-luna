@@ -9,9 +9,15 @@ import {
 /**
  * Remetente. Configuravel por env. Enquanto o dominio nao estiver verificado
  * no Resend, pode-se usar "Luna Privé <onboarding@resend.dev>".
+ *
+ * Limpamos crases/asteriscos que possam ter sido colados por engano junto
+ * com formatacao markdown (ex: "**`Nome <email>`**").
  */
 function getFrom(): string {
-  return process.env.EMAIL_FROM || 'Luna Privé <onboarding@resend.dev>'
+  const raw = process.env.EMAIL_FROM
+  if (!raw) return 'Luna Privé <onboarding@resend.dev>'
+  const cleaned = raw.replace(/[`*]/g, '').trim()
+  return cleaned || 'Luna Privé <onboarding@resend.dev>'
 }
 
 export type EmailSendStatus = 'sent' | 'skipped' | 'error'
