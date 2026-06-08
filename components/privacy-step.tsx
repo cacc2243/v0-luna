@@ -41,9 +41,12 @@ export function PrivacyStep({ onContinue }: { onContinue: () => void }) {
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
           Privacidade total
         </p>
-        <h1 className="mt-2 flex items-center justify-center gap-2 text-balance font-sans text-[1.7rem] font-bold leading-tight tracking-tight text-foreground">
-          Pode ficar <span className="text-primary">100% tranquila</span>
-          <Lock className="size-5 text-primary" aria-hidden="true" />
+        <h1 className="mt-2 text-balance font-sans text-[1.7rem] font-bold leading-tight tracking-tight text-foreground">
+          Pode ficar{' '}
+          <span className="whitespace-nowrap text-primary">
+            100% tranquila
+            <Lock className="ml-1.5 inline size-5 align-[-0.15em]" aria-hidden="true" />
+          </span>
         </h1>
         <p className="mt-2.5 text-pretty text-sm leading-relaxed text-muted-foreground">
           Aqui no Luna sua identidade é{' '}
