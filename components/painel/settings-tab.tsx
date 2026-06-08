@@ -12,6 +12,7 @@ import {
   Server,
   Plug,
   Gift,
+  QrCode,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -117,6 +118,7 @@ export function SettingsTab() {
         body: JSON.stringify({
           verificationEnabled: enabled,
           activeCashoutGateway: gateway,
+          activeCashinGateway: cashinGateway,
           verificationAmountCents: cents,
           inviteAmountCents: inviteCents,
         }),
@@ -238,6 +240,89 @@ export function SettingsTab() {
             />
           </div>
         </div>
+      </section>
+
+      {/* Gateway de geração de PIX (cash-in) */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <QrCode className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">Gateway de geração de PIX</h2>
+            <p className="text-sm text-muted-foreground">
+              Gera todos os PIX do site (convite, chat, presentes, boost e verificação).
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2.5">
+          {cashinGateways.map((g, i) => {
+            const active = cashinGateway === g.id
+            const selectable = g.configured
+            // Quem nao for o ativo e estiver configurado funciona como fallback.
+            const isFallback = !active && g.configured
+            return (
+              <button
+                key={g.id}
+                disabled={!selectable}
+                onClick={() => selectable && setCashinGateway(g.id)}
+                className={cn(
+                  'flex items-center gap-3 rounded-xl border p-3.5 text-left transition',
+                  active
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border bg-secondary/30 hover:border-muted-foreground/40',
+                  !selectable && 'cursor-not-allowed opacity-60',
+                )}
+              >
+                <span
+                  className={cn(
+                    'flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition',
+                    active ? 'border-primary bg-primary' : 'border-muted-foreground/50',
+                  )}
+                >
+                  {active && <span className="size-2 rounded-full bg-primary-foreground" />}
+                </span>
+                <Plug
+                  className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground')}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground">{g.label}</span>
+                    {!g.configured && (
+                      <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[0.65rem] font-semibold text-amber-500">
+                        Não configurado
+                      </span>
+                    )}
+                    {active && (
+                      <span className="rounded-full bg-positive/15 px-2 py-0.5 text-[0.65rem] font-semibold text-positive">
+                        Principal
+                      </span>
+                    )}
+                    {isFallback && (
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[0.65rem] font-semibold text-muted-foreground">
+                        Fallback
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                    {g.description}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
+          {cashinGateways.length === 0 && (
+            <p className="rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+              Nenhum gateway registrado.
+            </p>
+          )}
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+          O gateway <span className="font-medium text-foreground">Principal</span> gera todos os PIX
+          do site. Se ele falhar na hora de gerar uma cobrança, o sistema tenta automaticamente o(s)
+          gateway(s) marcado(s) como <span className="font-medium text-foreground">Fallback</span>.
+        </p>
       </section>
 
       {/* Gateway de cashout */}
