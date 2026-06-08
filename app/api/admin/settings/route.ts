@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
 import { getAppSettings, updateAppSettings } from '@/lib/settings'
 import { listCashoutGatewayMeta, getCashoutGateway } from '@/lib/cashout/gateways'
+import { listCashinGatewayMeta, getCashinGateway } from '@/lib/cashin/gateways'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,8 +21,9 @@ export async function GET() {
 
   const settings = await getAppSettings()
   const gateways = listCashoutGatewayMeta()
+  const cashinGateways = listCashinGatewayMeta()
 
-  return NextResponse.json({ settings, gateways })
+  return NextResponse.json({ settings, gateways, cashinGateways })
 }
 
 export async function POST(req: NextRequest) {
@@ -39,6 +41,7 @@ export async function POST(req: NextRequest) {
   const patch: {
     verificationEnabled?: boolean
     activeCashoutGateway?: string
+    activeCashinGateway?: string
     verificationAmountCents?: number
     inviteAmountCents?: number
   } = {}
@@ -57,6 +60,18 @@ export async function POST(req: NextRequest) {
       )
     }
     patch.activeCashoutGateway = gw.id
+  }
+
+  if (typeof body.activeCashinGateway === 'string') {
+    // So aceita gateway de cash-in que exista no registro.
+    const gw = getCashinGateway(body.activeCashinGateway)
+    if (!gw) {
+      return NextResponse.json(
+        { error: 'Gateway de geração de PIX inválido' },
+        { status: 400 }
+      )
+    }
+    patch.activeCashinGateway = gw.id
   }
 
   if (body.verificationAmountCents !== undefined) {
@@ -102,5 +117,6 @@ export async function POST(req: NextRequest) {
 
   const settings = await getAppSettings()
   const gateways = listCashoutGatewayMeta()
-  return NextResponse.json({ settings, gateways })
+  const cashinGateways = listCashinGatewayMeta()
+  return NextResponse.json({ settings, gateways, cashinGateways })
 }

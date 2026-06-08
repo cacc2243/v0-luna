@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export interface AppSettings {
   verificationEnabled: boolean
   activeCashoutGateway: string
+  activeCashinGateway: string
   verificationAmountCents: number
   inviteAmountCents: number
 }
@@ -10,6 +11,7 @@ export interface AppSettings {
 const DEFAULTS: AppSettings = {
   verificationEnabled: true,
   activeCashoutGateway: 'pixup',
+  activeCashinGateway: 'bynet',
   verificationAmountCents: 90,
   inviteAmountCents: 2480,
 }
@@ -17,6 +19,7 @@ const DEFAULTS: AppSettings = {
 const KEY_MAP = {
   verificationEnabled: 'verification_enabled',
   activeCashoutGateway: 'active_cashout_gateway',
+  activeCashinGateway: 'active_cashin_gateway',
   verificationAmountCents: 'verification_amount_cents',
   inviteAmountCents: 'invite_amount_cents',
 } as const
@@ -45,6 +48,11 @@ export async function getAppSettings(): Promise<AppSettings> {
       ? (map.get(KEY_MAP.activeCashoutGateway) as string)
       : DEFAULTS.activeCashoutGateway
 
+  const activeCashinGateway =
+    typeof map.get(KEY_MAP.activeCashinGateway) === 'string'
+      ? (map.get(KEY_MAP.activeCashinGateway) as string)
+      : DEFAULTS.activeCashinGateway
+
   const rawAmount = map.get(KEY_MAP.verificationAmountCents)
   const verificationAmountCents =
     typeof rawAmount === 'number' && Number.isFinite(rawAmount)
@@ -60,6 +68,7 @@ export async function getAppSettings(): Promise<AppSettings> {
   return {
     verificationEnabled,
     activeCashoutGateway,
+    activeCashinGateway,
     verificationAmountCents,
     inviteAmountCents,
   }
@@ -89,6 +98,14 @@ export async function updateAppSettings(
     rows.push({
       key: KEY_MAP.activeCashoutGateway,
       value: patch.activeCashoutGateway,
+      updated_at: now,
+      updated_by: updatedBy,
+    })
+  }
+  if (typeof patch.activeCashinGateway === 'string') {
+    rows.push({
+      key: KEY_MAP.activeCashinGateway,
+      value: patch.activeCashinGateway,
       updated_at: now,
       updated_by: updatedBy,
     })

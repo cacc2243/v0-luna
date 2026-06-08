@@ -17,6 +17,8 @@ import {
   Settings,
   Facebook,
   Mail,
+  Menu,
+  X,
 } from 'lucide-react'
 import { logoutAction } from '@/app/painel/actions'
 import { SummaryTab } from './summary-tab'
@@ -82,6 +84,7 @@ export function AdminDashboard() {
   const [tab, setTab] = useState<TabKey>('resumo')
   const [period, setPeriod] = useState<PeriodKey>('today')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const { data, error, isLoading, mutate, isValidating } = useSWR<{
     invites: InviteRow[]
@@ -163,11 +166,20 @@ export function AdminDashboard() {
         {/* Header */}
         <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-md">
           <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-3 px-4 py-3.5">
-            <div className="min-w-0">
-              <h1 className="truncate text-xl font-bold tracking-tight text-foreground">
-                {activeNav.label}
-              </h1>
-              <p className="truncate text-xs capitalize text-muted-foreground">{TODAY_LABEL}</p>
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                onClick={() => setMenuOpen(true)}
+                aria-label="Abrir menu"
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground transition hover:bg-secondary lg:hidden"
+              >
+                <Menu className="size-5" />
+              </button>
+              <div className="min-w-0">
+                <h1 className="truncate text-xl font-bold tracking-tight text-foreground">
+                  {activeNav.label}
+                </h1>
+                <p className="truncate text-xs capitalize text-muted-foreground">{TODAY_LABEL}</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -177,21 +189,11 @@ export function AdminDashboard() {
               >
                 <RefreshCw className={cn('size-4', isValidating && 'animate-spin')} />
               </button>
-              {/* Sair (mobile) */}
-              <form action={logoutAction} className="lg:hidden">
-                <button
-                  type="submit"
-                  aria-label="Sair"
-                  className="flex size-9 items-center justify-center rounded-lg bg-destructive/90 text-destructive-foreground transition hover:bg-destructive"
-                >
-                  <LogOut className="size-4" />
-                </button>
-              </form>
             </div>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-4xl flex-1 px-4 pb-28 pt-5 lg:pb-10">
+        <main className="mx-auto w-full max-w-4xl flex-1 px-4 pb-10 pt-5">
           {isLoading && !data ? (
             <div className="flex flex-col items-center justify-center py-24">
               <Loader2 className="size-7 animate-spin text-primary" />
@@ -277,28 +279,93 @@ export function AdminDashboard() {
         </main>
       </div>
 
-      {/* Bottom nav mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur-md lg:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
-          {NAV.map((n) => {
-            const Icon = n.icon
-            const active = tab === n.key
-            return (
+      {/* Drawer lateral mobile */}
+      <div
+        className={cn(
+          'fixed inset-0 z-50 lg:hidden',
+          menuOpen ? 'pointer-events-auto' : 'pointer-events-none',
+        )}
+        aria-hidden={!menuOpen}
+      >
+        {/* Overlay */}
+        <button
+          aria-label="Fechar menu"
+          onClick={() => setMenuOpen(false)}
+          className={cn(
+            'absolute inset-0 bg-background/70 backdrop-blur-sm transition-opacity duration-300',
+            menuOpen ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+        {/* Painel */}
+        <aside
+          className={cn(
+            'absolute inset-y-0 left-0 flex w-72 max-w-[82%] flex-col border-r border-border bg-card p-4 shadow-2xl transition-transform duration-300 ease-out',
+            menuOpen ? 'translate-x-0' : '-translate-x-full',
+          )}
+        >
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                <Sparkles className="size-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold leading-tight text-foreground">Luna Privé</p>
+                <p className="text-xs text-muted-foreground">Painel Admin</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setMenuOpen(false)}
+              aria-label="Fechar menu"
+              className="flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:text-foreground"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
+            {NAV.map((n) => {
+              const Icon = n.icon
+              const active = tab === n.key
+              return (
+                <button
+                  key={n.key}
+                  onClick={() => {
+                    setTab(n.key)
+                    setMenuOpen(false)
+                  }}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition',
+                    active
+                      ? 'bg-primary/15 text-primary'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                  )}
+                >
+                  <Icon className="size-[1.15rem]" />
+                  {n.label}
+                </button>
+              )
+            })}
+          </nav>
+
+          <div className="flex flex-col gap-2 border-t border-border pt-3">
+            <div className="flex items-center gap-2 px-3 py-1 text-xs text-muted-foreground">
+              <span className="flex size-2 rounded-full bg-positive">
+                <span className="size-2 animate-ping rounded-full bg-positive/70" />
+              </span>
+              Atualização em tempo real
+            </div>
+            <form action={logoutAction}>
               <button
-                key={n.key}
-                onClick={() => setTab(n.key)}
-                className={cn(
-                  'flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-medium transition',
-                  active ? 'text-primary' : 'text-muted-foreground',
-                )}
+                type="submit"
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-destructive transition hover:bg-destructive/10"
               >
-                <Icon className={cn('size-5', active && 'scale-110')} />
-                {n.label}
+                <LogOut className="size-[1.15rem]" />
+                Sair
               </button>
-            )
-          })}
-        </div>
-      </nav>
+            </form>
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }

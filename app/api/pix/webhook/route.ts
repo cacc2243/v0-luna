@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { maybeSendPurchase } from '@/lib/fb/purchase'
+import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,44 +9,79 @@ export async function POST(request: NextRequest) {
     
     console.log('[v0] Webhook PIX recebido:', JSON.stringify(body, null, 2))
 
-    // Extrair dados do webhook (formato pode variar dependendo do gateway)
-    const transactionId = body.id || body.transactionId || body.external_id || body.externalId
-    const status = body.status || body.payment_status
-    const paidAt = body.paid_at || body.paidAt || body.payment_date
+    // O formato do webhook varia por gateway:
+    // - Bynet: campos planos (id, status, paid_at)
+    // - SigiloPay: aninhado em `transaction` (id, identifier, status, payedAt)
+    //   com o tipo de evento em `event` (TRANSACTION_PAID, TRANSACTION_CANCELED...).
+    const tx = body.transaction || {}
+    const event = String(body.event || '').toUpperCase()
 
-    if (!transactionId) {
+    // Possiveis identificadores da transacao (tentamos casar por qualquer um).
+    const candidateIds = [
+      tx.id,
+      tx.identifier,
+      body.id,
+      body.transactionId,
+      body.external_id,
+      body.externalId,
+    ].filter((v): v is string => typeof v === 'string' && v.length > 0)
+
+    const rawStatus = String(
+      tx.status || body.status || body.payment_status || ''
+    ).toUpperCase()
+    const paidAt =
+      tx.payedAt || body.paid_at || body.paidAt || body.payment_date || null
+
+    // Sem ID = provavelmente um ping de teste do painel do gateway ou um evento
+    // sem transacao. A doc da SigiloPay exige responder 2XX, caso contrario ela
+    // reenvia a notificacao indefinidamente. Respondemos 200 (recebido/ignorado).
+    if (candidateIds.length === 0) {
+      console.log('[v0] Webhook sem transaction id — tratado como ping/teste, ignorando.')
       return NextResponse.json(
-        { error: 'Transaction ID não encontrado' },
-        { status: 400 }
+        { received: true, matched: false, reason: 'no_transaction_id' },
+        { status: 200 }
       )
     }
 
     const supabase = createAdminClient()
 
-    // Buscar convite pela transaction_id
+    // Buscar convite por qualquer um dos identificadores recebidos.
     const { data: invite, error: findError } = await supabase
       .from('invites')
       .select('*')
-      .eq('transaction_id', transactionId)
-      .single()
+      .in('transaction_id', candidateIds)
+      .maybeSingle()
 
     if (findError || !invite) {
-      console.error('[v0] Convite não encontrado para transaction:', transactionId)
+      // Transacao nao pertence a nenhum convite nosso (ex.: teste do painel ou
+      // transacao de outra origem na mesma conta). Respondemos 200 para a
+      // SigiloPay nao reenviar indefinidamente.
+      console.log('[v0] Convite não encontrado para transaction:', candidateIds.join(', '), '— ignorando.')
       return NextResponse.json(
-        { error: 'Convite não encontrado' },
-        { status: 404 }
+        { received: true, matched: false, reason: 'invite_not_found' },
+        { status: 200 }
       )
     }
 
-    // Mapear status do gateway para nosso status
+    // Mapear status do gateway para nosso status.
+    // SigiloPay usa `event` (TRANSACTION_PAID/CANCELED/REFUNDED) e status COMPLETED.
     let newStatus = invite.status
-    if (status === 'paid' || status === 'approved' || status === 'completed' || status === 'PAID') {
+    const paidEvent = event === 'TRANSACTION_PAID'
+    const canceledEvent = event === 'TRANSACTION_CANCELED' || event === 'TRANSACTION_CANCELLED'
+    const refundedEvent = event === 'TRANSACTION_REFUNDED'
+
+    if (
+      paidEvent ||
+      ['PAID', 'APPROVED', 'COMPLETED', 'PAID', 'OK'].includes(rawStatus) ||
+      ['paid', 'approved', 'completed'].includes(String(tx.status || body.status || ''))
+    ) {
       newStatus = 'paid'
-    } else if (status === 'expired' || status === 'EXPIRED') {
-      newStatus = 'expired'
-    } else if (status === 'refunded' || status === 'REFUNDED') {
+    } else if (refundedEvent || rawStatus === 'REFUNDED') {
       newStatus = 'refunded'
-    } else if (status === 'cancelled' || status === 'canceled' || status === 'CANCELLED') {
+    } else if (
+      canceledEvent ||
+      ['EXPIRED', 'CANCELLED', 'CANCELED', 'FAILED'].includes(rawStatus)
+    ) {
       newStatus = 'expired'
     }
 
@@ -77,6 +113,12 @@ export async function POST(request: NextRequest) {
     // nao envia Purchase (tratado dentro do helper).
     if (newStatus === 'paid') {
       await maybeSendPurchase({ ...invite, status: 'paid' })
+    }
+
+    // E-mail "Acesso liberado" para o Convite de Acesso pago. Idempotente:
+    // so envia uma vez por destinatario (checa email_logs internamente).
+    if (newStatus === 'paid') {
+      await sendInvitePaidEmailOnce(invite)
     }
 
     // Se for um pagamento de Chat Exclusivo confirmado, desbloqueia o chat da usuaria
