@@ -798,7 +798,7 @@ function ChatConversation({
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => {
@@ -807,9 +807,9 @@ function ChatConversation({
               }}
               aria-label="Anexar"
               disabled={step >= 3 || sending}
-              className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
+              className="flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
             >
-              <Plus className="size-5" />
+              <Plus className="size-6" />
             </button>
             <button
               type="button"
@@ -818,9 +818,9 @@ function ChatConversation({
                 setShowAttach(false)
               }}
               aria-label="Emojis"
-              className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              className="flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
-              <Smile className="size-5" />
+              <Smile className="size-6" />
             </button>
             <input
               value={input}
@@ -833,7 +833,7 @@ function ChatConversation({
                 if (e.key === 'Enter') handleSend()
               }}
               placeholder={step >= 3 ? 'Conversa em andamento...' : 'Escreva uma mensagem...'}
-              className="min-w-0 flex-1 rounded-full border border-border bg-secondary px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/60 focus:border-primary/60"
+              className="min-w-0 flex-1 rounded-full border border-border bg-secondary px-5 py-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground/60 focus:border-primary/60"
             />
             {input.trim() ? (
               <button
@@ -841,9 +841,9 @@ function ChatConversation({
                 onClick={handleSend}
                 aria-label="Enviar"
                 disabled={sending}
-                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-60"
+                className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-60"
               >
-                {sending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" />}
+                {sending ? <Loader2 className="size-6 animate-spin" /> : <Send className="size-6" />}
               </button>
             ) : (
               <button
@@ -851,9 +851,9 @@ function ChatConversation({
                 onClick={startRecording}
                 aria-label="Gravar áudio"
                 disabled={step >= 3 || sending}
-                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-50"
+                className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-50"
               >
-                <Mic className="size-5" />
+                <Mic className="size-6" />
               </button>
             )}
           </div>
@@ -1090,6 +1090,35 @@ function ImageBubble({ from, url, time }: { from: 'buyer' | 'creator'; url: stri
           src={url || '/placeholder.svg'}
           alt="Imagem enviada"
           className="max-h-60 w-full max-w-[240px] rounded-xl object-cover"
+        />
+        <span
+          className={`mt-1 flex items-center justify-end gap-0.5 px-1 pb-0.5 text-[0.6rem] ${
+            isCreator ? 'text-primary-foreground/80' : 'text-muted-foreground'
+          }`}
+        >
+          {time}
+          {isCreator && <CheckCheck className="size-3" />}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function VideoBubble({ from, url, time }: { from: 'buyer' | 'creator'; url: string; time?: string }) {
+  const isCreator = from === 'creator'
+  return (
+    <div className={`flex animate-speech-enter ${isCreator ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`overflow-hidden rounded-2xl p-1 shadow-sm ${
+          isCreator ? 'rounded-br-md bg-primary' : 'rounded-bl-md border border-border bg-card'
+        }`}
+      >
+        <video
+          src={url}
+          controls
+          playsInline
+          preload="metadata"
+          className="max-h-72 w-full max-w-[240px] rounded-xl bg-black object-cover"
         />
         <span
           className={`mt-1 flex items-center justify-end gap-0.5 px-1 pb-0.5 text-[0.6rem] ${
