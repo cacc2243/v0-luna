@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Mail } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
@@ -10,7 +10,7 @@ import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
 import { WelcomePopup } from '@/components/convite/welcome-popup'
-import { fbTrack } from '@/lib/fb/track'
+import { fbTrackWhenReady } from '@/lib/fb/track'
 
 interface SignupData {
   username: string
@@ -35,6 +35,8 @@ export default function ConvitePage() {
   // Indica se ja recebemos o valor real do painel. Enquanto false, o preco
   // fica com blur para nao "piscar" o valor padrao antes do correto.
   const [priceReady, setPriceReady] = useState(false)
+  // Garante que o InitiateCheckout seja disparado uma unica vez por carregamento.
+  const initiateCheckoutSent = useRef(false)
 
   useEffect(() => {
     try {
@@ -59,13 +61,18 @@ export default function ConvitePage() {
         // Mesmo se a resposta nao trouxer o valor, liberamos o preco (cai no padrao).
         setPriceReady(true)
         // InitiateCheckout: cliente chegou na pagina de checkout do convite,
-        // com o valor real ja conhecido.
-        fbTrack('InitiateCheckout', {
-          value: cents / 100,
-          currency: 'BRL',
-          content_name: 'Convite Luna Privé',
-          content_type: 'product',
-        })
+        // com o valor real ja conhecido. Usamos fbTrackWhenReady para aguardar a
+        // inicializacao do pixel (evita perder o evento por timing do fetch) e
+        // disparamos apenas uma vez por carregamento.
+        if (!initiateCheckoutSent.current) {
+          initiateCheckoutSent.current = true
+          fbTrackWhenReady('InitiateCheckout', {
+            value: cents / 100,
+            currency: 'BRL',
+            content_name: 'Convite Luna Privé',
+            content_type: 'product',
+          })
+        }
       })
       .catch(() => {
         if (active) setPriceReady(true)
