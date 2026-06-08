@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import useSWR from 'swr'
@@ -70,7 +70,7 @@ import {
   Clock,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
-  import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile } from './actions'
+  import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead } from './actions'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
@@ -898,7 +898,7 @@ function AppDashboard() {
           onSelect={(id) => setSelectedPackId(id)}
         />
       ) : activeTab === 'Perfil' ? (
-        <ProfileScreen profile={profile} highlights={highlights} onLogout={handleLogout} onProfileUpdated={mutateProfile} onHighlightsUpdated={mutateHighlights} />
+        <ProfileScreen profile={profile} highlights={highlights} notifications={notifications} onLogout={handleLogout} onProfileUpdated={mutateProfile} onHighlightsUpdated={mutateHighlights} onNotificationsChange={mutateNotifications} />
       ) : activeTab === 'Impulsionar' ? (
         <ImpulsionarScreen
           balance={animatedBalance}
@@ -3451,15 +3451,19 @@ function WalletScreen({
 function ProfileScreen({ 
   profile: userProfile, 
   highlights: userHighlights,
+  notifications: realNotifications,
   onLogout,
   onProfileUpdated,
   onHighlightsUpdated,
+  onNotificationsChange,
 }: { 
   profile: Profile | null | undefined
   highlights: Highlight[]
+  notifications: Notification[]
   onLogout: () => void
   onProfileUpdated?: () => void
   onHighlightsUpdated?: () => void
+  onNotificationsChange?: () => void
 }) {
   const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help'>('main')
   const [localProfile, setLocalProfile] = useState({
@@ -3476,7 +3480,27 @@ function ProfileScreen({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(userProfile?.avatar_url || null)
   const [addingAvatar, setAddingAvatar] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
-  const [notifications, setNotifications] = useState<Array<{id: number; type: string; title: string; desc: string; time: string; read: boolean}>>([])
+  // Notificacoes reais vindas do banco (vendas, mensagens, follows, etc.)
+  const notifications = useMemo(() => {
+    function timeAgo(iso: string) {
+      const diff = Date.now() - new Date(iso).getTime()
+      const min = Math.floor(diff / 60000)
+      if (min < 1) return 'agora mesmo'
+      if (min < 60) return `ha ${min} min`
+      const h = Math.floor(min / 60)
+      if (h < 24) return `ha ${h} h`
+      const d = Math.floor(h / 24)
+      return d === 1 ? 'ha 1 dia' : `ha ${d} dias`
+    }
+    return (realNotifications || []).map((n) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      desc: n.description || '',
+      time: timeAgo(n.created_at),
+      read: n.is_read,
+    }))
+  }, [realNotifications])
   const [settings, setSettings] = useState({
     darkMode: true,
     notifications: true,
@@ -3625,8 +3649,9 @@ function ProfileScreen({
     }
   }
 
-  function markAllRead() {
-    setNotifications(notifications.map(n => ({ ...n, read: true })))
+  async function markAllRead() {
+    await markAllNotificationsAsRead()
+    onNotificationsChange?.()
   }
 
   function toggleSetting(key: keyof typeof settings) {
@@ -3686,7 +3711,12 @@ function ProfileScreen({
                 <button
                   key={notif.id}
                   type="button"
-                  onClick={() => setNotifications(notifications.map(n => n.id === notif.id ? { ...n, read: true } : n))}
+                  onClick={async () => {
+                    if (!notif.read) {
+                      await markNotificationAsRead(notif.id)
+                      onNotificationsChange?.()
+                    }
+                  }}
                   className={`flex items-start gap-3 border-b border-border px-4 py-4 text-left transition active:bg-muted/50 ${
                     !notif.read ? 'bg-primary/5' : ''
                   }`}
