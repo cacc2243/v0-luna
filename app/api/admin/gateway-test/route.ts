@@ -1,24 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
-
-const BYNET_API_URL = 'https://api-gateway.techbynet.com'
-
-// Gera um CPF valido aleatorio
-function generateValidCPF(): string {
-  const n = () => Math.floor(Math.random() * 9)
-  const d: number[] = Array.from({ length: 9 }, n)
-  let sum = 0
-  for (let i = 0; i < 9; i++) sum += d[i] * (10 - i)
-  let r = (sum * 10) % 11
-  if (r === 10) r = 0
-  d.push(r)
-  sum = 0
-  for (let i = 0; i < 10; i++) sum += d[i] * (11 - i)
-  r = (sum * 10) % 11
-  if (r === 10) r = 0
-  d.push(r)
-  return d.join('')
-}
+import {
+  listCashinGatewayMeta,
+  getCashinGateway,
+  type CashinInput,
+} from '@/lib/cashin/gateways'
+import { getSiteUrl } from '@/lib/site-url'
 
 const TEST_NAMES = [
   'Maria Silva Santos',
@@ -27,86 +14,12 @@ const TEST_NAMES = [
   'Fernanda Souza Alves',
 ]
 
-// Configuracao dos gateways disponiveis (apenas Bynet em uso)
-const GATEWAYS: Record<
-  string,
-  { label: string; envKey: string; configured: boolean }
-> = {
-  bynet: { label: 'Bynet', envKey: 'BYNET_API_KEY', configured: !!process.env.BYNET_API_KEY },
-}
-
-async function testBynet(amount: number) {
-  const apiKey = process.env.BYNET_API_KEY
-  if (!apiKey) {
-    return { success: false, error: 'BYNET_API_KEY não configurada' }
-  }
-
-  const name = TEST_NAMES[Math.floor(Math.random() * TEST_NAMES.length)]
-  const requestBody = {
-    amount: Math.round(amount * 100),
-    paymentMethod: 'PIX',
-    customer: {
-      name,
-      email: `teste${Date.now()}@lunaprive.com`,
-      phone: '11999999999',
-      document: { number: generateValidCPF(), type: 'CPF' },
-    },
-    items: [
-      {
-        title: 'Teste de Gateway - Luna Privé',
-        unitPrice: Math.round(amount * 100),
-        quantity: 1,
-        tangible: false,
-      },
-    ],
-    pix: { expiresInDays: 1 },
-  }
-
-  const start = Date.now()
-  const response = await fetch(`${BYNET_API_URL}/api/user/transactions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'User-Agent': 'AtivoB2B/1.0',
-    },
-    body: JSON.stringify(requestBody),
-  })
-  const latency = Date.now() - start
-  const data = await response.json()
-
-  if (!response.ok || data.error) {
-    return {
-      success: false,
-      error: data.error || data.message || `Status ${response.status}`,
-      latency,
-    }
-  }
-
-  const td = data.data || data
-  const pixCode = td.qrCode || td.pix?.qrcode || td.pix?.qrCode || ''
-
-  return {
-    success: true,
-    latency,
-    pixCode,
-    transactionId: td.id,
-    amount,
-    customer: requestBody.customer,
-    raw: td,
-  }
-}
-
 export async function GET() {
   if (!(await isAdminAuthenticated())) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
-  const list = Object.entries(GATEWAYS).map(([id, g]) => ({
-    id,
-    label: g.label,
-    configured: g.configured,
-  }))
-  return NextResponse.json({ gateways: list })
+  // Lista dinamica a partir do registro central de gateways de cash-in.
+  return NextResponse.json({ gateways: listCashinGatewayMeta() })
 }
 
 export async function POST(request: NextRequest) {
@@ -125,30 +38,55 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!GATEWAYS[gateway]) {
+    const gw = getCashinGateway(gateway)
+    if (!gw) {
       return NextResponse.json({ error: 'Gateway inválido' }, { status: 400 })
     }
 
-    if (!GATEWAYS[gateway].configured) {
+    if (!gw.isConfigured()) {
       return NextResponse.json({
         success: false,
-        error: `Gateway ${GATEWAYS[gateway].label} não está configurado. Adicione a variável ${GATEWAYS[gateway].envKey}.`,
+        error: `Gateway ${gw.label} não está configurado. Verifique as variáveis de ambiente.`,
       })
     }
 
-    let result
-    switch (gateway) {
-      case 'bynet':
-        result = await testBynet(value)
-        break
-      default:
-        result = {
-          success: false,
-          error: `Teste para ${GATEWAYS[gateway].label} ainda não implementado.`,
-        }
+    const name = TEST_NAMES[Math.floor(Math.random() * TEST_NAMES.length)]
+    const input: CashinInput = {
+      identifier: `teste-painel-${Date.now()}`,
+      amount: value,
+      itemTitle: 'Teste de Gateway - Luna Privé',
+      client: {
+        name,
+        email: `teste${Date.now()}@lunaprive.live`,
+        phone: '11999999999',
+        document: '', // o gateway gera um CPF valido automaticamente
+      },
+      // Mesma URL fixa usada em producao (evita estourar o limite de webhooks).
+      callbackUrl: `${getSiteUrl()}/api/pix/webhook`,
     }
 
-    return NextResponse.json(result)
+    const start = Date.now()
+    const result = await gw.create(input)
+    const latency = Date.now() - start
+
+    if (!result.ok || !result.pixCode) {
+      return NextResponse.json({
+        success: false,
+        latency,
+        error: result.errorMessage || 'Falha ao gerar PIX de teste.',
+      })
+    }
+
+    return NextResponse.json({
+      success: true,
+      latency,
+      pixCode: result.pixCode,
+      transactionId: result.transactionId,
+      amount: value,
+      gateway: gw.id,
+      gatewayLabel: gw.label,
+      customer: { name, email: input.client.email },
+    })
   } catch (error) {
     console.error('[v0] Erro no teste de gateway:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
