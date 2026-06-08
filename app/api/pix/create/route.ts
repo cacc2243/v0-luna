@@ -4,6 +4,7 @@ import { getAppSettings } from '@/lib/settings'
 import { resolveCashinOrder, type CashinInput } from '@/lib/cashin/gateways'
 import { sendTemplateEmail } from '@/lib/email/send'
 import { getWebhookUrl } from '@/lib/site-url'
+import { sendUtmifyOrder } from '@/lib/utmify/orders'
 
 /** Formata centavos/reais para "R$ 24,80". */
 function formatBRL(value: number): string {
@@ -257,6 +258,12 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[v0] PIX gerado via gateway:', usedGateway, '| invite:', invite.id)
+
+    // Utmify: envia o pedido como "pendente" (waiting_payment) assim que o PIX
+    // e gerado. Idempotente e resiliente — nunca quebra o fluxo principal.
+    void sendUtmifyOrder(invite, 'waiting_payment').catch((e) =>
+      console.error('[v0] Falha ao enviar pedido pendente à Utmify:', (e as Error)?.message),
+    )
 
     // E-mail "PIX do convite gerado": apenas para o Convite de Acesso, pois e o
     // unico fluxo com template dedicado. Nao bloqueia a resposta e nunca quebra

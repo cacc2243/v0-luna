@@ -15,6 +15,7 @@ import {
   QrCode,
   MessageCircle,
   Rocket,
+  BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -37,6 +38,7 @@ interface SettingsPayload {
     chatAmountCents: number
     giftUnlockAmountCents: number
     boostAmountCents: Record<string, number>
+    utmifyApiToken: string
   }
   gateways: GatewayMeta[]
   cashinGateways: GatewayMeta[]
@@ -68,6 +70,7 @@ export function SettingsTab() {
   const [chatReais, setChatReais] = useState('99,00')
   const [giftReais, setGiftReais] = useState('38,60')
   const [boostReais, setBoostReais] = useState<Record<string, string>>({})
+  const [utmifyToken, setUtmifyToken] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -98,6 +101,7 @@ export function SettingsTab() {
         boost[String(day)] = (cents / 100).toFixed(2).replace('.', ',')
       }
       setBoostReais(boost)
+      setUtmifyToken(data.settings.utmifyApiToken || '')
     }
   }, [data])
 
@@ -128,6 +132,7 @@ export function SettingsTab() {
       parseAmountCents(inviteReais) !== data.settings.inviteAmountCents ||
       parseAmountCents(chatReais) !== data.settings.chatAmountCents ||
       parseAmountCents(giftReais) !== data.settings.giftUnlockAmountCents ||
+      utmifyToken.trim() !== (data.settings.utmifyApiToken || '') ||
       boostDirty)
 
   const save = async () => {
@@ -176,6 +181,7 @@ export function SettingsTab() {
           chatAmountCents: chatCents,
           giftUnlockAmountCents: giftCents,
           boostAmountCents: boostPayload,
+          utmifyApiToken: utmifyToken.trim(),
         }),
       })
       const json = await res.json()
@@ -611,6 +617,63 @@ export function SettingsTab() {
         <p className="mt-3 text-xs text-muted-foreground">
           Aplicado no servidor — o cliente não consegue alterar.
         </p>
+      </section>
+
+      {/* Integração Utmify */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <BarChart3 className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">Integração Utmify</h2>
+            <p className="text-sm text-muted-foreground">
+              Rastreamento de vendas e UTMs (pendentes e pagas).
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label htmlFor="utmify-token" className="text-sm font-semibold text-foreground">
+            Token da API (x-api-token)
+          </label>
+          <p className="mb-3 mt-1 text-pretty text-xs leading-relaxed text-muted-foreground">
+            Cole aqui o token gerado na Utmify em{' '}
+            <span className="font-medium text-foreground">Integrações → Webhooks / Credenciais API</span>.
+            Com ele preenchido, cada PIX gerado é enviado como pedido{' '}
+            <span className="font-medium text-foreground">pendente</span> e, ao ser pago, atualizado
+            para <span className="font-medium text-foreground">aprovado</span> — sempre com as UTMs
+            de origem. Deixe em branco para desativar.
+          </p>
+          <input
+            id="utmify-token"
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
+            value={utmifyToken}
+            onChange={(e) => setUtmifyToken(e.target.value)}
+            placeholder="Cole o token da Utmify aqui"
+            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground outline-none focus:border-primary"
+          />
+          <div className="mt-3 flex items-center gap-2">
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.7rem] font-semibold',
+                utmifyToken.trim()
+                  ? 'bg-positive/15 text-positive'
+                  : 'bg-muted text-muted-foreground',
+              )}
+            >
+              <span
+                className={cn(
+                  'size-1.5 rounded-full',
+                  utmifyToken.trim() ? 'bg-positive' : 'bg-muted-foreground/60',
+                )}
+              />
+              {utmifyToken.trim() ? 'Integração ativa' : 'Integração desativada'}
+            </span>
+          </div>
+        </div>
       </section>
 
       {/* Barra de salvar */}

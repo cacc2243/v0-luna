@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { maybeSendPurchase } from '@/lib/fb/purchase'
 import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
+import { sendUtmifyOrder } from '@/lib/utmify/orders'
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,6 +50,15 @@ export async function GET(request: NextRequest) {
     // webhook nao enviou o evento, envia aqui. Idempotente via fb_purchase_sent.
     if (paidInvite) {
       await maybeSendPurchase(paidInvite)
+    }
+
+    // Utmify (safety net): garante o pedido "pago" mesmo se o webhook falhar.
+    // Idempotente via flags utmify_*. Tambem reforca o pendente.
+    if (paidInvite) {
+      void sendUtmifyOrder(paidInvite, 'waiting_payment').catch(() => {})
+      void sendUtmifyOrder(paidInvite, 'paid').catch(() => {})
+    } else if (pendingInvite) {
+      void sendUtmifyOrder(pendingInvite, 'waiting_payment').catch(() => {})
     }
 
     // E-mail "Acesso liberado" (safety net): garante o envio mesmo se o webhook
