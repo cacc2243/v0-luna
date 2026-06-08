@@ -641,7 +641,8 @@ export async function seedConversations(): Promise<Conversation[]> {
   }
 
   const now = Date.now()
-  const conversationsToInsert = BUYER_SEEDS.map((b, i) => ({
+  // Acumula no maximo 4 conversas: usa apenas os 4 primeiros seeds.
+  const conversationsToInsert = BUYER_SEEDS.slice(0, 4).map((b, i) => ({
     creator_id: user.id,
     participant_id: null,
     participant_name: b.name,
@@ -897,20 +898,35 @@ export async function generateChatActivity() {
   const user = await getCurrentUser()
   if (!user) return { error: 'not_authenticated' as const }
 
+  // Limite: acumula no maximo 4 conversas. Se ja existirem 4 ou mais, nao
+  // gera novos chats (evita o excesso de pedidos relatado).
+  const MAX_CHATS = 4
+  const { count: convoCount } = await supabase
+    .from('conversations')
+    .select('*', { count: 'exact', head: true })
+    .eq('creator_id', user.id)
+  if ((convoCount ?? 0) >= MAX_CHATS) {
+    return { success: true as const, skipped: 'max_chats_reached' as const }
+  }
+
   // Evita repetir nomes já presentes nas conversas existentes
   const usedNames = new Set<string>()
+  const usedGreetings = new Set<string>()
   const { data: existingConvos } = await supabase
     .from('conversations')
-    .select('participant_name')
+    .select('participant_name, last_message')
     .eq('creator_id', user.id)
     .order('created_at', { ascending: false })
     .limit(120)
   for (const c of existingConvos ?? []) {
     if (c.participant_name) usedNames.add(c.participant_name)
+    if (c.last_message) usedGreetings.add(c.last_message)
   }
 
   const buyer = generateBuyerName(usedNames)
-  const greeting = pickRandom(NEW_CHAT_GREETINGS)
+  // Saudacao sem repetir: prioriza as que ainda nao foram usadas.
+  const availableGreetings = NEW_CHAT_GREETINGS.filter((g) => !usedGreetings.has(g))
+  const greeting = pickRandom(availableGreetings.length > 0 ? availableGreetings : NEW_CHAT_GREETINGS)
   const nowIso = new Date().toISOString()
 
   // Escolhe um pack publicado da criadora para vincular ao novo fã.
@@ -1006,7 +1022,7 @@ export async function markGiftClaimed(messageId: string) {
   return { success: true as const }
 }
 
-// ────────────────────────────────────────────────────────────────────────────��
+// ──────────────���─────────────────────────────────────────────────────────────��
 // Boost Actions
 // ─────────────────────────────────────────────────────────────────────────────
 

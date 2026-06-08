@@ -619,16 +619,18 @@ function AppDashboard() {
     return () => clearInterval(interval)
   }, [packs.length, refreshActivity])
 
-  // Motor de chat: novos clientes mandam mensagem periodicamente (gera toast)
+  // Motor de chat: novos clientes mandam mensagem periodicamente (gera toast).
+  // Acumula no maximo 4 conversas — quando atinge o limite, o motor para.
   useEffect(() => {
     if (packs.length === 0) return
+    if (conversations.length >= 4) return
     const interval = setInterval(async () => {
       await generateChatActivity()
       mutateConversations()
       mutateNotifications()
     }, 38000)
     return () => clearInterval(interval)
-  }, [packs.length, mutateConversations, mutateNotifications])
+  }, [packs.length, conversations.length, mutateConversations, mutateNotifications])
 
   // Aceitar / recusar pedidos (atualizacao otimista = instantaneo)
   async function handleAcceptSale(saleId: string) {
