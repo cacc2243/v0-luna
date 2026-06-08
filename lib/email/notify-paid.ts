@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendTemplateEmail } from '@/lib/email/send'
+import { getSiteUrl } from '@/lib/site-url'
 
 interface PaidInviteLike {
   id: string
@@ -38,8 +39,7 @@ export async function sendInvitePaidEmailOnce(invite: PaidInviteLike): Promise<v
 
     if (existing) return
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL || 'https://luna-prive.vercel.app'
+    const siteUrl = getSiteUrl()
 
     // Tenta usar o display_name do perfil para personalizar.
     let name: string | undefined

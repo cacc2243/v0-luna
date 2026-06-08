@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAppSettings } from '@/lib/settings'
 import { resolveCashinOrder, type CashinInput } from '@/lib/cashin/gateways'
 import { sendTemplateEmail } from '@/lib/email/send'
+import { getSiteUrl } from '@/lib/site-url'
 
 /** Formata centavos/reais para "R$ 24,80". */
 function formatBRL(value: number): string {
@@ -113,10 +114,7 @@ export async function POST(request: NextRequest) {
     // retorna um id proprio.
     const identifier = `luna-${inviteType}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      request.headers.get('origin') ||
-      'https://luna-prive.vercel.app'
+    const siteUrl = getSiteUrl()
 
     const cashinInput: CashinInput = {
       identifier,

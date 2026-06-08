@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAppSettings } from '@/lib/settings'
 import { getCashoutGateway, type CashoutInput } from '@/lib/cashout/gateways'
+import { getSiteUrl } from '@/lib/site-url'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Tipos de chave PIX normalizados (maiusculo no banco/gateways).
@@ -179,10 +180,7 @@ export async function POST(request: NextRequest) {
         ? beneficiaryName.trim()
         : FALLBACK_RECEIVER_NAME
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      request.headers.get('origin') ||
-      'https://luna-prive.vercel.app'
+    const siteUrl = getSiteUrl()
 
     // ------------------------------------------------------------------
     // 2) Chamar o gateway ativo. amount FIXO no servidor (vindo das settings).
