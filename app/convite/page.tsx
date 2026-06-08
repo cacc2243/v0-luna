@@ -9,6 +9,7 @@ import { PriceCard } from '@/components/convite/price-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
+import { fbTrack } from '@/lib/fb/track'
 
 interface SignupData {
   username: string
@@ -49,11 +50,21 @@ export default function ConvitePage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!active) return
+        const cents =
+          d && typeof d.inviteAmountCents === 'number' ? d.inviteAmountCents : DEFAULT_INVITE_CENTS
         if (d && typeof d.inviteAmountCents === 'number') {
           setInviteCents(d.inviteAmountCents)
         }
         // Mesmo se a resposta nao trouxer o valor, liberamos o preco (cai no padrao).
         setPriceReady(true)
+        // InitiateCheckout: cliente chegou na pagina de checkout do convite,
+        // com o valor real ja conhecido.
+        fbTrack('InitiateCheckout', {
+          value: cents / 100,
+          currency: 'BRL',
+          content_name: 'Convite Luna Privé',
+          content_type: 'product',
+        })
       })
       .catch(() => {
         if (active) setPriceReady(true)

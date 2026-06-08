@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { fbTrack } from '@/lib/fb/track'
 import {
   User,
   Mail,
@@ -148,7 +149,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       } catch {
         // ignore storage errors
       }
-      
+
+      // Evento padrao do Facebook: cadastro concluido com sucesso.
+      fbTrack('CompleteRegistration', {
+        content_name: 'Cadastro Luna Privé',
+        status: true,
+      })
+
       setStatus('invite')
     } catch (err) {
       console.error('[v0] Signup error:', err)

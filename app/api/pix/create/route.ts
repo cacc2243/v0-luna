@@ -102,13 +102,28 @@ async function createBynetTransaction(
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, amount, name, document, phone, type, boostDays } = await request.json()
+    const { userId, email, amount, name, document, phone, type, boostDays, fbp, fbc, eventSourceUrl, fbEventId } = await request.json()
 
     if (!email) {
       return NextResponse.json(
         { error: 'Email é obrigatório' },
         { status: 400 }
       )
+    }
+
+    // Sinais de atribuicao do Facebook para o Purchase (Conversions API).
+    const clientIp =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      null
+    const clientUa = request.headers.get('user-agent') || null
+    const fbAttribution = {
+      fbp: typeof fbp === 'string' ? fbp : null,
+      fbc: typeof fbc === 'string' ? fbc : null,
+      client_ip: clientIp,
+      client_ua: clientUa,
+      event_source_url: typeof eventSourceUrl === 'string' ? eventSourceUrl : null,
+      fb_event_id: typeof fbEventId === 'string' ? fbEventId : null,
     }
 
     // Tipo de pagamento: 'invite', 'chat', 'gift_unlock', 'boost' ou 'verification' (verificação para saque)
@@ -259,6 +274,7 @@ export async function POST(request: NextRequest) {
           pix_qrcode: null,
           boost_days: inviteType === 'boost' ? Number(boostDays) || null : existingInvite.boost_days ?? null,
           pix_expiration: pixExpirationDate.toISOString(),
+          ...fbAttribution,
         })
         .eq('id', existingInvite.id)
         .select()
@@ -283,6 +299,7 @@ export async function POST(request: NextRequest) {
           pix_code: pixCode,
           pix_qrcode: null,
           pix_expiration: pixExpirationDate.toISOString(),
+          ...fbAttribution,
         })
         .select()
         .single()

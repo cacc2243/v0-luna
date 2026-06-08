@@ -22,6 +22,7 @@ const CONTENT_NAME: Record<string, string> = {
   chat: 'Chat Exclusivo Luna Privé',
   gift_unlock: 'Habilitação de Presentes Luna Privé',
   boost: 'Impulsionamento Luna Privé',
+  verification: 'Verificação de Conta Luna Privé',
 }
 
 /**
@@ -30,13 +31,13 @@ const CONTENT_NAME: Record<string, string> = {
  * de forma atomica antes do envio), evitando eventos duplicados quando tanto
  * o webhook quanto o polling de status disparam.
  *
- * A verificacao de saque (type='verification') NUNCA envia Purchase.
+ * Todos os tipos pagos (convite, chat, presentes, impulsionamento e
+ * verificacao de saque) disparam Purchase com os dados do cliente.
  */
 export async function maybeSendPurchase(invite: InviteLike): Promise<void> {
   try {
     if (!invite?.id) return
     if (invite.status !== 'paid') return
-    if (invite.type === 'verification') return
     if (invite.fb_purchase_sent) return
 
     const supabase = createAdminClient()
