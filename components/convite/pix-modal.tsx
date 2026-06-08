@@ -180,11 +180,43 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
     }
   }
 
-  function copyPixCode() {
+  async function copyPixCode() {
     if (!pixCode) return
-    navigator.clipboard.writeText(pixCode)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+
+    const markCopied = () => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+
+    // Tenta a Clipboard API moderna (pode estar bloqueada em iframes)
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(pixCode)
+        markCopied()
+        return
+      }
+    } catch {
+      // Cai no fallback abaixo
+    }
+
+    // Fallback: textarea temporário + execCommand
+    try {
+      const textarea = document.createElement('textarea')
+      textarea.value = pixCode
+      textarea.setAttribute('readonly', '')
+      textarea.style.position = 'fixed'
+      textarea.style.top = '0'
+      textarea.style.left = '0'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.focus()
+      textarea.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(textarea)
+      if (ok) markCopied()
+    } catch {
+      // Silencioso: o usuário ainda pode copiar manualmente
+    }
   }
 
   if (!isOpen) return null
