@@ -369,15 +369,15 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
       {/* Conteúdo rolável do app */}
       {phase === 'wallet' ? (
-        <div key="wallet-screen" className="animate-slide-in-right flex-1">
+        <div key="wallet-screen" className="animate-slide-in-right flex min-h-0 flex-1 flex-col">
           <WalletScreen onDone={() => setPhase('profile')} />
         </div>
       ) : phase === 'profile' || phase === 'signup' ? (
-        <div key="profile-screen" className="animate-slide-in-right flex-1">
+        <div key="profile-screen" className="animate-slide-in-right flex min-h-0 flex-1 flex-col">
           <ProfileScreen onDone={() => setShowSellModal(true)} hideHint={phase === 'signup'} />
         </div>
       ) : phase === 'packs' ? (
-        <div key="packs-screen" className="animate-slide-in-right flex-1">
+        <div key="packs-screen" className="animate-slide-in-right flex min-h-0 flex-1 flex-col">
           <PacksScreen
             balance={balance}
             createdPack={createdPack}
@@ -1152,8 +1152,8 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
   const maxValue = Math.max(...monthlyChart.map((d) => d.value), 1)
 
   return (
-    <div className="relative flex-1 overflow-hidden">
-      <div className="flex h-full flex-col overflow-hidden">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Header */}
         <header className="shrink-0 px-4 pt-6">
           <div className="flex items-center justify-between gap-3">
@@ -1382,8 +1382,8 @@ function ProfileScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: bo
   ]
 
   return (
-    <div className="relative flex-1 overflow-hidden">
-      <div className="flex h-full flex-col overflow-y-auto px-4 pb-6 pt-6">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-6 pt-6">
         {/* Header */}
         <header className="shrink-0">
           <div className="flex items-center justify-between gap-3">
