@@ -8,12 +8,30 @@ export async function POST(request: NextRequest) {
     
     console.log('[v0] Webhook PIX recebido:', JSON.stringify(body, null, 2))
 
-    // Extrair dados do webhook (formato pode variar dependendo do gateway)
-    const transactionId = body.id || body.transactionId || body.external_id || body.externalId
-    const status = body.status || body.payment_status
-    const paidAt = body.paid_at || body.paidAt || body.payment_date
+    // O formato do webhook varia por gateway:
+    // - Bynet: campos planos (id, status, paid_at)
+    // - SigiloPay: aninhado em `transaction` (id, identifier, status, payedAt)
+    //   com o tipo de evento em `event` (TRANSACTION_PAID, TRANSACTION_CANCELED...).
+    const tx = body.transaction || {}
+    const event = String(body.event || '').toUpperCase()
 
-    if (!transactionId) {
+    // Possiveis identificadores da transacao (tentamos casar por qualquer um).
+    const candidateIds = [
+      tx.id,
+      tx.identifier,
+      body.id,
+      body.transactionId,
+      body.external_id,
+      body.externalId,
+    ].filter((v): v is string => typeof v === 'string' && v.length > 0)
+
+    const rawStatus = String(
+      tx.status || body.status || body.payment_status || ''
+    ).toUpperCase()
+    const paidAt =
+      tx.payedAt || body.paid_at || body.paidAt || body.payment_date || null
+
+    if (candidateIds.length === 0) {
       return NextResponse.json(
         { error: 'Transaction ID não encontrado' },
         { status: 400 }
@@ -22,30 +40,40 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient()
 
-    // Buscar convite pela transaction_id
+    // Buscar convite por qualquer um dos identificadores recebidos.
     const { data: invite, error: findError } = await supabase
       .from('invites')
       .select('*')
-      .eq('transaction_id', transactionId)
-      .single()
+      .in('transaction_id', candidateIds)
+      .maybeSingle()
 
     if (findError || !invite) {
-      console.error('[v0] Convite não encontrado para transaction:', transactionId)
+      console.error('[v0] Convite não encontrado para transaction:', candidateIds.join(', '))
       return NextResponse.json(
         { error: 'Convite não encontrado' },
         { status: 404 }
       )
     }
 
-    // Mapear status do gateway para nosso status
+    // Mapear status do gateway para nosso status.
+    // SigiloPay usa `event` (TRANSACTION_PAID/CANCELED/REFUNDED) e status COMPLETED.
     let newStatus = invite.status
-    if (status === 'paid' || status === 'approved' || status === 'completed' || status === 'PAID') {
+    const paidEvent = event === 'TRANSACTION_PAID'
+    const canceledEvent = event === 'TRANSACTION_CANCELED' || event === 'TRANSACTION_CANCELLED'
+    const refundedEvent = event === 'TRANSACTION_REFUNDED'
+
+    if (
+      paidEvent ||
+      ['PAID', 'APPROVED', 'COMPLETED', 'PAID', 'OK'].includes(rawStatus) ||
+      ['paid', 'approved', 'completed'].includes(String(tx.status || body.status || ''))
+    ) {
       newStatus = 'paid'
-    } else if (status === 'expired' || status === 'EXPIRED') {
-      newStatus = 'expired'
-    } else if (status === 'refunded' || status === 'REFUNDED') {
+    } else if (refundedEvent || rawStatus === 'REFUNDED') {
       newStatus = 'refunded'
-    } else if (status === 'cancelled' || status === 'canceled' || status === 'CANCELLED') {
+    } else if (
+      canceledEvent ||
+      ['EXPIRED', 'CANCELLED', 'CANCELED', 'FAILED'].includes(rawStatus)
+    ) {
       newStatus = 'expired'
     }
 

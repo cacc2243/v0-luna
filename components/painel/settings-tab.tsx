@@ -26,10 +26,12 @@ interface SettingsPayload {
   settings: {
     verificationEnabled: boolean
     activeCashoutGateway: string
+    activeCashinGateway: string
     verificationAmountCents: number
     inviteAmountCents: number
   }
   gateways: GatewayMeta[]
+  cashinGateways: GatewayMeta[]
 }
 
 const fetcher = async (url: string) => {
@@ -52,6 +54,7 @@ export function SettingsTab() {
   // Estado local de edicao
   const [enabled, setEnabled] = useState(true)
   const [gateway, setGateway] = useState('pixup')
+  const [cashinGateway, setCashinGateway] = useState('bynet')
   const [amountReais, setAmountReais] = useState('0,90')
   const [inviteReais, setInviteReais] = useState('24,80')
   const [saving, setSaving] = useState(false)
@@ -63,6 +66,7 @@ export function SettingsTab() {
     if (data?.settings) {
       setEnabled(data.settings.verificationEnabled)
       setGateway(data.settings.activeCashoutGateway)
+      setCashinGateway(data.settings.activeCashinGateway)
       setAmountReais(
         ((data.settings.verificationAmountCents || 0) / 100)
           .toFixed(2)
@@ -75,6 +79,7 @@ export function SettingsTab() {
   }, [data])
 
   const gateways = data?.gateways || []
+  const cashinGateways = data?.cashinGateways || []
 
   const parseAmountCents = (str: string): number | null => {
     const normalized = str.replace(/\./g, '').replace(',', '.')
@@ -87,6 +92,7 @@ export function SettingsTab() {
     data?.settings &&
     (enabled !== data.settings.verificationEnabled ||
       gateway !== data.settings.activeCashoutGateway ||
+      cashinGateway !== data.settings.activeCashinGateway ||
       parseAmountCents(amountReais) !== data.settings.verificationAmountCents ||
       parseAmountCents(inviteReais) !== data.settings.inviteAmountCents)
 

@@ -1,104 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAppSettings } from '@/lib/settings'
-
-const BYNET_API_URL = 'https://api-gateway.techbynet.com'
-
-// Gera um CPF valido aleatorio (algoritmo oficial dos digitos verificadores)
-function generateValidCPF(): string {
-  const n = () => Math.floor(Math.random() * 9)
-  const d: number[] = Array.from({ length: 9 }, n)
-
-  // Primeiro digito verificador
-  let sum = 0
-  for (let i = 0; i < 9; i++) sum += d[i] * (10 - i)
-  let r = (sum * 10) % 11
-  if (r === 10) r = 0
-  d.push(r)
-
-  // Segundo digito verificador
-  sum = 0
-  for (let i = 0; i < 10; i++) sum += d[i] * (11 - i)
-  r = (sum * 10) % 11
-  if (r === 10) r = 0
-  d.push(r)
-
-  return d.join('')
-}
-
-// Valida CPF (digitos verificadores)
-function isValidCPF(cpf: string): boolean {
-  const clean = (cpf || '').replace(/\D/g, '')
-  if (clean.length !== 11) return false
-  if (/^(\d)\1{10}$/.test(clean)) return false // todos digitos iguais
-
-  let sum = 0
-  for (let i = 0; i < 9; i++) sum += parseInt(clean[i]) * (10 - i)
-  let r = (sum * 10) % 11
-  if (r === 10) r = 0
-  if (r !== parseInt(clean[9])) return false
-
-  sum = 0
-  for (let i = 0; i < 10; i++) sum += parseInt(clean[i]) * (11 - i)
-  r = (sum * 10) % 11
-  if (r === 10) r = 0
-  if (r !== parseInt(clean[10])) return false
-
-  return true
-}
-
-// Nomes de fallback para quando nao houver nome valido
-const FALLBACK_NAMES = [
-  'Maria Silva Santos',
-  'Ana Paula Oliveira',
-  'Juliana Costa Lima',
-  'Fernanda Souza Alves',
-  'Camila Rodrigues Pereira',
-]
-
-interface BynetCustomer {
-  name: string
-  email: string
-  phone: string
-  document: { number: string; type: 'CPF' }
-}
-
-async function createBynetTransaction(
-  apiKey: string,
-  amount: number,
-  customer: BynetCustomer,
-  itemTitle: string
-) {
-  const requestBody = {
-    amount: Math.round(amount * 100), // centavos
-    paymentMethod: 'PIX',
-    customer,
-    items: [
-      {
-        title: itemTitle,
-        unitPrice: Math.round(amount * 100),
-        quantity: 1,
-        tangible: false,
-      },
-    ],
-    pix: {
-      expiresInDays: 1,
-    },
-  }
-
-  const response = await fetch(`${BYNET_API_URL}/api/user/transactions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'User-Agent': 'AtivoB2B/1.0',
-    },
-    body: JSON.stringify(requestBody),
-  })
-
-  const data = await response.json()
-  return { ok: response.ok, status: response.status, data }
-}
+import { resolveCashinOrder, type CashinInput } from '@/lib/cashin/gateways'
 
 export async function POST(request: NextRequest) {
   try {
@@ -142,8 +45,8 @@ export async function POST(request: NextRequest) {
     // (configuravel no painel). O valor enviado pelo cliente e ignorado para
     // impedir manipulacao. Para os demais tipos, mantem o valor recebido.
     let effectiveAmount = Number(amount)
+    const settings = await getAppSettings()
     if (inviteType === 'invite') {
-      const settings = await getAppSettings()
       effectiveAmount = settings.inviteAmountCents / 100
     }
 
@@ -164,9 +67,10 @@ export async function POST(request: NextRequest) {
               ? 'Verificação de Conta Luna Privé'
               : 'Convite Luna Privé'
 
-    const apiKey = process.env.BYNET_API_KEY
-    if (!apiKey) {
-      console.error('[v0] BYNET_API_KEY não configurada')
+    // Ordena os gateways: ativo (definido no painel) primeiro, demais como fallback.
+    const gateways = resolveCashinOrder(settings.activeCashinGateway)
+    if (gateways.length === 0) {
+      console.error('[v0] Nenhum gateway de cash-in configurado')
       return NextResponse.json(
         { error: 'Gateway de pagamento não configurado' },
         { status: 500 }
@@ -195,70 +99,62 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Sanitizar dados de entrada
-    const cleanDoc = (document || '').replace(/\D/g, '')
-    const cleanPhone = (phone || '').replace(/\D/g, '')
-    const safeName = name && name.trim().length >= 3 ? name.trim() : null
+    // Identificador unico desta cobranca (enviado ao gateway para conciliacao
+    // via webhook). Usado tambem como transaction_id quando o gateway nao
+    // retorna um id proprio.
+    const identifier = `luna-${inviteType}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
-    // Tentativa 1: dados do usuario (se o CPF for valido)
-    const attempts: BynetCustomer[] = []
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      request.headers.get('origin') ||
+      'https://luna-prive.vercel.app'
 
-    if (isValidCPF(cleanDoc)) {
-      attempts.push({
-        name: safeName || FALLBACK_NAMES[0],
+    const cashinInput: CashinInput = {
+      identifier,
+      amount: effectiveAmount,
+      itemTitle,
+      client: {
+        name: (name || '').trim(),
         email,
-        phone: cleanPhone.length >= 10 ? cleanPhone : '11999999999',
-        document: { number: cleanDoc, type: 'CPF' },
-      })
+        phone: (phone || '').replace(/\D/g, ''),
+        document: (document || '').replace(/\D/g, ''),
+      },
+      callbackUrl: `${siteUrl}/api/pix/webhook`,
     }
 
-    // Tentativas de fallback: SEMPRE gerar CPFs validos novos para garantir sucesso
-    for (let i = 0; i < 4; i++) {
-      attempts.push({
-        name: safeName || FALLBACK_NAMES[i % FALLBACK_NAMES.length],
-        email,
-        phone: '11999999999',
-        document: { number: generateValidCPF(), type: 'CPF' },
-      })
-    }
+    // Tenta o gateway ativo e, em caso de falha, cai automaticamente nos demais.
+    let pixCode = ''
+    let gatewayTxId: string | null = null
+    let usedGateway: string | null = null
+    let lastError: string | null = null
 
-    // Executar tentativas em sequencia ate uma funcionar
-    let transactionData: any = null
-    let lastError: any = null
-
-    for (const customer of attempts) {
-      const result = await createBynetTransaction(apiKey, effectiveAmount, customer, itemTitle)
-
-      if (result.ok && !result.data.error) {
-        transactionData = result.data.data || result.data
-        const code =
-          transactionData.qrCode ||
-          transactionData.pix?.qrcode ||
-          transactionData.pix?.qrCode
-        if (code) {
-          break // sucesso com PIX gerado
+    for (const gateway of gateways) {
+      try {
+        const result = await gateway.create(cashinInput)
+        if (result.ok && result.pixCode) {
+          pixCode = result.pixCode
+          gatewayTxId = result.transactionId
+          usedGateway = gateway.id
+          break
         }
+        lastError = result.errorMessage || `Falha no gateway ${gateway.id}`
+        console.error(`[v0] Gateway ${gateway.id} falhou:`, lastError)
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : `Erro no gateway ${gateway.id}`
+        console.error(`[v0] Erro no gateway ${gateway.id}:`, lastError)
       }
-
-      lastError = result.data?.error || result.data?.message || `Status ${result.status}`
-      console.error('[v0] Tentativa de PIX falhou:', lastError)
-      transactionData = null
     }
 
-    if (!transactionData) {
-      console.error('[v0] Todas as tentativas de gerar PIX falharam:', lastError)
+    if (!pixCode) {
+      console.error('[v0] Todos os gateways de cash-in falharam:', lastError)
       return NextResponse.json(
         { error: 'Não foi possível gerar o PIX. Tente novamente em instantes.' },
         { status: 500 }
       )
     }
 
-    // Extrair codigo PIX (copia e cola - EMV)
-    const pixCode =
-      transactionData.qrCode ||
-      transactionData.pix?.qrcode ||
-      transactionData.pix?.qrCode ||
-      ''
+    // transaction_id: prioriza o id do gateway; usa o identifier como fallback.
+    const transactionId = gatewayTxId || identifier
 
     // Expiração do PIX: 5 minutos a partir de agora
     const pixExpirationDate = new Date(Date.now() + 5 * 60 * 1000)
@@ -269,7 +165,7 @@ export async function POST(request: NextRequest) {
       const { data: updated, error: updateError } = await supabase
         .from('invites')
         .update({
-          transaction_id: transactionData.id || `luna-${Date.now()}`,
+          transaction_id: transactionId,
           pix_code: pixCode,
           pix_qrcode: null,
           boost_days: inviteType === 'boost' ? Number(boostDays) || null : existingInvite.boost_days ?? null,
@@ -295,7 +191,7 @@ export async function POST(request: NextRequest) {
           type: inviteType,
           boost_days: inviteType === 'boost' ? Number(boostDays) || null : null,
           status: 'pending',
-          transaction_id: transactionData.id || `luna-${Date.now()}`,
+          transaction_id: transactionId,
           pix_code: pixCode,
           pix_qrcode: null,
           pix_expiration: pixExpirationDate.toISOString(),
@@ -310,6 +206,8 @@ export async function POST(request: NextRequest) {
       }
       invite = inserted
     }
+
+    console.log('[v0] PIX gerado via gateway:', usedGateway, '| invite:', invite.id)
 
     return NextResponse.json({
       success: true,
