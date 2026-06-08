@@ -316,7 +316,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const ring = (key: string) => (highlight === key ? 'animate-highlight ring-2 ring-primary/50 transition-all duration-500' : 'ring-0 transition-all duration-500')
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-background">
+    <div className="fixed inset-x-0 top-0 z-40 flex h-[100dvh] flex-col overflow-hidden bg-background">
       {/* Notificação push estilo celular */}
       {toast && (
         <div
