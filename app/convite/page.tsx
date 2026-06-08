@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Mail } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
@@ -9,7 +9,6 @@ import { PriceCard } from '@/components/convite/price-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
-import { fbTrack } from '@/lib/fb/track'
 
 interface SignupData {
   username: string
@@ -31,7 +30,6 @@ export default function ConvitePage() {
   const [showPixModal, setShowPixModal] = useState(false)
   // Valor do convite controlado pelo painel (fonte da verdade no servidor).
   const [inviteCents, setInviteCents] = useState(DEFAULT_INVITE_CENTS)
-  const checkoutFiredRef = useRef(false)
 
   useEffect(() => {
     try {
@@ -56,21 +54,6 @@ export default function ConvitePage() {
       active = false
     }
   }, [])
-
-  // Evento Facebook: InitiateCheckout ao entrar na pagina de convite (uma vez).
-  useEffect(() => {
-    if (checkoutFiredRef.current) return
-    checkoutFiredRef.current = true
-    try {
-      fbTrack('InitiateCheckout', {
-        content_name: 'Convite Luna Privé',
-        value: inviteCents / 100,
-        currency: 'BRL',
-      })
-    } catch {
-      // nunca bloquear o fluxo por causa do pixel
-    }
-  }, [inviteCents])
 
   function handleAcquire() {
     if (!data.email || data.email === 'seu@email.com') {
