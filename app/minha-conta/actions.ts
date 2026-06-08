@@ -549,7 +549,7 @@ export async function settleExpiredWithdrawals() {
 
 // ───────���─────────────────────────────────────────────────────────────────────
 // Conversation Actions
-// ───────────────────────────────────────────────────────────────────────────�����─
+// ───────────────────��───────────────────────────────────────────────────────�����─
 
 // Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
 const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
@@ -876,6 +876,55 @@ export async function sendLockedMessage(conversationId: string) {
     .eq('id', conversationId)
 
   return { success: true as const, messages: (inserted as Message[]) || [] }
+}
+
+// Mensagens de cobrança de presença quando a criadora some sem ativar o chat.
+// Dois estágios: ~5 min (leve) e ~10 min (mais insistente).
+const INACTIVITY_NUDGES: Record<1 | 2, string[]> = {
+  1: ['tá por aí ainda?', 'oi, sumiu? 🥺', 'cadê vc? ainda tô aqui te esperando', 'oi linda, você travou aí?'],
+  2: [
+    'ainda quer conversar comigo? 🥹',
+    'puxa, achei que a gente tava se curtindo... ainda tá aí?',
+    'fiquei esperando você voltar, ainda tá online?',
+    'me responde só pra eu saber que você não sumiu de vez 🙏',
+  ],
+}
+
+// Insere uma única mensagem do comprador cobrando presença. Chamada pelo client
+// após 5 e 10 minutos de inatividade da criadora (enquanto o chat não foi ativado).
+export async function sendInactivityNudge(conversationId: string, stage: 1 | 2) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { error: 'not_authenticated' as const }
+
+  const { data: conversation } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('id', conversationId)
+    .eq('creator_id', user.id)
+    .single()
+  if (!conversation) return { error: 'conversation_not_found' as const }
+
+  const content = pickRandom(INACTIVITY_NUDGES[stage] ?? INACTIVITY_NUDGES[1])
+  const { data: inserted } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id: null,
+      is_from_creator: false,
+      content,
+      message_type: 'text',
+      is_read: false,
+    })
+    .select('*')
+    .single()
+
+  await supabase
+    .from('conversations')
+    .update({ last_message: content, last_message_at: new Date().toISOString() })
+    .eq('id', conversationId)
+
+  return { success: true as const, message: (inserted as Message) || null }
 }
 
 // Mensagens espontâneas de novos clientes chegando ao chat

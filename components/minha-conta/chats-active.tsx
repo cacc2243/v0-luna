@@ -36,6 +36,7 @@ import {
   markConversationRead,
   sendCreatorMessage,
   sendLockedMessage,
+  sendInactivityNudge,
   markGiftClaimed,
   type Conversation,
   type Message,
@@ -374,6 +375,10 @@ function ChatConversation({
   const scrollRef = useRef<HTMLDivElement>(null)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const lockedMsgSent = useRef(false)
+  // Marca o instante da última atividade da criadora; reinicia os lembretes de
+  // presença quando ela envia uma mensagem.
+  const [lastCreatorActivity, setLastCreatorActivity] = useState(() => Date.now())
+  const nudgeSent = useRef<Set<1 | 2>>(new Set())
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -408,6 +413,42 @@ function ChatConversation({
     }
   }, [])
 
+  // Lembretes de presença: se a criadora ainda NÃO ativou o chat (não pagou a
+  // habilitação) e ficar sem responder, o cliente cobra presença em 5 e 10 min.
+  useEffect(() => {
+    // Já ativado, conversa avançada ou histórico carregando: não cobra presença.
+    if (giftsEnabled || step >= 3 || loadingMessages) return
+
+    async function fireNudge(stage: 1 | 2) {
+      if (nudgeSent.current.has(stage)) return
+      nudgeSent.current.add(stage)
+      // "digitando..." curto antes da mensagem chegar, para parecer natural
+      setTyping(true)
+      const res = await sendInactivityNudge(conversation.id, stage)
+      setTyping(false)
+      if (!res || 'error' in res || !res.message) return
+      const nudge = res.message
+      setMessages((prev) => [...prev, toChatMessage(nudge)])
+      onConversationUpdate({
+        ...conversation,
+        last_message: nudge.content ?? 'tá por aí ainda?',
+        last_message_at: new Date().toISOString(),
+      })
+    }
+
+    const FIVE_MIN = 5 * 60 * 1000
+    const TEN_MIN = 10 * 60 * 1000
+    const elapsedAt5 = FIVE_MIN - (Date.now() - lastCreatorActivity)
+    const elapsedAt10 = TEN_MIN - (Date.now() - lastCreatorActivity)
+
+    const t5 = setTimeout(() => fireNudge(1), Math.max(0, elapsedAt5))
+    const t10 = setTimeout(() => fireNudge(2), Math.max(0, elapsedAt10))
+    return () => {
+      clearTimeout(t5)
+      clearTimeout(t10)
+    }
+  }, [giftsEnabled, step, loadingMessages, lastCreatorActivity, conversation, onConversationUpdate])
+
   // Faz upload de um arquivo de mídia para o Supabase Storage e devolve a URL pública
   async function uploadMedia(file: Blob, ext: string): Promise<string | null> {
     try {
@@ -439,6 +480,9 @@ function ChatConversation({
     audioDuration?: number
   }) {
     setSending(true)
+    // Atividade da criadora reinicia o cronômetro dos lembretes de presença
+    setLastCreatorActivity(Date.now())
+    nudgeSent.current = new Set()
     // Mostra a mensagem da criadora imediatamente (otimista)
     const optimisticId = `local-${Date.now()}`
     setMessages((prev) => [
