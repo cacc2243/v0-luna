@@ -588,13 +588,13 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               </span>
             ) : (
               <item.icon
-                className={`size-5 ${item.label === activeTab ? 'text-primary' : 'text-muted-foreground'}`}
+                className={`size-5 transition-colors ${item.label === activeTab ? 'text-primary' : 'text-muted-foreground/40'}`}
                 aria-hidden="true"
               />
             )}
             <span
-              className={`text-[0.6rem] ${
-                item.label === activeTab ? 'font-semibold text-primary' : 'text-muted-foreground'
+              className={`text-[0.6rem] transition-colors ${
+                item.label === activeTab ? 'font-semibold text-primary' : 'text-muted-foreground/40'
               }`}
             >
               {item.label}
