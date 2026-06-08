@@ -648,7 +648,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       {/* Barra da mentora — segunda rodada de pedidos */}
       {phase === 'selling2' && (
         <div className="pointer-events-none absolute inset-x-0 bottom-16 z-[46] px-4">
-          <div className="luna-border mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-card px-3.5 py-3 shadow-[0_8px_40px_-16px_oklch(0_0_0/0.5)] ring-1 ring-primary/30">
+          <div className="luna-border animate-coach-glow mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-card px-3.5 py-3 ring-1 ring-primary/30">
             <img
               src="/images/mentor.png"
               alt="Camila"
@@ -799,7 +799,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
 
           {/* Fala da mentora — flutuante, na frente do card */}
           <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[56] px-4">
-            <div className="luna-border animate-sheet-up flex items-start gap-3 rounded-2xl bg-card px-3.5 py-3 shadow-2xl ring-1 ring-primary/30">
+            <div className="luna-border animate-sheet-up animate-coach-glow flex items-start gap-3 rounded-2xl bg-card px-3.5 py-3 ring-1 ring-primary/30">
               <img
                 src="/images/mentor.png"
                 alt="Camila"
@@ -1076,7 +1076,7 @@ function PacksScreen({
             aria-hidden="true"
           />
           <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
-            <div className="luna-border animate-pop flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
+            <div className="luna-border animate-pop animate-coach-glow flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
               <img
                 src="/images/mentor.png"
                 alt="Camila"
@@ -1332,7 +1332,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
             aria-hidden="true"
           />
           <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
-            <div className="luna-border animate-pop relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
+            <div className="luna-border animate-pop animate-coach-glow relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
               <img
                 src="/images/mentor.png"
                 alt="Camila"
@@ -1479,7 +1479,7 @@ function ProfileScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: bo
             aria-hidden="true"
           />
           <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
-            <div className="luna-border animate-pop relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
+            <div className="luna-border animate-pop animate-coach-glow relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
               <img
                 src="/images/mentor.png"
                 alt="Camila"
