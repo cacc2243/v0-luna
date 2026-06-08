@@ -1352,8 +1352,8 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
       }
     }
 
-    // Pedidos de venda pendentes (1-2 por pack, mais no inicio)
-    const orders = initial ? randInt(1, 3) : randInt(0, 2)
+    // Pedidos de venda pendentes (menos frequentes para nao acumular demais)
+    const orders = initial ? randInt(1, 2) : randInt(0, 1)
     for (let i = 0; i < orders; i++) {
       const amount = Number(pack.price) || 0
       // A pessoa recebe o valor total da venda, sem desconto de taxa

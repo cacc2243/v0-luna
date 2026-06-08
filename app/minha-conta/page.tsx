@@ -615,7 +615,7 @@ function AppDashboard() {
     const interval = setInterval(async () => {
       await generatePackActivity()
       refreshActivity()
-    }, 25000)
+    }, 45000)
     return () => clearInterval(interval)
   }, [packs.length, refreshActivity])
 
@@ -2050,7 +2050,7 @@ function PacksScreen({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────���─────────────────
 // Tela Detalhe do Pack (visualizar, métricas e editar)
 // ─────────────────────────────────────────────────────────────────────────────
 
