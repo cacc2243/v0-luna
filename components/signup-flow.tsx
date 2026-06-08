@@ -952,7 +952,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
           alt=""
           className="size-full object-cover object-top"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/80 to-background/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/65 via-background/60 to-background/80" />
       </div>
 
       {/* Mentora */}
