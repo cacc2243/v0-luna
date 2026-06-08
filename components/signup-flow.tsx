@@ -933,43 +933,95 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
 }
 
 function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => void }) {
+  const INVITE_STEPS = 2
+  const [sub, setSub] = useState(0)
+
   return (
     <div className="animate-pop luna-border w-full max-w-md overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20">
-      {/* Mulher falando */}
-      <div className="flex flex-col items-center px-6 pt-8">
+      {/* Mentora */}
+      <div className="flex flex-col items-center px-6 pt-7">
         <div className="relative">
           <span className="absolute -inset-1.5 rounded-full luna-gradient opacity-70 blur-lg" aria-hidden="true" />
           <img
             src="/images/mentor.png"
             alt="Mentora do Luna Prive"
-            className="relative size-28 rounded-full border-2 border-primary/60 object-cover"
+            className="relative size-24 rounded-full border-2 border-primary/60 object-cover"
           />
           <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
         </div>
-        <p className="mt-5 text-sm font-bold uppercase tracking-[0.2em] text-primary">
-          Meus parabens!
+        <p className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">
+          {sub === 0 ? 'Meus parabens!' : 'Atencao'}
         </p>
       </div>
 
-      {/* Balao de fala */}
-      <div className="px-6 pb-8 pt-5">
-        <div className="rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
-          <p>
-            Sua conta foi criada com{' '}
-            <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
-            <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
-          </p>
-          <p className="mt-3">
-            Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
-          </p>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
-            acesso esta muito barato e confiavel.
-          </p>
+      <div className="px-6 pb-7 pt-4">
+        {/* ETAPA 0 — Parabens + convite */}
+        {sub === 0 && (
+          <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
+            <p>
+              Sua conta foi criada com{' '}
+              <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
+              <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
+            </p>
+            <p className="mt-3">
+              Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
+            </p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
+              acesso esta muito barato e confiavel.
+            </p>
+          </div>
+        )}
+
+        {/* ETAPA 1 — Convites limitados + conformidade */}
+        {sub === 1 && (
+          <div key="invite-1" className="animate-pop rounded-2xl border border-primary/30 bg-primary/5 p-5">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
+                <ShieldCheck className="size-[1.1rem] text-primary" aria-hidden="true" />
+              </span>
+              <p className="text-sm font-bold text-foreground">Convites limitados</p>
+            </div>
+            <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
+              Existem <span className="font-semibold text-primary">poucos convites disponiveis</span> no momento. Eles sao liberados
+              em pequenas quantidades para manter a qualidade da plataforma.
+            </p>
+            <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
+              <span className="font-semibold text-foreground">Toda usuaria possui um convite ativo</span> para garantir a conformidade e a
+              seguranca de todos dentro do Luna Prive.
+            </p>
+          </div>
+        )}
+
+        {/* Indicador de etapas */}
+        <div className="mt-5 flex items-center justify-center gap-2" aria-hidden="true">
+          {Array.from({ length: INVITE_STEPS }).map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                'h-1.5 rounded-full transition-all duration-300',
+                i === sub ? 'w-6 bg-primary' : 'w-1.5 bg-muted',
+              )}
+            />
+          ))}
         </div>
 
-        <div className="mt-6">
-          <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
+        {/* Acoes */}
+        <div className="mt-4">
+          {sub < INVITE_STEPS - 1 ? (
+            <CtaButton onClick={() => setSub((s) => s + 1)}>Continuar</CtaButton>
+          ) : (
+            <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
+          )}
+          {sub > 0 && (
+            <button
+              type="button"
+              onClick={() => setSub((s) => Math.max(0, s - 1))}
+              className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+            >
+              ← Voltar
+            </button>
+          )}
         </div>
       </div>
     </div>
