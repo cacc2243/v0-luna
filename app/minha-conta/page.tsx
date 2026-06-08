@@ -931,6 +931,7 @@ function AppDashboard() {
           userName={profile?.display_name || 'Criadora Luna'}
           userEmail={userEmail}
           packsCount={packs.length}
+          giftPrice={pricing?.giftUnlockAmountCents ? pricing.giftUnlockAmountCents / 100 : undefined}
           onGoToPacks={() => setActiveTab('Packs')}
           onProfileRefresh={mutateProfile}
         />
