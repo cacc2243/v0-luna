@@ -24,6 +24,10 @@ import {
   Lock,
   Heart,
   TrendingUp,
+  Star,
+  Settings,
+  HelpCircle,
+  LogOut,
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { CtaButton } from '@/components/cta-button'
@@ -112,7 +116,7 @@ const examplePhotos = [
 
 export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [phase, setPhase] = useState<
-    'tour' | 'selling' | 'done' | 'packs' | 'selling2' | 'celebrate' | 'wallet' | 'signup'
+    'tour' | 'selling' | 'done' | 'packs' | 'selling2' | 'celebrate' | 'wallet' | 'profile' | 'signup'
   >('tour')
   const [showSellModal, setShowSellModal] = useState(false)
   const [tourStep, setTourStep] = useState(0)
@@ -293,9 +297,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const activeTab =
     phase === 'packs'
       ? 'Packs'
-      : phase === 'wallet' || phase === 'signup'
+      : phase === 'wallet'
         ? 'Carteira'
-        : 'Início'
+        : phase === 'profile' || phase === 'signup'
+          ? 'Perfil'
+          : 'Início'
 
   const currentSale = activeSale !== null ? sellingList[activeSale] : null
   const saleActive = currentSale !== null && (phase === 'selling' || phase === 'selling2')
@@ -362,12 +368,13 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       ))}
 
       {/* Conteúdo rolável do app */}
-      {phase === 'wallet' || phase === 'signup' ? (
+      {phase === 'wallet' ? (
         <div key="wallet-screen" className="animate-slide-in-right flex-1">
-          <WalletScreen
-            onDone={() => setShowSellModal(true)}
-            hideHint={phase === 'signup'}
-          />
+          <WalletScreen onDone={() => setPhase('profile')} />
+        </div>
+      ) : phase === 'profile' || phase === 'signup' ? (
+        <div key="profile-screen" className="animate-slide-in-right flex-1">
+          <ProfileScreen onDone={() => setShowSellModal(true)} hideHint={phase === 'signup'} />
         </div>
       ) : phase === 'packs' ? (
         <div key="packs-screen" className="animate-slide-in-right flex-1">
@@ -1352,6 +1359,145 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
                     onDone()
                   }}
                 className="mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
+                >
+                  Entendi
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function ProfileScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boolean }) {
+  const [showHint, setShowHint] = useState(true)
+
+  const menu = [
+    { icon: User, label: 'Editar perfil' },
+    { icon: Bell, label: 'Notificações', badge: 3 },
+    { icon: Settings, label: 'Configurações' },
+    { icon: HelpCircle, label: 'Ajuda e suporte' },
+  ]
+
+  return (
+    <div className="relative flex-1 overflow-hidden">
+      <div className="flex h-full flex-col overflow-y-auto px-4 pb-6 pt-6">
+        {/* Header */}
+        <header className="shrink-0">
+          <div className="flex items-center justify-between gap-3">
+            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
+            <span className="flex size-9 items-center justify-center rounded-full bg-card ring-1 ring-border">
+              <Settings className="size-4 text-muted-foreground" aria-hidden="true" />
+            </span>
+          </div>
+        </header>
+
+        {/* Card de perfil */}
+        <div className="luna-border mt-5 rounded-2xl bg-card p-4">
+          <div className="flex items-start gap-4">
+            <div className="relative shrink-0">
+              <span className="flex size-20 items-center justify-center rounded-full bg-muted ring-2 ring-primary/30">
+                <User className="size-9 text-muted-foreground" aria-hidden="true" />
+              </span>
+              <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <h1 className="truncate text-lg font-bold text-foreground">Seu perfil</h1>
+                <BadgeCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
+              </div>
+              <p className="text-xs text-muted-foreground">@seuusuario</p>
+              <div className="mt-3 flex items-center gap-4">
+                <div>
+                  <p className="text-base font-bold leading-none text-foreground">447</p>
+                  <p className="mt-0.5 text-[0.65rem] text-muted-foreground">Seguidores</p>
+                </div>
+                <div>
+                  <p className="text-base font-bold leading-none text-foreground">146</p>
+                  <p className="mt-0.5 text-[0.65rem] text-muted-foreground">Vendas</p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-0.5">
+                    <p className="text-base font-bold leading-none text-foreground">4.9</p>
+                    <Star className="size-3 fill-amber-400 text-amber-400" aria-hidden="true" />
+                  </div>
+                  <p className="mt-0.5 text-[0.65rem] text-muted-foreground">Avaliação</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Destaques */}
+        <div className="mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Destaques</h2>
+          <div className="flex gap-4 overflow-x-auto pb-1">
+            <button type="button" className="flex flex-col items-center gap-1.5">
+              <div className="flex size-20 items-center justify-center rounded-full border-2 border-dashed border-primary/40 bg-primary/5">
+                <Plus className="size-6 text-primary" aria-hidden="true" />
+              </div>
+              <span className="text-xs text-muted-foreground">Adicionar</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Menu */}
+        <div className="mt-6 flex flex-col gap-2">
+          {menu.map((item) => (
+            <div
+              key={item.label}
+              className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left"
+            >
+              <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+                <item.icon className="size-5 text-primary" aria-hidden="true" />
+              </span>
+              <span className="flex-1 text-sm font-semibold text-foreground">{item.label}</span>
+              {item.badge ? (
+                <span className="rounded-full bg-primary px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
+                  {item.badge}
+                </span>
+              ) : null}
+              <ChevronRight className="size-5 text-muted-foreground" aria-hidden="true" />
+            </div>
+          ))}
+          <div className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left">
+            <span className="flex size-10 items-center justify-center rounded-full bg-red-500/10">
+              <LogOut className="size-5 text-red-500" aria-hidden="true" />
+            </span>
+            <span className="flex-1 text-sm font-semibold text-red-500">Sair da conta</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Coach — mentora explicando o perfil */}
+      {showHint && !hideHint && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[50] h-72 bg-gradient-to-t from-background via-background/90 to-transparent"
+            aria-hidden="true"
+          />
+          <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
+            <div className="luna-border animate-pop relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_18px_50px_-12px_oklch(0_0_0/0.85)] ring-1 ring-primary/30">
+              <img
+                src="/images/mentor.png"
+                alt="Camila"
+                className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+              />
+              <div className="flex-1">
+                <p className="animate-item text-pretty text-base leading-relaxed text-foreground">
+                  E aqui é o seu <span className="font-bold text-primary">perfil</span>: você
+                  configura seus dados pessoais, foto, bio e seus destaques. É o seu cartão de
+                  visitas para os compradores.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHint(false)
+                    onDone()
+                  }}
+                  className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Entendi
                 </button>
