@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { maybeSendPurchase } from '@/lib/fb/purchase'
+import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,6 +49,12 @@ export async function GET(request: NextRequest) {
     // webhook nao enviou o evento, envia aqui. Idempotente via fb_purchase_sent.
     if (paidInvite) {
       await maybeSendPurchase(paidInvite)
+    }
+
+    // E-mail "Acesso liberado" (safety net): garante o envio mesmo se o webhook
+    // falhar. Idempotente — so envia uma vez por destinatario.
+    if (paidInvite) {
+      await sendInvitePaidEmailOnce(paidInvite)
     }
 
     // Safety net: se um pagamento de Chat Exclusivo ja foi confirmado,

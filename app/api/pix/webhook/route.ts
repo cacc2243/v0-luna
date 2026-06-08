@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { maybeSendPurchase } from '@/lib/fb/purchase'
+import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
 
 export async function POST(request: NextRequest) {
   try {
@@ -105,6 +106,12 @@ export async function POST(request: NextRequest) {
     // nao envia Purchase (tratado dentro do helper).
     if (newStatus === 'paid') {
       await maybeSendPurchase({ ...invite, status: 'paid' })
+    }
+
+    // E-mail "Acesso liberado" para o Convite de Acesso pago. Idempotente:
+    // so envia uma vez por destinatario (checa email_logs internamente).
+    if (newStatus === 'paid') {
+      await sendInvitePaidEmailOnce(invite)
     }
 
     // Se for um pagamento de Chat Exclusivo confirmado, desbloqueia o chat da usuaria

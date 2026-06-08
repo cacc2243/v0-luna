@@ -140,6 +140,16 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         // Nao bloquear - o trigger ja criou o perfil basico
       }
       
+      // E-mail de boas-vindas (conta criada). Nao bloqueia o fluxo de cadastro
+      // e nunca quebra caso o envio falhe.
+      void fetch('/api/email/account-created', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), name: username.trim() }),
+      }).catch((e) =>
+        console.error('[v0] Falha ao solicitar e-mail de conta criada:', e),
+      )
+
       // Salvar dados no sessionStorage para a pagina de convite
       try {
         sessionStorage.setItem(

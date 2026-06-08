@@ -2,6 +2,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAppSettings } from '@/lib/settings'
 import { resolveCashinOrder, type CashinInput } from '@/lib/cashin/gateways'
+import { sendTemplateEmail } from '@/lib/email/send'
+
+/** Formata centavos/reais para "R$ 24,80". */
+function formatBRL(value: number): string {
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  })
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -208,6 +217,20 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[v0] PIX gerado via gateway:', usedGateway, '| invite:', invite.id)
+
+    // E-mail "PIX do convite gerado": apenas para o Convite de Acesso, pois e o
+    // unico fluxo com template dedicado. Nao bloqueia a resposta e nunca quebra
+    // o fluxo principal (sendTemplateEmail e resiliente). So envia se o PIX
+    // acabou de ser gerado (nao quando reaproveita um convite pendente).
+    if (inviteType === 'invite') {
+      void sendTemplateEmail('invite_pix', email, {
+        name: (name || '').trim() || undefined,
+        amount: formatBRL(effectiveAmount),
+        pixCode: invite.pix_code,
+      }).catch((e) =>
+        console.error('[v0] Falha ao enviar e-mail invite_pix:', (e as Error)?.message),
+      )
+    }
 
     return NextResponse.json({
       success: true,
