@@ -63,13 +63,51 @@ export default function ConvitePage() {
     }
   }, [])
 
+  function updateField(field: keyof SignupData, value: string) {
+    setData((prev) => {
+      const next = { ...prev, [field]: value }
+      try {
+        sessionStorage.setItem('luna_signup', JSON.stringify(next))
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
   function handleAcquire() {
     // Evita gerar PIX com valor padrao antes do valor real do painel chegar.
     if (!priceReady) return
-    if (!data.email || data.email === 'seu@email.com') {
-      alert('Por favor, complete seu cadastro primeiro.')
+
+    // O e-mail e obrigatorio e precisa ser valido para gerar o PIX corretamente.
+    const email = data.email.trim()
+    if (!email || email === 'seu@email.com' || !EMAIL_REGEX.test(email)) {
+      alert('Por favor, informe um e-mail válido tocando no lápis ao lado do campo E-mail.')
       return
     }
+
+    // Username e chave PIX sao complementares: se vazios, criamos valores
+    // apenas para gerar o PIX sem travar o fluxo.
+    if (!data.username || !data.pixKey) {
+      const fallbackUser = data.username || `cliente_${email.split('@')[0]}`.slice(0, 24)
+      setData((prev) => {
+        const next = {
+          ...prev,
+          email,
+          username: prev.username || fallbackUser,
+          pixKey: prev.pixKey || email,
+        }
+        try {
+          sessionStorage.setItem('luna_signup', JSON.stringify(next))
+        } catch {
+          // ignore
+        }
+        return next
+      })
+    }
+
     setShowPixModal(true)
   }
 
@@ -131,6 +169,7 @@ export default function ConvitePage() {
           email={data.email}
           pixType={data.pixType}
           pixKey={data.pixKey}
+          onUpdate={updateField}
         />
 
         {/* Preço + garantia */}
