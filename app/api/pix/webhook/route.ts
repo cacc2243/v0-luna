@@ -32,10 +32,14 @@ export async function POST(request: NextRequest) {
     const paidAt =
       tx.payedAt || body.paid_at || body.paidAt || body.payment_date || null
 
+    // Sem ID = provavelmente um ping de teste do painel do gateway ou um evento
+    // sem transacao. A doc da SigiloPay exige responder 2XX, caso contrario ela
+    // reenvia a notificacao indefinidamente. Respondemos 200 (recebido/ignorado).
     if (candidateIds.length === 0) {
+      console.log('[v0] Webhook sem transaction id — tratado como ping/teste, ignorando.')
       return NextResponse.json(
-        { error: 'Transaction ID não encontrado' },
-        { status: 400 }
+        { received: true, matched: false, reason: 'no_transaction_id' },
+        { status: 200 }
       )
     }
 
@@ -49,10 +53,13 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (findError || !invite) {
-      console.error('[v0] Convite não encontrado para transaction:', candidateIds.join(', '))
+      // Transacao nao pertence a nenhum convite nosso (ex.: teste do painel ou
+      // transacao de outra origem na mesma conta). Respondemos 200 para a
+      // SigiloPay nao reenviar indefinidamente.
+      console.log('[v0] Convite não encontrado para transaction:', candidateIds.join(', '), '— ignorando.')
       return NextResponse.json(
-        { error: 'Convite não encontrado' },
-        { status: 404 }
+        { received: true, matched: false, reason: 'invite_not_found' },
+        { status: 200 }
       )
     }
 
