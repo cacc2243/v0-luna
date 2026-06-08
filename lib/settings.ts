@@ -1,11 +1,27 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
+/** Planos de impulsionamento: dias -> valor em centavos. */
+export type BoostAmounts = Record<string, number>
+
+export const BOOST_DAYS = [2, 7, 14, 21, 30] as const
+
 export interface AppSettings {
   verificationEnabled: boolean
   activeCashoutGateway: string
   activeCashinGateway: string
   verificationAmountCents: number
   inviteAmountCents: number
+  chatAmountCents: number
+  giftUnlockAmountCents: number
+  boostAmountCents: BoostAmounts
+}
+
+const DEFAULT_BOOST: BoostAmounts = {
+  '2': 2800,
+  '7': 5600,
+  '14': 7000,
+  '21': 8400,
+  '30': 9900,
 }
 
 const DEFAULTS: AppSettings = {
@@ -14,6 +30,9 @@ const DEFAULTS: AppSettings = {
   activeCashinGateway: 'bynet',
   verificationAmountCents: 90,
   inviteAmountCents: 2480,
+  chatAmountCents: 9900,
+  giftUnlockAmountCents: 3860,
+  boostAmountCents: { ...DEFAULT_BOOST },
 }
 
 const KEY_MAP = {
@@ -22,7 +41,24 @@ const KEY_MAP = {
   activeCashinGateway: 'active_cashin_gateway',
   verificationAmountCents: 'verification_amount_cents',
   inviteAmountCents: 'invite_amount_cents',
+  chatAmountCents: 'chat_amount_cents',
+  giftUnlockAmountCents: 'gift_unlock_amount_cents',
+  boostAmountCents: 'boost_amount_cents',
 } as const
+
+/** Normaliza um objeto de precos de boost garantindo todos os planos. */
+function normalizeBoost(raw: unknown): BoostAmounts {
+  const out: BoostAmounts = { ...DEFAULT_BOOST }
+  if (raw && typeof raw === 'object') {
+    for (const day of BOOST_DAYS) {
+      const v = (raw as Record<string, unknown>)[String(day)]
+      if (typeof v === 'number' && Number.isFinite(v) && v > 0) {
+        out[String(day)] = Math.round(v)
+      }
+    }
+  }
+  return out
+}
 
 /**
  * Le as configuracoes do app a partir do banco (fonte unica da verdade).
@@ -65,12 +101,29 @@ export async function getAppSettings(): Promise<AppSettings> {
       ? Math.round(rawInvite)
       : DEFAULTS.inviteAmountCents
 
+  const rawChat = map.get(KEY_MAP.chatAmountCents)
+  const chatAmountCents =
+    typeof rawChat === 'number' && Number.isFinite(rawChat)
+      ? Math.round(rawChat)
+      : DEFAULTS.chatAmountCents
+
+  const rawGift = map.get(KEY_MAP.giftUnlockAmountCents)
+  const giftUnlockAmountCents =
+    typeof rawGift === 'number' && Number.isFinite(rawGift)
+      ? Math.round(rawGift)
+      : DEFAULTS.giftUnlockAmountCents
+
+  const boostAmountCents = normalizeBoost(map.get(KEY_MAP.boostAmountCents))
+
   return {
     verificationEnabled,
     activeCashoutGateway,
     activeCashinGateway,
     verificationAmountCents,
     inviteAmountCents,
+    chatAmountCents,
+    giftUnlockAmountCents,
+    boostAmountCents,
   }
 }
 
@@ -122,6 +175,30 @@ export async function updateAppSettings(
     rows.push({
       key: KEY_MAP.inviteAmountCents,
       value: Math.round(patch.inviteAmountCents),
+      updated_at: now,
+      updated_by: updatedBy,
+    })
+  }
+  if (typeof patch.chatAmountCents === 'number') {
+    rows.push({
+      key: KEY_MAP.chatAmountCents,
+      value: Math.round(patch.chatAmountCents),
+      updated_at: now,
+      updated_by: updatedBy,
+    })
+  }
+  if (typeof patch.giftUnlockAmountCents === 'number') {
+    rows.push({
+      key: KEY_MAP.giftUnlockAmountCents,
+      value: Math.round(patch.giftUnlockAmountCents),
+      updated_at: now,
+      updated_by: updatedBy,
+    })
+  }
+  if (patch.boostAmountCents && typeof patch.boostAmountCents === 'object') {
+    rows.push({
+      key: KEY_MAP.boostAmountCents,
+      value: normalizeBoost(patch.boostAmountCents),
       updated_at: now,
       updated_by: updatedBy,
     })

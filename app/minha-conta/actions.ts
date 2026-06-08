@@ -124,7 +124,7 @@ export type Message = {
   sender_id: string | null
   is_from_creator: boolean
   content: string | null
-  message_type: 'text' | 'image' | 'gift' | 'audio'
+  message_type: 'text' | 'image' | 'gift' | 'audio' | 'video'
   media_url: string | null
   gift_amount: number | null
   gift_claimed: boolean
@@ -549,7 +549,7 @@ export async function settleExpiredWithdrawals() {
 
 // ───────���─────────────────────────────────────────────────────────────────────
 // Conversation Actions
-// ───────────────────────────────────────────────────────────────────────────�����─
+// ───────────────────��───────────────────────────────────────────────────────�����─
 
 // Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
 const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
@@ -641,7 +641,8 @@ export async function seedConversations(): Promise<Conversation[]> {
   }
 
   const now = Date.now()
-  const conversationsToInsert = BUYER_SEEDS.map((b, i) => ({
+  // Acumula no maximo 4 conversas: usa apenas os 4 primeiros seeds.
+  const conversationsToInsert = BUYER_SEEDS.slice(0, 4).map((b, i) => ({
     creator_id: user.id,
     participant_id: null,
     participant_name: b.name,
@@ -717,7 +718,7 @@ export async function markConversationRead(conversationId: string) {
 }
 
 type CreatorMessageInput = {
-  kind: 'text' | 'image' | 'audio'
+  kind: 'text' | 'image' | 'audio' | 'video'
   content?: string | null
   mediaUrl?: string | null
   audioDuration?: number | null
@@ -877,6 +878,55 @@ export async function sendLockedMessage(conversationId: string) {
   return { success: true as const, messages: (inserted as Message[]) || [] }
 }
 
+// Mensagens de cobrança de presença quando a criadora some sem ativar o chat.
+// Dois estágios: ~5 min (leve) e ~10 min (mais insistente).
+const INACTIVITY_NUDGES: Record<1 | 2, string[]> = {
+  1: ['tá por aí ainda?', 'oi, sumiu? 🥺', 'cadê vc? ainda tô aqui te esperando', 'oi linda, você travou aí?'],
+  2: [
+    'ainda quer conversar comigo? 🥹',
+    'puxa, achei que a gente tava se curtindo... ainda tá aí?',
+    'fiquei esperando você voltar, ainda tá online?',
+    'me responde só pra eu saber que você não sumiu de vez 🙏',
+  ],
+}
+
+// Insere uma única mensagem do comprador cobrando presença. Chamada pelo client
+// após 5 e 10 minutos de inatividade da criadora (enquanto o chat não foi ativado).
+export async function sendInactivityNudge(conversationId: string, stage: 1 | 2) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { error: 'not_authenticated' as const }
+
+  const { data: conversation } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('id', conversationId)
+    .eq('creator_id', user.id)
+    .single()
+  if (!conversation) return { error: 'conversation_not_found' as const }
+
+  const content = pickRandom(INACTIVITY_NUDGES[stage] ?? INACTIVITY_NUDGES[1])
+  const { data: inserted } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id: null,
+      is_from_creator: false,
+      content,
+      message_type: 'text',
+      is_read: false,
+    })
+    .select('*')
+    .single()
+
+  await supabase
+    .from('conversations')
+    .update({ last_message: content, last_message_at: new Date().toISOString() })
+    .eq('id', conversationId)
+
+  return { success: true as const, message: (inserted as Message) || null }
+}
+
 // Mensagens espontâneas de novos clientes chegando ao chat
 const NEW_CHAT_GREETINGS = [
   'Oi linda, acabei de ver seu perfil e fiquei encantado',
@@ -897,20 +947,35 @@ export async function generateChatActivity() {
   const user = await getCurrentUser()
   if (!user) return { error: 'not_authenticated' as const }
 
+  // Limite: acumula no maximo 4 conversas. Se ja existirem 4 ou mais, nao
+  // gera novos chats (evita o excesso de pedidos relatado).
+  const MAX_CHATS = 4
+  const { count: convoCount } = await supabase
+    .from('conversations')
+    .select('*', { count: 'exact', head: true })
+    .eq('creator_id', user.id)
+  if ((convoCount ?? 0) >= MAX_CHATS) {
+    return { success: true as const, skipped: 'max_chats_reached' as const }
+  }
+
   // Evita repetir nomes já presentes nas conversas existentes
   const usedNames = new Set<string>()
+  const usedGreetings = new Set<string>()
   const { data: existingConvos } = await supabase
     .from('conversations')
-    .select('participant_name')
+    .select('participant_name, last_message')
     .eq('creator_id', user.id)
     .order('created_at', { ascending: false })
     .limit(120)
   for (const c of existingConvos ?? []) {
     if (c.participant_name) usedNames.add(c.participant_name)
+    if (c.last_message) usedGreetings.add(c.last_message)
   }
 
   const buyer = generateBuyerName(usedNames)
-  const greeting = pickRandom(NEW_CHAT_GREETINGS)
+  // Saudacao sem repetir: prioriza as que ainda nao foram usadas.
+  const availableGreetings = NEW_CHAT_GREETINGS.filter((g) => !usedGreetings.has(g))
+  const greeting = pickRandom(availableGreetings.length > 0 ? availableGreetings : NEW_CHAT_GREETINGS)
   const nowIso = new Date().toISOString()
 
   // Escolhe um pack publicado da criadora para vincular ao novo fã.
@@ -1006,7 +1071,7 @@ export async function markGiftClaimed(messageId: string) {
   return { success: true as const }
 }
 
-// ────────────────────────────────────────────────────────────────────────────��
+// ──────────────���─────────────────────────────────────────────────────────────��
 // Boost Actions
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1336,8 +1401,8 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
       }
     }
 
-    // Pedidos de venda pendentes (1-2 por pack, mais no inicio)
-    const orders = initial ? randInt(1, 3) : randInt(0, 2)
+    // Pedidos de venda pendentes (menos frequentes para nao acumular demais)
+    const orders = initial ? randInt(1, 2) : randInt(0, 1)
     for (let i = 0; i < orders; i++) {
       const amount = Number(pack.price) || 0
       // A pessoa recebe o valor total da venda, sem desconto de taxa
@@ -1439,7 +1504,7 @@ export async function rejectSale(saleId: string) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Presentes (Chat) — resgate de presente vira saldo
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────��────────────────────────────────────────────────────────────────────
 
 // Resgata um presente recebido no chat, creditando o valor no saldo da usuaria.
 // Requer que a conta tenha a habilitacao de presentes ativa (gifts_enabled).

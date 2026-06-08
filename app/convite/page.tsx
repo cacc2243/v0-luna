@@ -125,8 +125,8 @@ export default function ConvitePage() {
 
   function handlePaymentConfirmed() {
     setShowPixModal(false)
-    // Redirecionar para minha-conta após pagamento
-    router.push('/minha-conta?convite=pago')
+    // Redirecionar para a tela de confirmação após o pagamento aprovado
+    router.push('/confirmation')
   }
 
   return (

@@ -7,6 +7,8 @@ export interface InviteRow {
   type: string | null
   transaction_id: string | null
   pix_code: string | null
+  pix_copied_at: string | null
+  gateway: string | null
   created_at: string
   paid_at: string | null
   pix_expiration: string | null
@@ -202,6 +204,34 @@ export function formatDateTime(dateStr: string | null): string {
   })
 }
 
+// Metadados dos gateways de cash-in conhecidos. Mantem rotulo amigavel para o
+// painel mesmo quando ainda nao houve nenhuma transacao com aquele gateway.
+export const GATEWAY_META: Record<string, { label: string }> = {
+  bynet: { label: 'Bynet' },
+  sigilopay: { label: 'SigiloPay' },
+}
+
+export function gatewayLabel(id: string | null): string {
+  if (!id) return 'Não identificado'
+  return GATEWAY_META[id]?.label ?? id
+}
+
+// Estatistica de desempenho de um gateway no periodo selecionado.
+export interface GatewayStat {
+  id: string
+  label: string
+  /** Total de cobrancas geradas pelo gateway no periodo. */
+  generated: number
+  /** Cobrancas pagas (PIX confirmado). */
+  paid: number
+  /** Receita confirmada via este gateway. */
+  revenue: number
+  /** % de conversao: geraram PIX -> pagaram. */
+  conversionRate: number
+  /** Se este e o gateway ativo configurado no painel. */
+  active: boolean
+}
+
 export interface DashboardMetrics {
   clientsCount: number
   revenue: number
@@ -219,6 +249,8 @@ export interface DashboardMetrics {
   chatPaidCount: number
   // Detalhamento completo por produto (convite, chat, boost, presentes, verificacao)
   productBreakdown: Record<ProductKey, { revenue: number; paidCount: number }>
+  // Desempenho por gateway de pagamento (geradas, pagas, % de conversao)
+  gatewayBreakdown: GatewayStat[]
   funnel: {
     signups: number
     viewedCheckout: number
@@ -239,6 +271,7 @@ export interface Lead {
   firstSeen: string // data mais antiga (cadastro ou 1o PIX)
   invites: InviteRow[]
   pixGenerated: number
+  pixCopied: number
   paidCount: number
   totalPaid: number
   pendingCount: number
@@ -275,6 +308,7 @@ export function buildLeads(invites: InviteRow[], profiles: ProfileRow[]): Lead[]
       firstSeen: p.created_at,
       invites: [],
       pixGenerated: 0,
+      pixCopied: 0,
       paidCount: 0,
       totalPaid: 0,
       pendingCount: 0,
@@ -308,6 +342,7 @@ export function buildLeads(invites: InviteRow[], profiles: ProfileRow[]): Lead[]
           firstSeen: inv.created_at,
           invites: [],
           pixGenerated: 0,
+          pixCopied: 0,
           paidCount: 0,
           totalPaid: 0,
           pendingCount: 0,
@@ -324,6 +359,7 @@ export function buildLeads(invites: InviteRow[], profiles: ProfileRow[]): Lead[]
     lead.invites.push(inv)
     if (!lead.email && inv.email) lead.email = inv.email
     if (inv.pix_code) lead.pixGenerated += 1
+    if (inv.pix_copied_at) lead.pixCopied += 1
     if (isPaid(inv.status)) {
       lead.paidCount += 1
       lead.totalPaid += Number(inv.amount) || 0
@@ -353,12 +389,15 @@ export function computeMetrics(
   invites: InviteRow[],
   profiles: ProfileRow[],
   range: [Date | null, Date | null],
+  options?: { activeGateway?: string; knownGateways?: string[] },
 ): DashboardMetrics {
   const periodInvites = invites.filter((i) => isInRange(i.created_at, range))
 
   const paid = periodInvites.filter((i) => isPaid(i.status))
   const pending = periodInvites.filter((i) => isPending(i.status))
   const withPixCode = periodInvites.filter((i) => i.pix_code)
+  // Copiou de verdade: marcou pix_copied_at ao tocar no botão "Copiar código PIX".
+  const actuallyCopied = periodInvites.filter((i) => i.pix_copied_at)
 
   const revenue = paid.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
   const pendingRevenue = pending.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
@@ -397,13 +436,43 @@ export function computeMetrics(
   const conversionRate = signups > 0 ? (paidCount / signups) * 100 : 0
   const avgTicket = paidCount > 0 ? revenue / paidCount : 0
 
+  // Desempenho por gateway de cash-in. Inclui sempre os gateways conhecidos
+  // (mesmo com zero transacoes) para que o painel liste todos os configurados.
+  const activeGateway = options?.activeGateway
+  const gatewayIds = new Set<string>(options?.knownGateways ?? Object.keys(GATEWAY_META))
+  for (const i of periodInvites) {
+    if (i.gateway) gatewayIds.add(i.gateway)
+  }
+  if (activeGateway) gatewayIds.add(activeGateway)
+
+  const gatewayBreakdown: GatewayStat[] = Array.from(gatewayIds).map((id) => {
+    const generated = periodInvites.filter((i) => i.gateway === id).length
+    const paidRows = paid.filter((i) => i.gateway === id)
+    const gwRevenue = paidRows.reduce((s, i) => s + (Number(i.amount) || 0), 0)
+    return {
+      id,
+      label: gatewayLabel(id),
+      generated,
+      paid: paidRows.length,
+      revenue: gwRevenue,
+      conversionRate: generated > 0 ? (paidRows.length / generated) * 100 : 0,
+      active: id === activeGateway,
+    }
+  })
+  // Ativo primeiro; depois por receita; gateways sem transacao no periodo ao fim.
+  gatewayBreakdown.sort((a, b) => {
+    if (a.active !== b.active) return a.active ? -1 : 1
+    if (b.revenue !== a.revenue) return b.revenue - a.revenue
+    return b.generated - a.generated
+  })
+
   return {
     clientsCount: signups,
     revenue,
     pendingRevenue,
     paidCount,
     generatedCount,
-    copiedCount: withPixCode.length,
+    copiedCount: actuallyCopied.length,
     pendingCount: pending.length,
     conversionRate,
     avgTicket,
@@ -412,6 +481,7 @@ export function computeMetrics(
     invitePaidCount: paidInvitesOnly.length,
     chatPaidCount: paidChats.length,
     productBreakdown,
+    gatewayBreakdown,
     funnel: {
       signups,
       viewedCheckout: generatedCount,

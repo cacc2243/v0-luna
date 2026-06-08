@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import useSWR from 'swr'
@@ -70,7 +70,7 @@ import {
   Clock,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
-  import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals } from './actions'
+  import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead } from './actions'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
@@ -530,6 +530,19 @@ function AppDashboard() {
   const { data: boosts = [], mutate: mutateBoosts } = useSWR('boosts', fetchBoosts)
   const { data: highlights = [], mutate: mutateHighlights } = useSWR('highlights', fetchHighlights)
   const { data: notifications = [], mutate: mutateNotifications } = useSWR('notifications', fetchNotifications)
+  // Precos configurados no painel (fonte unica da verdade). Exibicao bate com o que o servidor cobra.
+  const { data: pricing } = useSWR('public-pricing', async () => {
+    const res = await fetch('/api/settings/public')
+    if (!res.ok) return null
+    return res.json() as Promise<{
+      chatAmountCents: number
+      giftUnlockAmountCents: number
+      boostAmountCents: Record<string, number>
+    }>
+  })
+
+  // Preco do chat: vem do painel; fallback para o padrao se ainda nao carregou.
+  const chatPrice = pricing?.chatAmountCents ? pricing.chatAmountCents / 100 : CHAT_PRICE
 
   // Calcular estatisticas
   const balance = profile?.balance || 0
@@ -615,20 +628,22 @@ function AppDashboard() {
     const interval = setInterval(async () => {
       await generatePackActivity()
       refreshActivity()
-    }, 25000)
+    }, 45000)
     return () => clearInterval(interval)
   }, [packs.length, refreshActivity])
 
-  // Motor de chat: novos clientes mandam mensagem periodicamente (gera toast)
+  // Motor de chat: novos clientes mandam mensagem periodicamente (gera toast).
+  // Acumula no maximo 4 conversas — quando atinge o limite, o motor para.
   useEffect(() => {
     if (packs.length === 0) return
+    if (conversations.length >= 4) return
     const interval = setInterval(async () => {
       await generateChatActivity()
       mutateConversations()
       mutateNotifications()
     }, 38000)
     return () => clearInterval(interval)
-  }, [packs.length, mutateConversations, mutateNotifications])
+  }, [packs.length, conversations.length, mutateConversations, mutateNotifications])
 
   // Aceitar / recusar pedidos (atualizacao otimista = instantaneo)
   async function handleAcceptSale(saleId: string) {
@@ -886,6 +901,7 @@ function AppDashboard() {
             mutateWithdrawals()
             mutateProfile()
           }}
+          onProfileUpdated={mutateProfile}
         />
       ) : activeTab === 'Packs' ? (
         <PacksScreen
@@ -895,13 +911,14 @@ function AppDashboard() {
           onSelect={(id) => setSelectedPackId(id)}
         />
       ) : activeTab === 'Perfil' ? (
-        <ProfileScreen profile={profile} highlights={highlights} onLogout={handleLogout} onProfileUpdated={mutateProfile} onHighlightsUpdated={mutateHighlights} />
+        <ProfileScreen profile={profile} highlights={highlights} notifications={notifications} onLogout={handleLogout} onProfileUpdated={mutateProfile} onHighlightsUpdated={mutateHighlights} onNotificationsChange={mutateNotifications} />
       ) : activeTab === 'Impulsionar' ? (
         <ImpulsionarScreen
           balance={animatedBalance}
           boosts={boosts}
           userEmail={userEmail}
           userName={profile?.display_name || 'Criadora Luna'}
+          boostPrices={pricing?.boostAmountCents}
           onBoostActivated={() => {
             mutateBoosts()
           }}
@@ -914,6 +931,7 @@ function AppDashboard() {
           userName={profile?.display_name || 'Criadora Luna'}
           userEmail={userEmail}
           packsCount={packs.length}
+          giftPrice={pricing?.giftUnlockAmountCents ? pricing.giftUnlockAmountCents / 100 : undefined}
           onGoToPacks={() => setActiveTab('Packs')}
           onProfileRefresh={mutateProfile}
         />
@@ -987,7 +1005,7 @@ function AppDashboard() {
       <UnlockChatModal
         isOpen={showUnlockChat}
         onClose={() => setShowUnlockChat(false)}
-        price={CHAT_PRICE}
+        price={chatPrice}
         onConfirm={() => {
           setShowUnlockChat(false)
           setShowChatPix(true)
@@ -998,7 +1016,7 @@ function AppDashboard() {
           isOpen={showChatPix}
           onClose={() => setShowChatPix(false)}
           email={userEmail}
-          amount={CHAT_PRICE}
+          amount={chatPrice}
           userName={profile?.display_name || 'Criadora Luna'}
           type="chat"
           title="Chat Exclusivo"
@@ -1223,6 +1241,7 @@ function ChatsScreen({
   userName,
   userEmail,
   packsCount,
+  giftPrice,
   onGoToPacks,
   onProfileRefresh,
 }: {
@@ -1232,6 +1251,7 @@ function ChatsScreen({
   userName: string
   userEmail: string
   packsCount: number
+  giftPrice?: number
   onGoToPacks: () => void
   onProfileRefresh: () => void
 }) {
@@ -1243,6 +1263,7 @@ function ChatsScreen({
         giftsEnabled={giftsEnabled}
         userName={userName}
         userEmail={userEmail}
+        giftPrice={giftPrice}
         onProfileRefresh={onProfileRefresh}
       />
     )
@@ -1334,19 +1355,41 @@ const boostPlans = [
   { days: 30, price: 99.0, pricePerDay: 3.3, discount: 76, popular: true },
 ]
 
+/**
+ * Monta os planos de boost a partir dos precos do painel (centavos por dias).
+ * Recalcula preco/dia e o desconto relativo ao plano mais caro por dia.
+ * Cai para os valores padrao se ainda nao houver precos carregados.
+ */
+function buildBoostPlans(boostCents?: Record<string, number>) {
+  if (!boostCents) return boostPlans
+  const base = boostPlans.map((p) => {
+    const cents = boostCents[String(p.days)]
+    const price = cents ? cents / 100 : p.price
+    return { ...p, price, pricePerDay: price / p.days }
+  })
+  const maxPerDay = Math.max(...base.map((p) => p.pricePerDay))
+  return base.map((p) => ({
+    ...p,
+    discount: maxPerDay > 0 ? Math.round((1 - p.pricePerDay / maxPerDay) * 100) : 0,
+  }))
+}
+
 function ImpulsionarScreen({
   balance,
   boosts,
   userEmail,
   userName,
+  boostPrices,
   onBoostActivated,
 }: {
   balance: number
   boosts: Boost[]
   userEmail: string
   userName: string
+  boostPrices?: Record<string, number>
   onBoostActivated: () => void
 }) {
+  const boostPlans = useMemo(() => buildBoostPlans(boostPrices), [boostPrices])
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -2047,7 +2090,7 @@ function PacksScreen({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────���─────────────────
 // Tela Detalhe do Pack (visualizar, métricas e editar)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2483,6 +2526,7 @@ function WalletScreen({
   userEmail,
   userName,
   onWithdrawalsChange,
+  onProfileUpdated,
 }: {
   balance: number
   pendingBalance: number
@@ -2492,6 +2536,7 @@ function WalletScreen({
   userEmail: string
   userName: string
   onWithdrawalsChange: () => void
+  onProfileUpdated: () => void
 }) {
   // Etapas do fluxo de saque:
   // 'form' -> 'processing' (5s) -> 'new_account' (conta nova) -> 'verify_info' -> 'verify_processing' -> PIX
@@ -2508,6 +2553,40 @@ function WalletScreen({
   const [barsReady, setBarsReady] = useState(false)
   const [withdrawError, setWithdrawError] = useState<string | null>(null)
   const pixKey = profile?.pix_key || 'Nao cadastrada'
+
+  // Modal de edicao da chave PIX
+  const [showPixModal, setShowPixModal] = useState(false)
+  const [pixForm, setPixForm] = useState({ type: profile?.pix_key_type || 'CPF', key: '' })
+  const [savingPix, setSavingPix] = useState(false)
+  const [pixError, setPixError] = useState<string | null>(null)
+
+  function openPixModal() {
+    setPixForm({ type: profile?.pix_key_type || 'CPF', key: profile?.pix_key || '' })
+    setPixError(null)
+    setShowPixModal(true)
+  }
+
+  async function savePixKey() {
+    const trimmed = pixForm.key.trim()
+    if (!trimmed) {
+      setPixError('Informe sua chave PIX.')
+      return
+    }
+    if (pixForm.type === 'Email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setPixError('E-mail inválido.')
+      return
+    }
+    setSavingPix(true)
+    setPixError(null)
+    const res = await updateProfile({ pix_key: trimmed, pix_key_type: pixForm.type })
+    setSavingPix(false)
+    if (res?.error) {
+      setPixError('Não foi possível salvar. Tente novamente.')
+      return
+    }
+    setShowPixModal(false)
+    onProfileUpdated()
+  }
 
   const isEarning = (t: Transaction) => t.type === 'sale' || t.type === 'gift_received' || t.type === 'bonus'
 
@@ -2935,8 +3014,12 @@ function WalletScreen({
               <p className="text-xs font-medium text-muted-foreground">Chave PIX cadastrada</p>
               <div className="mt-2 flex items-center justify-between">
                 <p className="text-sm font-semibold text-foreground">{pixKey}</p>
-                <button type="button" className="text-xs font-semibold text-primary">
-                  Alterar
+                <button
+                  type="button"
+                  onClick={openPixModal}
+                  className="text-xs font-semibold text-primary"
+                >
+                  {profile?.pix_key ? 'Alterar' : 'Cadastrar'}
                 </button>
               </div>
             </div>
@@ -3027,6 +3110,105 @@ function WalletScreen({
       </div>
 
       {/* Modal de Saque */}
+      {showPixModal && (
+        <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
+            <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
+
+            <div className="flex items-center justify-between px-5 py-4">
+              <h3 className="text-lg font-bold text-foreground">
+                {profile?.pix_key ? 'Alterar chave PIX' : 'Cadastrar chave PIX'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowPixModal(false)}
+                className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
+                aria-label="Fechar"
+              >
+                <X className="size-5 text-muted-foreground" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="px-5">
+              <p className="mb-4 text-sm text-muted-foreground">
+                Cadastre a chave PIX que receberá os seus saques. Confira os dados com atenção.
+              </p>
+
+              {/* Tipo de chave */}
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Tipo de chave
+              </label>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria'].map((opt) => {
+                  const active = pixForm.type === opt
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setPixForm((f) => ({ ...f, type: opt }))}
+                      className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                        active
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {opt === 'Email' ? 'E-mail' : opt === 'Chave Aleatoria' ? 'Aleatória' : opt}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Campo da chave */}
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Chave PIX
+              </label>
+              <input
+                type={pixForm.type === 'Email' ? 'email' : 'text'}
+                inputMode={
+                  pixForm.type === 'CPF' || pixForm.type === 'CNPJ' || pixForm.type === 'Telefone'
+                    ? 'numeric'
+                    : 'text'
+                }
+                value={pixForm.key}
+                onChange={(e) => setPixForm((f) => ({ ...f, key: e.target.value }))}
+                placeholder={
+                  pixForm.type === 'CPF'
+                    ? '000.000.000-00'
+                    : pixForm.type === 'CNPJ'
+                      ? '00.000.000/0000-00'
+                      : pixForm.type === 'Telefone'
+                        ? '(00) 00000-0000'
+                        : pixForm.type === 'Email'
+                          ? 'seu@email.com'
+                          : 'sua chave aleatória'
+                }
+                className="w-full rounded-2xl bg-muted/50 px-4 py-3.5 text-sm font-medium text-foreground outline-none ring-1 ring-border transition focus:ring-2 focus:ring-primary"
+              />
+
+              {pixError && (
+                <p className="mt-2 text-xs font-medium text-destructive">{pixError}</p>
+              )}
+
+              <button
+                type="button"
+                onClick={savePixKey}
+                disabled={savingPix}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+              >
+                {savingPix ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar chave PIX'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showWithdrawModal && (
         <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
@@ -3302,22 +3484,26 @@ function WalletScreen({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────��───────────────────
 // Tela Perfil
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ProfileScreen({ 
   profile: userProfile, 
   highlights: userHighlights,
+  notifications: realNotifications,
   onLogout,
   onProfileUpdated,
   onHighlightsUpdated,
+  onNotificationsChange,
 }: { 
   profile: Profile | null | undefined
   highlights: Highlight[]
+  notifications: Notification[]
   onLogout: () => void
   onProfileUpdated?: () => void
   onHighlightsUpdated?: () => void
+  onNotificationsChange?: () => void
 }) {
   const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help'>('main')
   const [localProfile, setLocalProfile] = useState({
@@ -3334,7 +3520,27 @@ function ProfileScreen({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(userProfile?.avatar_url || null)
   const [addingAvatar, setAddingAvatar] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
-  const [notifications, setNotifications] = useState<Array<{id: number; type: string; title: string; desc: string; time: string; read: boolean}>>([])
+  // Notificacoes reais vindas do banco (vendas, mensagens, follows, etc.)
+  const notifications = useMemo(() => {
+    function timeAgo(iso: string) {
+      const diff = Date.now() - new Date(iso).getTime()
+      const min = Math.floor(diff / 60000)
+      if (min < 1) return 'agora mesmo'
+      if (min < 60) return `ha ${min} min`
+      const h = Math.floor(min / 60)
+      if (h < 24) return `ha ${h} h`
+      const d = Math.floor(h / 24)
+      return d === 1 ? 'ha 1 dia' : `ha ${d} dias`
+    }
+    return (realNotifications || []).map((n) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      desc: n.description || '',
+      time: timeAgo(n.created_at),
+      read: n.is_read,
+    }))
+  }, [realNotifications])
   const [settings, setSettings] = useState({
     darkMode: true,
     notifications: true,
@@ -3483,8 +3689,9 @@ function ProfileScreen({
     }
   }
 
-  function markAllRead() {
-    setNotifications(notifications.map(n => ({ ...n, read: true })))
+  async function markAllRead() {
+    await markAllNotificationsAsRead()
+    onNotificationsChange?.()
   }
 
   function toggleSetting(key: keyof typeof settings) {
@@ -3544,7 +3751,12 @@ function ProfileScreen({
                 <button
                   key={notif.id}
                   type="button"
-                  onClick={() => setNotifications(notifications.map(n => n.id === notif.id ? { ...n, read: true } : n))}
+                  onClick={async () => {
+                    if (!notif.read) {
+                      await markNotificationAsRead(notif.id)
+                      onNotificationsChange?.()
+                    }
+                  }}
                   className={`flex items-start gap-3 border-b border-border px-4 py-4 text-left transition active:bg-muted/50 ${
                     !notif.read ? 'bg-primary/5' : ''
                   }`}

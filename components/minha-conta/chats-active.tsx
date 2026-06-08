@@ -17,6 +17,7 @@ import {
   User,
   Smile,
   ImageIcon,
+  Video as VideoIcon,
   Mic,
   X,
   Plus,
@@ -35,6 +36,7 @@ import {
   markConversationRead,
   sendCreatorMessage,
   sendLockedMessage,
+  sendInactivityNudge,
   markGiftClaimed,
   type Conversation,
   type Message,
@@ -77,7 +79,7 @@ type ChatMessage = {
   id: string
   from: 'buyer' | 'creator'
   text?: string
-  kind?: 'text' | 'gift' | 'image' | 'audio'
+  kind?: 'text' | 'gift' | 'image' | 'audio' | 'video'
   giftAmount?: number
   giftClaimed?: boolean
   /** URL pública (Supabase Storage) para imagem ou áudio enviado pela criadora */
@@ -139,6 +141,7 @@ interface ChatsActiveProps {
   giftsEnabled: boolean
   userName: string
   userEmail: string
+  giftPrice?: number
   onProfileRefresh: () => void
 }
 
@@ -147,6 +150,7 @@ export function ChatsActive({
   giftsEnabled,
   userName,
   userEmail,
+  giftPrice,
   onProfileRefresh,
 }: ChatsActiveProps) {
   const [openId, setOpenId] = useState<string | null>(null)
@@ -195,6 +199,7 @@ export function ChatsActive({
         giftsEnabled={giftsEnabled}
         userName={userName}
         userEmail={userEmail}
+        giftPrice={giftPrice}
         onBack={() => setOpenId(null)}
         onProfileRefresh={onProfileRefresh}
         onConversationUpdate={handleConversationUpdate}
@@ -325,6 +330,7 @@ function ChatConversation({
   giftsEnabled,
   userName,
   userEmail,
+  giftPrice,
   onBack,
   onProfileRefresh,
   onConversationUpdate,
@@ -333,11 +339,13 @@ function ChatConversation({
   giftsEnabled: boolean
   userName: string
   userEmail: string
+  giftPrice?: number
   onBack: () => void
   onProfileRefresh: () => void
   onConversationUpdate: (c: Conversation) => void
 }) {
   const buyerName = conversation.participant_name || 'Cliente'
+  const effectiveGiftPrice = giftPrice ?? GIFT_UNLOCK_PRICE
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loadingMessages, setLoadingMessages] = useState(true)
   const [step, setStep] = useState<number>(conversation.flow_step)
@@ -359,6 +367,7 @@ function ChatConversation({
   const [recording, setRecording] = useState(false)
   const [recordSeconds, setRecordSeconds] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordChunksRef = useRef<Blob[]>([])
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -366,6 +375,10 @@ function ChatConversation({
   const scrollRef = useRef<HTMLDivElement>(null)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const lockedMsgSent = useRef(false)
+  // Marca o instante da última atividade da criadora; reinicia os lembretes de
+  // presença quando ela envia uma mensagem.
+  const [lastCreatorActivity, setLastCreatorActivity] = useState(() => Date.now())
+  const nudgeSent = useRef<Set<1 | 2>>(new Set())
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -400,6 +413,42 @@ function ChatConversation({
     }
   }, [])
 
+  // Lembretes de presença: se a criadora ainda NÃO ativou o chat (não pagou a
+  // habilitação) e ficar sem responder, o cliente cobra presença em 5 e 10 min.
+  useEffect(() => {
+    // Já ativado, conversa avançada ou histórico carregando: não cobra presença.
+    if (giftsEnabled || step >= 3 || loadingMessages) return
+
+    async function fireNudge(stage: 1 | 2) {
+      if (nudgeSent.current.has(stage)) return
+      nudgeSent.current.add(stage)
+      // "digitando..." curto antes da mensagem chegar, para parecer natural
+      setTyping(true)
+      const res = await sendInactivityNudge(conversation.id, stage)
+      setTyping(false)
+      if (!res || 'error' in res || !res.message) return
+      const nudge = res.message
+      setMessages((prev) => [...prev, toChatMessage(nudge)])
+      onConversationUpdate({
+        ...conversation,
+        last_message: nudge.content ?? 'tá por aí ainda?',
+        last_message_at: new Date().toISOString(),
+      })
+    }
+
+    const FIVE_MIN = 5 * 60 * 1000
+    const TEN_MIN = 10 * 60 * 1000
+    const elapsedAt5 = FIVE_MIN - (Date.now() - lastCreatorActivity)
+    const elapsedAt10 = TEN_MIN - (Date.now() - lastCreatorActivity)
+
+    const t5 = setTimeout(() => fireNudge(1), Math.max(0, elapsedAt5))
+    const t10 = setTimeout(() => fireNudge(2), Math.max(0, elapsedAt10))
+    return () => {
+      clearTimeout(t5)
+      clearTimeout(t10)
+    }
+  }, [giftsEnabled, step, loadingMessages, lastCreatorActivity, conversation, onConversationUpdate])
+
   // Faz upload de um arquivo de mídia para o Supabase Storage e devolve a URL pública
   async function uploadMedia(file: Blob, ext: string): Promise<string | null> {
     try {
@@ -425,12 +474,15 @@ function ChatConversation({
 
   // Envia a mensagem da criadora ao servidor e revela as respostas do comprador
   async function dispatchCreatorMessage(input: {
-    kind: 'text' | 'image' | 'audio'
+    kind: 'text' | 'image' | 'audio' | 'video'
     content?: string
     mediaUrl?: string
     audioDuration?: number
   }) {
     setSending(true)
+    // Atividade da criadora reinicia o cronômetro dos lembretes de presença
+    setLastCreatorActivity(Date.now())
+    nudgeSent.current = new Set()
     // Mostra a mensagem da criadora imediatamente (otimista)
     const optimisticId = `local-${Date.now()}`
     setMessages((prev) => [
@@ -462,10 +514,10 @@ function ChatConversation({
       // tempo "digitando" proporcional ao tamanho (presentes sao rapidos)
       const typingMs =
         bm.message_type === 'gift'
-          ? 700
-          : Math.min(2600, Math.max(700, content.length * 55))
-      // pequena pausa antes de comecar a digitar a proxima bolha
-      const gapMs = i === 0 ? 700 : 500 + Math.random() * 500
+          ? 1400
+          : Math.min(5500, Math.max(1600, content.length * 95))
+      // pausa antes de comecar a digitar a proxima bolha (mais natural/lenta)
+      const gapMs = i === 0 ? 1400 : 1100 + Math.random() * 1200
 
       const tStart = setTimeout(() => setTyping(true), delay + gapMs)
       delay += gapMs + typingMs
@@ -482,7 +534,12 @@ function ChatConversation({
       last_message:
         buyerMsgs.length > 0
           ? buyerMsgs[buyerMsgs.length - 1].content ?? 'Presente recebido'
-          : input.content ?? (input.kind === 'image' ? 'Imagem' : 'Áudio'),
+          : input.content ??
+            (input.kind === 'image'
+              ? 'Imagem'
+              : input.kind === 'video'
+                ? 'Vídeo'
+                : 'Áudio'),
       last_message_at: new Date().toISOString(),
       flow_step: res.flowStep,
       unread_count: 0,
@@ -506,10 +563,11 @@ function ChatConversation({
     e.target.value = ''
     setShowAttach(false)
     if (!file || step >= 3 || sending) return
-    const ext = file.name.split('.').pop() || 'jpg'
+    const isVideo = file.type.startsWith('video/')
+    const ext = file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg')
     const url = await uploadMedia(file, ext)
     if (!url) return
-    dispatchCreatorMessage({ kind: 'image', mediaUrl: url })
+    dispatchCreatorMessage({ kind: isVideo ? 'video' : 'image', mediaUrl: url })
   }
 
   async function startRecording() {
@@ -577,8 +635,8 @@ function ChatConversation({
     let delay = 0
     lockedMsgs.forEach((lm, i) => {
       const content = lm.content ?? ''
-      const typingMs = Math.min(2600, Math.max(700, content.length * 55))
-      const gapMs = i === 0 ? 600 : 500 + Math.random() * 500
+      const typingMs = Math.min(5500, Math.max(1600, content.length * 95))
+      const gapMs = i === 0 ? 1200 : 1100 + Math.random() * 1200
       const tStart = setTimeout(() => setTyping(true), delay + gapMs)
       delay += gapMs + typingMs
       const tEnd = setTimeout(() => {
@@ -683,6 +741,8 @@ function ChatConversation({
                 />
               ) : m.kind === 'image' ? (
                 <ImageBubble key={m.id} from={m.from} url={m.mediaUrl || ''} time={m.time} />
+              ) : m.kind === 'video' ? (
+                <VideoBubble key={m.id} from={m.from} url={m.mediaUrl || ''} time={m.time} />
               ) : m.kind === 'audio' ? (
                 <AudioBubble key={m.id} from={m.from} url={m.mediaUrl || ''} duration={m.audioDuration || 0} time={m.time} />
               ) : (
@@ -713,7 +773,17 @@ function ChatConversation({
               <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
                 <ImageIcon className="size-5" />
               </span>
-              Imagem
+              Foto
+            </button>
+            <button
+              type="button"
+              onClick={() => videoInputRef.current?.click()}
+              className="flex flex-col items-center gap-1 rounded-xl px-4 py-2.5 text-xs font-medium text-foreground transition hover:bg-muted"
+            >
+              <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+                <VideoIcon className="size-5" />
+              </span>
+              Vídeo
             </button>
             <button
               type="button"
@@ -735,6 +805,13 @@ function ChatConversation({
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          className="hidden"
+          onChange={handleImageSelected}
+        />
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/*"
           className="hidden"
           onChange={handleImageSelected}
         />
@@ -765,7 +842,7 @@ function ChatConversation({
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => {
@@ -774,9 +851,9 @@ function ChatConversation({
               }}
               aria-label="Anexar"
               disabled={step >= 3 || sending}
-              className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
+              className="flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
             >
-              <Plus className="size-5" />
+              <Plus className="size-6" />
             </button>
             <button
               type="button"
@@ -785,9 +862,9 @@ function ChatConversation({
                 setShowAttach(false)
               }}
               aria-label="Emojis"
-              className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              className="flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
-              <Smile className="size-5" />
+              <Smile className="size-6" />
             </button>
             <input
               value={input}
@@ -800,7 +877,7 @@ function ChatConversation({
                 if (e.key === 'Enter') handleSend()
               }}
               placeholder={step >= 3 ? 'Conversa em andamento...' : 'Escreva uma mensagem...'}
-              className="min-w-0 flex-1 rounded-full border border-border bg-secondary px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/60 focus:border-primary/60"
+              className="min-w-0 flex-1 rounded-full border border-border bg-secondary px-5 py-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground/60 focus:border-primary/60"
             />
             {input.trim() ? (
               <button
@@ -808,9 +885,9 @@ function ChatConversation({
                 onClick={handleSend}
                 aria-label="Enviar"
                 disabled={sending}
-                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-60"
+                className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-60"
               >
-                {sending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" />}
+                {sending ? <Loader2 className="size-6 animate-spin" /> : <Send className="size-6" />}
               </button>
             ) : (
               <button
@@ -818,9 +895,9 @@ function ChatConversation({
                 onClick={startRecording}
                 aria-label="Gravar áudio"
                 disabled={step >= 3 || sending}
-                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-50"
+                className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 disabled:opacity-50"
               >
-                <Mic className="size-5" />
+                <Mic className="size-6" />
               </button>
             )}
           </div>
@@ -855,7 +932,7 @@ function ChatConversation({
       <GiftEnableModal
         isOpen={showEnable}
         onClose={() => setShowEnable(false)}
-        price={GIFT_UNLOCK_PRICE}
+        price={effectiveGiftPrice}
         onConfirm={() => {
           setShowEnable(false)
           setShowPix(true)
@@ -868,7 +945,7 @@ function ChatConversation({
           isOpen={showPix}
           onClose={() => setShowPix(false)}
           email={userEmail}
-          amount={GIFT_UNLOCK_PRICE}
+          amount={effectiveGiftPrice}
           userName={userName}
           type="gift_unlock"
           title="Habilitação de Presentes"
@@ -1057,6 +1134,35 @@ function ImageBubble({ from, url, time }: { from: 'buyer' | 'creator'; url: stri
           src={url || '/placeholder.svg'}
           alt="Imagem enviada"
           className="max-h-60 w-full max-w-[240px] rounded-xl object-cover"
+        />
+        <span
+          className={`mt-1 flex items-center justify-end gap-0.5 px-1 pb-0.5 text-[0.6rem] ${
+            isCreator ? 'text-primary-foreground/80' : 'text-muted-foreground'
+          }`}
+        >
+          {time}
+          {isCreator && <CheckCheck className="size-3" />}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function VideoBubble({ from, url, time }: { from: 'buyer' | 'creator'; url: string; time?: string }) {
+  const isCreator = from === 'creator'
+  return (
+    <div className={`flex animate-speech-enter ${isCreator ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`overflow-hidden rounded-2xl p-1 shadow-sm ${
+          isCreator ? 'rounded-br-md bg-primary' : 'rounded-bl-md border border-border bg-card'
+        }`}
+      >
+        <video
+          src={url}
+          controls
+          playsInline
+          preload="metadata"
+          className="max-h-72 w-full max-w-[240px] rounded-xl bg-black object-cover"
         />
         <span
           className={`mt-1 flex items-center justify-end gap-0.5 px-1 pb-0.5 text-[0.6rem] ${
