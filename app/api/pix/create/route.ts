@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAppSettings } from '@/lib/settings'
 
 const BYNET_API_URL = 'https://api-gateway.techbynet.com'
 
@@ -101,13 +102,28 @@ async function createBynetTransaction(
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, amount, name, document, phone, type, boostDays } = await request.json()
+    const { userId, email, amount, name, document, phone, type, boostDays, fbp, fbc, eventSourceUrl, fbEventId } = await request.json()
 
-    if (!email || !amount) {
+    if (!email) {
       return NextResponse.json(
-        { error: 'Email e valor são obrigatórios' },
+        { error: 'Email é obrigatório' },
         { status: 400 }
       )
+    }
+
+    // Sinais de atribuicao do Facebook para o Purchase (Conversions API).
+    const clientIp =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      null
+    const clientUa = request.headers.get('user-agent') || null
+    const fbAttribution = {
+      fbp: typeof fbp === 'string' ? fbp : null,
+      fbc: typeof fbc === 'string' ? fbc : null,
+      client_ip: clientIp,
+      client_ua: clientUa,
+      event_source_url: typeof eventSourceUrl === 'string' ? eventSourceUrl : null,
+      fb_event_id: typeof fbEventId === 'string' ? fbEventId : null,
     }
 
     // Tipo de pagamento: 'invite', 'chat', 'gift_unlock', 'boost' ou 'verification' (verificação para saque)
@@ -121,6 +137,22 @@ export async function POST(request: NextRequest) {
             : type === 'verification'
               ? 'verification'
               : 'invite'
+
+    // SEGURANCA: para o convite, o valor e SEMPRE definido pelo servidor
+    // (configuravel no painel). O valor enviado pelo cliente e ignorado para
+    // impedir manipulacao. Para os demais tipos, mantem o valor recebido.
+    let effectiveAmount = Number(amount)
+    if (inviteType === 'invite') {
+      const settings = await getAppSettings()
+      effectiveAmount = settings.inviteAmountCents / 100
+    }
+
+    if (!effectiveAmount || !Number.isFinite(effectiveAmount) || effectiveAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Valor inválido' },
+        { status: 400 }
+      )
+    }
     const itemTitle =
       inviteType === 'chat'
         ? 'Chat Exclusivo Luna Privé'
@@ -195,7 +227,7 @@ export async function POST(request: NextRequest) {
     let lastError: any = null
 
     for (const customer of attempts) {
-      const result = await createBynetTransaction(apiKey, amount, customer, itemTitle)
+      const result = await createBynetTransaction(apiKey, effectiveAmount, customer, itemTitle)
 
       if (result.ok && !result.data.error) {
         transactionData = result.data.data || result.data
@@ -242,6 +274,7 @@ export async function POST(request: NextRequest) {
           pix_qrcode: null,
           boost_days: inviteType === 'boost' ? Number(boostDays) || null : existingInvite.boost_days ?? null,
           pix_expiration: pixExpirationDate.toISOString(),
+          ...fbAttribution,
         })
         .eq('id', existingInvite.id)
         .select()
@@ -258,7 +291,7 @@ export async function POST(request: NextRequest) {
         .insert({
           user_id: userId || null,
           email,
-          amount,
+          amount: effectiveAmount,
           type: inviteType,
           boost_days: inviteType === 'boost' ? Number(boostDays) || null : null,
           status: 'pending',
@@ -266,6 +299,7 @@ export async function POST(request: NextRequest) {
           pix_code: pixCode,
           pix_qrcode: null,
           pix_expiration: pixExpirationDate.toISOString(),
+          ...fbAttribution,
         })
         .select()
         .single()

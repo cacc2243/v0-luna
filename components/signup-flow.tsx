@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { fbTrack } from '@/lib/fb/track'
 import {
   User,
   Mail,
@@ -32,7 +33,7 @@ const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 export function SignupFlow({ onComplete }: SignupFlowProps) {
   const router = useRouter()
   const [step, setStep] = useState(0)
-  const [status, setStatus] = useState<'form' | 'loading' | 'invite' | 'error'>('form')
+  const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
 
   // Campos
@@ -47,6 +48,30 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const [showPass, setShowPass] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [pixOpen, setPixOpen] = useState(false)
+
+  // Configuracoes publicas do servidor (fonte da verdade no backend).
+  // verificationEnabled controla se a etapa de verificacao PIX aparece no fluxo.
+  const [verificationEnabled, setVerificationEnabled] = useState(true)
+  const [verificationAmountCents, setVerificationAmountCents] = useState(90)
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/settings/public')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!active || !data) return
+        if (typeof data.verificationEnabled === 'boolean') {
+          setVerificationEnabled(data.verificationEnabled)
+        }
+        if (typeof data.verificationAmountCents === 'number') {
+          setVerificationAmountCents(data.verificationAmountCents)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
 
   const back = () => setStep((s) => Math.max(0, s - 1))
   const advance = () => setStep((s) => Math.min(TOTAL - 1, s + 1))
@@ -124,7 +149,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       } catch {
         // ignore storage errors
       }
-      
+
+      // Evento padrao do Facebook: cadastro concluido com sucesso.
+      fbTrack('CompleteRegistration', {
+        content_name: 'Cadastro Luna Privé',
+        status: true,
+      })
+
       setStatus('invite')
     } catch (err) {
       console.error('[v0] Signup error:', err)
@@ -173,6 +204,26 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             <InviteCard onAccept={goToConvite} onSkip={goToMinhaConta} />
           ) : status === 'error' ? (
             <ErrorCard message={errorMessage} onRetry={() => setStatus('form')} />
+          ) : status === 'sending' ? (
+            <SendingPixCard
+              pixType={pixType}
+              pixKey={pixKey}
+              email={email}
+              beneficiaryName={username}
+              onDone={() => setStatus('verify')}
+              onError={(msg) => {
+                setErrorMessage(msg)
+                setStatus('error')
+              }}
+            />
+          ) : status === 'verify' ? (
+            <VerifyPixCard
+              pixType={pixType}
+              pixKey={pixKey}
+              amountCents={verificationAmountCents}
+              onConfirm={finish}
+              onBack={() => setStatus('form')}
+            />
           ) : status === 'loading' ? (
           <LoadingCard />
         ) : (
@@ -391,7 +442,11 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   />
                 </div>
 
-                <CtaButton className="mt-6" disabled={!canContinue} onClick={finish}>
+                <CtaButton
+                  className="mt-6"
+                  disabled={!canContinue}
+                  onClick={() => (verificationEnabled ? setStatus('sending') : finish())}
+                >
                   Finalizar cadastro
                 </CtaButton>
                 <button
@@ -590,6 +645,271 @@ function StepFooter({
   )
 }
 
+function VerifyPixCard({
+  pixType,
+  pixKey,
+  amountCents,
+  onConfirm,
+  onBack,
+}: {
+  pixType: string
+  pixKey: string
+  amountCents: number
+  onConfirm: () => void
+  onBack: () => void
+}) {
+  const [raw, setRaw] = useState('')
+  const [touched, setTouched] = useState(false)
+  const [checking, setChecking] = useState(false)
+
+  // Valor exato esperado, formatado em BRL (ex.: R$ 0,90), vindo do servidor.
+  const expectedFormatted = useMemo(
+    () =>
+      (amountCents / 100).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }),
+    [amountCents],
+  )
+
+  // Formata os digitos como moeda: 1 -> R$ 0,01 / 123 -> R$ 1,23
+  const formatted = useMemo(() => {
+    const digits = raw.replace(/\D/g, '').slice(0, 9)
+    const cents = digits ? Number.parseInt(digits, 10) : 0
+    return (cents / 100).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    })
+  }, [raw])
+
+  // Confere se o valor digitado e exatamente o valor esperado (em centavos)
+  const isCorrect = (Number.parseInt(raw.replace(/\D/g, ''), 10) || 0) === amountCents
+
+  const handleConfirm = () => {
+    if (checking) return
+    setTouched(true)
+    // Mostra um loading de verificação antes de validar o resultado
+    setChecking(true)
+    setTimeout(() => {
+      if (isCorrect) {
+        onConfirm()
+      } else {
+        setChecking(false)
+      }
+    }, 2200)
+  }
+
+  // Tela de checagem do valor recebido
+  if (checking) {
+    return (
+      <div className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card px-7 py-9 text-center shadow-2xl shadow-primary/15">
+        <div className="relative mx-auto flex size-16 items-center justify-center">
+          <span className="absolute inset-0 rounded-full bg-positive/15" />
+          <Loader2 className="size-9 animate-spin text-positive" aria-hidden="true" />
+        </div>
+        <h2 className="mt-5 text-balance text-xl font-bold leading-tight text-foreground">
+          Confirmando valor recebido...
+        </h2>
+        <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+          Estamos verificando se o valor digitado confere com o que enviamos para sua chave PIX.
+        </p>
+        <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-border bg-secondary/50 px-4 py-3">
+          <span className="text-sm text-muted-foreground">Valor informado:</span>
+          <span className="text-base font-bold tabular-nums text-foreground">{formatted}</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15">
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-9 items-center justify-center rounded-xl bg-positive/15">
+          <ShieldCheck className="size-[1.1rem] text-positive" aria-hidden="true" />
+        </span>
+        <p className="text-[0.7rem] font-bold uppercase tracking-[0.16em] text-positive">
+          Verificação da chave
+        </p>
+      </div>
+
+      <h2 className="mt-3.5 text-balance text-[1.35rem] font-bold leading-tight text-foreground">
+        Confirme sua chave PIX
+      </h2>
+      <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+        Para garantir que sua chave PIX é autêntica e real, enviamos um pequeno valor para ela.
+        Confira no seu banco e digite abaixo o <span className="font-semibold text-foreground">valor exato</span> que você recebeu.
+      </p>
+
+      {/* Chave que está sendo verificada */}
+      <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-border bg-secondary/50 px-4 py-3">
+        <KeyRound className="size-4 shrink-0 text-positive" aria-hidden="true" />
+        <div className="min-w-0 leading-tight">
+          <p className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">{pixType}</p>
+          <p className="truncate text-sm font-semibold text-foreground">{pixKey || '—'}</p>
+        </div>
+      </div>
+
+      {/* Aviso */}
+      <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3">
+        <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+        <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
+          Digite o valor com <span className="font-semibold text-primary">todos os números certinhos</span>,
+          exatamente como você recebeu (ex.: {expectedFormatted}).
+        </p>
+      </div>
+
+      {/* Campo de valor */}
+      <div className="mt-4">
+        <input
+          inputMode="numeric"
+          value={formatted}
+          autoFocus
+          onChange={(e) => {
+            setRaw(e.target.value)
+            setTouched(false)
+          }}
+          placeholder="R$ 0,00"
+          className={cn(
+            'w-full rounded-2xl border bg-secondary/60 px-4 py-4 text-center text-2xl font-bold tabular-nums text-foreground outline-none transition-colors focus:ring-2',
+            touched && !isCorrect
+              ? 'border-destructive/60 focus:ring-destructive/20'
+              : 'border-border focus:border-positive/60 focus:ring-positive/20',
+          )}
+        />
+        {touched && !isCorrect && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-destructive">
+            <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" />
+            Valor incorreto. Confira no seu banco e digite exatamente o valor recebido.
+          </p>
+        )}
+      </div>
+
+      <CtaButton className="mt-6" disabled={!isCorrect} onClick={handleConfirm}>
+        Confirmar e finalizar
+      </CtaButton>
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+      >
+        ← Voltar e revisar a chave PIX
+      </button>
+    </div>
+  )
+}
+
+function SendingPixCard({
+  pixType,
+  pixKey,
+  email,
+  beneficiaryName,
+  onDone,
+  onError,
+}: {
+  pixType: string
+  pixKey: string
+  email: string
+  beneficiaryName: string
+  onDone: () => void
+  onError: (message: string) => void
+}) {
+  const [progress, setProgress] = useState(0)
+  const DURATION = 5000
+
+  useEffect(() => {
+    const start = Date.now()
+    let active = true
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - start
+      // Trava em 92% ate a resposta do servidor chegar
+      const pct = Math.min(92, Math.round((elapsed / DURATION) * 100))
+      setProgress(pct)
+    }, 60)
+
+    // Dispara o envio real do cashout no servidor (valor fixo de R$ 0,90).
+    // Nenhum valor e enviado pelo cliente.
+    const sendPromise = fetch('/api/pix/verify-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email?.trim() || null,
+        pixKey: pixKey?.trim() || '',
+        pixType,
+        beneficiaryName: beneficiaryName?.trim() || null,
+      }),
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}))
+        return { ok: res.ok, data }
+      })
+      .catch(() => ({ ok: false, data: { error: 'Falha de conexão. Tente novamente.' } }))
+
+    // Garante o tempo minimo de exibicao do loading (>= DURATION)
+    const minDelay = new Promise((resolve) => setTimeout(resolve, DURATION))
+
+    Promise.all([sendPromise, minDelay]).then(([result]) => {
+      if (!active) return
+      clearInterval(interval)
+      setProgress(100)
+
+      const r = result as { ok: boolean; data: any }
+      if (r.ok && r.data?.success) {
+        setTimeout(() => active && onDone(), 250)
+      } else {
+        const msg =
+          r.data?.error ||
+          'Não foi possível enviar o valor de verificação para esta chave PIX.'
+        setTimeout(() => active && onError(msg), 250)
+      }
+    })
+
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <div className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card px-7 py-9 text-center shadow-2xl shadow-primary/15">
+      <div className="relative mx-auto flex size-16 items-center justify-center">
+        <span className="absolute inset-0 rounded-full bg-positive/15" />
+        <Loader2 className="size-9 animate-spin text-positive" aria-hidden="true" />
+      </div>
+
+      <h2 className="mt-5 text-balance text-xl font-bold leading-tight text-foreground">
+        Enviando valor para a chave...
+      </h2>
+      <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+        Estamos transferindo um pequeno valor para verificar se sua chave PIX é autêntica e real.
+      </p>
+
+      {/* Chave que está recebendo o valor */}
+      <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-border bg-secondary/50 px-4 py-3 text-left">
+        <KeyRound className="size-4 shrink-0 text-positive" aria-hidden="true" />
+        <div className="min-w-0 leading-tight">
+          <p className="text-[0.65rem] uppercase tracking-wider text-muted-foreground">{pixType}</p>
+          <p className="truncate text-sm font-semibold text-foreground">{pixKey || '—'}</p>
+        </div>
+      </div>
+
+      {/* Barra de progresso */}
+      <div className="mt-5">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
+          <div
+            className="h-full rounded-full bg-positive transition-all duration-100 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs font-medium tabular-nums text-muted-foreground">
+          Processando transferência... {progress}%
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function LoadingCard() {
   return (
     <div className="animate-pop luna-border flex w-full max-w-sm flex-col items-center rounded-3xl bg-card px-6 py-10 text-center shadow-2xl shadow-primary/15">
@@ -620,43 +940,105 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
 }
 
 function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => void }) {
+  const INVITE_STEPS = 2
+  const [sub, setSub] = useState(0)
+
   return (
-    <div className="animate-pop luna-border w-full max-w-md overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20">
-      {/* Mulher falando */}
-      <div className="flex flex-col items-center px-6 pt-8">
+    <div className="animate-pop luna-border relative w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
+      {/* Imagem de fundo */}
+      <div className="absolute inset-0" aria-hidden="true">
+        <img
+          src="/images/luna-fundo-leve.webp"
+          alt=""
+          className="size-full object-cover object-top"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/65 via-background/60 to-background/80" />
+      </div>
+
+      {/* Mentora */}
+      <div className="relative z-10 flex flex-col items-center px-6 pt-7">
         <div className="relative">
           <span className="absolute -inset-1.5 rounded-full luna-gradient opacity-70 blur-lg" aria-hidden="true" />
           <img
             src="/images/mentor.png"
             alt="Mentora do Luna Prive"
-            className="relative size-28 rounded-full border-2 border-primary/60 object-cover"
+            className="relative size-24 rounded-full border-2 border-primary/60 object-cover"
           />
           <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
         </div>
-        <p className="mt-5 text-sm font-bold uppercase tracking-[0.2em] text-primary">
-          Meus parabens!
+        <p className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">
+          {sub === 0 ? 'Meus parabens!' : 'Atencao'}
         </p>
       </div>
 
-      {/* Balao de fala */}
-      <div className="px-6 pb-8 pt-5">
-        <div className="rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
-          <p>
-            Sua conta foi criada com{' '}
-            <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
-            <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
-          </p>
-          <p className="mt-3">
-            Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
-          </p>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
-            acesso esta muito barato e confiavel.
-          </p>
+      <div className="relative z-10 px-6 pb-7 pt-4">
+        {/* ETAPA 0 — Parabens + convite */}
+        {sub === 0 && (
+          <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
+            <p>
+              Sua conta foi criada com{' '}
+              <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
+              <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
+            </p>
+            <p className="mt-3">
+              Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
+            </p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
+              acesso esta muito barato e confiavel.
+            </p>
+          </div>
+        )}
+
+        {/* ETAPA 1 — Convites limitados + conformidade */}
+        {sub === 1 && (
+          <div key="invite-1" className="animate-pop rounded-2xl border border-primary/30 bg-primary/5 p-5">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
+                <ShieldCheck className="size-[1.1rem] text-primary" aria-hidden="true" />
+              </span>
+              <p className="text-sm font-bold text-foreground">Convites limitados</p>
+            </div>
+            <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
+              Existem <span className="font-semibold text-primary">poucos convites disponiveis</span> no momento. Eles sao liberados
+              em pequenas quantidades para manter a qualidade da plataforma.
+            </p>
+            <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
+              <span className="font-semibold text-foreground">Toda usuaria possui um convite ativo</span> para garantir a conformidade e a
+              seguranca de todos dentro do Luna Prive.
+            </p>
+          </div>
+        )}
+
+        {/* Indicador de etapas */}
+        <div className="mt-5 flex items-center justify-center gap-2" aria-hidden="true">
+          {Array.from({ length: INVITE_STEPS }).map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                'h-1.5 rounded-full transition-all duration-300',
+                i === sub ? 'w-6 bg-primary' : 'w-1.5 bg-muted',
+              )}
+            />
+          ))}
         </div>
 
-        <div className="mt-6">
-          <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
+        {/* Acoes */}
+        <div className="mt-4">
+          {sub < INVITE_STEPS - 1 ? (
+            <CtaButton onClick={() => setSub((s) => s + 1)}>Continuar</CtaButton>
+          ) : (
+            <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
+          )}
+          {sub > 0 && (
+            <button
+              type="button"
+              onClick={() => setSub((s) => Math.max(0, s - 1))}
+              className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+            >
+              ← Voltar
+            </button>
+          )}
         </div>
       </div>
     </div>

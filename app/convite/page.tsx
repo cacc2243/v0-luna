@@ -9,6 +9,8 @@ import { PriceCard } from '@/components/convite/price-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
+import { WelcomePopup } from '@/components/convite/welcome-popup'
+import { fbTrack } from '@/lib/fb/track'
 
 interface SignupData {
   username: string
@@ -17,7 +19,7 @@ interface SignupData {
   pixKey: string
 }
 
-const INVITE_PRICE = 24.80
+const DEFAULT_INVITE_CENTS = 2480
 
 export default function ConvitePage() {
   const router = useRouter()
@@ -28,6 +30,11 @@ export default function ConvitePage() {
     pixKey: '',
   })
   const [showPixModal, setShowPixModal] = useState(false)
+  // Valor do convite controlado pelo painel (fonte da verdade no servidor).
+  const [inviteCents, setInviteCents] = useState(DEFAULT_INVITE_CENTS)
+  // Indica se ja recebemos o valor real do painel. Enquanto false, o preco
+  // fica com blur para nao "piscar" o valor padrao antes do correto.
+  const [priceReady, setPriceReady] = useState(false)
 
   useEffect(() => {
     try {
@@ -38,11 +45,81 @@ export default function ConvitePage() {
     }
   }, [])
 
+  useEffect(() => {
+    let active = true
+    fetch('/api/settings/public')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!active) return
+        const cents =
+          d && typeof d.inviteAmountCents === 'number' ? d.inviteAmountCents : DEFAULT_INVITE_CENTS
+        if (d && typeof d.inviteAmountCents === 'number') {
+          setInviteCents(d.inviteAmountCents)
+        }
+        // Mesmo se a resposta nao trouxer o valor, liberamos o preco (cai no padrao).
+        setPriceReady(true)
+        // InitiateCheckout: cliente chegou na pagina de checkout do convite,
+        // com o valor real ja conhecido.
+        fbTrack('InitiateCheckout', {
+          value: cents / 100,
+          currency: 'BRL',
+          content_name: 'Convite Luna Privé',
+          content_type: 'product',
+        })
+      })
+      .catch(() => {
+        if (active) setPriceReady(true)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  function updateField(field: keyof SignupData, value: string) {
+    setData((prev) => {
+      const next = { ...prev, [field]: value }
+      try {
+        sessionStorage.setItem('luna_signup', JSON.stringify(next))
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
   function handleAcquire() {
-    if (!data.email || data.email === 'seu@email.com') {
-      alert('Por favor, complete seu cadastro primeiro.')
+    // Evita gerar PIX com valor padrao antes do valor real do painel chegar.
+    if (!priceReady) return
+
+    // O e-mail e obrigatorio e precisa ser valido para gerar o PIX corretamente.
+    const email = data.email.trim()
+    if (!email || email === 'seu@email.com' || !EMAIL_REGEX.test(email)) {
+      alert('Por favor, informe um e-mail válido tocando no lápis ao lado do campo E-mail.')
       return
     }
+
+    // Username e chave PIX sao complementares: se vazios, criamos valores
+    // apenas para gerar o PIX sem travar o fluxo.
+    if (!data.username || !data.pixKey) {
+      const fallbackUser = data.username || `cliente_${email.split('@')[0]}`.slice(0, 24)
+      setData((prev) => {
+        const next = {
+          ...prev,
+          email,
+          username: prev.username || fallbackUser,
+          pixKey: prev.pixKey || email,
+        }
+        try {
+          sessionStorage.setItem('luna_signup', JSON.stringify(next))
+        } catch {
+          // ignore
+        }
+        return next
+      })
+    }
+
     setShowPixModal(true)
   }
 
@@ -54,6 +131,7 @@ export default function ConvitePage() {
 
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">
+      <WelcomePopup />
       <div className="fixed inset-0 z-0">
         <PageBackground />
         <div className="absolute inset-0 bg-background/70" aria-hidden="true" />
@@ -104,10 +182,11 @@ export default function ConvitePage() {
           email={data.email}
           pixType={data.pixType}
           pixKey={data.pixKey}
+          onUpdate={updateField}
         />
 
         {/* Preço + garantia */}
-        <PriceCard onAcquire={handleAcquire} />
+        <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady={priceReady} />
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
@@ -121,7 +200,7 @@ export default function ConvitePage() {
         isOpen={showPixModal}
         onClose={() => setShowPixModal(false)}
         email={data.email}
-        amount={INVITE_PRICE}
+        amount={inviteCents / 100}
         userName={data.username}
         onPaymentConfirmed={handlePaymentConfirmed}
       />

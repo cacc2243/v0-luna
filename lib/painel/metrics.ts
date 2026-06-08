@@ -21,6 +21,23 @@ export interface ProfileRow {
   chat_unlocked_at?: string | null
 }
 
+export interface PixVerificationRow {
+  id: string
+  user_id: string | null
+  email: string | null
+  pix_key: string | null
+  pix_key_normalized: string | null
+  pix_type: string | null
+  amount_cents: number | null
+  status: string | null
+  attempts: number | null
+  transaction_id: string | null
+  last_error: string | null
+  request_ip: string | null
+  created_at: string
+  updated_at: string | null
+}
+
 export type PeriodKey = 'today' | 'yesterday' | '7d' | '14d' | '30d' | 'all'
 export type StatusFilter = 'all' | 'paid' | 'pending'
 
@@ -122,13 +139,46 @@ export function isPending(status: string | null): boolean {
   return status === 'pending'
 }
 
+// Produtos vendidos na plataforma (alinhados aos tipos de PIX gerados)
+export type ProductKey = 'invite' | 'chat' | 'boost' | 'gift' | 'verification'
+
+// Classifica um invite pelo seu tipo. Convites antigos sem tipo (null) ou
+// marcados como 'invite' caem em 'invite'.
+export function productOf(type: string | null): ProductKey {
+  switch (type) {
+    case 'chat':
+      return 'chat'
+    case 'boost':
+      return 'boost'
+    case 'gift_unlock':
+      return 'gift'
+    case 'verification':
+      return 'verification'
+    default:
+      return 'invite'
+  }
+}
+
+// Metadados de exibicao de cada produto (rotulo + unidade de contagem)
+export const PRODUCT_META: Record<ProductKey, { label: string; unit: string; unitPlural: string }> = {
+  invite: { label: 'Convite', unit: 'venda', unitPlural: 'vendas' },
+  chat: { label: 'Chat Exclusivo', unit: 'desbloqueio', unitPlural: 'desbloqueios' },
+  boost: { label: 'Impulsionamento', unit: 'impulso', unitPlural: 'impulsos' },
+  gift: { label: 'Habilitação de Presentes', unit: 'ativação', unitPlural: 'ativações' },
+  verification: { label: 'Verificação de Saque', unit: 'verificação', unitPlural: 'verificações' },
+}
+
+export const PRODUCT_ORDER: ProductKey[] = ['invite', 'chat', 'boost', 'gift', 'verification']
+
 // Tipo de pagamento de um invite: 'chat' = Chat Exclusivo, qualquer outro = convite
 export function isChatInvite(type: string | null): boolean {
   return type === 'chat'
 }
 
+// Considera "convite" apenas os tipos de convite propriamente ditos (inclui
+// legados sem tipo). Boost, presentes e verificacao NAO sao convite.
 export function isInviteType(type: string | null): boolean {
-  return type !== 'chat'
+  return productOf(type) === 'invite'
 }
 
 // Valor padrao do Chat Exclusivo
@@ -167,6 +217,8 @@ export interface DashboardMetrics {
   chatRevenue: number
   invitePaidCount: number
   chatPaidCount: number
+  // Detalhamento completo por produto (convite, chat, boost, presentes, verificacao)
+  productBreakdown: Record<ProductKey, { revenue: number; paidCount: number }>
   funnel: {
     signups: number
     viewedCheckout: number
@@ -317,6 +369,20 @@ export function computeMetrics(
   const inviteRevenue = paidInvitesOnly.reduce((s, i) => s + (Number(i.amount) || 0), 0)
   const chatRevenue = paidChats.reduce((s, i) => s + (Number(i.amount) || 0), 0)
 
+  // Detalhamento por produto (todos os tipos vendidos na plataforma)
+  const productBreakdown: Record<ProductKey, { revenue: number; paidCount: number }> = {
+    invite: { revenue: 0, paidCount: 0 },
+    chat: { revenue: 0, paidCount: 0 },
+    boost: { revenue: 0, paidCount: 0 },
+    gift: { revenue: 0, paidCount: 0 },
+    verification: { revenue: 0, paidCount: 0 },
+  }
+  for (const i of paid) {
+    const key = productOf(i.type)
+    productBreakdown[key].revenue += Number(i.amount) || 0
+    productBreakdown[key].paidCount += 1
+  }
+
   const generatedCount = periodInvites.length
   const paidCount = paid.length
 
@@ -345,6 +411,7 @@ export function computeMetrics(
     chatRevenue,
     invitePaidCount: paidInvitesOnly.length,
     chatPaidCount: paidChats.length,
+    productBreakdown,
     funnel: {
       signups,
       viewedCheckout: generatedCount,

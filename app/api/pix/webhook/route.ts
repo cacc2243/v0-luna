@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { maybeSendPurchase } from '@/lib/fb/purchase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,6 +70,13 @@ export async function POST(request: NextRequest) {
         { error: 'Erro ao atualizar convite' },
         { status: 500 }
       )
+    }
+
+    // Facebook Purchase (server-side / Conversions API) quando o pagamento e
+    // confirmado. Idempotente via flag fb_purchase_sent. A verificacao de saque
+    // nao envia Purchase (tratado dentro do helper).
+    if (newStatus === 'paid') {
+      await maybeSendPurchase({ ...invite, status: 'paid' })
     }
 
     // Se for um pagamento de Chat Exclusivo confirmado, desbloqueia o chat da usuaria

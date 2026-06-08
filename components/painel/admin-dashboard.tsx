@@ -13,16 +13,24 @@ import {
   Sparkles,
   ChevronDown,
   ImageIcon,
+  ShieldCheck,
+  Settings,
+  Facebook,
 } from 'lucide-react'
 import { logoutAction } from '@/app/painel/actions'
 import { SummaryTab } from './summary-tab'
 import { ClientsTab } from './clients-tab'
+import { TransactionsTab } from './transactions-tab'
 import { GatewayTestTab } from './gateway-test-tab'
 import { ImagesTab } from './images-tab'
+import { VerificationsTab } from './verifications-tab'
+import { SettingsTab } from './settings-tab'
+import { PixelTab } from './pixel-tab'
 import {
   PERIOD_LABELS,
   type InviteRow,
   type ProfileRow,
+  type PixVerificationRow,
   type PeriodKey,
   type StatusFilter,
 } from '@/lib/painel/metrics'
@@ -40,14 +48,17 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'pix' | 'imagens' | 'gateways'
+type TabKey = 'resumo' | 'clientes' | 'pix' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
   { key: 'clientes', label: 'Clientes', icon: Users },
   { key: 'pix', label: 'Transações', icon: Receipt },
+  { key: 'verificacoes', label: 'Verificações', icon: ShieldCheck },
   { key: 'imagens', label: 'Imagens', icon: ImageIcon },
   { key: 'gateways', label: 'Gateways', icon: FlaskConical },
+  { key: 'pixel', label: 'Pixel', icon: Facebook },
+  { key: 'config', label: 'Configurações', icon: Settings },
 ]
 
 const PERIODS: PeriodKey[] = ['today', 'yesterday', '7d', '14d', '30d', 'all']
@@ -72,6 +83,7 @@ export function AdminDashboard() {
   const { data, error, isLoading, mutate, isValidating } = useSWR<{
     invites: InviteRow[]
     profiles: ProfileRow[]
+    verifications: PixVerificationRow[]
     fetchedAt: string
   }>('/api/admin/data', fetcher, {
     refreshInterval: 10000,
@@ -84,6 +96,7 @@ export function AdminDashboard() {
 
   const invites = data?.invites || []
   const profiles = data?.profiles || []
+  const verifications = data?.verifications || []
 
   const activeNav = NAV.find((n) => n.key === tab)!
 
@@ -214,7 +227,7 @@ export function AdminDashboard() {
             </div>
           ) : (
             <>
-              {tab !== 'gateways' && tab !== 'imagens' && (
+              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
                   {tab !== 'clientes' && (
@@ -233,7 +246,7 @@ export function AdminDashboard() {
                 </div>
               )}
 
-              {(tab === 'resumo' || tab === 'pix') && (
+              {tab === 'resumo' && (
                 <SummaryTab
                   invites={invites}
                   profiles={profiles}
@@ -241,9 +254,20 @@ export function AdminDashboard() {
                   statusFilter={statusFilter}
                 />
               )}
+              {tab === 'pix' && (
+                <TransactionsTab
+                  invites={invites}
+                  profiles={profiles}
+                  period={period}
+                  statusFilter={statusFilter}
+                />
+              )}
               {tab === 'clientes' && <ClientsTab profiles={profiles} invites={invites} />}
+              {tab === 'verificacoes' && <VerificationsTab verifications={verifications} />}
               {tab === 'imagens' && <ImagesTab />}
               {tab === 'gateways' && <GatewayTestTab />}
+              {tab === 'pixel' && <PixelTab />}
+              {tab === 'config' && <SettingsTab />}
             </>
           )}
         </main>

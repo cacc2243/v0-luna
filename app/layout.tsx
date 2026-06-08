@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import { Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import Script from 'next/script'
+import { Suspense } from 'react'
+import { FbPixel } from '@/components/fb-pixel'
 import './globals.css'
 
 const manrope = Manrope({
@@ -48,8 +51,17 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`dark bg-background ${manrope.variable}`}>
       <body className="font-sans antialiased">
+        <Suspense fallback={null}>
+          <FbPixel />
+        </Suspense>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
+        <Script
+          src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+          data-utmify-prevent-xcod-sck
+          data-utmify-prevent-subids
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   )

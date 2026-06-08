@@ -49,32 +49,51 @@ interface NotificationToasterProps {
 }
 
 export function NotificationToaster({ notifications }: NotificationToasterProps) {
-  const [toasts, setToasts] = useState<Toast[]>([])
-  // ids ja vistos para nao re-disparar toasts antigos no primeiro carregamento
+  // Exibe apenas UM toast por vez; os demais aguardam na fila.
+  const [current, setCurrent] = useState<Toast | null>(null)
+  const queue = useRef<Toast[]>([])
+  // ids ja vistos para nao re-disparar o mesmo toast
   const seenIds = useRef<Set<string>>(new Set())
-  const initialized = useRef(false)
-  const timers = useRef<Record<string, ReturnType<typeof setTimeout>[]>>({})
+  // momento em que o app foi aberto: so notificamos o que nascer depois disso
+  const mountedAt = useRef<number>(Date.now())
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  const dismiss = useCallback((key: string) => {
-    // dispara a animacao de saida e remove apos ela terminar
-    setToasts((prev) => prev.map((t) => (t.key === key ? { ...t, leaving: true } : t)))
-    const t = setTimeout(() => {
-      setToasts((prev) => prev.filter((x) => x.key !== key))
-    }, 340)
-    timers.current[key] = [...(timers.current[key] || []), t]
+  // Mostra o proximo da fila (se houver) quando nada estiver visivel
+  const showNext = useCallback(() => {
+    const next = queue.current.shift()
+    if (!next) return
+    setCurrent(next)
+    const t = setTimeout(() => dismissRef.current(), DISPLAY_MS)
+    timers.current.push(t)
   }, [])
 
-  useEffect(() => {
-    // No primeiro render apenas registra o que ja existe (sem disparar toasts)
-    if (!initialized.current) {
-      for (const n of notifications) seenIds.current.add(n.id)
-      initialized.current = true
-      return
-    }
+  // Encerra o toast atual com animacao de saida e, ao terminar, exibe o proximo
+  const dismiss = useCallback(() => {
+    setCurrent((prev) => (prev ? { ...prev, leaving: true } : prev))
+    const t = setTimeout(() => {
+      setCurrent(null)
+      showNext()
+    }, 340)
+    timers.current.push(t)
+  }, [showNext])
 
-    // Detecta notificacoes novas de venda/mensagem (ordem do mais novo p/ mais antigo)
+  // Ref para permitir que o timer agendado em showNext chame a versao atual de dismiss
+  const dismissRef = useRef(dismiss)
+  useEffect(() => {
+    dismissRef.current = dismiss
+  }, [dismiss])
+
+  useEffect(() => {
+    // So consideramos notificacoes de venda/mensagem CRIADAS depois que o app
+    // foi aberto. Isso evita que notificacoes antigas apareçam em cascata quando
+    // os dados carregam (SWR) ou quando o usuario volta ao app.
     const fresh = notifications
-      .filter((n) => (n.type === 'sale' || n.type === 'message') && !seenIds.current.has(n.id))
+      .filter((n) => {
+        if (n.type !== 'sale' && n.type !== 'message') return false
+        if (seenIds.current.has(n.id)) return false
+        const createdMs = new Date(n.created_at).getTime()
+        return Number.isFinite(createdMs) && createdMs >= mountedAt.current
+      })
       .reverse()
 
     if (fresh.length === 0) return
@@ -102,35 +121,29 @@ export function NotificationToaster({ notifications }: NotificationToasterProps)
       }
     })
 
-    // Mantem no maximo 3 toasts simultaneos na pilha
-    setToasts((prev) => [...newToasts, ...prev].slice(0, 3))
-
-    // Agenda o auto-dismiss de cada novo toast
-    for (const toast of newToasts) {
-      const t = setTimeout(() => dismiss(toast.key), DISPLAY_MS)
-      timers.current[toast.key] = [...(timers.current[toast.key] || []), t]
-    }
-  }, [notifications, dismiss])
+    // Enfileira os novos toasts e, se nada estiver visivel, mostra o primeiro
+    queue.current.push(...newToasts)
+    if (!current) showNext()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifications])
 
   useEffect(() => {
     const all = timers.current
     return () => {
-      Object.values(all).forEach((arr) => arr.forEach(clearTimeout))
+      all.forEach(clearTimeout)
     }
   }, [])
 
-  if (toasts.length === 0) return null
+  if (!current) return null
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex flex-col items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
+      className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex flex-col items-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
       role="region"
       aria-live="polite"
       aria-label="Notificações"
     >
-      {toasts.map((toast) => (
-        <ToastCard key={toast.key} toast={toast} onClose={() => dismiss(toast.key)} />
-      ))}
+      <ToastCard key={current.key} toast={current} onClose={() => dismiss()} />
     </div>
   )
 }

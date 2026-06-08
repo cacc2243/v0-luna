@@ -608,6 +608,41 @@
   animation: soft-pulse 2.6s ease-in-out infinite;
 }
 
+/* Glow rosa lento e sutil para chamar atencao nos cards do tour */
+@keyframes coach-glow {
+  0%,
+  100% {
+    box-shadow: 0 8px 40px -16px oklch(0 0 0 / 0.5), 0 0 0 0 oklch(0.6 0.22 10 / 0);
+  }
+  50% {
+    box-shadow: 0 8px 40px -16px oklch(0 0 0 / 0.5), 0 0 26px 2px oklch(0.6 0.22 10 / 0.32);
+  }
+}
+.animate-coach-glow {
+  animation: coach-glow 4.5s ease-in-out infinite;
+}
+
+/* Leve up-scaling pulsante nos botoes que avancam o fluxo */
+@keyframes cta-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025);
+  }
+}
+.animate-cta-breathe {
+  animation: cta-breathe 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-coach-glow,
+  .animate-cta-breathe {
+    animation: none;
+  }
+}
+
 /* Welcome banner animations */
 @keyframes welcome-in {
   0% {

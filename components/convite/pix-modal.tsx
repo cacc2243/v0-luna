@@ -4,6 +4,15 @@ import { useState, useEffect } from 'react'
 import { X, Copy, Check, Clock, QrCode, AlertCircle, RefreshCw } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
+import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
+
+const PIX_CONTENT_NAME: Record<string, string> = {
+  invite: 'Convite Luna Privé',
+  chat: 'Chat Exclusivo Luna Privé',
+  gift_unlock: 'Habilitação de Presentes Luna Privé',
+  boost: 'Impulsionamento Luna Privé',
+  verification: 'Verificação de Conta Luna Privé',
+}
 
 interface PixModalProps {
   isOpen: boolean
@@ -80,6 +89,12 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
     setError(null)
 
     try {
+      // Sinais de atribuicao do Facebook (cookies do navegador) + event_id unico
+      // para deduplicacao com o Purchase enviado depois via Conversions API.
+      const fbp = readCookie('_fbp')
+      const fbc = readCookie('_fbc')
+      const eventId = newEventId('purchase')
+
       const response = await fetch('/api/pix/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,6 +104,10 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
           name: userName || 'Cliente Luna',
           type,
           boostDays,
+          fbp,
+          fbc,
+          eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
+          fbEventId: eventId,
         }),
       })
 
@@ -106,6 +125,19 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
       setPixCode(data.pixCode)
       setExpiresAt(data.expiresAt)
       setInviteId(data.invite?.id)
+
+      // Evento personalizado: PIX gerado no checkout.
+      fbTrackCustom(
+        'PixGerado',
+        {
+          value: Number(amount) || 0,
+          currency: 'BRL',
+          content_name: PIX_CONTENT_NAME[type] || 'Compra Luna Privé',
+          content_type: 'product',
+          transaction_type: type,
+        },
+        eventId,
+      )
 
       // Gerar QR Code a partir do codigo PIX (a API retorna apenas o codigo EMV)
       if (data.pixCode) {
@@ -148,11 +180,43 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
     }
   }
 
-  function copyPixCode() {
+  async function copyPixCode() {
     if (!pixCode) return
-    navigator.clipboard.writeText(pixCode)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+
+    const markCopied = () => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+
+    // Tenta a Clipboard API moderna (pode estar bloqueada em iframes)
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(pixCode)
+        markCopied()
+        return
+      }
+    } catch {
+      // Cai no fallback abaixo
+    }
+
+    // Fallback: textarea temporário + execCommand
+    try {
+      const textarea = document.createElement('textarea')
+      textarea.value = pixCode
+      textarea.setAttribute('readonly', '')
+      textarea.style.position = 'fixed'
+      textarea.style.top = '0'
+      textarea.style.left = '0'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.focus()
+      textarea.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(textarea)
+      if (ok) markCopied()
+    } catch {
+      // Silencioso: o usuário ainda pode copiar manualmente
+    }
   }
 
   if (!isOpen) return null

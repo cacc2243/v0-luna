@@ -573,15 +573,29 @@ function AppDashboard() {
     })
   }, [])
 
-  // Quando a criadora acumula mais de 6 chats, mostramos o modal "conta bombando"
-  // uma unica vez por sessao, convidando a responder os fas.
+  // Modal "conta bombando": aparece quando a criadora acumula mais de 6 chats e
+  // volta a aparecer a cada 4 minutos ate que o chat exclusivo seja pago E os
+  // presentes estejam habilitados.
+  const chatUnlocked = !!profile?.chat_unlocked
+  const giftsEnabled = !!profile?.gifts_enabled
   useEffect(() => {
-    if (fansModalShown.current) return
-    if (conversations.length > 6 && activeTab !== 'Chats') {
+    // Enquanto faltar pagar o chat ou habilitar presentes, mantemos o lembrete ativo
+    if (chatUnlocked && giftsEnabled) return
+    if (conversations.length <= 6) return
+
+    // Primeira aparicao logo ao atingir o gatilho (uma vez por sessao)
+    if (!fansModalShown.current) {
       fansModalShown.current = true
       setShowFansWaiting(true)
     }
-  }, [conversations.length, activeTab])
+
+    // Reaparece a cada 4 minutos
+    const interval = setInterval(() => {
+      setShowFansWaiting(true)
+    }, 4 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [conversations.length, chatUnlocked, giftsEnabled])
 
   // Versao com debounce: ao aceitar varios pedidos em sequencia, agrupamos
   // todas as revalidacoes numa unica no fim, evitando dezenas de requisicoes
@@ -899,7 +913,8 @@ function AppDashboard() {
           giftsEnabled={!!profile?.gifts_enabled}
           userName={profile?.display_name || 'Criadora Luna'}
           userEmail={userEmail}
-          onUnlock={() => setShowUnlockChat(true)}
+          packsCount={packs.length}
+          onGoToPacks={() => setActiveTab('Packs')}
           onProfileRefresh={mutateProfile}
         />
       ) : (
@@ -1207,7 +1222,8 @@ function ChatsScreen({
   giftsEnabled,
   userName,
   userEmail,
-  onUnlock,
+  packsCount,
+  onGoToPacks,
   onProfileRefresh,
 }: {
   balance: number
@@ -1215,7 +1231,8 @@ function ChatsScreen({
   giftsEnabled: boolean
   userName: string
   userEmail: string
-  onUnlock: () => void
+  packsCount: number
+  onGoToPacks: () => void
   onProfileRefresh: () => void
 }) {
   // Chat ativo: lista de conversas com fluxo de presentes
@@ -1230,6 +1247,8 @@ function ChatsScreen({
       />
     )
   }
+
+  const hasPacks = packsCount > 0
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
@@ -1257,29 +1276,29 @@ function ChatsScreen({
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
             </div>
-            <p className="text-sm text-muted-foreground">Chat Exclusivo bloqueado</p>
+            <p className="text-sm text-muted-foreground">Comece publicando seus packs</p>
           </div>
         </div>
       </div>
 
-      {/* Estado bloqueado — CTA para liberar o Chat Exclusivo */}
+      {/* Estado inicial — oriente a publicar packs para atrair conversas */}
       <div className="mt-6">
         <div className="luna-border overflow-hidden rounded-3xl bg-card">
           <div className="bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 py-6 text-center">
             <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
-              <Lock className="size-7 text-primary-foreground" aria-hidden="true" />
+              <Package className="size-7 text-primary-foreground" aria-hidden="true" />
             </div>
-            <h2 className="mt-3 text-lg font-bold text-foreground">Libere seu Chat Exclusivo</h2>
+            <h2 className="mt-3 text-lg font-bold text-foreground">Publique seus packs</h2>
             <p className="mx-auto mt-1 max-w-xs text-pretty text-sm text-muted-foreground">
-              Converse com seus clientes, aceite vendas e receba no seu saldo. Pagamento único, acesso vitalício.
+              Poste seus packs para que seus fãs descubram seu perfil e queiram conversar com você. Você decide quem aceita.
             </p>
           </div>
           <div className="px-5 py-5">
             <ul className="flex flex-col gap-2.5">
               {[
-                'Aceite pedidos e receba por suas vendas',
-                'Atendimento personalizado com cada cliente',
-                'Perfil verificado em destaque',
+                'Seus packs aparecem para novos fãs',
+                'Os fãs interessados pedem para conversar',
+                'Você aceita quem quiser e recebe no seu saldo',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5">
                   <BadgeCheck className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
@@ -1289,11 +1308,11 @@ function ChatsScreen({
             </ul>
             <button
               type="button"
-              onClick={onUnlock}
+              onClick={onGoToPacks}
               className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
             >
-              <Sparkles className="size-4" aria-hidden="true" />
-              Liberar Chat Privé · {brl(99)}
+              <Package className="size-4" aria-hidden="true" />
+              {hasPacks ? 'Gerenciar meus packs' : 'Publicar meu primeiro pack'}
             </button>
           </div>
         </div>
@@ -1657,7 +1676,7 @@ function ImpulsionarScreen({
   )
 }
 
-// ─────────────────────────────────────────────���──────────────────────────────���
+// ─────────────────────────────────────────────���─────────────────────��────────���
 // Tela Inicio
 // ────────────────────────────────────────────────────────────────────────��────
 
