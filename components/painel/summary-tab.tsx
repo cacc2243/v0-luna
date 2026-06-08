@@ -15,6 +15,9 @@ import {
   Layers,
   Ticket,
   MessageCircle,
+  Rocket,
+  Gift,
+  BadgeCheck,
 } from 'lucide-react'
 import { StatCard } from './stat-card'
 import { ConversionFunnel } from './conversion-funnel'
@@ -29,6 +32,9 @@ import {
   isPending,
   formatBRL,
   PERIOD_LABELS,
+  PRODUCT_META,
+  PRODUCT_ORDER,
+  type ProductKey,
   type InviteRow,
   type ProfileRow,
   type PeriodKey,
@@ -40,6 +46,54 @@ interface SummaryTabProps {
   profiles: ProfileRow[]
   period: PeriodKey
   statusFilter: StatusFilter
+}
+
+// Estilo visual de cada card de produto (icone + paleta)
+const PRODUCT_STYLES: Record<
+  ProductKey,
+  {
+    icon: typeof Ticket
+    border: string
+    bg: string
+    iconBg: string
+    iconColor: string
+  }
+> = {
+  invite: {
+    icon: Ticket,
+    border: 'border-border/60',
+    bg: 'bg-background/40',
+    iconBg: 'bg-primary/15',
+    iconColor: 'text-primary',
+  },
+  chat: {
+    icon: MessageCircle,
+    border: 'border-emerald-600/30',
+    bg: 'bg-emerald-500/5',
+    iconBg: 'bg-emerald-500/15',
+    iconColor: 'text-emerald-400',
+  },
+  boost: {
+    icon: Rocket,
+    border: 'border-sky-600/30',
+    bg: 'bg-sky-500/5',
+    iconBg: 'bg-sky-500/15',
+    iconColor: 'text-sky-400',
+  },
+  gift: {
+    icon: Gift,
+    border: 'border-amber-600/30',
+    bg: 'bg-amber-500/5',
+    iconBg: 'bg-amber-500/15',
+    iconColor: 'text-amber-400',
+  },
+  verification: {
+    icon: BadgeCheck,
+    border: 'border-border/60',
+    bg: 'bg-background/40',
+    iconBg: 'bg-positive/15',
+    iconColor: 'text-positive',
+  },
 }
 
 export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryTabProps) {
@@ -187,35 +241,32 @@ export function SummaryTab({ invites, profiles, period, statusFilter }: SummaryT
           <Layers className="size-4 text-muted-foreground" />
           <h2 className="text-base font-bold text-foreground">Receita por Produto</h2>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-border/60 bg-background/40 p-4">
-            <div className="flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15">
-                <Ticket className="size-4 text-primary" />
-              </span>
-              <p className="text-sm font-semibold text-foreground">Convite</p>
-            </div>
-            <p className="mt-3 text-2xl font-bold tabular-nums text-foreground">
-              {formatBRL(metrics.inviteRevenue)}
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {metrics.invitePaidCount} venda{metrics.invitePaidCount === 1 ? '' : 's'}
-            </p>
-          </div>
-          <div className="rounded-xl border border-emerald-600/30 bg-emerald-500/5 p-4">
-            <div className="flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/15">
-                <MessageCircle className="size-4 text-emerald-400" />
-              </span>
-              <p className="text-sm font-semibold text-foreground">Chat Exclusivo</p>
-            </div>
-            <p className="mt-3 text-2xl font-bold tabular-nums text-foreground">
-              {formatBRL(metrics.chatRevenue)}
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {metrics.chatPaidCount} desbloqueio{metrics.chatPaidCount === 1 ? '' : 's'}
-            </p>
-          </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {PRODUCT_ORDER.map((key) => {
+            const meta = PRODUCT_META[key]
+            const data = metrics.productBreakdown[key]
+            const style = PRODUCT_STYLES[key]
+            const Icon = style.icon
+            return (
+              <div
+                key={key}
+                className={`rounded-xl border p-4 ${style.border} ${style.bg}`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`flex size-8 items-center justify-center rounded-lg ${style.iconBg}`}>
+                    <Icon className={`size-4 ${style.iconColor}`} />
+                  </span>
+                  <p className="text-sm font-semibold text-foreground">{meta.label}</p>
+                </div>
+                <p className="mt-3 text-2xl font-bold tabular-nums text-foreground">
+                  {formatBRL(data.revenue)}
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {data.paidCount} {data.paidCount === 1 ? meta.unit : meta.unitPlural}
+                </p>
+              </div>
+            )
+          })}
         </div>
       </section>
 
