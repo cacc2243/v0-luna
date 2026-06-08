@@ -1,6 +1,6 @@
 export function PageBackground() {
   return (
-    <div className="absolute inset-0">
+    <div className="fixed inset-0 z-0">
       <img
         src="/images/background.png"
         alt=""
