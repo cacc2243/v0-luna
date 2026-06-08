@@ -20,9 +20,11 @@ function formatCents(cents: number): string {
 export function PriceCard({
   onAcquire,
   amountCents = 2480,
+  priceReady = true,
 }: {
   onAcquire?: () => void
   amountCents?: number
+  priceReady?: boolean
 }) {
   // Preco "de" (ancora) calculado a partir do preco atual com ~40% de desconto.
   const originalCents = Math.round(amountCents / 0.6)
@@ -39,7 +41,12 @@ export function PriceCard({
             Investimento único
           </span>
 
-          <div className="mt-3 flex items-center justify-center gap-2.5">
+          <div
+            className={`mt-3 flex items-center justify-center gap-2.5 transition-all duration-300 ${
+              priceReady ? 'blur-0 opacity-100' : 'blur-md opacity-70'
+            }`}
+            aria-hidden={!priceReady}
+          >
             <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
               R${formatCents(originalCents)}
             </span>
@@ -48,7 +55,12 @@ export function PriceCard({
             </span>
           </div>
 
-          <div className="mt-1 flex items-baseline justify-center gap-1">
+          <div
+            className={`mt-1 flex items-baseline justify-center gap-1 transition-all duration-300 ${
+              priceReady ? 'blur-0 opacity-100' : 'blur-md opacity-70'
+            }`}
+            aria-hidden={!priceReady}
+          >
             <span className="text-2xl font-bold text-foreground">R$</span>
             <span className="text-5xl font-extrabold leading-none tracking-tight text-foreground">
               {formatCents(amountCents)}
@@ -74,10 +86,11 @@ export function PriceCard({
         <button
           type="button"
           onClick={onAcquire}
-          className="luna-gradient mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+          disabled={!priceReady}
+          className="luna-gradient mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
         >
           <Gift className="size-5" aria-hidden="true" />
-          Adquirir meu Convite!
+          {priceReady ? 'Adquirir meu Convite!' : 'Carregando valor...'}
           <ChevronRight className="size-5" aria-hidden="true" />
         </button>
 

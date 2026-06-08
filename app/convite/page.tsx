@@ -30,6 +30,9 @@ export default function ConvitePage() {
   const [showPixModal, setShowPixModal] = useState(false)
   // Valor do convite controlado pelo painel (fonte da verdade no servidor).
   const [inviteCents, setInviteCents] = useState(DEFAULT_INVITE_CENTS)
+  // Indica se ja recebemos o valor real do painel. Enquanto false, o preco
+  // fica com blur para nao "piscar" o valor padrao antes do correto.
+  const [priceReady, setPriceReady] = useState(false)
 
   useEffect(() => {
     try {
@@ -45,17 +48,24 @@ export default function ConvitePage() {
     fetch('/api/settings/public')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (active && d && typeof d.inviteAmountCents === 'number') {
+        if (!active) return
+        if (d && typeof d.inviteAmountCents === 'number') {
           setInviteCents(d.inviteAmountCents)
         }
+        // Mesmo se a resposta nao trouxer o valor, liberamos o preco (cai no padrao).
+        setPriceReady(true)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (active) setPriceReady(true)
+      })
     return () => {
       active = false
     }
   }, [])
 
   function handleAcquire() {
+    // Evita gerar PIX com valor padrao antes do valor real do painel chegar.
+    if (!priceReady) return
     if (!data.email || data.email === 'seu@email.com') {
       alert('Por favor, complete seu cadastro primeiro.')
       return
@@ -124,7 +134,7 @@ export default function ConvitePage() {
         />
 
         {/* Preço + garantia */}
-        <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} />
+        <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady={priceReady} />
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
