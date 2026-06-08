@@ -186,6 +186,16 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
     const markCopied = () => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+      // Registra no servidor que o cliente de fato copiou o código PIX.
+      if (inviteId) {
+        fetch('/api/pix/copied', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inviteId }),
+        }).catch(() => {
+          // Silencioso: a cópia local já funcionou para o usuário.
+        })
+      }
     }
 
     // Tenta a Clipboard API moderna (pode estar bloqueada em iframes)

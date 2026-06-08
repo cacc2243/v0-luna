@@ -124,7 +124,7 @@ export type Message = {
   sender_id: string | null
   is_from_creator: boolean
   content: string | null
-  message_type: 'text' | 'image' | 'gift' | 'audio'
+  message_type: 'text' | 'image' | 'gift' | 'audio' | 'video'
   media_url: string | null
   gift_amount: number | null
   gift_claimed: boolean
@@ -718,7 +718,7 @@ export async function markConversationRead(conversationId: string) {
 }
 
 type CreatorMessageInput = {
-  kind: 'text' | 'image' | 'audio'
+  kind: 'text' | 'image' | 'audio' | 'video'
   content?: string | null
   mediaUrl?: string | null
   audioDuration?: number | null
@@ -1455,7 +1455,7 @@ export async function rejectSale(saleId: string) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Presentes (Chat) — resgate de presente vira saldo
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────��────────────────────────────────────────────────────────────────────
 
 // Resgata um presente recebido no chat, creditando o valor no saldo da usuaria.
 // Requer que a conta tenha a habilitacao de presentes ativa (gifts_enabled).

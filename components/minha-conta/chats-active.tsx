@@ -17,6 +17,7 @@ import {
   User,
   Smile,
   ImageIcon,
+  Video as VideoIcon,
   Mic,
   X,
   Plus,
@@ -77,7 +78,7 @@ type ChatMessage = {
   id: string
   from: 'buyer' | 'creator'
   text?: string
-  kind?: 'text' | 'gift' | 'image' | 'audio'
+  kind?: 'text' | 'gift' | 'image' | 'audio' | 'video'
   giftAmount?: number
   giftClaimed?: boolean
   /** URL pública (Supabase Storage) para imagem ou áudio enviado pela criadora */
@@ -365,6 +366,7 @@ function ChatConversation({
   const [recording, setRecording] = useState(false)
   const [recordSeconds, setRecordSeconds] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordChunksRef = useRef<Blob[]>([])
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -431,7 +433,7 @@ function ChatConversation({
 
   // Envia a mensagem da criadora ao servidor e revela as respostas do comprador
   async function dispatchCreatorMessage(input: {
-    kind: 'text' | 'image' | 'audio'
+    kind: 'text' | 'image' | 'audio' | 'video'
     content?: string
     mediaUrl?: string
     audioDuration?: number
@@ -488,7 +490,12 @@ function ChatConversation({
       last_message:
         buyerMsgs.length > 0
           ? buyerMsgs[buyerMsgs.length - 1].content ?? 'Presente recebido'
-          : input.content ?? (input.kind === 'image' ? 'Imagem' : 'Áudio'),
+          : input.content ??
+            (input.kind === 'image'
+              ? 'Imagem'
+              : input.kind === 'video'
+                ? 'Vídeo'
+                : 'Áudio'),
       last_message_at: new Date().toISOString(),
       flow_step: res.flowStep,
       unread_count: 0,
@@ -512,10 +519,11 @@ function ChatConversation({
     e.target.value = ''
     setShowAttach(false)
     if (!file || step >= 3 || sending) return
-    const ext = file.name.split('.').pop() || 'jpg'
+    const isVideo = file.type.startsWith('video/')
+    const ext = file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg')
     const url = await uploadMedia(file, ext)
     if (!url) return
-    dispatchCreatorMessage({ kind: 'image', mediaUrl: url })
+    dispatchCreatorMessage({ kind: isVideo ? 'video' : 'image', mediaUrl: url })
   }
 
   async function startRecording() {
@@ -689,6 +697,8 @@ function ChatConversation({
                 />
               ) : m.kind === 'image' ? (
                 <ImageBubble key={m.id} from={m.from} url={m.mediaUrl || ''} time={m.time} />
+              ) : m.kind === 'video' ? (
+                <VideoBubble key={m.id} from={m.from} url={m.mediaUrl || ''} time={m.time} />
               ) : m.kind === 'audio' ? (
                 <AudioBubble key={m.id} from={m.from} url={m.mediaUrl || ''} duration={m.audioDuration || 0} time={m.time} />
               ) : (
@@ -719,7 +729,17 @@ function ChatConversation({
               <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
                 <ImageIcon className="size-5" />
               </span>
-              Imagem
+              Foto
+            </button>
+            <button
+              type="button"
+              onClick={() => videoInputRef.current?.click()}
+              className="flex flex-col items-center gap-1 rounded-xl px-4 py-2.5 text-xs font-medium text-foreground transition hover:bg-muted"
+            >
+              <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+                <VideoIcon className="size-5" />
+              </span>
+              Vídeo
             </button>
             <button
               type="button"
@@ -741,6 +761,13 @@ function ChatConversation({
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          className="hidden"
+          onChange={handleImageSelected}
+        />
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/*"
           className="hidden"
           onChange={handleImageSelected}
         />

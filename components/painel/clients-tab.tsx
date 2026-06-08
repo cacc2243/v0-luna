@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Search, UserRound, CheckCircle2, Mail, Clock, MessageCircle } from 'lucide-react'
+import { Search, UserRound, CheckCircle2, Mail, Clock, MessageCircle, Copy } from 'lucide-react'
 import {
   buildLeads,
   formatBRL,
@@ -146,6 +146,12 @@ export function ClientsTab({ profiles, invites }: ClientsTabProps) {
                           <span className="inline-flex items-center gap-0.5 rounded bg-emerald-500/15 px-1 py-0.5 text-[0.6rem] font-semibold text-emerald-400">
                             <MessageCircle className="size-2.5" />
                             CHAT
+                          </span>
+                        )}
+                        {lead.pixCopied > 0 && !lead.invitePaid && (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 px-1 py-0.5 text-[0.6rem] font-semibold text-amber-400">
+                            <Copy className="size-2.5" />
+                            COPIOU PIX
                           </span>
                         )}
                       </p>

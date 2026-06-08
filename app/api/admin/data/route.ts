@@ -39,7 +39,7 @@ export async function GET() {
     supabase
       .from('invites')
       .select(
-        'id, user_id, email, amount, status, type, transaction_id, pix_code, created_at, paid_at, pix_expiration',
+        'id, user_id, email, amount, status, type, transaction_id, pix_code, pix_copied_at, created_at, paid_at, pix_expiration',
       )
       .order('created_at', { ascending: false }),
     supabase

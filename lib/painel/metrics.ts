@@ -7,6 +7,7 @@ export interface InviteRow {
   type: string | null
   transaction_id: string | null
   pix_code: string | null
+  pix_copied_at: string | null
   created_at: string
   paid_at: string | null
   pix_expiration: string | null
@@ -239,6 +240,7 @@ export interface Lead {
   firstSeen: string // data mais antiga (cadastro ou 1o PIX)
   invites: InviteRow[]
   pixGenerated: number
+  pixCopied: number
   paidCount: number
   totalPaid: number
   pendingCount: number
@@ -275,6 +277,7 @@ export function buildLeads(invites: InviteRow[], profiles: ProfileRow[]): Lead[]
       firstSeen: p.created_at,
       invites: [],
       pixGenerated: 0,
+      pixCopied: 0,
       paidCount: 0,
       totalPaid: 0,
       pendingCount: 0,
@@ -308,6 +311,7 @@ export function buildLeads(invites: InviteRow[], profiles: ProfileRow[]): Lead[]
           firstSeen: inv.created_at,
           invites: [],
           pixGenerated: 0,
+          pixCopied: 0,
           paidCount: 0,
           totalPaid: 0,
           pendingCount: 0,
@@ -324,6 +328,7 @@ export function buildLeads(invites: InviteRow[], profiles: ProfileRow[]): Lead[]
     lead.invites.push(inv)
     if (!lead.email && inv.email) lead.email = inv.email
     if (inv.pix_code) lead.pixGenerated += 1
+    if (inv.pix_copied_at) lead.pixCopied += 1
     if (isPaid(inv.status)) {
       lead.paidCount += 1
       lead.totalPaid += Number(inv.amount) || 0
@@ -359,6 +364,8 @@ export function computeMetrics(
   const paid = periodInvites.filter((i) => isPaid(i.status))
   const pending = periodInvites.filter((i) => isPending(i.status))
   const withPixCode = periodInvites.filter((i) => i.pix_code)
+  // Copiou de verdade: marcou pix_copied_at ao tocar no botão "Copiar código PIX".
+  const actuallyCopied = periodInvites.filter((i) => i.pix_copied_at)
 
   const revenue = paid.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
   const pendingRevenue = pending.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
@@ -403,7 +410,7 @@ export function computeMetrics(
     pendingRevenue,
     paidCount,
     generatedCount,
-    copiedCount: withPixCode.length,
+    copiedCount: actuallyCopied.length,
     pendingCount: pending.length,
     conversionRate,
     avgTicket,
