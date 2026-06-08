@@ -462,10 +462,10 @@ function ChatConversation({
       // tempo "digitando" proporcional ao tamanho (presentes sao rapidos)
       const typingMs =
         bm.message_type === 'gift'
-          ? 700
-          : Math.min(2600, Math.max(700, content.length * 55))
-      // pequena pausa antes de comecar a digitar a proxima bolha
-      const gapMs = i === 0 ? 700 : 500 + Math.random() * 500
+          ? 1400
+          : Math.min(5500, Math.max(1600, content.length * 95))
+      // pausa antes de comecar a digitar a proxima bolha (mais natural/lenta)
+      const gapMs = i === 0 ? 1400 : 1100 + Math.random() * 1200
 
       const tStart = setTimeout(() => setTyping(true), delay + gapMs)
       delay += gapMs + typingMs
@@ -577,8 +577,8 @@ function ChatConversation({
     let delay = 0
     lockedMsgs.forEach((lm, i) => {
       const content = lm.content ?? ''
-      const typingMs = Math.min(2600, Math.max(700, content.length * 55))
-      const gapMs = i === 0 ? 600 : 500 + Math.random() * 500
+      const typingMs = Math.min(5500, Math.max(1600, content.length * 95))
+      const gapMs = i === 0 ? 1200 : 1100 + Math.random() * 1200
       const tStart = setTimeout(() => setTyping(true), delay + gapMs)
       delay += gapMs + typingMs
       const tEnd = setTimeout(() => {
