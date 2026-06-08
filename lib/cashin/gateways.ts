@@ -116,9 +116,10 @@ async function createBynetTransaction(
   apiKey: string,
   amount: number,
   customer: BynetCustomer,
-  itemTitle: string
+  itemTitle: string,
+  postbackUrl?: string
 ) {
-  const requestBody = {
+  const requestBody: Record<string, any> = {
     amount: Math.round(amount * 100), // centavos
     paymentMethod: 'PIX',
     customer,
@@ -131,6 +132,12 @@ async function createBynetTransaction(
       },
     ],
     pix: { expiresInDays: 1 },
+  }
+
+  // URL de notificacao de pagamento (webhook). Aponta para a Edge Function
+  // do Supabase, mantendo o dominio real fora do painel do gateway.
+  if (postbackUrl) {
+    requestBody.postbackUrl = postbackUrl
   }
 
   const response = await fetch(`${BYNET_API_URL}/api/user/transactions`, {
@@ -202,7 +209,13 @@ const bynetGateway: CashinGateway = {
     let lastStatus = 500
 
     for (const customer of attempts) {
-      const result = await createBynetTransaction(apiKey, input.amount, customer, input.itemTitle)
+      const result = await createBynetTransaction(
+        apiKey,
+        input.amount,
+        customer,
+        input.itemTitle,
+        input.callbackUrl
+      )
       lastStatus = result.status
 
       if (result.ok && !result.data?.error) {
