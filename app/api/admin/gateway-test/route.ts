@@ -5,7 +5,7 @@ import {
   getCashinGateway,
   type CashinInput,
 } from '@/lib/cashin/gateways'
-import { getSiteUrl } from '@/lib/site-url'
+import { getWebhookUrl } from '@/lib/site-url'
 
 const TEST_NAMES = [
   'Maria Silva Santos',
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         document: '', // o gateway gera um CPF valido automaticamente
       },
       // Mesma URL fixa usada em producao (evita estourar o limite de webhooks).
-      callbackUrl: `${getSiteUrl()}/api/pix/webhook`,
+      callbackUrl: getWebhookUrl(),
     }
 
     const start = Date.now()

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAppSettings } from '@/lib/settings'
 import { resolveCashinOrder, type CashinInput } from '@/lib/cashin/gateways'
 import { sendTemplateEmail } from '@/lib/email/send'
-import { getSiteUrl } from '@/lib/site-url'
+import { getWebhookUrl } from '@/lib/site-url'
 
 /** Formata centavos/reais para "R$ 24,80". */
 function formatBRL(value: number): string {
@@ -114,8 +114,8 @@ export async function POST(request: NextRequest) {
     // retorna um id proprio.
     const identifier = `luna-${inviteType}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
-    const siteUrl = getSiteUrl()
-
+    // URL enviada ao gateway: a Edge Function do Supabase (proxy), nunca o
+    // dominio do site. Mantem o dominio real fora do painel do gateway.
     const cashinInput: CashinInput = {
       identifier,
       amount: effectiveAmount,
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
         phone: (phone || '').replace(/\D/g, ''),
         document: (document || '').replace(/\D/g, ''),
       },
-      callbackUrl: `${siteUrl}/api/pix/webhook`,
+      callbackUrl: getWebhookUrl(),
     }
 
     // Tenta o gateway ativo e, em caso de falha, cai automaticamente nos demais.

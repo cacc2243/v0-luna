@@ -35,3 +35,32 @@ export function siteUrl(path = ''): string {
   if (!path) return base
   return `${base}${path.startsWith('/') ? '' : '/'}${path}`
 }
+
+/**
+ * URL de webhook que e ENVIADA aos gateways de pagamento (SigiloPay, Bynet).
+ *
+ * Importante: usamos a Edge Function do Supabase como ponto de recebimento,
+ * NAO o dominio do site. Assim o dominio real (lunaprive.live) nao fica
+ * exposto no painel dos gateways. A Edge Function apenas repassa (proxy) o
+ * evento para a rota interna do site, onde toda a logica e executada.
+ *
+ * Deriva automaticamente de NEXT_PUBLIC_SUPABASE_URL:
+ *   "https://kbiaaf....supabase.co" -> "https://kbiaaf....supabase.co/functions/v1/pix-webhook"
+ *
+ * Pode ser sobrescrita por PIX_WEBHOOK_URL caso necessario.
+ */
+export function getWebhookUrl(): string {
+  const override = (process.env.PIX_WEBHOOK_URL || '').trim()
+  if (override) {
+    return override.replace(/\/+$/, '')
+  }
+
+  const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim()
+  if (supabaseUrl) {
+    const base = supabaseUrl.replace(/\/+$/, '')
+    return `${base}/functions/v1/pix-webhook`
+  }
+
+  // Fallback: se nao houver Supabase configurado, cai na rota interna do site.
+  return `${getSiteUrl()}/api/pix/webhook`
+}
