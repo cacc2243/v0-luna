@@ -605,7 +605,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             aria-hidden="true"
           />
           <div className="pointer-events-none absolute inset-x-0 bottom-14 z-[46] px-4">
-            <div className="luna-border pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-[0_8px_40px_-16px_oklch(0_0_0/0.5)] ring-1 ring-primary/30">
+            <div className="luna-border animate-coach-glow pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
               <img
                 src="/images/mentor.png"
                 alt="Camila"
@@ -624,7 +624,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                 type="button"
                 onClick={advanceTour}
                 disabled={isTransitioning}
-                className="mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition active:scale-[0.98] disabled:opacity-70"
+                className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
               >
                 {tourStep < tour.length - 1 ? 'Entendi, próximo' : 'Ver meu primeiro pedido'}
               </button>
