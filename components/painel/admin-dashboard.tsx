@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Settings,
   Facebook,
+  Mail,
 } from 'lucide-react'
 import { logoutAction } from '@/app/painel/actions'
 import { SummaryTab } from './summary-tab'
@@ -26,6 +27,7 @@ import { ImagesTab } from './images-tab'
 import { VerificationsTab } from './verifications-tab'
 import { SettingsTab } from './settings-tab'
 import { PixelTab } from './pixel-tab'
+import { EmailsTab } from './emails-tab'
 import {
   PERIOD_LABELS,
   type InviteRow,
@@ -48,7 +50,7 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'pix' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel'
+type TabKey = 'resumo' | 'clientes' | 'pix' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
@@ -58,6 +60,7 @@ const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'imagens', label: 'Imagens', icon: ImageIcon },
   { key: 'gateways', label: 'Gateways', icon: FlaskConical },
   { key: 'pixel', label: 'Pixel', icon: Facebook },
+  { key: 'emails', label: 'E-mails', icon: Mail },
   { key: 'config', label: 'Configurações', icon: Settings },
 ]
 
@@ -227,7 +230,7 @@ export function AdminDashboard() {
             </div>
           ) : (
             <>
-              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && (
+              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
                   {tab !== 'clientes' && (
@@ -267,6 +270,7 @@ export function AdminDashboard() {
               {tab === 'imagens' && <ImagesTab />}
               {tab === 'gateways' && <GatewayTestTab />}
               {tab === 'pixel' && <PixelTab />}
+              {tab === 'emails' && <EmailsTab />}
               {tab === 'config' && <SettingsTab />}
             </>
           )}
