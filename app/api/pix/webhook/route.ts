@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { maybeSendPurchase } from '@/lib/fb/purchase'
 import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
+import { sendUtmifyOrder } from '@/lib/utmify/orders'
 
 export async function POST(request: NextRequest) {
   try {
@@ -113,6 +114,25 @@ export async function POST(request: NextRequest) {
     // nao envia Purchase (tratado dentro do helper).
     if (newStatus === 'paid') {
       await maybeSendPurchase({ ...invite, status: 'paid' })
+    }
+
+    // Utmify: envia o pedido como "pago" (paid) quando confirmado, com a data
+    // de aprovacao. Idempotente via utmify_paid_sent. Tambem garante o envio do
+    // pendente caso a geracao do PIX nao o tenha registrado.
+    if (newStatus === 'paid') {
+      const utmifyInvite = {
+        ...invite,
+        status: 'paid',
+        paid_at: (updateData.paid_at as string) || invite.paid_at,
+      }
+      void sendUtmifyOrder(utmifyInvite, 'waiting_payment').catch(() => {})
+      await sendUtmifyOrder(utmifyInvite, 'paid')
+    } else if (newStatus === 'refunded') {
+      // Reembolso: a Utmify so atualiza pedidos ja existentes pelo orderId.
+      void sendUtmifyOrder(
+        { ...invite, status: 'refunded', refunded_at: new Date().toISOString() },
+        'refunded',
+      ).catch(() => {})
     }
 
     // E-mail "Acesso liberado" para o Convite de Acesso pago. Idempotente:

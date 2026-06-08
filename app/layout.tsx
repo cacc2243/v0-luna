@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import Script from 'next/script'
 import { Suspense } from 'react'
 import { FbPixel } from '@/components/fb-pixel'
+import { AttributionTracker } from '@/components/attribution-tracker'
 import './globals.css'
 
 const manrope = Manrope({
@@ -53,6 +54,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <Suspense fallback={null}>
           <FbPixel />
+          <AttributionTracker />
         </Suspense>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

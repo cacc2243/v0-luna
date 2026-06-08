@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Mail } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
@@ -10,7 +10,8 @@ import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
 import { WelcomePopup } from '@/components/convite/welcome-popup'
-import { fbTrack } from '@/lib/fb/track'
+import { fbTrackWhenReady, newEventId, readCookie } from '@/lib/fb/track'
+import { getAttributionForCheckout } from '@/lib/fb/attribution'
 
 interface SignupData {
   username: string
@@ -35,6 +36,8 @@ export default function ConvitePage() {
   // Indica se ja recebemos o valor real do painel. Enquanto false, o preco
   // fica com blur para nao "piscar" o valor padrao antes do correto.
   const [priceReady, setPriceReady] = useState(false)
+  // Garante que o InitiateCheckout seja disparado uma unica vez por carregamento.
+  const initiateCheckoutSent = useRef(false)
 
   useEffect(() => {
     try {
@@ -59,13 +62,41 @@ export default function ConvitePage() {
         // Mesmo se a resposta nao trouxer o valor, liberamos o preco (cai no padrao).
         setPriceReady(true)
         // InitiateCheckout: cliente chegou na pagina de checkout do convite,
-        // com o valor real ja conhecido.
-        fbTrack('InitiateCheckout', {
-          value: cents / 100,
-          currency: 'BRL',
-          content_name: 'Convite Luna Privé',
-          content_type: 'product',
-        })
+        // com o valor real ja conhecido. Disparamos no pixel (browser) E na
+        // Conversions API (servidor) usando o MESMO event_id, para que o
+        // Facebook deduplique e o evento nao se perca caso o pixel seja
+        // bloqueado. fbTrackWhenReady aguarda a inicializacao do pixel.
+        if (!initiateCheckoutSent.current) {
+          initiateCheckoutSent.current = true
+          const eventId = newEventId('ic')
+          const params = {
+            value: cents / 100,
+            currency: 'BRL',
+            content_name: 'Convite Luna Privé',
+            content_type: 'product',
+          }
+          fbTrackWhenReady('InitiateCheckout', params, eventId)
+
+          // Replica server-side (CAPI) com fbp/fbc/atribuicao para maxima
+          // correspondencia. Nunca bloqueia nem quebra o fluxo.
+          try {
+            const attribution = getAttributionForCheckout()
+            fetch('/api/fb/initiate-checkout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                eventId,
+                eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
+                fbp: readCookie('_fbp'),
+                fbc: readCookie('_fbc'),
+                value: cents / 100,
+                attribution,
+              }),
+            }).catch(() => {})
+          } catch {
+            // ignore
+          }
+        }
       })
       .catch(() => {
         if (active) setPriceReady(true)

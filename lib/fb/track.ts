@@ -8,6 +8,8 @@
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void
+    __fbqReady?: boolean
+    __fbqQueue?: Array<() => void>
   }
 }
 
@@ -43,6 +45,56 @@ export function fbTrack(
   } catch {
     // nunca quebrar o fluxo por causa do pixel
   }
+}
+
+/**
+ * Dispara um evento padrao do Facebook assim que o pixel estiver pronto.
+ *
+ * Eventos disparados muito cedo (logo apos a montagem da pagina, antes do
+ * fbevents.js carregar e do fbq('init') rodar) se perdem com o fbTrack normal.
+ * Aqui, se o pixel ainda nao estiver inicializado, o evento e enfileirado e
+ * disparado assim que o FbPixel sinalizar window.__fbqReady. Se o pixel nunca
+ * carregar (sem pixel configurado), o evento simplesmente nao e enviado.
+ */
+export function fbTrackWhenReady(
+  eventName: string,
+  params?: Record<string, unknown>,
+  eventId?: string,
+): void {
+  if (typeof window === 'undefined') return
+
+  // Pixel ja inicializado: dispara imediatamente.
+  if (window.__fbqReady && typeof window.fbq === 'function') {
+    fbTrack(eventName, params, eventId)
+    return
+  }
+
+  // Ainda nao pronto: enfileira para o FbPixel disparar apos o init.
+  const fire = () => fbTrack(eventName, params, eventId)
+  if (!Array.isArray(window.__fbqQueue)) {
+    window.__fbqQueue = []
+  }
+  window.__fbqQueue.push(fire)
+
+  // Rede de seguranca: se por algum motivo o sinal __fbqReady nao chegar (ex.:
+  // corrida de carregamento), tenta novamente por ate ~6s.
+  let attempts = 0
+  const retry = () => {
+    if (window.__fbqReady) return // ja foi disparado pela fila
+    if (typeof window.fbq === 'function') {
+      // Remove da fila para evitar disparo duplicado e envia agora.
+      if (Array.isArray(window.__fbqQueue)) {
+        window.__fbqQueue = window.__fbqQueue.filter((fn) => fn !== fire)
+      }
+      fbTrack(eventName, params, eventId)
+      return
+    }
+    attempts += 1
+    if (attempts < 60) {
+      setTimeout(retry, 100)
+    }
+  }
+  setTimeout(retry, 100)
 }
 
 /** Dispara um evento personalizado do Facebook (trackCustom). */

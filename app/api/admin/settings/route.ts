@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     chatAmountCents?: number
     giftUnlockAmountCents?: number
     boostAmountCents?: BoostAmounts
+    utmifyApiToken?: string
   } = {}
 
   if (typeof body.verificationEnabled === 'boolean') {
@@ -150,6 +151,17 @@ export async function POST(req: NextRequest) {
     if (Object.keys(boost).length > 0) {
       patch.boostAmountCents = boost
     }
+  }
+
+  if (body.utmifyApiToken !== undefined) {
+    if (typeof body.utmifyApiToken !== 'string') {
+      return NextResponse.json({ error: 'Token da Utmify inválido' }, { status: 400 })
+    }
+    const token = body.utmifyApiToken.trim()
+    if (token.length > 300) {
+      return NextResponse.json({ error: 'Token da Utmify muito longo' }, { status: 400 })
+    }
+    patch.utmifyApiToken = token
   }
 
   if (Object.keys(patch).length === 0) {

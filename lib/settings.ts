@@ -14,6 +14,8 @@ export interface AppSettings {
   chatAmountCents: number
   giftUnlockAmountCents: number
   boostAmountCents: BoostAmounts
+  /** Token de API da Utmify (x-api-token). Vazio = integração desligada. */
+  utmifyApiToken: string
 }
 
 const DEFAULT_BOOST: BoostAmounts = {
@@ -33,6 +35,7 @@ const DEFAULTS: AppSettings = {
   chatAmountCents: 9900,
   giftUnlockAmountCents: 3860,
   boostAmountCents: { ...DEFAULT_BOOST },
+  utmifyApiToken: '',
 }
 
 const KEY_MAP = {
@@ -44,6 +47,7 @@ const KEY_MAP = {
   chatAmountCents: 'chat_amount_cents',
   giftUnlockAmountCents: 'gift_unlock_amount_cents',
   boostAmountCents: 'boost_amount_cents',
+  utmifyApiToken: 'utmify_api_token',
 } as const
 
 /** Normaliza um objeto de precos de boost garantindo todos os planos. */
@@ -115,6 +119,11 @@ export async function getAppSettings(): Promise<AppSettings> {
 
   const boostAmountCents = normalizeBoost(map.get(KEY_MAP.boostAmountCents))
 
+  const utmifyApiToken =
+    typeof map.get(KEY_MAP.utmifyApiToken) === 'string'
+      ? (map.get(KEY_MAP.utmifyApiToken) as string)
+      : DEFAULTS.utmifyApiToken
+
   return {
     verificationEnabled,
     activeCashoutGateway,
@@ -124,6 +133,7 @@ export async function getAppSettings(): Promise<AppSettings> {
     chatAmountCents,
     giftUnlockAmountCents,
     boostAmountCents,
+    utmifyApiToken,
   }
 }
 
@@ -199,6 +209,14 @@ export async function updateAppSettings(
     rows.push({
       key: KEY_MAP.boostAmountCents,
       value: normalizeBoost(patch.boostAmountCents),
+      updated_at: now,
+      updated_by: updatedBy,
+    })
+  }
+  if (typeof patch.utmifyApiToken === 'string') {
+    rows.push({
+      key: KEY_MAP.utmifyApiToken,
+      value: patch.utmifyApiToken.trim(),
       updated_at: now,
       updated_by: updatedBy,
     })

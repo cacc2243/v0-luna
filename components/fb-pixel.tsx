@@ -49,6 +49,24 @@ export function FbPixel() {
         }
         fbq('track', 'PageView')
         initializedRef.current = true
+        // Sinaliza que os pixels foram inicializados, para que eventos
+        // disparados cedo (ex.: InitiateCheckout) aguardem e nao se percam.
+        // Em seguida, drena a fila de eventos que ficaram pendentes.
+        const w = window as unknown as {
+          __fbqReady?: boolean
+          __fbqQueue?: Array<() => void>
+        }
+        w.__fbqReady = true
+        if (Array.isArray(w.__fbqQueue)) {
+          for (const fn of w.__fbqQueue) {
+            try {
+              fn()
+            } catch {
+              // ignora falhas individuais de eventos enfileirados
+            }
+          }
+          w.__fbqQueue = []
+        }
         return
       }
       attempts += 1
