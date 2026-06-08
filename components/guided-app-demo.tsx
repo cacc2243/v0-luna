@@ -22,6 +22,8 @@ import {
   ArrowDownLeft,
   ChevronRight,
   Lock,
+  Heart,
+  TrendingUp,
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { CtaButton } from '@/components/cta-button'
@@ -432,16 +434,18 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
             className={`rounded-2xl border border-border bg-card/60 px-4 py-3 transition-all duration-300 ${ring('views')}`}
           >
             {[
-              { tag: 'SP', text: 'alguém de São Paulo viu seu perfil', t: 'agora' },
-              { tag: 'RJ', text: 'um comprador do Rio abriu seus packs', t: '1 min' },
-              { tag: 'MG', text: 'visitante de BH favoritou seu perfil', t: '3 min' },
+              { name: 'Wagner Souza', t: 'agora' },
+              { name: 'Diego Martins', t: '1 min' },
+              { name: 'Eduardo Santos', t: '3 min' },
             ].map((v) => (
-              <div key={v.text} className="flex items-center gap-3 border-b border-border/50 py-2 last:border-0">
-                <span className="flex size-8 items-center justify-center rounded-full bg-positive/10 text-[0.65rem] font-bold text-positive">
-                  {v.tag}
+              <div key={v.name} className="flex items-center gap-3 border-b border-border/50 py-2 last:border-0">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-positive/10">
+                  <Heart className="size-4 text-positive" aria-hidden="true" />
                 </span>
-                <p className="flex-1 text-pretty text-xs text-muted-foreground">{v.text}</p>
-                <span className="text-[0.65rem] text-muted-foreground/70">{v.t}</span>
+                <p className="flex-1 text-pretty text-xs text-muted-foreground">
+                  {v.name} começou a seguir você
+                </p>
+                <span className="shrink-0 text-[0.65rem] text-muted-foreground/70">{v.t}</span>
               </div>
             ))}
           </div>
@@ -1125,13 +1129,24 @@ const withdrawals = [
   { label: 'Saque PIX', date: '12 mai, 18:47', amount: 3890.0 },
 ]
 
+const monthlyChart = [
+  { label: 'Jun', value: 18541.67, current: true },
+  { label: 'Jul', value: 0 },
+  { label: 'Ago', value: 0 },
+  { label: 'Set', value: 0 },
+  { label: 'Out', value: 0 },
+  { label: 'Nov', value: 0 },
+]
+
 function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boolean }) {
   const [showHint, setShowHint] = useState(true)
+  const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
   const available = 18541.67
+  const maxValue = Math.max(...monthlyChart.map((d) => d.value), 1)
 
   return (
     <div className="relative flex-1 overflow-hidden">
-      <div className="flex h-full flex-col overflow-y-auto pb-6">
+      <div className="flex h-full flex-col overflow-hidden">
         {/* Header */}
         <header className="shrink-0 px-4 pt-6">
           <div className="flex items-center justify-between gap-3">
@@ -1149,7 +1164,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
               <p className="mt-1 text-4xl font-bold tracking-tight text-foreground">{brl(available)}</p>
               <div className="mt-4 flex items-center gap-4">
                 <div className="flex items-center gap-1.5 rounded-full bg-positive/15 px-3 py-1">
-                  <ArrowUpRight className="size-3.5 text-positive" aria-hidden="true" />
+                  <TrendingUp className="size-3.5 text-positive" aria-hidden="true" />
                   <span className="text-xs font-semibold text-positive">+{brl(1664.97)} hoje</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -1161,7 +1176,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
           </div>
         </div>
 
-        {/* Botão de saque principal */}
+        {/* Botão de saque + aviso */}
         <div className="shrink-0 px-4 pt-4">
           <button
             type="button"
@@ -1170,59 +1185,134 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
             <ArrowUpRight className="size-6" aria-hidden="true" />
             Sacar saldo
           </button>
-        </div>
-
-        {/* Stats */}
-        <div className="shrink-0 px-4 pt-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
-              <div className="flex items-center gap-2">
-                <span className="flex size-8 items-center justify-center rounded-full bg-positive/15">
-                  <ArrowUpRight className="size-4 text-positive" aria-hidden="true" />
-                </span>
-                <span className="text-xs font-medium text-muted-foreground">Ganhos do mês</span>
-              </div>
-              <p className="mt-2 text-2xl font-bold text-foreground">{brl(18541.67)}</p>
-              <p className="mt-1 text-xs text-positive">+24% vs mês anterior</p>
-            </div>
-            <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
-              <div className="flex items-center gap-2">
-                <span className="flex size-8 items-center justify-center rounded-full bg-primary/15">
-                  <Wallet className="size-4 text-primary" aria-hidden="true" />
-                </span>
-                <span className="text-xs font-medium text-muted-foreground">Total sacado</span>
-              </div>
-              <p className="mt-2 text-2xl font-bold text-foreground">{brl(94614.76)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Desde o início</p>
-            </div>
+          <div className="mt-3 flex items-start gap-2 rounded-2xl border border-border bg-card/60 px-4 py-3">
+            <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Saque mínimo de <span className="font-semibold text-foreground">R$ 50,00</span>. É descontada uma
+              taxa de <span className="font-semibold text-foreground">R$ 1,99</span> por saque realizado.
+            </p>
           </div>
         </div>
 
-        {/* Saques realizados */}
-        <div className="px-4 pt-5">
-          <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <ArrowDownLeft className="size-4 text-primary" aria-hidden="true" />
-            Saques realizados
-          </p>
-          <div className="flex flex-col gap-2">
-            {withdrawals.map((w, i) => (
-              <div
-                key={i}
-                className="luna-border flex items-center justify-between rounded-2xl bg-card px-3.5 py-3"
+        {/* Tabs */}
+        <div className="mt-5 shrink-0 px-4">
+          <div className="flex rounded-2xl bg-card/60 p-1 ring-1 ring-border">
+            {(['resumo', 'extrato', 'saques'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+                  activeTab === tab
+                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/30'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className="flex size-9 items-center justify-center rounded-full bg-primary/10">
-                    <ArrowDownLeft className="size-4 text-primary" aria-hidden="true" />
-                  </span>
-                  <div className="leading-tight">
-                    <p className="text-sm font-semibold text-foreground">{w.label}</p>
-                    <p className="text-[0.65rem] text-muted-foreground">{w.date}</p>
-                  </div>
-                </div>
-                <p className="text-sm font-bold text-foreground">-{brl(w.amount)}</p>
-              </div>
+                {tab === 'resumo' ? 'Resumo' : tab === 'extrato' ? 'Extrato' : 'Saques'}
+              </button>
             ))}
           </div>
+        </div>
+
+        {/* Conteúdo scrollável */}
+        <div className="flex-1 overflow-y-auto px-4 pb-6 pt-5">
+          {activeTab === 'resumo' && (
+            <>
+              {/* Stats rápidos */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="flex size-8 items-center justify-center rounded-full bg-positive/15">
+                      <TrendingUp className="size-4 text-positive" aria-hidden="true" />
+                    </span>
+                    <span className="text-xs font-medium text-muted-foreground">Ganhos do mês</span>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-foreground">{brl(18541.67)}</p>
+                  <p className="mt-1 text-xs text-positive">+24% vs mês anterior</p>
+                </div>
+                <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="flex size-8 items-center justify-center rounded-full bg-primary/15">
+                      <Wallet className="size-4 text-primary" aria-hidden="true" />
+                    </span>
+                    <span className="text-xs font-medium text-muted-foreground">Total sacado</span>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-foreground">{brl(94614.76)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Desde o início</p>
+                </div>
+              </div>
+
+              {/* Gráfico de ganhos mensais */}
+              <div className="mt-5 rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground">Ganhos mensais</h3>
+                  <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                    2026
+                  </span>
+                </div>
+                <div className="flex h-36 items-end justify-between gap-2">
+                  {monthlyChart.map((d) => {
+                    const pct = Math.max((d.value / maxValue) * 100, d.value > 0 ? 6 : 2)
+                    return (
+                      <div key={d.label} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+                        {d.value > 0 && (
+                          <span className="text-[0.6rem] font-semibold text-foreground">
+                            {(d.value / 1000).toFixed(1)}k
+                          </span>
+                        )}
+                        <div
+                          className={`w-full rounded-lg ${
+                            d.current ? 'bg-primary shadow-md shadow-primary/30' : 'bg-primary/30'
+                          }`}
+                          style={{ height: `${pct}%`, minHeight: '6px' }}
+                        />
+                        <span className={`text-[0.6rem] ${d.current ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
+                          {d.label}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Saques realizados */}
+              <div className="mt-5">
+                <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <ArrowDownLeft className="size-4 text-primary" aria-hidden="true" />
+                  Saques realizados
+                </p>
+                <div className="flex flex-col gap-2">
+                  {withdrawals.map((w, i) => (
+                    <div
+                      key={i}
+                      className="luna-border flex items-center justify-between rounded-2xl bg-card px-3.5 py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="flex size-9 items-center justify-center rounded-full bg-primary/10">
+                          <ArrowDownLeft className="size-4 text-primary" aria-hidden="true" />
+                        </span>
+                        <div className="leading-tight">
+                          <p className="text-sm font-semibold text-foreground">{w.label}</p>
+                          <p className="text-[0.65rem] text-muted-foreground">{w.date}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm font-bold text-foreground">-{brl(w.amount)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab !== 'resumo' && (
+            <div className="rounded-2xl bg-card/60 p-8 text-center ring-1 ring-border">
+              <p className="text-sm text-muted-foreground">
+                {activeTab === 'extrato'
+                  ? 'Seu extrato completo aparece aqui.'
+                  : 'Seus saques aparecem aqui.'}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
