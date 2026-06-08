@@ -944,9 +944,19 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
   const [sub, setSub] = useState(0)
 
   return (
-    <div className="animate-pop luna-border w-full max-w-md overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20">
+    <div className="animate-pop luna-border relative w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
+      {/* Imagem de fundo */}
+      <div className="absolute inset-0" aria-hidden="true">
+        <img
+          src="/images/luna-fundo-leve.webp"
+          alt=""
+          className="size-full object-cover object-top"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/80 to-background/95" />
+      </div>
+
       {/* Mentora */}
-      <div className="flex flex-col items-center px-6 pt-7">
+      <div className="relative z-10 flex flex-col items-center px-6 pt-7">
         <div className="relative">
           <span className="absolute -inset-1.5 rounded-full luna-gradient opacity-70 blur-lg" aria-hidden="true" />
           <img
@@ -961,7 +971,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
         </p>
       </div>
 
-      <div className="px-6 pb-7 pt-4">
+      <div className="relative z-10 px-6 pb-7 pt-4">
         {/* ETAPA 0 — Parabens + convite */}
         {sub === 0 && (
           <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
