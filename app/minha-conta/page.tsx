@@ -70,7 +70,7 @@ import {
   Clock,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
-  import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals } from './actions'
+  import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile } from './actions'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
@@ -886,6 +886,7 @@ function AppDashboard() {
             mutateWithdrawals()
             mutateProfile()
           }}
+          onProfileUpdated={mutateProfile}
         />
       ) : activeTab === 'Packs' ? (
         <PacksScreen
@@ -2483,6 +2484,7 @@ function WalletScreen({
   userEmail,
   userName,
   onWithdrawalsChange,
+  onProfileUpdated,
 }: {
   balance: number
   pendingBalance: number
@@ -2492,6 +2494,7 @@ function WalletScreen({
   userEmail: string
   userName: string
   onWithdrawalsChange: () => void
+  onProfileUpdated: () => void
 }) {
   // Etapas do fluxo de saque:
   // 'form' -> 'processing' (5s) -> 'new_account' (conta nova) -> 'verify_info' -> 'verify_processing' -> PIX
@@ -2508,6 +2511,40 @@ function WalletScreen({
   const [barsReady, setBarsReady] = useState(false)
   const [withdrawError, setWithdrawError] = useState<string | null>(null)
   const pixKey = profile?.pix_key || 'Nao cadastrada'
+
+  // Modal de edicao da chave PIX
+  const [showPixModal, setShowPixModal] = useState(false)
+  const [pixForm, setPixForm] = useState({ type: profile?.pix_key_type || 'CPF', key: '' })
+  const [savingPix, setSavingPix] = useState(false)
+  const [pixError, setPixError] = useState<string | null>(null)
+
+  function openPixModal() {
+    setPixForm({ type: profile?.pix_key_type || 'CPF', key: profile?.pix_key || '' })
+    setPixError(null)
+    setShowPixModal(true)
+  }
+
+  async function savePixKey() {
+    const trimmed = pixForm.key.trim()
+    if (!trimmed) {
+      setPixError('Informe sua chave PIX.')
+      return
+    }
+    if (pixForm.type === 'Email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setPixError('E-mail inválido.')
+      return
+    }
+    setSavingPix(true)
+    setPixError(null)
+    const res = await updateProfile({ pix_key: trimmed, pix_key_type: pixForm.type })
+    setSavingPix(false)
+    if (res?.error) {
+      setPixError('Não foi possível salvar. Tente novamente.')
+      return
+    }
+    setShowPixModal(false)
+    onProfileUpdated()
+  }
 
   const isEarning = (t: Transaction) => t.type === 'sale' || t.type === 'gift_received' || t.type === 'bonus'
 
@@ -2935,8 +2972,12 @@ function WalletScreen({
               <p className="text-xs font-medium text-muted-foreground">Chave PIX cadastrada</p>
               <div className="mt-2 flex items-center justify-between">
                 <p className="text-sm font-semibold text-foreground">{pixKey}</p>
-                <button type="button" className="text-xs font-semibold text-primary">
-                  Alterar
+                <button
+                  type="button"
+                  onClick={openPixModal}
+                  className="text-xs font-semibold text-primary"
+                >
+                  {profile?.pix_key ? 'Alterar' : 'Cadastrar'}
                 </button>
               </div>
             </div>
@@ -3027,6 +3068,105 @@ function WalletScreen({
       </div>
 
       {/* Modal de Saque */}
+      {showPixModal && (
+        <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
+            <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
+
+            <div className="flex items-center justify-between px-5 py-4">
+              <h3 className="text-lg font-bold text-foreground">
+                {profile?.pix_key ? 'Alterar chave PIX' : 'Cadastrar chave PIX'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowPixModal(false)}
+                className="flex size-9 items-center justify-center rounded-full bg-muted/50 transition hover:bg-muted"
+                aria-label="Fechar"
+              >
+                <X className="size-5 text-muted-foreground" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="px-5">
+              <p className="mb-4 text-sm text-muted-foreground">
+                Cadastre a chave PIX que receberá os seus saques. Confira os dados com atenção.
+              </p>
+
+              {/* Tipo de chave */}
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Tipo de chave
+              </label>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria'].map((opt) => {
+                  const active = pixForm.type === opt
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setPixForm((f) => ({ ...f, type: opt }))}
+                      className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                        active
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {opt === 'Email' ? 'E-mail' : opt === 'Chave Aleatoria' ? 'Aleatória' : opt}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Campo da chave */}
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Chave PIX
+              </label>
+              <input
+                type={pixForm.type === 'Email' ? 'email' : 'text'}
+                inputMode={
+                  pixForm.type === 'CPF' || pixForm.type === 'CNPJ' || pixForm.type === 'Telefone'
+                    ? 'numeric'
+                    : 'text'
+                }
+                value={pixForm.key}
+                onChange={(e) => setPixForm((f) => ({ ...f, key: e.target.value }))}
+                placeholder={
+                  pixForm.type === 'CPF'
+                    ? '000.000.000-00'
+                    : pixForm.type === 'CNPJ'
+                      ? '00.000.000/0000-00'
+                      : pixForm.type === 'Telefone'
+                        ? '(00) 00000-0000'
+                        : pixForm.type === 'Email'
+                          ? 'seu@email.com'
+                          : 'sua chave aleatória'
+                }
+                className="w-full rounded-2xl bg-muted/50 px-4 py-3.5 text-sm font-medium text-foreground outline-none ring-1 ring-border transition focus:ring-2 focus:ring-primary"
+              />
+
+              {pixError && (
+                <p className="mt-2 text-xs font-medium text-destructive">{pixError}</p>
+              )}
+
+              <button
+                type="button"
+                onClick={savePixKey}
+                disabled={savingPix}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+              >
+                {savingPix ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar chave PIX'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showWithdrawModal && (
         <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
@@ -3302,7 +3442,7 @@ function WalletScreen({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────��───────────────────
 // Tela Perfil
 // ─────────────────────────────────────────────────────────────────────────────
 
