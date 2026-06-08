@@ -13,8 +13,12 @@ import {
   Plug,
   Gift,
   QrCode,
+  MessageCircle,
+  Rocket,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+const BOOST_DAYS = [2, 7, 14, 21, 30] as const
 
 interface GatewayMeta {
   id: string
@@ -30,6 +34,9 @@ interface SettingsPayload {
     activeCashinGateway: string
     verificationAmountCents: number
     inviteAmountCents: number
+    chatAmountCents: number
+    giftUnlockAmountCents: number
+    boostAmountCents: Record<string, number>
   }
   gateways: GatewayMeta[]
   cashinGateways: GatewayMeta[]
@@ -58,6 +65,9 @@ export function SettingsTab() {
   const [cashinGateway, setCashinGateway] = useState('bynet')
   const [amountReais, setAmountReais] = useState('0,90')
   const [inviteReais, setInviteReais] = useState('24,80')
+  const [chatReais, setChatReais] = useState('99,00')
+  const [giftReais, setGiftReais] = useState('38,60')
+  const [boostReais, setBoostReais] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -76,6 +86,18 @@ export function SettingsTab() {
       setInviteReais(
         ((data.settings.inviteAmountCents || 0) / 100).toFixed(2).replace('.', ','),
       )
+      setChatReais(
+        ((data.settings.chatAmountCents || 0) / 100).toFixed(2).replace('.', ','),
+      )
+      setGiftReais(
+        ((data.settings.giftUnlockAmountCents || 0) / 100).toFixed(2).replace('.', ','),
+      )
+      const boost: Record<string, string> = {}
+      for (const day of BOOST_DAYS) {
+        const cents = data.settings.boostAmountCents?.[String(day)] || 0
+        boost[String(day)] = (cents / 100).toFixed(2).replace('.', ',')
+      }
+      setBoostReais(boost)
     }
   }, [data])
 
@@ -89,13 +111,24 @@ export function SettingsTab() {
     return Math.round(reais * 100)
   }
 
+  const boostDirty =
+    data?.settings &&
+    BOOST_DAYS.some(
+      (day) =>
+        parseAmountCents(boostReais[String(day)] || '') !==
+        (data.settings.boostAmountCents?.[String(day)] ?? null),
+    )
+
   const dirty =
     data?.settings &&
     (enabled !== data.settings.verificationEnabled ||
       gateway !== data.settings.activeCashoutGateway ||
       cashinGateway !== data.settings.activeCashinGateway ||
       parseAmountCents(amountReais) !== data.settings.verificationAmountCents ||
-      parseAmountCents(inviteReais) !== data.settings.inviteAmountCents)
+      parseAmountCents(inviteReais) !== data.settings.inviteAmountCents ||
+      parseAmountCents(chatReais) !== data.settings.chatAmountCents ||
+      parseAmountCents(giftReais) !== data.settings.giftUnlockAmountCents ||
+      boostDirty)
 
   const save = async () => {
     setSaveError(null)
@@ -109,6 +142,25 @@ export function SettingsTab() {
       setSaveError('Valor do convite inválido. Use algo entre R$ 1,00 e R$ 1.000,00.')
       return
     }
+    const chatCents = parseAmountCents(chatReais)
+    if (chatCents === null || chatCents < 100 || chatCents > 100000) {
+      setSaveError('Valor do chat inválido. Use algo entre R$ 1,00 e R$ 1.000,00.')
+      return
+    }
+    const giftCents = parseAmountCents(giftReais)
+    if (giftCents === null || giftCents < 100 || giftCents > 100000) {
+      setSaveError('Valor dos presentes inválido. Use algo entre R$ 1,00 e R$ 1.000,00.')
+      return
+    }
+    const boostPayload: Record<string, number> = {}
+    for (const day of BOOST_DAYS) {
+      const c = parseAmountCents(boostReais[String(day)] || '')
+      if (c === null || c < 100 || c > 100000) {
+        setSaveError(`Valor do plano de ${day} dias inválido. Use entre R$ 1,00 e R$ 1.000,00.`)
+        return
+      }
+      boostPayload[String(day)] = c
+    }
 
     setSaving(true)
     try {
@@ -121,6 +173,9 @@ export function SettingsTab() {
           activeCashinGateway: cashinGateway,
           verificationAmountCents: cents,
           inviteAmountCents: inviteCents,
+          chatAmountCents: chatCents,
+          giftUnlockAmountCents: giftCents,
+          boostAmountCents: boostPayload,
         }),
       })
       const json = await res.json()
@@ -436,6 +491,126 @@ export function SettingsTab() {
             />
           </div>
         </div>
+      </section>
+
+      {/* Valor do Chat */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <MessageCircle className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">Valor do chat exclusivo</h2>
+            <p className="text-sm text-muted-foreground">
+              Preço para o cliente desbloquear a conversa privada.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label htmlFor="chat-amount" className="text-sm font-semibold text-foreground">
+            Valor do chat (PIX)
+          </label>
+          <p className="mb-3 mt-1 text-xs text-muted-foreground">
+            Aplicado no servidor — o cliente não consegue alterar.
+          </p>
+          <div className="relative max-w-[12rem]">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+              R$
+            </span>
+            <input
+              id="chat-amount"
+              type="text"
+              inputMode="decimal"
+              value={chatReais}
+              onChange={(e) => setChatReais(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-sm font-semibold text-foreground outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Valor dos Presentes */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Gift className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">Valor da habilitação de presentes</h2>
+            <p className="text-sm text-muted-foreground">
+              Preço para o cliente liberar o envio de presentes no chat.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label htmlFor="gift-amount" className="text-sm font-semibold text-foreground">
+            Valor dos presentes (PIX)
+          </label>
+          <p className="mb-3 mt-1 text-xs text-muted-foreground">
+            Aplicado no servidor — o cliente não consegue alterar.
+          </p>
+          <div className="relative max-w-[12rem]">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+              R$
+            </span>
+            <input
+              id="gift-amount"
+              type="text"
+              inputMode="decimal"
+              value={giftReais}
+              onChange={(e) => setGiftReais(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-sm font-semibold text-foreground outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Valores do Impulsionamento (boost) */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Rocket className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">Planos de impulsionamento</h2>
+            <p className="text-sm text-muted-foreground">
+              Preço de cada plano de boost do perfil.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {BOOST_DAYS.map((day) => (
+            <div key={day}>
+              <label
+                htmlFor={`boost-${day}`}
+                className="text-sm font-semibold text-foreground"
+              >
+                {day} dias
+              </label>
+              <div className="relative mt-1.5">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                  R$
+                </span>
+                <input
+                  id={`boost-${day}`}
+                  type="text"
+                  inputMode="decimal"
+                  value={boostReais[String(day)] || ''}
+                  onChange={(e) =>
+                    setBoostReais((prev) => ({ ...prev, [String(day)]: e.target.value }))
+                  }
+                  className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm font-semibold text-foreground outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Aplicado no servidor — o cliente não consegue alterar.
+        </p>
       </section>
 
       {/* Barra de salvar */}

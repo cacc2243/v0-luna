@@ -139,6 +139,7 @@ interface ChatsActiveProps {
   giftsEnabled: boolean
   userName: string
   userEmail: string
+  giftPrice?: number
   onProfileRefresh: () => void
 }
 
@@ -147,6 +148,7 @@ export function ChatsActive({
   giftsEnabled,
   userName,
   userEmail,
+  giftPrice,
   onProfileRefresh,
 }: ChatsActiveProps) {
   const [openId, setOpenId] = useState<string | null>(null)
@@ -195,6 +197,7 @@ export function ChatsActive({
         giftsEnabled={giftsEnabled}
         userName={userName}
         userEmail={userEmail}
+        giftPrice={giftPrice}
         onBack={() => setOpenId(null)}
         onProfileRefresh={onProfileRefresh}
         onConversationUpdate={handleConversationUpdate}
@@ -325,6 +328,7 @@ function ChatConversation({
   giftsEnabled,
   userName,
   userEmail,
+  giftPrice,
   onBack,
   onProfileRefresh,
   onConversationUpdate,
@@ -333,11 +337,13 @@ function ChatConversation({
   giftsEnabled: boolean
   userName: string
   userEmail: string
+  giftPrice?: number
   onBack: () => void
   onProfileRefresh: () => void
   onConversationUpdate: (c: Conversation) => void
 }) {
   const buyerName = conversation.participant_name || 'Cliente'
+  const effectiveGiftPrice = giftPrice ?? GIFT_UNLOCK_PRICE
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loadingMessages, setLoadingMessages] = useState(true)
   const [step, setStep] = useState<number>(conversation.flow_step)
@@ -855,7 +861,7 @@ function ChatConversation({
       <GiftEnableModal
         isOpen={showEnable}
         onClose={() => setShowEnable(false)}
-        price={GIFT_UNLOCK_PRICE}
+        price={effectiveGiftPrice}
         onConfirm={() => {
           setShowEnable(false)
           setShowPix(true)
@@ -868,7 +874,7 @@ function ChatConversation({
           isOpen={showPix}
           onClose={() => setShowPix(false)}
           email={userEmail}
-          amount={GIFT_UNLOCK_PRICE}
+          amount={effectiveGiftPrice}
           userName={userName}
           type="gift_unlock"
           title="Habilitação de Presentes"

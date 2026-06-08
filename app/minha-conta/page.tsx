@@ -530,6 +530,19 @@ function AppDashboard() {
   const { data: boosts = [], mutate: mutateBoosts } = useSWR('boosts', fetchBoosts)
   const { data: highlights = [], mutate: mutateHighlights } = useSWR('highlights', fetchHighlights)
   const { data: notifications = [], mutate: mutateNotifications } = useSWR('notifications', fetchNotifications)
+  // Precos configurados no painel (fonte unica da verdade). Exibicao bate com o que o servidor cobra.
+  const { data: pricing } = useSWR('public-pricing', async () => {
+    const res = await fetch('/api/settings/public')
+    if (!res.ok) return null
+    return res.json() as Promise<{
+      chatAmountCents: number
+      giftUnlockAmountCents: number
+      boostAmountCents: Record<string, number>
+    }>
+  })
+
+  // Preco do chat: vem do painel; fallback para o padrao se ainda nao carregou.
+  const chatPrice = pricing?.chatAmountCents ? pricing.chatAmountCents / 100 : CHAT_PRICE
 
   // Calcular estatisticas
   const balance = profile?.balance || 0
@@ -905,6 +918,7 @@ function AppDashboard() {
           boosts={boosts}
           userEmail={userEmail}
           userName={profile?.display_name || 'Criadora Luna'}
+          boostPrices={pricing?.boostAmountCents}
           onBoostActivated={() => {
             mutateBoosts()
           }}
@@ -990,7 +1004,7 @@ function AppDashboard() {
       <UnlockChatModal
         isOpen={showUnlockChat}
         onClose={() => setShowUnlockChat(false)}
-        price={CHAT_PRICE}
+        price={chatPrice}
         onConfirm={() => {
           setShowUnlockChat(false)
           setShowChatPix(true)
@@ -1001,7 +1015,7 @@ function AppDashboard() {
           isOpen={showChatPix}
           onClose={() => setShowChatPix(false)}
           email={userEmail}
-          amount={CHAT_PRICE}
+          amount={chatPrice}
           userName={profile?.display_name || 'Criadora Luna'}
           type="chat"
           title="Chat Exclusivo"
@@ -1226,6 +1240,7 @@ function ChatsScreen({
   userName,
   userEmail,
   packsCount,
+  giftPrice,
   onGoToPacks,
   onProfileRefresh,
 }: {
@@ -1235,6 +1250,7 @@ function ChatsScreen({
   userName: string
   userEmail: string
   packsCount: number
+  giftPrice?: number
   onGoToPacks: () => void
   onProfileRefresh: () => void
 }) {
@@ -1246,6 +1262,7 @@ function ChatsScreen({
         giftsEnabled={giftsEnabled}
         userName={userName}
         userEmail={userEmail}
+        giftPrice={giftPrice}
         onProfileRefresh={onProfileRefresh}
       />
     )
@@ -1337,19 +1354,41 @@ const boostPlans = [
   { days: 30, price: 99.0, pricePerDay: 3.3, discount: 76, popular: true },
 ]
 
+/**
+ * Monta os planos de boost a partir dos precos do painel (centavos por dias).
+ * Recalcula preco/dia e o desconto relativo ao plano mais caro por dia.
+ * Cai para os valores padrao se ainda nao houver precos carregados.
+ */
+function buildBoostPlans(boostCents?: Record<string, number>) {
+  if (!boostCents) return boostPlans
+  const base = boostPlans.map((p) => {
+    const cents = boostCents[String(p.days)]
+    const price = cents ? cents / 100 : p.price
+    return { ...p, price, pricePerDay: price / p.days }
+  })
+  const maxPerDay = Math.max(...base.map((p) => p.pricePerDay))
+  return base.map((p) => ({
+    ...p,
+    discount: maxPerDay > 0 ? Math.round((1 - p.pricePerDay / maxPerDay) * 100) : 0,
+  }))
+}
+
 function ImpulsionarScreen({
   balance,
   boosts,
   userEmail,
   userName,
+  boostPrices,
   onBoostActivated,
 }: {
   balance: number
   boosts: Boost[]
   userEmail: string
   userName: string
+  boostPrices?: Record<string, number>
   onBoostActivated: () => void
 }) {
+  const boostPlans = useMemo(() => buildBoostPlans(boostPrices), [boostPrices])
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [processing, setProcessing] = useState(false)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
-import { getAppSettings, updateAppSettings } from '@/lib/settings'
+import { getAppSettings, updateAppSettings, BOOST_DAYS, type BoostAmounts } from '@/lib/settings'
 import { listCashoutGatewayMeta, getCashoutGateway } from '@/lib/cashout/gateways'
 import { listCashinGatewayMeta, getCashinGateway } from '@/lib/cashin/gateways'
 
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 const MIN_AMOUNT_CENTS = 1
 const MAX_AMOUNT_CENTS = 5000
 
-// Limites de seguranca para o valor do convite (em centavos): R$ 1,00 ate R$ 1.000,00
+// Limites de seguranca para precos de produto (em centavos): R$ 1,00 ate R$ 1.000,00
 const MIN_INVITE_CENTS = 100
 const MAX_INVITE_CENTS = 100000
 
@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
     activeCashinGateway?: string
     verificationAmountCents?: number
     inviteAmountCents?: number
+    chatAmountCents?: number
+    giftUnlockAmountCents?: number
+    boostAmountCents?: BoostAmounts
   } = {}
 
   if (typeof body.verificationEnabled === 'boolean') {
@@ -102,6 +105,51 @@ export async function POST(req: NextRequest) {
       )
     }
     patch.inviteAmountCents = cents
+  }
+
+  // Validador reutilizavel para precos de produto (centavos).
+  const validateProductCents = (raw: unknown, label: string): number | NextResponse => {
+    const cents = Math.round(Number(raw))
+    if (!Number.isFinite(cents) || cents < MIN_INVITE_CENTS || cents > MAX_INVITE_CENTS) {
+      return NextResponse.json(
+        {
+          error: `${label} inválido. Deve estar entre R$ ${(MIN_INVITE_CENTS / 100).toFixed(
+            2
+          )} e R$ ${(MAX_INVITE_CENTS / 100).toFixed(2)}.`,
+        },
+        { status: 400 }
+      )
+    }
+    return cents
+  }
+
+  if (body.chatAmountCents !== undefined) {
+    const res = validateProductCents(body.chatAmountCents, 'Valor do chat')
+    if (res instanceof NextResponse) return res
+    patch.chatAmountCents = res
+  }
+
+  if (body.giftUnlockAmountCents !== undefined) {
+    const res = validateProductCents(body.giftUnlockAmountCents, 'Valor dos presentes')
+    if (res instanceof NextResponse) return res
+    patch.giftUnlockAmountCents = res
+  }
+
+  if (body.boostAmountCents !== undefined && body.boostAmountCents !== null) {
+    if (typeof body.boostAmountCents !== 'object') {
+      return NextResponse.json({ error: 'Planos de impulsionamento inválidos' }, { status: 400 })
+    }
+    const boost: BoostAmounts = {}
+    for (const day of BOOST_DAYS) {
+      const raw = body.boostAmountCents[String(day)]
+      if (raw === undefined) continue
+      const res = validateProductCents(raw, `Plano de ${day} dias`)
+      if (res instanceof NextResponse) return res
+      boost[String(day)] = res
+    }
+    if (Object.keys(boost).length > 0) {
+      patch.boostAmountCents = boost
+    }
   }
 
   if (Object.keys(patch).length === 0) {

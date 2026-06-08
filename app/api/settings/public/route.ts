@@ -15,5 +15,8 @@ export async function GET() {
     verificationEnabled: settings.verificationEnabled,
     verificationAmountCents: settings.verificationAmountCents,
     inviteAmountCents: settings.inviteAmountCents,
+    chatAmountCents: settings.chatAmountCents,
+    giftUnlockAmountCents: settings.giftUnlockAmountCents,
+    boostAmountCents: settings.boostAmountCents,
   })
 }

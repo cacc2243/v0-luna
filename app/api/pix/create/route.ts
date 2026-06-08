@@ -51,13 +51,31 @@ export async function POST(request: NextRequest) {
               ? 'verification'
               : 'invite'
 
-    // SEGURANCA: para o convite, o valor e SEMPRE definido pelo servidor
-    // (configuravel no painel). O valor enviado pelo cliente e ignorado para
-    // impedir manipulacao. Para os demais tipos, mantem o valor recebido.
-    let effectiveAmount = Number(amount)
+    // SEGURANCA: o valor e SEMPRE definido pelo servidor a partir das
+    // configuracoes do painel (fonte unica da verdade). O valor enviado pelo
+    // cliente e ignorado para impedir manipulacao de preco.
     const settings = await getAppSettings()
+    let effectiveAmount: number
     if (inviteType === 'invite') {
       effectiveAmount = settings.inviteAmountCents / 100
+    } else if (inviteType === 'chat') {
+      effectiveAmount = settings.chatAmountCents / 100
+    } else if (inviteType === 'gift_unlock') {
+      effectiveAmount = settings.giftUnlockAmountCents / 100
+    } else if (inviteType === 'boost') {
+      const days = String(boostDays || '')
+      const cents = settings.boostAmountCents[days]
+      if (!cents) {
+        return NextResponse.json(
+          { error: 'Plano de impulsionamento inválido' },
+          { status: 400 }
+        )
+      }
+      effectiveAmount = cents / 100
+    } else if (inviteType === 'verification') {
+      effectiveAmount = settings.verificationAmountCents / 100
+    } else {
+      effectiveAmount = Number(amount)
     }
 
     if (!effectiveAmount || !Number.isFinite(effectiveAmount) || effectiveAmount <= 0) {
