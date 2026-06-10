@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyPixupWebhookSignature } from '@/lib/pixup/client'
+import { verifyHorsepayWebhookSignature } from '@/lib/horsepay/client'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
