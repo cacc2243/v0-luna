@@ -488,24 +488,47 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                       handleSend()
                     }
                   }}
-                  rows={1}
-                  placeholder="Digite sua mensagem..."
+                  rows={isNewTicket ? 3 : 1}
+                  placeholder={isNewTicket ? 'Descreva o que está acontecendo...' : 'Digite sua mensagem...'}
                   className="max-h-28 min-h-[2.75rem] flex-1 resize-none rounded-2xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
                 />
+                {!isNewTicket && (
+                  <button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={!draft.trim() || sending}
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-95 disabled:opacity-40"
+                    aria-label="Enviar"
+                  >
+                    {sending ? (
+                      <Loader2 className="size-5 animate-spin" />
+                    ) : (
+                      <Send className="size-5" />
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {isNewTicket && (
                 <button
                   type="button"
                   onClick={handleSend}
                   disabled={!draft.trim() || sending}
-                  className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-95 disabled:opacity-40"
-                  aria-label="Enviar"
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground transition active:scale-[0.98] disabled:opacity-40"
                 >
                   {sending ? (
-                    <Loader2 className="size-5 animate-spin" />
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Criando ticket...
+                    </>
                   ) : (
-                    <Send className="size-5" />
+                    <>
+                      <Plus className="size-4" />
+                      Criar ticket de suporte
+                    </>
                   )}
                 </button>
-              </div>
+              )}
             </div>
           </>
         )}
