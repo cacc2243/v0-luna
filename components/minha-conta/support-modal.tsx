@@ -12,14 +12,138 @@ import {
   CheckCircle2,
   Clock,
 } from 'lucide-react'
-import {
-  getSupportTickets,
-  getSupportMessages,
-  createSupportTicket,
-  sendSupportMessage,
-  type SupportTicket,
-  type SupportMessage,
-} from '@/app/minha-conta/actions'
+import { createClient } from '@/lib/supabase/client'
+
+export type SupportTicket = {
+  id: string
+  user_id: string
+  subject: string
+  status: 'open' | 'answered' | 'closed'
+  last_message: string | null
+  last_message_at: string
+  unread_count: number
+  created_at: string
+}
+
+export type SupportMessage = {
+  id: string
+  ticket_id: string
+  user_id: string
+  is_from_support: boolean
+  content: string
+  created_at: string
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Data helpers (client-side, igual ao resto do app /minha-conta)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function getSupportTickets(): Promise<SupportTicket[]> {
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('support_tickets')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('last_message_at', { ascending: false })
+
+  if (error) {
+    console.error('[v0] getSupportTickets error:', error.message)
+    return []
+  }
+  return (data || []) as SupportTicket[]
+}
+
+async function getSupportMessages(ticketId: string): Promise<SupportMessage[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('support_messages')
+    .select('*')
+    .eq('ticket_id', ticketId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('[v0] getSupportMessages error:', error.message)
+    return []
+  }
+  return (data || []) as SupportMessage[]
+}
+
+async function createSupportTicket(subject: string, message: string) {
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
+  if (!user) return { error: 'Você precisa estar logado para abrir um ticket.' }
+
+  const cleanSubject = subject.trim() || 'Atendimento'
+  const cleanMessage = message.trim()
+  if (!cleanMessage) return { error: 'Escreva uma mensagem.' }
+
+  const { data: ticket, error: ticketError } = await supabase
+    .from('support_tickets')
+    .insert({
+      user_id: user.id,
+      subject: cleanSubject,
+      status: 'open',
+      last_message: cleanMessage,
+      last_message_at: new Date().toISOString(),
+    })
+    .select('*')
+    .single()
+
+  if (ticketError || !ticket) {
+    return { error: ticketError?.message || 'Não foi possível criar o ticket.' }
+  }
+
+  const { error: msgError } = await supabase.from('support_messages').insert({
+    ticket_id: ticket.id,
+    user_id: user.id,
+    is_from_support: false,
+    content: cleanMessage,
+  })
+
+  if (msgError) return { error: msgError.message }
+
+  return { success: true as const, ticket: ticket as SupportTicket }
+}
+
+async function sendSupportMessage(ticketId: string, message: string) {
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
+  if (!user) return { error: 'Você precisa estar logado.' }
+
+  const cleanMessage = message.trim()
+  if (!cleanMessage) return { error: 'Escreva uma mensagem.' }
+
+  const { data: inserted, error: msgError } = await supabase
+    .from('support_messages')
+    .insert({
+      ticket_id: ticketId,
+      user_id: user.id,
+      is_from_support: false,
+      content: cleanMessage,
+    })
+    .select('*')
+    .single()
+
+  if (msgError) return { error: msgError.message }
+
+  await supabase
+    .from('support_tickets')
+    .update({
+      last_message: cleanMessage,
+      last_message_at: new Date().toISOString(),
+      status: 'open',
+    })
+    .eq('id', ticketId)
+    .eq('user_id', user.id)
+
+  return { success: true as const, message: inserted as SupportMessage }
+}
 
 const WHATSAPP_NUMBER = '5561981107346'
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
@@ -55,6 +179,7 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [subject, setSubject] = useState('')
   const [sending, setSending] = useState(false)
   const [isNewTicket, setIsNewTicket] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -103,6 +228,7 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     const content = draft.trim()
     if (!content || sending) return
     setSending(true)
+    setErrorMsg(null)
 
     if (isNewTicket && !activeTicket) {
       const res = await createSupportTicket(subject, content)
@@ -113,6 +239,8 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         const data = await getSupportMessages(res.ticket.id)
         setMessages(data)
         loadTickets()
+      } else {
+        setErrorMsg('error' in res ? res.error : 'Não foi possível abrir o ticket.')
       }
     } else if (activeTicket) {
       const res = await sendSupportMessage(activeTicket.id, content)
@@ -120,6 +248,8 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         setMessages((prev) => [...prev, res.message])
         setDraft('')
         loadTickets()
+      } else {
+        setErrorMsg('error' in res ? res.error : 'Não foi possível enviar a mensagem.')
       }
     }
     setSending(false)
@@ -343,6 +473,11 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
             {/* Input */}
             <div className="border-t border-border bg-card px-3 py-3">
+              {errorMsg && (
+                <p className="mb-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  {errorMsg}
+                </p>
+              )}
               <div className="flex items-end gap-2">
                 <textarea
                   value={draft}
