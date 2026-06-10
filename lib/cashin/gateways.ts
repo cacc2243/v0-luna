@@ -1,5 +1,6 @@
 import { createSigilopayPixCharge } from '@/lib/sigilopay/client'
 import { createHorsepayPixCharge } from '@/lib/horsepay/client'
+import { createPixupPixCharge } from '@/lib/pixup/client'
 
 const BYNET_API_URL = 'https://api-gateway.techbynet.com'
 
@@ -361,11 +362,63 @@ const horsepayGateway: CashinGateway = {
 }
 
 /**
+ * Gateway PixUp (cash-in). Autenticacao OAuth2 client_credentials (Basic ->
+ * Bearer). O cash-in NAO exige assinatura HMAC (so o cash-out exige).
+ */
+const pixupGateway: CashinGateway = {
+  id: 'pixup',
+  label: 'PixUp',
+  description: 'Geração de PIX (cash-in) via PixUp.',
+  isConfigured: () =>
+    Boolean(process.env.PIXUP_CLIENT_ID && process.env.PIXUP_CLIENT_SECRET),
+  create: async (input) => {
+    const safeName =
+      input.client.name && input.client.name.trim().length >= 3
+        ? input.client.name.trim()
+        : FALLBACK_NAMES[0]
+    const cleanDoc = (input.client.document || '').replace(/\D/g, '')
+
+    try {
+      const result = await createPixupPixCharge({
+        externalId: input.identifier,
+        amount: input.amount,
+        postbackUrl: input.callbackUrl,
+        client: {
+          name: safeName,
+          email: input.client.email,
+          document: isValidCPF(cleanDoc) ? cleanDoc : undefined,
+        },
+      })
+
+      return {
+        ok: result.ok,
+        status: result.status,
+        transactionId: result.transactionId,
+        pixCode: result.pixCode,
+        errorMessage: result.errorMessage,
+        raw: result.raw,
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao contatar a PixUp'
+      console.error('[v0] Erro no gateway PixUp (cash-in):', msg)
+      return {
+        ok: false,
+        status: 502,
+        transactionId: null,
+        pixCode: null,
+        errorMessage: msg,
+        raw: null,
+      }
+    }
+  },
+}
+
+/**
  * Registro central de gateways de cash-in. Para adicionar um novo gateway,
  * implemente CashinGateway e registre-o aqui — ele aparece automaticamente
  * no painel de configuracoes.
  */
-const GATEWAYS: CashinGateway[] = [bynetGateway, sigilopayGateway, horsepayGateway]
+const GATEWAYS: CashinGateway[] = [bynetGateway, sigilopayGateway, horsepayGateway, pixupGateway]
 
 export function listCashinGateways(): CashinGateway[] {
   return GATEWAYS

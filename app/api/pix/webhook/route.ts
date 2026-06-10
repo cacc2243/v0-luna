@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       tx.identifier,
       body.id,
       body.transactionId,
+      body.transaction_id,
       body.external_id,
       body.externalId,
       body.client_reference_id,
@@ -101,9 +102,13 @@ export async function POST(request: NextRequest) {
     // Mapear status do gateway para nosso status.
     // SigiloPay usa `event` (TRANSACTION_PAID/CANCELED/REFUNDED) e status COMPLETED.
     let newStatus = invite.status
-    const paidEvent = event === 'TRANSACTION_PAID'
-    const canceledEvent = event === 'TRANSACTION_CANCELED' || event === 'TRANSACTION_CANCELLED'
-    const refundedEvent = event === 'TRANSACTION_REFUNDED'
+    const paidEvent = event === 'TRANSACTION_PAID' || event === 'CASHIN.CONFIRMED'
+    const canceledEvent =
+      event === 'TRANSACTION_CANCELED' ||
+      event === 'TRANSACTION_CANCELLED' ||
+      event === 'CASHIN.EXPIRED' ||
+      event === 'CASHIN.FAILED'
+    const refundedEvent = event === 'TRANSACTION_REFUNDED' || event === 'CASHIN.REFUNDED'
 
     if (
       paidEvent ||
