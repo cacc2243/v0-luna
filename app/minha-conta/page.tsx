@@ -454,7 +454,7 @@ function NoInviteScreen({ email }: { email: string }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela de Login (integrada)
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────��
 
 function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInvite: (email: string) => void }) {
   const [email, setEmail] = useState('')
@@ -767,9 +767,11 @@ function AppDashboard() {
   }, [packs.length, firstPackAt, refreshActivity])
 
   // Motor de chat: novos clientes mandam mensagem periodicamente (gera toast).
+  // So funciona quando a usuaria tem o Chat Exclusivo pago/desbloqueado.
   // Acumula no maximo 4 conversas — quando atinge o limite, o motor para.
   useEffect(() => {
     if (packs.length === 0) return
+    if (!profile?.chat_unlocked) return
     if (conversations.length >= 4) return
     const initialDelay = Math.max(ACTIVITY_DELAY - (Date.now() - firstPackAt), 0)
     let interval: ReturnType<typeof setInterval> | null = null
@@ -787,7 +789,7 @@ function AppDashboard() {
       clearTimeout(startTimer)
       if (interval) clearInterval(interval)
     }
-  }, [packs.length, conversations.length, firstPackAt, mutateConversations, mutateNotifications])
+  }, [packs.length, conversations.length, firstPackAt, profile?.chat_unlocked, mutateConversations, mutateNotifications])
 
   // Aceitar / recusar pedidos (atualizacao otimista = instantaneo)
   async function handleAcceptSale(saleId: string) {
