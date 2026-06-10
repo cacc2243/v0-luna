@@ -249,7 +249,7 @@ export default function Page() {
                 <span className="text-primary">R$15 mil</span> com seus Pés
               </h1>
               <p className="mt-2.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-                Aqui seus pés de fazem rainha, você posta, vende na hora e
+                Aqui seus Pés te fazem Rainha. Você posta, vende na hora e
                 recebe via PIX.
               </p>
             </section>
