@@ -281,32 +281,44 @@ async function fetchNotifications() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function MinhaContaPage() {
-  const [authState, setAuthState] = useState<'checking' | 'logged_in' | 'logged_out'>('checking')
-  
+  const [authState, setAuthState] = useState<'checking' | 'logged_in' | 'logged_out' | 'no_invite'>('checking')
+  const [noInviteEmail, setNoInviteEmail] = useState('')
+
   // Verificar autenticacao
   useEffect(() => {
     const supabase = createClient()
-    
+
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
-      setAuthState(user ? 'logged_in' : 'logged_out')
+      if (!user) {
+        setAuthState('logged_out')
+        return
+      }
+
+      // Sessao existe — mas so pode acessar quem tem convite pago.
+      const email = user.email || ''
+      const allowed = await hasPaidInvite(email)
+      if (allowed) {
+        setAuthState('logged_in')
+      } else {
+        setNoInviteEmail(email)
+        setAuthState('no_invite')
+      }
     }
-    
+
     checkAuth()
-    
+
     // Escutar mudancas de autenticacao
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         setAuthState('logged_out')
-      } else if (event === 'SIGNED_IN' && session?.user) {
-        setAuthState('logged_in')
       }
     })
-    
+
     return () => subscription.unsubscribe()
   }, [])
-  
+
   if (authState === 'checking') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -318,19 +330,133 @@ export default function MinhaContaPage() {
       </div>
     )
   }
-  
+
+  if (authState === 'no_invite') {
+    return <NoInviteScreen email={noInviteEmail} />
+  }
+
   if (authState === 'logged_out') {
-    return <LoginScreen onSuccess={() => setAuthState('logged_in')} />
+    return (
+      <LoginScreen
+        onSuccess={() => setAuthState('logged_in')}
+        onNoInvite={(email) => {
+          setNoInviteEmail(email)
+          setAuthState('no_invite')
+        }}
+      />
+    )
   }
 
   return <AppDashboard />
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Verificacao de convite pago (compartilhada)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function hasPaidInvite(email: string): Promise<boolean> {
+  if (!email) return false
+  try {
+    const res = await fetch(`/api/pix/status?email=${encodeURIComponent(email.trim())}`)
+    if (!res.ok) return false
+    const data = await res.json()
+    return !!data.hasPaidInvite
+  } catch (err) {
+    console.error('[v0] Erro ao verificar convite:', err)
+    return false
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tela "Sem convite ativo"
+// ─────────────────────────────────────────────────────────────────────────────
+
+function NoInviteScreen({ email }: { email: string }) {
+  const router = useRouter()
+  const [signingOut, setSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/')
+  }
+
+  return (
+    <div className="relative flex min-h-screen flex-col bg-background">
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-20"
+        style={{ backgroundImage: 'url(/images/hero-bg.png)' }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(to bottom, oklch(0.11 0.02 360 / 0.3) 0%, oklch(0.11 0.02 360) 60%)',
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-12">
+        <img
+          src="/images/luna-prive-logo.png"
+          alt="Luna Prive"
+          className="mb-8 h-10 w-auto"
+        />
+
+        <div className="w-full max-w-sm">
+          <div className="luna-border rounded-3xl bg-card p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-destructive/10">
+              <AlertCircle className="size-8 text-destructive" />
+            </div>
+
+            <h1 className="text-xl font-bold text-foreground">Nenhum convite ativo</h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Não encontramos um convite pago para esta conta. Resgate seu convite para
+              ter acesso completo à plataforma.
+            </p>
+
+            {email && (
+              <p className="mt-3 truncate rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground">
+                {email}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => router.push('/convite')}
+              className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+            >
+              Resgatar convite
+              <ChevronRight className="size-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-secondary py-3.5 text-sm font-semibold text-foreground transition active:scale-[0.98] disabled:opacity-70"
+            >
+              {signingOut ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <LogOut className="size-4" />
+              )}
+              Sair da conta
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Tela de Login (integrada)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
+function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInvite: (email: string) => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -345,7 +471,7 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
     
     const supabase = createClient()
     
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     })
@@ -362,25 +488,14 @@ function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
       return
     }
     
-    // Verificar se o convite está pago
-    try {
-      const inviteResponse = await fetch(`/api/pix/status?email=${encodeURIComponent(email.trim())}`)
-      const inviteData = await inviteResponse.json()
-      
-      if (!inviteData.hasPaidInvite) {
-        // Fazer logout e redirecionar para página de convite
-        await supabase.auth.signOut()
-        setIsLoading(false)
-        setError('Seu convite ainda não foi pago. Complete o pagamento para acessar.')
-        return
-      }
-    } catch (err) {
-      console.error('[v0] Erro ao verificar convite:', err)
-      // Em caso de erro, permitir login (fail-open para não bloquear usuários)
-    }
-    
+    // Verificar se o convite está pago — somente contas com convite pago acessam.
+    const allowed = await hasPaidInvite(email.trim())
     setIsLoading(false)
-    onSuccess()
+    if (allowed) {
+      onSuccess()
+    } else {
+      onNoInvite(email.trim())
+    }
   }
 
   return (
