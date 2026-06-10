@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { fbTrack } from '@/lib/fb/track'
@@ -955,6 +955,12 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
   const [sub, setSub] = useState(0)
   const [phase, setPhase] = useState<'steps' | 'searching' | 'offer' | 'redirecting'>('steps')
 
+  // Mantem a referencia mais recente de onAccept sem reiniciar os timers.
+  const onAcceptRef = useRef(onAccept)
+  useEffect(() => {
+    onAcceptRef.current = onAccept
+  }, [onAccept])
+
   // Loading "Buscando convites" -> mostra oferta especial
   useEffect(() => {
     if (phase !== 'searching') return
@@ -965,9 +971,9 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
   // Loading "Resgatando" -> vai para /convite
   useEffect(() => {
     if (phase !== 'redirecting') return
-    const t = setTimeout(() => onAccept(), 2000)
+    const t = setTimeout(() => onAcceptRef.current(), 2000)
     return () => clearTimeout(t)
-  }, [phase, onAccept])
+  }, [phase])
 
   return (
     <div className="animate-pop luna-border relative w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
