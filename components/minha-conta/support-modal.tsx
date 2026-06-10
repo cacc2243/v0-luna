@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   X,
   Send,
@@ -168,6 +169,8 @@ type View = 'home' | 'list' | 'chat'
 
 export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [view, setView] = useState<View>('home')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [loadingTickets, setLoadingTickets] = useState(false)
 
@@ -255,10 +258,10 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     setSending(false)
   }, [draft, sending, isNewTicket, activeTicket, subject, loadTickets])
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
       {/* Overlay */}
       <button
         type="button"
@@ -268,7 +271,7 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       />
 
       {/* Painel */}
-      <div className="relative flex h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl sm:h-[640px] sm:rounded-3xl">
+      <div className="relative flex h-[90dvh] max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl sm:h-[640px] sm:max-h-[90dvh] sm:rounded-3xl">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-3.5">
           {view !== 'home' ? (
@@ -472,7 +475,7 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             </div>
 
             {/* Input */}
-            <div className="border-t border-border bg-card px-3 py-3">
+            <div className="border-t border-border bg-card px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               {errorMsg && (
                 <p className="mb-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   {errorMsg}
@@ -533,7 +536,8 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
