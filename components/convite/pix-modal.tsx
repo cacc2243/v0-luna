@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Gift, Mail, CheckCircle2 } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
+import confetti from 'canvas-confetti'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 
@@ -42,6 +43,31 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
   const [checkingPayment, setCheckingPayment] = useState(false)
   const [inviteId, setInviteId] = useState<string | null>(null)
   const [verifying, setVerifying] = useState(false)
+  // Garante que os confetes disparem apenas uma vez por geração de PIX.
+  const confettiFiredRef = useRef(false)
+
+  // Confetes sutis quando o PIX é gerado com sucesso.
+  useEffect(() => {
+    if (loading || error || !pixCode || confettiFiredRef.current) return
+    confettiFiredRef.current = true
+
+    const colors = ['#ff2d6f', '#ff7aa8', '#ffffff']
+    confetti({
+      particleCount: 60,
+      spread: 65,
+      startVelocity: 38,
+      origin: { x: 0.5, y: 0.35 },
+      colors,
+      scalar: 0.85,
+      ticks: 160,
+      disableForReducedMotion: true,
+    })
+  }, [loading, error, pixCode])
+
+  // Reseta o controle de confetes ao reabrir o modal.
+  useEffect(() => {
+    if (!isOpen) confettiFiredRef.current = false
+  }, [isOpen])
 
   // Preço "de" (âncora) com ~40% de desconto, igual ao PriceCard.
   const originalAmount = amount / 0.6
