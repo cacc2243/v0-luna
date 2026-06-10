@@ -245,8 +245,9 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="absolute inset-0 z-0" aria-hidden="true">
           <img src="/images/background.png" alt="" className="size-full object-cover" />
-          <div className="absolute inset-0 bg-background/92" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/95 to-background" />
+          {/* Overlay escuro mantendo a imagem visível */}
+          <div className="absolute inset-0 bg-background/55" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/55 to-background/80" />
         </div>
 
         {/* Botão fechar */}
