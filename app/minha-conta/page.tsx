@@ -738,28 +738,56 @@ function AppDashboard() {
     }, 600)
   }, [refreshActivity])
 
+  // Instante em que o PRIMEIRO pack foi publicado (created_at mais antigo).
+  // Pedidos e chats só começam a aparecer 10s após esse marco.
+  const firstPackAt = useMemo(() => {
+    if (packs.length === 0) return 0
+    return Math.min(...packs.map((p) => new Date(p.created_at).getTime()))
+  }, [packs])
+
+  const ACTIVITY_DELAY = 10000 // 10s após publicar o primeiro pack
+
   // Motor de atividade: enquanto houver packs publicados, gera views/pedidos periodicamente
   useEffect(() => {
     if (packs.length === 0) return
-    const interval = setInterval(async () => {
+    const initialDelay = Math.max(ACTIVITY_DELAY - (Date.now() - firstPackAt), 0)
+    let interval: ReturnType<typeof setInterval> | null = null
+    const startTimer = setTimeout(async () => {
       await generatePackActivity()
       refreshActivity()
-    }, 45000)
-    return () => clearInterval(interval)
-  }, [packs.length, refreshActivity])
+      interval = setInterval(async () => {
+        await generatePackActivity()
+        refreshActivity()
+      }, 45000)
+    }, initialDelay)
+    return () => {
+      clearTimeout(startTimer)
+      if (interval) clearInterval(interval)
+    }
+  }, [packs.length, firstPackAt, refreshActivity])
 
   // Motor de chat: novos clientes mandam mensagem periodicamente (gera toast).
   // Acumula no maximo 4 conversas — quando atinge o limite, o motor para.
   useEffect(() => {
     if (packs.length === 0) return
     if (conversations.length >= 4) return
-    const interval = setInterval(async () => {
+    const initialDelay = Math.max(ACTIVITY_DELAY - (Date.now() - firstPackAt), 0)
+    let interval: ReturnType<typeof setInterval> | null = null
+    const startTimer = setTimeout(async () => {
       await generateChatActivity()
       mutateConversations()
       mutateNotifications()
-    }, 38000)
-    return () => clearInterval(interval)
-  }, [packs.length, conversations.length, mutateConversations, mutateNotifications])
+      interval = setInterval(async () => {
+        await generateChatActivity()
+        mutateConversations()
+        mutateNotifications()
+      }, 38000)
+    }, initialDelay)
+    return () => {
+      clearTimeout(startTimer)
+      if (interval) clearInterval(interval)
+    }
+  }, [packs.length, conversations.length, firstPackAt, mutateConversations, mutateNotifications])
 
   // Aceitar / recusar pedidos (atualizacao otimista = instantaneo)
   async function handleAcceptSale(saleId: string) {
