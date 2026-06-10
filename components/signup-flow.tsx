@@ -18,7 +18,6 @@ import {
   Check,
   Loader2,
   AlertCircle,
-  Sparkles,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 import { cn } from '@/lib/utils'
@@ -1137,27 +1136,21 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
         {/* FASE: convite especial */}
         {phase === 'offer' && (
           <>
-            <div className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty">
-              <p className="text-sm leading-relaxed text-foreground">
-                Infelizmente <span className="font-semibold text-primary">nao temos mais convites gratuitos</span> disponiveis.
+            <div className="animate-pop rounded-3xl border border-border/80 bg-secondary/40 p-6 text-center text-pretty">
+              <p className="text-[0.95rem] leading-relaxed text-foreground">
+                Infelizmente nao temos mais{' '}
+                <span className="font-bold">convites gratuitos</span> disponiveis.
               </p>
-              <div className="relative mt-4 overflow-hidden rounded-2xl border border-primary/50 bg-primary/10 p-4 shadow-lg shadow-primary/20">
-                <span className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/20 blur-2xl" aria-hidden="true" />
-                <div className="flex items-center gap-2">
-                  <span className="flex size-7 items-center justify-center rounded-lg bg-primary/20">
-                    <Sparkles className="size-4 text-primary" aria-hidden="true" />
-                  </span>
-                  <p className="text-sm font-bold text-foreground">Mas como voce chegou ate aqui</p>
-                </div>
-                <p className="mt-2 text-base leading-relaxed text-foreground">
-                  preparamos{' '}
-                  <span className="font-extrabold text-primary">algo especial</span> para voce.
+              <div className="mt-5 rounded-2xl border border-primary/60 bg-transparent px-5 py-5">
+                <p className="text-[0.95rem] font-bold leading-relaxed text-foreground">
+                  Mas como voce chegou ate aqui, preparamos{' '}
+                  <span className="text-primary">algo especial</span> para voce.
                 </p>
               </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5">
-              <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
+            <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
+              <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
               <p className="text-xs text-muted-foreground">
                 Restam apenas <span className="font-bold text-primary">6 convites</span> para resgate
               </p>
