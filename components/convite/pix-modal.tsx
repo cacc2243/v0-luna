@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Gift, Mail, CheckCircle2 } from 'lucide-react'
+import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Mail, CheckCircle2 } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import confetti from 'canvas-confetti'
@@ -71,10 +71,6 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
 
   // Preço "de" (âncora) com ~40% de desconto, igual ao PriceCard.
   const originalAmount = amount / 0.6
-  // Código de convite mascarado exibido no topo (apenas visual).
-  const maskedInviteCode = inviteId
-    ? `LP-${inviteId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase()}-••••`
-    : 'LP-••••-••••'
 
   // Ação do botão "Já fiz o pagamento": força uma verificação imediata.
   async function handleAlreadyPaid() {
@@ -349,17 +345,6 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
                 </span>
               </div>
 
-              {/* Código de convite (mascarado) */}
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/50 px-4 py-3">
-                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Gift className="size-4 text-primary" aria-hidden="true" />
-                  Código de convite
-                </span>
-                <span className="font-mono text-sm tracking-widest text-muted-foreground/70 blur-[3px] select-none">
-                  {maskedInviteCode}
-                </span>
-              </div>
-
               {/* QR Code */}
               {pixQrCode && (
                 <div className="mt-6 flex justify-center">
@@ -389,7 +374,6 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
                     R${amount.toFixed(2).replace('.', ',')}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">Pagamento único</p>
               </div>
 
               {/* Código copia e cola */}
@@ -450,11 +434,6 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
                   enviados no e-mail cadastrado.
                 </p>
               </div>
-
-              {/* Rodapé de expiração */}
-              <p className="mt-5 text-center text-xs text-muted-foreground">
-                PIX expira em <span className="font-bold text-primary">{timeLeft || '--:--'}</span>
-              </p>
             </>
           )}
         </div>
