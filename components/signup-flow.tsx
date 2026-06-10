@@ -1008,7 +1008,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
     if (phase !== 'redirecting') return
     setShowFallback(false)
     const redirectTimer = setTimeout(() => onAcceptRef.current(), 2000)
-    const fallbackTimer = setTimeout(() => setShowFallback(true), 4000)
+    const fallbackTimer = setTimeout(() => setShowFallback(true), 2500)
     return () => {
       clearTimeout(redirectTimer)
       clearTimeout(fallbackTimer)
