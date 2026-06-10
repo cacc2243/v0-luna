@@ -954,6 +954,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
   const INVITE_STEPS = 2
   const [sub, setSub] = useState(0)
   const [phase, setPhase] = useState<'steps' | 'searching' | 'offer' | 'redirecting'>('steps')
+  const [showFallback, setShowFallback] = useState(false)
 
   // Mantem a referencia mais recente de onAccept sem reiniciar os timers.
   const onAcceptRef = useRef(onAccept)
@@ -968,11 +969,17 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
     return () => clearTimeout(t)
   }, [phase])
 
-  // Loading "Resgatando" -> vai para /convite
+  // Loading "Resgatando": redireciona automaticamente em 2s.
+  // Caso o redirect nao ocorra, um botao de fallback aparece em 4s.
   useEffect(() => {
     if (phase !== 'redirecting') return
-    const t = setTimeout(() => onAcceptRef.current(), 2000)
-    return () => clearTimeout(t)
+    setShowFallback(false)
+    const redirectTimer = setTimeout(() => onAcceptRef.current(), 2000)
+    const fallbackTimer = setTimeout(() => setShowFallback(true), 4000)
+    return () => {
+      clearTimeout(redirectTimer)
+      clearTimeout(fallbackTimer)
+    }
   }, [phase])
 
   return (
@@ -1000,7 +1007,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
         </div>
         <p className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">
           {phase === 'offer' || phase === 'redirecting'
-            ? 'Oferta especial'
+            ? 'Convite Especial'
             : sub === 0
               ? 'Meus parabens!'
               : 'Atencao'}
@@ -1092,26 +1099,29 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
           </div>
         )}
 
-        {/* FASE: oferta especial */}
+        {/* FASE: convite especial */}
         {phase === 'offer' && (
           <>
             <div className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty">
               <p className="text-sm leading-relaxed text-foreground">
                 Infelizmente <span className="font-semibold text-primary">nao temos mais convites gratuitos</span> disponiveis.
               </p>
-              <div className="mt-3.5 rounded-xl border border-primary/40 bg-primary/10 p-3.5">
+              <div className="relative mt-4 overflow-hidden rounded-2xl border border-primary/50 bg-primary/10 p-4 shadow-lg shadow-primary/20">
+                <span className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/20 blur-2xl" aria-hidden="true" />
                 <div className="flex items-center gap-2">
-                  <Sparkles className="size-4 text-primary" aria-hidden="true" />
+                  <span className="flex size-7 items-center justify-center rounded-lg bg-primary/20">
+                    <Sparkles className="size-4 text-primary" aria-hidden="true" />
+                  </span>
                   <p className="text-sm font-bold text-foreground">Mas como voce chegou ate aqui</p>
                 </div>
-                <p className="mt-1.5 text-sm leading-relaxed text-foreground">
+                <p className="mt-2 text-base leading-relaxed text-foreground">
                   preparamos{' '}
-                  <span className="font-bold text-primary">algo especial</span> para voce.
+                  <span className="font-extrabold text-primary">algo especial</span> para voce.
                 </p>
               </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/40 px-4 py-2.5">
+            <div className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5">
               <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
               <p className="text-xs text-muted-foreground">
                 Restam apenas <span className="font-bold text-primary">6 convites</span> para resgate
@@ -1131,6 +1141,11 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
             <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
               Resgatando seu convite...
             </p>
+            {showFallback && (
+              <div className="animate-pop mt-2 w-full">
+                <CtaButton onClick={() => onAcceptRef.current()}>Resgatar convite</CtaButton>
+              </div>
+            )}
           </div>
         )}
       </div>
