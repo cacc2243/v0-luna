@@ -31,6 +31,24 @@ const TOTAL = 6
 
 const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 
+// Nomes muito comuns/genericos: sugerimos algo mais criativo quando o usuario
+// digita apenas um nome simples sem nenhum diferencial (numero, sufixo, etc).
+const GENERIC_USERNAMES = [
+  'luna', 'amanda', 'maria', 'ana', 'julia', 'joao', 'jose', 'pedro', 'lucas',
+  'gabriel', 'rafael', 'bruna', 'carla', 'paula', 'fernanda', 'camila', 'beatriz',
+  'larissa', 'leticia', 'vitoria', 'isabela', 'sophia', 'sofia', 'helena', 'laura',
+  'manuela', 'alice', 'valentina', 'rosa', 'bella', 'lia', 'mia', 'teste', 'admin',
+  'user', 'usuario', 'love', 'baby', 'anjo', 'gata', 'princesa',
+]
+
+function isGenericUsername(raw: string) {
+  const value = raw.trim().toLowerCase()
+  if (value.length < 3) return false
+  // Possui algum diferencial (numero, _, ., sufixo) -> nao e generico.
+  if (/[0-9._]/.test(value)) return false
+  return GENERIC_USERNAMES.includes(value)
+}
+
 export function SignupFlow({ onComplete }: SignupFlowProps) {
   const router = useRouter()
   const [step, setStep] = useState(0)
@@ -76,6 +94,17 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
   const back = () => setStep((s) => Math.max(0, s - 1))
   const advance = () => setStep((s) => Math.min(TOTAL - 1, s + 1))
+
+  // Loading visual (apenas) ao avancar da etapa de email.
+  const [verifyingEmail, setVerifyingEmail] = useState(false)
+  const advanceEmail = () => {
+    if (verifyingEmail) return
+    setVerifyingEmail(true)
+    setTimeout(() => {
+      setVerifyingEmail(false)
+      advance()
+    }, 1500)
+  }
 
   const finish = async () => {
     setStatus('loading')
@@ -275,14 +304,16 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   placeholder="seu_nome"
                   autoFocus
                 />
-                <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3">
-                  <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                  <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
-                    Dica: use algo mais criativo, como{' '}
-                    <span className="font-semibold text-primary">@{username || 'seu_nome'}_oficial</span> ou{' '}
-                    <span className="font-semibold text-primary">@{username || 'seu_nome'}_real</span>.
-                  </p>
-                </div>
+                {isGenericUsername(username) && (
+                  <div className="animate-pop mt-3 flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3">
+                    <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                    <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
+                      Esse nome é muito comum. Use algo mais criativo, como{' '}
+                      <span className="font-semibold text-primary">@{username}_oficial</span> ou{' '}
+                      <span className="font-semibold text-primary">@{username}_real</span>.
+                    </p>
+                  </div>
+                )}
                 <CtaButton className="mt-6" disabled={!canContinue} onClick={advance}>
                   Continuar
                 </CtaButton>
@@ -306,7 +337,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   placeholder="seu@email.com"
                   autoFocus
                 />
-                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advanceEmail} loading={verifyingEmail} loadingText="Verificando email..." />
               </StepShell>
             )}
 
@@ -635,21 +666,25 @@ function StepFooter({
   onBack,
   onNext,
   disabled,
-}: {
+  loading,
+  loadingText,
+  }: {
   onBack: () => void
   onNext: () => void
   disabled: boolean
-}) {
+  loading?: boolean
+  loadingText?: string
+  }) {
   return (
-    <>
-      <CtaButton className="mt-6" disabled={disabled} onClick={onNext}>
-        Continuar
-      </CtaButton>
-      <button
-        type="button"
-        onClick={onBack}
-        className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
-      >
+  <>
+  <CtaButton className="mt-6" disabled={disabled} onClick={onNext} loading={loading} loadingText={loadingText}>
+  Continuar
+  </CtaButton>
+  <button
+  type="button"
+  onClick={onBack}
+  className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+  >
         ← Voltar para o passo anterior
       </button>
     </>

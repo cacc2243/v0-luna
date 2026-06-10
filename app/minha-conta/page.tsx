@@ -74,7 +74,8 @@ import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost,
 import { PixModal } from '@/components/convite/pix-modal'
 import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
-import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
+ import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
+ import { SupportModal } from '@/components/minha-conta/support-modal'
 
 // Valor do Chat Exclusivo (pagamento unico)
 const CHAT_PRICE = 99.0
@@ -3506,6 +3507,7 @@ function ProfileScreen({
   onNotificationsChange?: () => void
 }) {
   const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help'>('main')
+  const [supportOpen, setSupportOpen] = useState(false)
   const [localProfile, setLocalProfile] = useState({
     username: userProfile?.username || '@usuario',
     displayName: userProfile?.display_name || 'Usuario',
@@ -4408,7 +4410,7 @@ function ProfileScreen({
         
         <button
           type="button"
-          onClick={() => setCurrentView('help')}
+          onClick={() => setSupportOpen(true)}
           className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
         >
           <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
@@ -4434,6 +4436,8 @@ function ProfileScreen({
       <p className="mt-6 text-center text-xs text-muted-foreground/50">
         Luna Prive v1.0.0
       </p>
+
+      <SupportModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
     </div>
   )
 }
