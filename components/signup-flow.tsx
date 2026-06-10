@@ -18,6 +18,7 @@ import {
   Check,
   Loader2,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 import { cn } from '@/lib/utils'
@@ -952,6 +953,21 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
 function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => void }) {
   const INVITE_STEPS = 2
   const [sub, setSub] = useState(0)
+  const [phase, setPhase] = useState<'steps' | 'searching' | 'offer' | 'redirecting'>('steps')
+
+  // Loading "Buscando convites" -> mostra oferta especial
+  useEffect(() => {
+    if (phase !== 'searching') return
+    const t = setTimeout(() => setPhase('offer'), 3500)
+    return () => clearTimeout(t)
+  }, [phase])
+
+  // Loading "Resgatando" -> vai para /convite
+  useEffect(() => {
+    if (phase !== 'redirecting') return
+    const t = setTimeout(() => onAccept(), 2000)
+    return () => clearTimeout(t)
+  }, [phase, onAccept])
 
   return (
     <div className="animate-pop luna-border relative w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
@@ -977,79 +993,140 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
           <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
         </div>
         <p className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">
-          {sub === 0 ? 'Meus parabens!' : 'Atencao'}
+          {phase === 'offer' || phase === 'redirecting'
+            ? 'Oferta especial'
+            : sub === 0
+              ? 'Meus parabens!'
+              : 'Atencao'}
         </p>
       </div>
 
       <div className="relative z-10 px-6 pb-7 pt-4">
-        {/* ETAPA 0 — Parabens + convite */}
-        {sub === 0 && (
-          <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
-            <p>
-              Sua conta foi criada com{' '}
-              <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
-              <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
-            </p>
-            <p className="mt-3">
-              Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
-            </p>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
-              acesso esta muito barato e confiavel.
-            </p>
-          </div>
-        )}
+        {/* FASE: etapas iniciais */}
+        {phase === 'steps' && (
+          <>
+            {/* ETAPA 0 — Parabens + convite */}
+            {sub === 0 && (
+              <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
+                <p>
+                  Sua conta foi criada com{' '}
+                  <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
+                  <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
+                </p>
+                <p className="mt-3">
+                  Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
+                  acesso esta muito barato e confiavel.
+                </p>
+              </div>
+            )}
 
-        {/* ETAPA 1 — Convites limitados + conformidade */}
-        {sub === 1 && (
-          <div key="invite-1" className="animate-pop rounded-2xl border border-primary/30 bg-primary/5 p-5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
-                <ShieldCheck className="size-[1.1rem] text-primary" aria-hidden="true" />
-              </span>
-              <p className="text-sm font-bold text-foreground">Convites limitados</p>
+            {/* ETAPA 1 — Convites limitados + conformidade */}
+            {sub === 1 && (
+              <div key="invite-1" className="animate-pop rounded-2xl border border-primary/30 bg-primary/5 p-5">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
+                    <ShieldCheck className="size-[1.1rem] text-primary" aria-hidden="true" />
+                  </span>
+                  <p className="text-sm font-bold text-foreground">Convites limitados</p>
+                </div>
+                <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
+                  Existem <span className="font-semibold text-primary">poucos convites disponiveis</span> no momento. Eles sao liberados
+                  em pequenas quantidades para manter a qualidade da plataforma.
+                </p>
+                <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-foreground">Toda usuaria possui um convite ativo</span> para garantir a conformidade e a
+                  seguranca de todos dentro do Luna Prive.
+                </p>
+              </div>
+            )}
+
+            {/* Indicador de etapas */}
+            <div className="mt-5 flex items-center justify-center gap-2" aria-hidden="true">
+              {Array.from({ length: INVITE_STEPS }).map((_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all duration-300',
+                    i === sub ? 'w-6 bg-primary' : 'w-1.5 bg-muted',
+                  )}
+                />
+              ))}
             </div>
-            <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
-              Existem <span className="font-semibold text-primary">poucos convites disponiveis</span> no momento. Eles sao liberados
-              em pequenas quantidades para manter a qualidade da plataforma.
-            </p>
-            <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
-              <span className="font-semibold text-foreground">Toda usuaria possui um convite ativo</span> para garantir a conformidade e a
-              seguranca de todos dentro do Luna Prive.
+
+            {/* Acoes */}
+            <div className="mt-4">
+              {sub < INVITE_STEPS - 1 ? (
+                <CtaButton onClick={() => setSub((s) => s + 1)}>Continuar</CtaButton>
+              ) : (
+                <CtaButton onClick={() => setPhase('searching')}>Quero um Convite</CtaButton>
+              )}
+              {sub > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSub((s) => Math.max(0, s - 1))}
+                  className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+                >
+                  ← Voltar
+                </button>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* FASE: buscando convites */}
+        {phase === 'searching' && (
+          <div className="flex flex-col items-center justify-center gap-4 py-10">
+            <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
+            <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
+              Buscando convites disponiveis...
             </p>
           </div>
         )}
 
-        {/* Indicador de etapas */}
-        <div className="mt-5 flex items-center justify-center gap-2" aria-hidden="true">
-          {Array.from({ length: INVITE_STEPS }).map((_, i) => (
-            <span
-              key={i}
-              className={cn(
-                'h-1.5 rounded-full transition-all duration-300',
-                i === sub ? 'w-6 bg-primary' : 'w-1.5 bg-muted',
-              )}
-            />
-          ))}
-        </div>
+        {/* FASE: oferta especial */}
+        {phase === 'offer' && (
+          <>
+            <div className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty">
+              <p className="text-sm leading-relaxed text-foreground">
+                Infelizmente <span className="font-semibold text-primary">nao temos mais convites gratuitos</span> disponiveis.
+              </p>
+              <div className="mt-3.5 rounded-xl border border-primary/40 bg-primary/10 p-3.5">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="size-4 text-primary" aria-hidden="true" />
+                  <p className="text-sm font-bold text-foreground">Mas como voce chegou ate aqui</p>
+                </div>
+                <p className="mt-1.5 text-sm leading-relaxed text-foreground">
+                  preparamos{' '}
+                  <span className="font-bold text-primary">algo especial</span> para voce.
+                </p>
+              </div>
+            </div>
 
-        {/* Acoes */}
-        <div className="mt-4">
-          {sub < INVITE_STEPS - 1 ? (
-            <CtaButton onClick={() => setSub((s) => s + 1)}>Continuar</CtaButton>
-          ) : (
-            <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
-          )}
-          {sub > 0 && (
-            <button
-              type="button"
-              onClick={() => setSub((s) => Math.max(0, s - 1))}
-              className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
-            >
-              ← Voltar
-            </button>
-          )}
-        </div>
+            <div className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/40 px-4 py-2.5">
+              <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
+              <p className="text-xs text-muted-foreground">
+                Restam apenas <span className="font-bold text-primary">6 convites</span> para resgate
+              </p>
+            </div>
+
+            <div className="mt-4">
+              <CtaButton onClick={() => setPhase('redirecting')}>Resgatar meu convite</CtaButton>
+            </div>
+          </>
+        )}
+
+        {/* FASE: redirecionando */}
+        {phase === 'redirecting' && (
+          <div className="flex flex-col items-center justify-center gap-4 py-10">
+            <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
+            <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
+              Resgatando seu convite...
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
