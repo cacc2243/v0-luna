@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Copy, Check, Clock, QrCode, AlertCircle, RefreshCw } from 'lucide-react'
+import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Gift, Mail, CheckCircle2 } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -32,8 +32,6 @@ interface PixModalProps {
 }
 
 export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle }: PixModalProps) {
-  const headerTitle = title || 'Pagamento PIX'
-  const headerSubtitle = subtitle || (type === 'chat' ? 'Chat Exclusivo Luna Privé' : 'Convite Luna Privé')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pixCode, setPixCode] = useState<string | null>(null)
@@ -43,6 +41,31 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
   const [timeLeft, setTimeLeft] = useState<string>('')
   const [checkingPayment, setCheckingPayment] = useState(false)
   const [inviteId, setInviteId] = useState<string | null>(null)
+  const [verifying, setVerifying] = useState(false)
+
+  // Preço "de" (âncora) com ~40% de desconto, igual ao PriceCard.
+  const originalAmount = amount / 0.6
+  // Código de convite mascarado exibido no topo (apenas visual).
+  const maskedInviteCode = inviteId
+    ? `LP-${inviteId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase()}-••••`
+    : 'LP-••••-••••'
+
+  // Ação do botão "Já fiz o pagamento": força uma verificação imediata.
+  async function handleAlreadyPaid() {
+    if (!inviteId || verifying) return
+    setVerifying(true)
+    try {
+      const response = await fetch(`/api/pix/status?id=${inviteId}&type=${type}`)
+      const data = await response.json()
+      if (data.paidInvite) {
+        onPaymentConfirmed?.()
+      }
+    } catch (err) {
+      console.error('[v0] Erro ao verificar pagamento:', err)
+    } finally {
+      setVerifying(false)
+    }
+  }
 
   // Gerar PIX ao abrir o modal
   useEffect(() => {
@@ -236,43 +259,54 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
-      <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col rounded-3xl bg-card border border-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-        {/* Header */}
-        <div className="relative bg-gradient-to-r from-primary/20 to-primary/5 px-4 py-4 sm:px-6 sm:py-5 border-b border-border shrink-0">
-          <button
-            onClick={onClose}
-            className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-          >
-            <X className="size-5" />
-          </button>
-          <div className="flex items-center gap-3 pr-10">
-            <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/20">
-              <QrCode className="size-5 sm:size-6 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold text-foreground truncate">{headerTitle}</h2>
-              <p className="text-sm text-muted-foreground truncate">{headerSubtitle}</p>
-            </div>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="relative flex max-h-[96dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:rounded-3xl sm:zoom-in-95">
+        {/* Imagem de fundo (mesma do /convite) */}
+        <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+          <img src="/images/background.png" alt="" className="size-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/92 to-background/96" />
         </div>
 
-        {/* Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto">
+        {/* Botão fechar */}
+        <button
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute right-4 top-4 z-20 rounded-full bg-background/60 p-2 text-muted-foreground backdrop-blur-sm transition hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-5" />
+        </button>
+
+        {/* Conteúdo */}
+        <div className="relative z-10 overflow-y-auto px-5 pb-6 pt-7 sm:px-7">
+          {/* Logo + título */}
+          <div className="flex flex-col items-center text-center">
+            <img
+              src="/images/luna-prive-logo.png"
+              alt="Luna Privé"
+              className="h-7 w-auto"
+            />
+            <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+              Pagamento via PIX
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Escaneie o QR Code ou copie o código abaixo
+            </p>
+          </div>
+
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-10">
+            <div className="flex flex-col items-center justify-center py-14">
               <div className="size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               <p className="mt-4 text-sm text-muted-foreground">Gerando PIX...</p>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="flex flex-col items-center justify-center py-14 text-center">
               <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10">
                 <AlertCircle className="size-8 text-destructive" />
               </div>
               <p className="mt-4 text-sm font-medium text-foreground">{error}</p>
               <button
                 onClick={generatePix}
-                className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition"
+                className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
               >
                 <RefreshCw className="size-4" />
                 Tentar novamente
@@ -280,82 +314,121 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
             </div>
           ) : (
             <>
-              {/* Valor */}
-              <div className="mb-4 sm:mb-6 text-center">
-                <p className="text-sm text-muted-foreground">Valor a pagar</p>
-                <p className="text-3xl sm:text-4xl font-bold text-foreground">
-                  R$ {amount.toFixed(2).replace('.', ',')}
-                </p>
+              {/* Timer de reserva */}
+              <div className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-4 py-2.5">
+                <Clock className="size-4 text-primary" aria-hidden="true" />
+                <span className="text-sm font-medium text-foreground">
+                  Código reservado por{' '}
+                  <span className="font-bold text-primary">{timeLeft || '--:--'}</span>
+                </span>
               </div>
 
-              {/* Timer */}
-              <div className="mb-4 sm:mb-6 flex items-center justify-center gap-2 rounded-xl bg-amber-500/10 px-4 py-2">
-                <Clock className="size-4 text-amber-500" />
-                <span className="text-sm font-medium text-amber-500">
-                  Expira em {timeLeft}
+              {/* Código de convite (mascarado) */}
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/50 px-4 py-3">
+                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Gift className="size-4 text-primary" aria-hidden="true" />
+                  Código de convite
+                </span>
+                <span className="font-mono text-sm tracking-widest text-muted-foreground/70 blur-[3px] select-none">
+                  {maskedInviteCode}
                 </span>
               </div>
 
               {/* QR Code */}
               {pixQrCode && (
-                <div className="mb-4 sm:mb-6 flex justify-center">
-                  <div className="rounded-2xl bg-white p-3">
+                <div className="mt-6 flex justify-center">
+                  <div className="rounded-2xl bg-white p-3 shadow-lg shadow-black/30">
                     <Image
                       src={pixQrCode}
                       alt="QR Code PIX"
-                      width={140}
-                      height={140}
-                      className="size-[120px] sm:size-[140px]"
+                      width={180}
+                      height={180}
+                      className="size-[160px] sm:size-[180px]"
                       unoptimized
                     />
                   </div>
                 </div>
               )}
 
-              {/* Código PIX */}
-              <div className="mb-4 sm:mb-6">
-                <p className="mb-2 text-xs font-medium text-muted-foreground text-center">
-                  Ou copie o código PIX
+              {/* Valor */}
+              <div className="mt-6 text-center">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Valor a pagar
                 </p>
-                <div className="rounded-xl bg-muted/50 border border-border px-4 py-3">
-                  <p className="text-xs font-mono text-foreground truncate leading-relaxed">
+                <div className="mt-1 flex items-center justify-center gap-2.5">
+                  <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
+                    R${originalAmount.toFixed(2).replace('.', ',')}
+                  </span>
+                  <span className="text-3xl font-extrabold tracking-tight text-foreground">
+                    R${amount.toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">Pagamento único</p>
+              </div>
+
+              {/* Código copia e cola */}
+              <div className="mt-6">
+                <p className="mb-2 text-center text-xs font-medium text-muted-foreground">
+                  Código PIX (copia e cola)
+                </p>
+                <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-3">
+                  <p className="break-all font-mono text-xs leading-relaxed text-muted-foreground line-clamp-2">
                     {pixCode || ''}
                   </p>
                 </div>
-                <button
-                  onClick={copyPixCode}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition active:scale-[0.98]"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="size-5" />
-                      Código copiado!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="size-5" />
-                      Copiar código PIX
-                    </>
-                  )}
-                </button>
               </div>
 
-              {/* Instruções */}
-              <div className="rounded-xl bg-muted/30 p-4">
-                <p className="text-xs font-semibold text-foreground mb-2">Como pagar:</p>
-                <ol className="text-xs text-muted-foreground space-y-1.5">
-                  <li>1. Abra o app do seu banco</li>
-                  <li>2. Escolha pagar via PIX</li>
-                  <li>3. Escaneie o QR Code ou cole o código</li>
-                  <li>4. Confirme o pagamento</li>
-                </ol>
+              {/* Botão copiar */}
+              <button
+                onClick={copyPixCode}
+                className="luna-gradient mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                {copied ? (
+                  <>
+                    <Check className="size-5" />
+                    Código copiado!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-5" />
+                    Copiar código PIX
+                  </>
+                )}
+              </button>
+
+              {/* Já fiz o pagamento */}
+              <button
+                onClick={handleAlreadyPaid}
+                disabled={verifying}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 py-3.5 text-sm font-semibold text-foreground transition hover:bg-muted/60 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {verifying ? (
+                  <>
+                    <RefreshCw className="size-4 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="size-4" />
+                    Já fiz o pagamento
+                  </>
+                )}
+              </button>
+
+              {/* Aviso de e-mail */}
+              <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
+                <Mail className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                  Após o pagamento, seu{' '}
+                  <span className="font-semibold text-foreground">convite e acesso</span> serão
+                  enviados no e-mail cadastrado.
+                </p>
               </div>
 
-              {/* Status de verificação */}
-              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <div className="size-2 rounded-full bg-positive animate-pulse" />
-                Aguardando pagamento...
-              </div>
+              {/* Rodapé de expiração */}
+              <p className="mt-5 text-center text-xs text-muted-foreground">
+                PIX expira em <span className="font-bold text-primary">{timeLeft || '--:--'}</span>
+              </p>
             </>
           )}
         </div>
