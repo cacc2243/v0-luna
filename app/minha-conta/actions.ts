@@ -549,7 +549,7 @@ export async function settleExpiredWithdrawals() {
 
 // ───────���─────────────────────────────────────────────────────────────────────
 // Conversation Actions
-// ───────────────────��───────────────────────────────────────────────────────�����─
+// ───────────────────���───────────────────────────────────────────────────────�����─
 
 // Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
 const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
@@ -1226,7 +1226,7 @@ export async function getHighlights(): Promise<Highlight[]> {
   return data || []
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────���───────────────────────────────────
 // Settings Actions
 // ─────────────────────────────────────────────────────────────────────────────
 

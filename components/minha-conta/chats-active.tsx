@@ -517,7 +517,8 @@ function ChatConversation({
           ? 1400
           : Math.min(5500, Math.max(1600, content.length * 95))
       // pausa antes de comecar a digitar a proxima bolha (mais natural/lenta)
-      const gapMs = i === 0 ? 1400 : 1100 + Math.random() * 1200
+      // +3000ms para deixar o ritmo geral mais devagar
+      const gapMs = (i === 0 ? 1400 : 1100 + Math.random() * 1200) + 3000
 
       const tStart = setTimeout(() => setTyping(true), delay + gapMs)
       delay += gapMs + typingMs
@@ -636,7 +637,7 @@ function ChatConversation({
     lockedMsgs.forEach((lm, i) => {
       const content = lm.content ?? ''
       const typingMs = Math.min(5500, Math.max(1600, content.length * 95))
-      const gapMs = i === 0 ? 1200 : 1100 + Math.random() * 1200
+      const gapMs = (i === 0 ? 1200 : 1100 + Math.random() * 1200) + 3000
       const tStart = setTimeout(() => setTyping(true), delay + gapMs)
       delay += gapMs + typingMs
       const tEnd = setTimeout(() => {

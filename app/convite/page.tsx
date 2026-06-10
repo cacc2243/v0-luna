@@ -9,7 +9,6 @@ import { PriceCard } from '@/components/convite/price-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
-import { WelcomePopup } from '@/components/convite/welcome-popup'
 import { fbTrackWhenReady, newEventId, readCookie } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 
@@ -162,7 +161,6 @@ export default function ConvitePage() {
 
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">
-      <WelcomePopup />
       <div className="fixed inset-0 z-0">
         <PageBackground />
         <div className="absolute inset-0 bg-background/70" aria-hidden="true" />

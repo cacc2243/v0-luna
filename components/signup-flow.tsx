@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { fbTrack } from '@/lib/fb/track'
 import {
@@ -30,8 +29,26 @@ const TOTAL = 6
 
 const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 
+// Nomes muito comuns/genericos: sugerimos algo mais criativo quando o usuario
+// digita apenas um nome simples sem nenhum diferencial (numero, sufixo, etc).
+const GENERIC_USERNAMES = [
+  'luna', 'amanda', 'maria', 'ana', 'julia', 'joao', 'jose', 'pedro', 'lucas',
+  'gabriel', 'rafael', 'bruna', 'carla', 'paula', 'fernanda', 'camila', 'beatriz',
+  'larissa', 'leticia', 'vitoria', 'isabela', 'sophia', 'sofia', 'helena', 'laura',
+  'manuela', 'alice', 'valentina', 'rosa', 'bella', 'lia', 'mia', 'teste', 'admin',
+  'user', 'usuario', 'love', 'baby', 'anjo', 'gata', 'princesa',
+]
+
+function isGenericUsername(raw: string) {
+  const value = raw.trim().toLowerCase()
+  if (value.length < 3) return false
+  // Possui algum diferencial (numero, _, ., sufixo) -> nao e generico.
+  if (/[0-9._]/.test(value)) return false
+  return GENERIC_USERNAMES.includes(value)
+}
+
 export function SignupFlow({ onComplete }: SignupFlowProps) {
-  const router = useRouter()
+  void onComplete
   const [step, setStep] = useState(0)
   const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
@@ -75,6 +92,17 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
   const back = () => setStep((s) => Math.max(0, s - 1))
   const advance = () => setStep((s) => Math.min(TOTAL - 1, s + 1))
+
+  // Loading visual (apenas) ao avancar da etapa de email.
+  const [verifyingEmail, setVerifyingEmail] = useState(false)
+  const advanceEmail = () => {
+    if (verifyingEmail) return
+    setVerifyingEmail(true)
+    setTimeout(() => {
+      setVerifyingEmail(false)
+      advance()
+    }, 1500)
+  }
 
   const finish = async () => {
     setStatus('loading')
@@ -175,13 +203,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   }
 
   const goToConvite = () => {
-    onComplete()
-    router.push('/convite')
+    // Navegacao "hard": nao e cancelada por re-renders do React (router.push
+    // estava sendo interrompido pelo re-render que onComplete dispara no pai).
+    window.location.assign('/convite')
   }
-  
+
   const goToMinhaConta = () => {
-    onComplete()
-    router.push('/minha-conta')
+    window.location.assign('/minha-conta')
   }
 
   // Validação por etapa
@@ -274,14 +302,16 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   placeholder="seu_nome"
                   autoFocus
                 />
-                <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3">
-                  <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                  <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
-                    Dica: use algo mais criativo, como{' '}
-                    <span className="font-semibold text-primary">@{username || 'seu_nome'}_oficial</span> ou{' '}
-                    <span className="font-semibold text-primary">@{username || 'seu_nome'}_real</span>.
-                  </p>
-                </div>
+                {isGenericUsername(username) && (
+                  <div className="animate-pop mt-3 flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3">
+                    <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                    <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
+                      Esse nome é muito comum. Use algo mais criativo, como{' '}
+                      <span className="font-semibold text-primary">@{username}_oficial</span> ou{' '}
+                      <span className="font-semibold text-primary">@{username}_real</span>.
+                    </p>
+                  </div>
+                )}
                 <CtaButton className="mt-6" disabled={!canContinue} onClick={advance}>
                   Continuar
                 </CtaButton>
@@ -305,7 +335,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   placeholder="seu@email.com"
                   autoFocus
                 />
-                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advanceEmail} loading={verifyingEmail} loadingText="Verificando email..." />
               </StepShell>
             )}
 
@@ -634,21 +664,25 @@ function StepFooter({
   onBack,
   onNext,
   disabled,
-}: {
+  loading,
+  loadingText,
+  }: {
   onBack: () => void
   onNext: () => void
   disabled: boolean
-}) {
+  loading?: boolean
+  loadingText?: string
+  }) {
   return (
-    <>
-      <CtaButton className="mt-6" disabled={disabled} onClick={onNext}>
-        Continuar
-      </CtaButton>
-      <button
-        type="button"
-        onClick={onBack}
-        className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
-      >
+  <>
+  <CtaButton className="mt-6" disabled={disabled} onClick={onNext} loading={loading} loadingText={loadingText}>
+  Continuar
+  </CtaButton>
+  <button
+  type="button"
+  onClick={onBack}
+  className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+  >
         ← Voltar para o passo anterior
       </button>
     </>
@@ -952,6 +986,34 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
 function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => void }) {
   const INVITE_STEPS = 2
   const [sub, setSub] = useState(0)
+  const [phase, setPhase] = useState<'steps' | 'searching' | 'offer' | 'redirecting'>('steps')
+  const [showFallback, setShowFallback] = useState(false)
+
+  // Mantem a referencia mais recente de onAccept sem reiniciar os timers.
+  const onAcceptRef = useRef(onAccept)
+  useEffect(() => {
+    onAcceptRef.current = onAccept
+  }, [onAccept])
+
+  // Loading "Buscando convites" -> mostra oferta especial
+  useEffect(() => {
+    if (phase !== 'searching') return
+    const t = setTimeout(() => setPhase('offer'), 3500)
+    return () => clearTimeout(t)
+  }, [phase])
+
+  // Loading "Resgatando": redireciona automaticamente em 2s.
+  // Caso o redirect nao ocorra, um botao de fallback aparece em 4s.
+  useEffect(() => {
+    if (phase !== 'redirecting') return
+    setShowFallback(false)
+    const redirectTimer = setTimeout(() => onAcceptRef.current(), 2000)
+    const fallbackTimer = setTimeout(() => setShowFallback(true), 2500)
+    return () => {
+      clearTimeout(redirectTimer)
+      clearTimeout(fallbackTimer)
+    }
+  }, [phase])
 
   return (
     <div className="animate-pop luna-border relative w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
@@ -977,79 +1039,142 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
           <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
         </div>
         <p className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">
-          {sub === 0 ? 'Meus parabens!' : 'Atencao'}
+          {phase === 'offer' || phase === 'redirecting'
+            ? 'Convite Especial'
+            : sub === 0
+              ? 'Meus parabens!'
+              : 'Atencao'}
         </p>
       </div>
 
       <div className="relative z-10 px-6 pb-7 pt-4">
-        {/* ETAPA 0 — Parabens + convite */}
-        {sub === 0 && (
-          <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
-            <p>
-              Sua conta foi criada com{' '}
-              <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
-              <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
-            </p>
-            <p className="mt-3">
-              Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
-            </p>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
-              acesso esta muito barato e confiavel.
-            </p>
-          </div>
-        )}
+        {/* FASE: etapas iniciais */}
+        {phase === 'steps' && (
+          <>
+            {/* ETAPA 0 — Parabens + convite */}
+            {sub === 0 && (
+              <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
+                <p>
+                  Sua conta foi criada com{' '}
+                  <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
+                  <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
+                </p>
+                <p className="mt-3">
+                  Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
+                  acesso esta muito barato e confiavel.
+                </p>
+              </div>
+            )}
 
-        {/* ETAPA 1 — Convites limitados + conformidade */}
-        {sub === 1 && (
-          <div key="invite-1" className="animate-pop rounded-2xl border border-primary/30 bg-primary/5 p-5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
-                <ShieldCheck className="size-[1.1rem] text-primary" aria-hidden="true" />
-              </span>
-              <p className="text-sm font-bold text-foreground">Convites limitados</p>
+            {/* ETAPA 1 — Convites limitados + conformidade */}
+            {sub === 1 && (
+              <div key="invite-1" className="animate-pop rounded-2xl border border-primary/30 bg-primary/5 p-5">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
+                    <ShieldCheck className="size-[1.1rem] text-primary" aria-hidden="true" />
+                  </span>
+                  <p className="text-sm font-bold text-foreground">Convites limitados</p>
+                </div>
+                <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
+                  Existem <span className="font-semibold text-primary">poucos convites disponiveis</span> no momento. Eles sao liberados
+                  em pequenas quantidades para manter a qualidade da plataforma.
+                </p>
+                <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-foreground">Toda usuaria possui um convite ativo</span> para garantir a conformidade e a
+                  seguranca de todos dentro do Luna Prive.
+                </p>
+              </div>
+            )}
+
+            {/* Indicador de etapas */}
+            <div className="mt-5 flex items-center justify-center gap-2" aria-hidden="true">
+              {Array.from({ length: INVITE_STEPS }).map((_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all duration-300',
+                    i === sub ? 'w-6 bg-primary' : 'w-1.5 bg-muted',
+                  )}
+                />
+              ))}
             </div>
-            <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
-              Existem <span className="font-semibold text-primary">poucos convites disponiveis</span> no momento. Eles sao liberados
-              em pequenas quantidades para manter a qualidade da plataforma.
-            </p>
-            <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
-              <span className="font-semibold text-foreground">Toda usuaria possui um convite ativo</span> para garantir a conformidade e a
-              seguranca de todos dentro do Luna Prive.
+
+            {/* Acoes */}
+            <div className="mt-4">
+              {sub < INVITE_STEPS - 1 ? (
+                <CtaButton onClick={() => setSub((s) => s + 1)}>Continuar</CtaButton>
+              ) : (
+                <CtaButton onClick={() => setPhase('searching')}>Quero um Convite</CtaButton>
+              )}
+              {sub > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSub((s) => Math.max(0, s - 1))}
+                  className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+                >
+                  ← Voltar
+                </button>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* FASE: buscando convites */}
+        {phase === 'searching' && (
+          <div className="flex flex-col items-center justify-center gap-4 py-10">
+            <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
+            <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
+              Buscando convites disponiveis...
             </p>
           </div>
         )}
 
-        {/* Indicador de etapas */}
-        <div className="mt-5 flex items-center justify-center gap-2" aria-hidden="true">
-          {Array.from({ length: INVITE_STEPS }).map((_, i) => (
-            <span
-              key={i}
-              className={cn(
-                'h-1.5 rounded-full transition-all duration-300',
-                i === sub ? 'w-6 bg-primary' : 'w-1.5 bg-muted',
-              )}
-            />
-          ))}
-        </div>
+        {/* FASE: convite especial */}
+        {phase === 'offer' && (
+          <>
+            <div className="animate-pop rounded-3xl border border-border/80 bg-secondary/40 p-6 text-center text-pretty">
+              <p className="text-[0.95rem] leading-relaxed text-foreground">
+                Infelizmente nao temos mais{' '}
+                <span className="font-bold">convites gratuitos</span> disponiveis.
+              </p>
+              <div className="mt-5 rounded-2xl border border-primary/60 bg-transparent px-5 py-5">
+                <p className="text-[0.95rem] font-bold leading-relaxed text-foreground">
+                  Mas como voce chegou ate aqui, preparamos{' '}
+                  <span className="text-primary">algo especial</span> para voce.
+                </p>
+              </div>
+            </div>
 
-        {/* Acoes */}
-        <div className="mt-4">
-          {sub < INVITE_STEPS - 1 ? (
-            <CtaButton onClick={() => setSub((s) => s + 1)}>Continuar</CtaButton>
-          ) : (
-            <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
-          )}
-          {sub > 0 && (
-            <button
-              type="button"
-              onClick={() => setSub((s) => Math.max(0, s - 1))}
-              className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
-            >
-              ← Voltar
-            </button>
-          )}
-        </div>
+            <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
+              <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
+              <p className="text-xs text-muted-foreground">
+                Restam apenas <span className="font-bold text-primary">6 convites</span> para resgate
+              </p>
+            </div>
+
+            <div className="mt-4">
+              <CtaButton onClick={() => setPhase('redirecting')}>Resgatar meu convite</CtaButton>
+            </div>
+          </>
+        )}
+
+        {/* FASE: redirecionando */}
+        {phase === 'redirecting' && (
+          <div className="flex flex-col items-center justify-center gap-4 py-10">
+            <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
+            <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
+              Resgatando seu convite...
+            </p>
+            {showFallback && (
+              <div className="animate-pop mt-2 w-full">
+                <CtaButton onClick={() => onAcceptRef.current()}>Resgatar convite</CtaButton>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

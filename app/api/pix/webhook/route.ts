@@ -14,24 +14,44 @@ export async function POST(request: NextRequest) {
     // - Bynet: campos planos (id, status, paid_at)
     // - SigiloPay: aninhado em `transaction` (id, identifier, status, payedAt)
     //   com o tipo de evento em `event` (TRANSACTION_PAID, TRANSACTION_CANCELED...).
+    // - HorsePay: campos planos com external_id (number), status (boolean),
+    //   client_reference_id (nosso identifier) e end_to_end.
     const tx = body.transaction || {}
     const event = String(body.event || '').toUpperCase()
 
+    // Detecta callbacks de infracao da HorsePay (contem infraction_status).
+    // Nao alteram o status de pagamento — apenas registramos e respondemos 200.
+    const infractionStatus = body.infraction_status || tx.infraction_status || null
+
     // Possiveis identificadores da transacao (tentamos casar por qualquer um).
+    // Normalizamos para string pois a HorsePay envia external_id como number.
     const candidateIds = [
       tx.id,
       tx.identifier,
       body.id,
       body.transactionId,
+      body.transaction_id,
       body.external_id,
       body.externalId,
-    ].filter((v): v is string => typeof v === 'string' && v.length > 0)
+      body.client_reference_id,
+      tx.client_reference_id,
+    ]
+      .filter((v) => v !== undefined && v !== null && String(v).length > 0)
+      .map((v) => String(v))
 
     const rawStatus = String(
       tx.status || body.status || body.payment_status || ''
     ).toUpperCase()
     const paidAt =
       tx.payedAt || body.paid_at || body.paidAt || body.payment_date || null
+
+    // HorsePay envia `status` como boolean: true = pago, false = falhou/estornado.
+    const horsepayBoolStatus =
+      typeof body.status === 'boolean'
+        ? body.status
+        : typeof tx.status === 'boolean'
+          ? tx.status
+          : null
 
     // Sem ID = provavelmente um ping de teste do painel do gateway ou um evento
     // sem transacao. A doc da SigiloPay exige responder 2XX, caso contrario ela
@@ -40,6 +60,21 @@ export async function POST(request: NextRequest) {
       console.log('[v0] Webhook sem transaction id — tratado como ping/teste, ignorando.')
       return NextResponse.json(
         { received: true, matched: false, reason: 'no_transaction_id' },
+        { status: 200 }
+      )
+    }
+
+    // Callback de infracao da HorsePay: nao altera o status do pagamento.
+    // Apenas registramos e respondemos 200 (a doc exige resposta 2XX).
+    if (infractionStatus) {
+      console.log(
+        '[v0] Callback de infração HorsePay recebido:',
+        infractionStatus,
+        '| tx:',
+        candidateIds.join(', '),
+      )
+      return NextResponse.json(
+        { received: true, matched: false, reason: 'infraction', infraction_status: infractionStatus },
         { status: 200 }
       )
     }
@@ -67,12 +102,17 @@ export async function POST(request: NextRequest) {
     // Mapear status do gateway para nosso status.
     // SigiloPay usa `event` (TRANSACTION_PAID/CANCELED/REFUNDED) e status COMPLETED.
     let newStatus = invite.status
-    const paidEvent = event === 'TRANSACTION_PAID'
-    const canceledEvent = event === 'TRANSACTION_CANCELED' || event === 'TRANSACTION_CANCELLED'
-    const refundedEvent = event === 'TRANSACTION_REFUNDED'
+    const paidEvent = event === 'TRANSACTION_PAID' || event === 'CASHIN.CONFIRMED'
+    const canceledEvent =
+      event === 'TRANSACTION_CANCELED' ||
+      event === 'TRANSACTION_CANCELLED' ||
+      event === 'CASHIN.EXPIRED' ||
+      event === 'CASHIN.FAILED'
+    const refundedEvent = event === 'TRANSACTION_REFUNDED' || event === 'CASHIN.REFUNDED'
 
     if (
       paidEvent ||
+      horsepayBoolStatus === true ||
       ['PAID', 'APPROVED', 'COMPLETED', 'PAID', 'OK'].includes(rawStatus) ||
       ['paid', 'approved', 'completed'].includes(String(tx.status || body.status || ''))
     ) {
@@ -81,6 +121,7 @@ export async function POST(request: NextRequest) {
       newStatus = 'refunded'
     } else if (
       canceledEvent ||
+      horsepayBoolStatus === false ||
       ['EXPIRED', 'CANCELLED', 'CANCELED', 'FAILED'].includes(rawStatus)
     ) {
       newStatus = 'expired'
