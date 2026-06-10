@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { fbTrack } from '@/lib/fb/track'
 import {
@@ -49,7 +48,7 @@ function isGenericUsername(raw: string) {
 }
 
 export function SignupFlow({ onComplete }: SignupFlowProps) {
-  const router = useRouter()
+  void onComplete
   const [step, setStep] = useState(0)
   const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error'>('form')
   const [errorMessage, setErrorMessage] = useState('')
@@ -204,13 +203,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   }
 
   const goToConvite = () => {
-    onComplete()
-    router.push('/convite')
+    // Navegacao "hard": nao e cancelada por re-renders do React (router.push
+    // estava sendo interrompido pelo re-render que onComplete dispara no pai).
+    window.location.assign('/convite')
   }
-  
+
   const goToMinhaConta = () => {
-    onComplete()
-    router.push('/minha-conta')
+    window.location.assign('/minha-conta')
   }
 
   // Validação por etapa
