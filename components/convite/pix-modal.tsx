@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Mail, CheckCircle2 } from 'lucide-react'
+import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Mail, CheckCircle2, Info } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import confetti from 'canvas-confetti'
@@ -53,6 +53,9 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
   const [checkingPayment, setCheckingPayment] = useState(false)
   const [inviteId, setInviteId] = useState<string | null>(null)
   const [verifying, setVerifying] = useState(false)
+  // Toast interno do modal (cópia do código / resultado da verificação de pagamento).
+  const [toast, setToast] = useState<{ variant: 'success' | 'error' | 'info'; message: string } | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Garante que os confetes disparem apenas uma vez por geração de PIX.
   const confettiFiredRef = useRef(false)
   // Garante que o InitiateCheckout seja disparado uma unica vez por abertura.
@@ -87,6 +90,20 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
   // Preço "de" (âncora) com ~40% de desconto, igual ao PriceCard.
   const originalAmount = amount / 0.6
 
+  // Exibe um toast temporário dentro do modal.
+  function showToast(variant: 'success' | 'error' | 'info', message: string) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast({ variant, message })
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000)
+  }
+
+  // Limpa o timer do toast ao desmontar.
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    }
+  }, [])
+
   // Ação do botão "Já fiz o pagamento": força uma verificação imediata.
   async function handleAlreadyPaid() {
     if (!inviteId || verifying) return
@@ -95,10 +112,14 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
       const response = await fetch(`/api/pix/status?id=${inviteId}&type=${type}`)
       const data = await response.json()
       if (data.paidInvite) {
+        showToast('success', 'Pagamento confirmado! Liberando seu acesso...')
         onPaymentConfirmed?.()
+      } else {
+        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes.')
       }
     } catch (err) {
       console.error('[v0] Erro ao verificar pagamento:', err)
+      showToast('error', 'Não foi possível verificar agora. Tente novamente em instantes.')
     } finally {
       setVerifying(false)
     }
@@ -301,6 +322,7 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
     const markCopied = () => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+      showToast('success', 'Código PIX copiado com sucesso!')
       // Registra no servidor que o cliente de fato copiou o código PIX.
       if (inviteId) {
         fetch('/api/pix/copied', {
@@ -338,9 +360,13 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
       textarea.select()
       const ok = document.execCommand('copy')
       document.body.removeChild(textarea)
-      if (ok) markCopied()
+      if (ok) {
+        markCopied()
+      } else {
+        showToast('error', 'Não foi possível copiar. Selecione e copie o código manualmente.')
+      }
     } catch {
-      // Silencioso: o usuário ainda pode copiar manualmente
+      showToast('error', 'Não foi possível copiar. Selecione e copie o código manualmente.')
     }
   }
 
@@ -349,6 +375,34 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">
       <div className="relative flex max-h-[96dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:rounded-3xl sm:zoom-in-95">
+        {/* Toast interno */}
+        {toast && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="absolute inset-x-3 top-3 z-30 flex items-start gap-2.5 rounded-2xl border bg-background/95 px-4 py-3 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-200"
+            style={{
+              borderColor:
+                toast.variant === 'success'
+                  ? 'rgb(34 197 94 / 0.5)'
+                  : toast.variant === 'error'
+                    ? 'rgb(239 68 68 / 0.5)'
+                    : 'var(--border)',
+            }}
+          >
+            {toast.variant === 'success' ? (
+              <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-green-500" aria-hidden="true" />
+            ) : toast.variant === 'error' ? (
+              <AlertCircle className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
+            ) : (
+              <Info className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+            )}
+            <p className="text-pretty text-sm font-medium leading-relaxed text-foreground">
+              {toast.message}
+            </p>
+          </div>
+        )}
+
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
           <img src="/images/background.png" alt="" className="size-full object-cover" />
