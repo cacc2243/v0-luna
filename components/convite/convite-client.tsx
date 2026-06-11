@@ -115,7 +115,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
 
       <div className="relative mx-auto flex w-full max-w-md flex-col gap-7 px-5 pb-12 pt-8">
         {/* Hero */}
-        <header className="relative overflow-hidden rounded-3xl border border-border/40 bg-card/80 px-6 py-7 backdrop-blur-sm">
+        <header className="relative overflow-hidden rounded-3xl border border-border/40 bg-card/80 px-5 py-5 backdrop-blur-sm">
           <div
             className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-primary/20 blur-3xl"
             aria-hidden="true"
@@ -124,18 +124,18 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
             <img
               src="/images/luna-prive-logo.png"
               alt="Luna Privé"
-              className="h-7 w-auto self-start"
+              className="h-6 w-auto self-start"
             />
-            <h1 className="mt-5 text-balance text-3xl font-extrabold leading-tight tracking-tight text-foreground">
+            <h1 className="mt-4 text-balance text-2xl font-extrabold leading-tight tracking-tight text-foreground">
               Ative seu Plano Criadora
             </h1>
-            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
               Confirme seus dados abaixo e ative seu Plano de Criadora Luna para começar a vender.
             </p>
 
-            <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-border/60 bg-background/50 px-4 py-3">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
-                <Mail className="size-4" aria-hidden="true" />
+            <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-border/60 bg-background/50 px-3.5 py-2.5">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+                <Mail className="size-3.5" aria-hidden="true" />
               </span>
               <p className="text-pretty text-xs font-medium leading-relaxed text-foreground">
                 Você receberá a confirmação do seu Plano Criadora por e-mail.
