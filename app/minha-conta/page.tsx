@@ -68,7 +68,6 @@ import {
   AlertCircle,
   Gift,
   Clock,
-  Zap,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
   import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead } from './actions'
@@ -2152,7 +2151,7 @@ function StatCard({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ��────────────────────────────────────────────────────────────────────────────
 // Tela Packs
 // ─────────────��───────────────────────────────────────────────────────────────
 
@@ -2257,7 +2256,7 @@ function PacksScreen({
   )
 }
 
-// ───────────────────────────────────────────────────────────���─────────────────
+// ────────────────────────────────────────────────���──────────���─────────────────
 // Tela Detalhe do Pack (visualizar, métricas e editar)
 // ─────────────────────────────────────────────────────────────────────────────
 
