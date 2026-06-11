@@ -549,7 +549,7 @@ export async function settleExpiredWithdrawals() {
 
 // ───────���─────────────────────────────────────────────────────────────────────
 // Conversation Actions
-// ───────────────────����───────────────────────────────────────────────────────�����─
+// ───────────────────������───────────────────────────────────────────────────────�����─
 
 // Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
 const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
@@ -1226,7 +1226,7 @@ export async function getHighlights(): Promise<Highlight[]> {
   return data || []
 }
 
-// ─────────────────────────────────────────���───────────────────────────────────
+// ──────────────────────────────────────���──���───────────────────────────────────
 // Settings Actions
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1319,7 +1319,7 @@ function randInt(min: number, max: number) {
 
 // Gera atividade para os packs do usuario: views, likes, seguidores e pedidos pendentes.
 // Tudo fica salvo no banco. Retorna quantos pedidos novos foram criados.
-export async function generatePackActivity(opts?: { initial?: boolean }) {
+export async function generatePackActivity(opts?: { initial?: boolean; maxOrders?: number }) {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return { error: 'Not authenticated' }
@@ -1345,7 +1345,8 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
   }
 
   // Contagem total de pedidos ja gerados (para a regra de pedido direto).
-  // Regra: a cada 5 pedidos com chat exclusivo, 1 pedido direto (o 6o).
+  // Regra: os 4 PRIMEIROS pedidos sao diretos (sem chat). Depois disso,
+  // a cada 10 pedidos apenas 1 e direto e os outros 9 sao com chat exclusivo.
   const { count: existingOrders } = await supabase
     .from('sales')
     .select('id', { count: 'exact', head: true })
@@ -1353,6 +1354,8 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
   let orderIndex = existingOrders ?? 0
 
   const initial = opts?.initial
+  // Limite de pedidos por chamada (para os pedidos aparecerem um a um, e nao em lote).
+  const maxOrders = opts?.maxOrders ?? Infinity
   let newOrders = 0
   let followersGained = 0
 
@@ -1404,14 +1407,18 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
     // Pedidos de venda pendentes (menos frequentes para nao acumular demais)
     const orders = initial ? randInt(1, 2) : randInt(0, 1)
     for (let i = 0; i < orders; i++) {
+      // Respeita o limite global de pedidos por chamada.
+      if (newOrders >= maxOrders) break
       const amount = Number(pack.price) || 0
       // A pessoa recebe o valor total da venda, sem desconto de taxa
       const netAmount = amount
       const buyer = generateBuyerName(usedNames)
 
-      // Regra: a cada 5 pedidos com chat, o 6o e um pedido direto (sem chat).
+      // Regra de pedido direto:
+      // - os 4 primeiros pedidos (orderIndex 1..4) sao sempre diretos;
+      // - a partir do 5o, a cada bloco de 10 pedidos apenas 1 e direto.
       orderIndex++
-      const isDirect = orderIndex % 6 === 0
+      const isDirect = orderIndex <= 4 || (orderIndex - 4) % 10 === 1
 
       const { data: sale } = await supabase
         .from('sales')

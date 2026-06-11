@@ -1112,204 +1112,57 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
 }
 
 function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => void }) {
-  const INVITE_STEPS = 2
-  const [sub, setSub] = useState(0)
-  const [phase, setPhase] = useState<'steps' | 'searching' | 'offer' | 'redirecting'>('steps')
-  const [showFallback, setShowFallback] = useState(false)
-
-  // Mantem a referencia mais recente de onAccept sem reiniciar os timers.
-  const onAcceptRef = useRef(onAccept)
-  useEffect(() => {
-    onAcceptRef.current = onAccept
-  }, [onAccept])
-
-  // Loading "Buscando convites" -> mostra oferta especial
-  useEffect(() => {
-    if (phase !== 'searching') return
-    const t = setTimeout(() => setPhase('offer'), 3500)
-    return () => clearTimeout(t)
-  }, [phase])
-
-  // Loading "Resgatando": redireciona automaticamente em 2s.
-  // Caso o redirect nao ocorra, um botao de fallback aparece em 4s.
-  useEffect(() => {
-    if (phase !== 'redirecting') return
-    setShowFallback(false)
-    const redirectTimer = setTimeout(() => onAcceptRef.current(), 2000)
-    const fallbackTimer = setTimeout(() => setShowFallback(true), 2500)
-    return () => {
-      clearTimeout(redirectTimer)
-      clearTimeout(fallbackTimer)
-    }
-  }, [phase])
+  void onSkip
 
   return (
-    <div className="animate-pop luna-border relative flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
-      {/* Imagem de fundo */}
+    <div className="animate-pop luna-border relative flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20">
+      {/* Imagem de fundo sutil */}
       <div className="absolute inset-0" aria-hidden="true">
         <img
           src="/images/luna-fundo-leve.webp"
           alt=""
-          className="size-full object-cover object-top"
+          className="size-full object-cover object-top opacity-60"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/65 via-background/60 to-background/80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/80 to-background/95" />
       </div>
 
-      {/* Conteúdo rolável (evita corte em telas baixas) */}
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto">
-      {/* Mentora */}
-      <div className="flex flex-col items-center px-6 pt-7">
-        <div className="relative">
-          <span className="absolute -inset-1.5 rounded-full luna-gradient opacity-70 blur-lg" aria-hidden="true" />
+      {/* Conteúdo */}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-7 pb-8 pt-9 text-center">
+        {/* Logo completa */}
+        <div className="flex justify-center">
           <img
-            src="/images/mentor.png"
-            alt="Mentora do Luna Prive"
-            className="relative size-24 rounded-full border-2 border-primary/60 object-cover"
+            src="/images/luna-prive-logo.png"
+            alt="Luna Privé"
+            className="h-12 w-auto"
           />
-          <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
         </div>
-        <p className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">
-          {phase === 'offer' || phase === 'redirecting'
-            ? 'Plano Criadora'
-            : sub === 0
-              ? 'Meus parabens!'
-              : 'Atencao'}
+
+        {/* Selo de sucesso */}
+        <div className="mt-8 flex justify-center">
+          <span className="flex size-16 items-center justify-center rounded-full bg-positive/15">
+            <Check className="size-8 text-positive" aria-hidden="true" />
+          </span>
+        </div>
+
+        {/* Título */}
+        <h2 className="mt-6 text-balance text-2xl font-bold leading-tight text-foreground">
+          Bem-vinda ao Luna Privé!
+        </h2>
+
+        {/* Mensagem */}
+        <p className="mt-4 text-pretty text-base leading-relaxed text-foreground/90">
+          Sua conta foi criada com{' '}
+          <span className="font-semibold text-positive">sucesso!</span>
         </p>
-      </div>
+        <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
+          Ela já está <span className="font-semibold text-primary">apta a receber um convite de acesso</span>{' '}
+          à plataforma. É só continuar para dar o próximo passo.
+        </p>
 
-      <div className="px-6 pb-7 pt-4">
-        {/* FASE: etapas iniciais */}
-        {phase === 'steps' && (
-          <>
-            {/* ETAPA 0 — Parabens + escolha do plano */}
-            {sub === 0 && (
-              <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
-                <p>
-                  Seu perfil foi criado com{' '}
-                  <span className="font-semibold text-positive">sucesso!</span> Agora é hora de escolher o seu{' '}
-                  <span className="font-semibold text-primary">Plano de Criadora Luna</span>.
-                </p>
-                <p className="mt-3">
-                  Toda usuária escolhe um plano para{' '}
-                  <span className="font-semibold">começar a vender</span> dentro da plataforma — é ele que
-                  ativa suas ferramentas de criadora.
-                </p>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Para publicar seus packs, receber pedidos privados e usar o painel de vendas da
-                  LUNA.PRIVÉ, você precisa ter um Plano Criadora ativo.
-                </p>
-              </div>
-            )}
-
-            {/* ETAPA 1 — O que o plano libera + vagas limitadas */}
-            {sub === 1 && (
-              <div key="invite-1" className="animate-pop rounded-2xl border border-primary/30 bg-primary/5 p-5">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
-                    <ShieldCheck className="size-[1.1rem] text-primary" aria-hidden="true" />
-                  </span>
-                  <p className="text-sm font-bold text-foreground">O que o plano libera</p>
-                </div>
-                <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
-                  O Plano Criadora habilita sua conta com{' '}
-                  <span className="font-semibold text-primary">anonimato, segurança nas transações</span> e
-                  todas as ferramentas de venda da plataforma.
-                </p>
-                <p className="mt-3 text-pretty text-sm leading-relaxed text-foreground/85">
-                  Você ainda conta com <span className="font-semibold text-foreground">suporte 24h por chat ou WhatsApp</span>{' '}
-                  para começar com segurança. Em outras plataformas esse acesso é caro ou nem está mais
-                  disponível — aqui ainda temos <span className="font-semibold text-primary">alguns planos disponíveis</span>.
-                </p>
-              </div>
-            )}
-
-            {/* Indicador de etapas */}
-            <div className="mt-5 flex items-center justify-center gap-2" aria-hidden="true">
-              {Array.from({ length: INVITE_STEPS }).map((_, i) => (
-                <span
-                  key={i}
-                  className={cn(
-                    'h-1.5 rounded-full transition-all duration-300',
-                    i === sub ? 'w-6 bg-primary' : 'w-1.5 bg-muted',
-                  )}
-                />
-              ))}
-            </div>
-
-            {/* Acoes */}
-            <div className="mt-4">
-              {sub < INVITE_STEPS - 1 ? (
-                <CtaButton onClick={() => setSub((s) => s + 1)}>Continuar</CtaButton>
-              ) : (
-                <CtaButton onClick={() => setPhase('searching')}>Escolher meu Plano</CtaButton>
-              )}
-              {sub > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSub((s) => Math.max(0, s - 1))}
-                  className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
-                >
-                  ← Voltar
-                </button>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* FASE: buscando planos */}
-        {phase === 'searching' && (
-          <div className="flex flex-col items-center justify-center gap-4 py-10">
-            <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
-            <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
-              Buscando planos disponiveis...
-            </p>
-          </div>
-        )}
-
-        {/* FASE: plano especial */}
-        {phase === 'offer' && (
-          <>
-            <div className="animate-pop rounded-3xl border border-border/80 bg-secondary/40 p-6 text-center text-pretty">
-              <p className="text-[0.95rem] leading-relaxed text-foreground">
-                Os <span className="font-bold">planos gratuitos</span> de criadora já não estão mais
-                disponíveis.
-              </p>
-              <div className="mt-5 rounded-2xl border border-primary/60 bg-transparent px-5 py-5">
-                <p className="text-[0.95rem] font-bold leading-relaxed text-foreground">
-                  Mas como voce chegou ate aqui, conseguimos liberar um{' '}
-                  <span className="text-primary">Plano Criadora especial</span> para voce.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
-              <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
-              <p className="text-xs text-muted-foreground">
-                Restam apenas <span className="font-bold text-primary">6 planos</span> com esta condição
-              </p>
-            </div>
-
-            <div className="mt-4">
-              <CtaButton onClick={() => setPhase('redirecting')}>Ativar meu Plano Criadora</CtaButton>
-            </div>
-          </>
-        )}
-
-        {/* FASE: redirecionando */}
-        {phase === 'redirecting' && (
-          <div className="flex flex-col items-center justify-center gap-4 py-10">
-            <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
-            <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
-              Preparando seu Plano Criadora...
-            </p>
-            {showFallback && (
-              <div className="animate-pop mt-2 w-full">
-                <CtaButton onClick={() => onAcceptRef.current()}>Continuar para o plano</CtaButton>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        {/* Ação */}
+        <div className="mt-8">
+          <CtaButton onClick={onAccept}>Continuar</CtaButton>
+        </div>
       </div>
     </div>
   )

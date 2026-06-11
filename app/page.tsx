@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { primeSounds, playTabTap } from '@/lib/sounds'
 import {
   ShieldCheck,
   Lock,
@@ -220,7 +221,12 @@ const TOTAL_STEPS = 8
 export default function Page() {
   const [step, setStep] = useState(0)
   const [verified, setVerified] = useState(false)
-  const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1))
+  const next = () => {
+    // Som suave de toque ao avançar em qualquer etapa do funil.
+    primeSounds()
+    playTabTap()
+    setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1))
+  }
 
   return (
     <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">

@@ -286,9 +286,9 @@ export function FansWaitingModal({
             <X className="size-5" />
           </button>
 
-          <div className="relative mx-auto flex size-20 items-center justify-center rounded-full bg-primary/15 ring-2 ring-primary/40">
-            <Zap className="size-9 text-primary" />
-            <span className="absolute -right-1 -top-1 flex min-w-7 items-center justify-center rounded-full bg-positive px-2 py-0.5 text-xs font-bold text-background ring-2 ring-card">
+          <div className="relative mx-auto flex size-14 items-center justify-center rounded-full bg-primary/15 ring-2 ring-primary/40">
+            <Zap className="size-6 text-primary" />
+            <span className="absolute -right-1 -top-1 flex min-w-6 items-center justify-center rounded-full bg-positive px-1.5 py-0.5 text-[0.65rem] font-bold text-background ring-2 ring-card">
               {chatCount}
             </span>
           </div>

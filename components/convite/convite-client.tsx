@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Mail } from 'lucide-react'
-import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
+import { WelcomePopup } from '@/components/convite/welcome-popup'
+import { SocialProofToaster } from '@/components/convite/social-proof-toaster'
 
 interface SignupData {
   username: string
@@ -43,6 +44,8 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
     return { username: '', email: '', pixType: '', pixKey: '' }
   })
   const [showPixModal, setShowPixModal] = useState(false)
+  // Ativa as notificações de prova social no topo após o modal de convite fechar
+  const [socialProofActive, setSocialProofActive] = useState(false)
   // Valor do convite ja chega resolvido do servidor (Server Component), entao
   // o preco aparece imediatamente, sem blur nem fetch no cliente.
   const [inviteCents] = useState(initialInviteCents)
@@ -101,15 +104,21 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">
       <div className="fixed inset-0 z-0">
-        <PageBackground />
-        <div className="absolute inset-0 bg-background/70" aria-hidden="true" />
+        <img
+          src="/images/convite-fundo.jpg"
+          alt=""
+          className="size-full object-cover object-center"
+        />
+        {/* Camadas de legibilidade */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/55 to-background/85" />
+        <div className="absolute inset-0 bg-background/40" aria-hidden="true" />
       </div>
 
       {/* Top bar */}
       <div className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-md items-center gap-2 px-5 py-3.5">
           <Lock className="size-4 text-primary" aria-hidden="true" />
-          <span className="text-sm font-semibold text-foreground">Ativar Plano Criadora</span>
+          <span className="text-sm font-semibold text-foreground">Adquirir meu Convite</span>
         </div>
       </div>
 
@@ -127,10 +136,10 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
               className="h-6 w-auto self-start"
             />
             <h1 className="mt-4 text-balance text-2xl font-extrabold leading-tight tracking-tight text-foreground">
-              Ative seu Plano Criadora
+              Resgate seu Convite Oficial
             </h1>
             <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-              Confirme seus dados abaixo e ative seu Plano de Criadora Luna para começar a vender.
+              O Luna Privé é exclusivo para convidadas. Confirme seus dados abaixo e garanta seu código de convite para entrar na plataforma.
             </p>
 
             <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-border/60 bg-background/50 px-3.5 py-2.5">
@@ -138,7 +147,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
                 <Mail className="size-3.5" aria-hidden="true" />
               </span>
               <p className="text-pretty text-xs font-medium leading-relaxed text-foreground">
-                Você receberá a confirmação do seu Plano Criadora por e-mail.
+                Você receberá seu código de convite por e-mail após a confirmação.
               </p>
             </div>
           </div>
@@ -175,6 +184,12 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
         trackInitiateCheckout
         onPaymentConfirmed={handlePaymentConfirmed}
       />
+
+      {/* Modal de código de convite (abre ao entrar na tela) */}
+      <WelcomePopup onClose={() => setSocialProofActive(true)} />
+
+      {/* Notificações de prova social no topo (após fechar o modal) */}
+      <SocialProofToaster active={socialProofActive} />
     </main>
   )
 }

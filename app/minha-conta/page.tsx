@@ -76,6 +76,7 @@ import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/comp
 import { ChatsActive } from '@/components/minha-conta/chats-active'
  import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
  import { SupportModal } from '@/components/minha-conta/support-modal'
+import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
 
 // Valor do Chat Exclusivo (pagamento unico)
 const CHAT_PRICE = 99.0
@@ -739,30 +740,39 @@ function AppDashboard() {
   }, [refreshActivity])
 
   // Instante em que o PRIMEIRO pack foi publicado (created_at mais antigo).
-  // Pedidos e chats só começam a aparecer 10s após esse marco.
+  // Pedidos e chats só começam a aparecer 20s após esse marco.
   const firstPackAt = useMemo(() => {
     if (packs.length === 0) return 0
     return Math.min(...packs.map((p) => new Date(p.created_at).getTime()))
   }, [packs])
 
-  const ACTIVITY_DELAY = 10000 // 10s após publicar o primeiro pack
+  const ACTIVITY_DELAY = 20000 // 20s após publicar o primeiro pack
 
-  // Motor de atividade: enquanto houver packs publicados, gera views/pedidos periodicamente
+  // Motor de atividade: enquanto houver packs publicados, gera views/pedidos periodicamente.
+  // Os pedidos aparecem UM DE CADA VEZ, com intervalo aleatorio de 7 a 25s entre eles,
+  // para nao chegarem rapido demais nem em lote.
   useEffect(() => {
     if (packs.length === 0) return
     const initialDelay = Math.max(ACTIVITY_DELAY - (Date.now() - firstPackAt), 0)
-    let interval: ReturnType<typeof setInterval> | null = null
-    const startTimer = setTimeout(async () => {
-      await generatePackActivity()
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let cancelled = false
+
+    // Delay aleatorio entre 7s e 25s.
+    const nextDelay = () => 7000 + Math.floor(Math.random() * 18001)
+
+    const runCycle = async (isFirst: boolean) => {
+      if (cancelled) return
+      await generatePackActivity({ initial: isFirst, maxOrders: 1 })
+      if (cancelled) return
       refreshActivity()
-      interval = setInterval(async () => {
-        await generatePackActivity()
-        refreshActivity()
-      }, 45000)
-    }, initialDelay)
+      timer = setTimeout(() => runCycle(false), nextDelay())
+    }
+
+    const startTimer = setTimeout(() => runCycle(true), initialDelay)
     return () => {
+      cancelled = true
       clearTimeout(startTimer)
-      if (interval) clearInterval(interval)
+      if (timer) clearTimeout(timer)
     }
   }, [packs.length, firstPackAt, refreshActivity])
 
@@ -831,6 +841,8 @@ function AppDashboard() {
     // Dispara destaque no saldo
     setBalanceFlash(true)
     setTimeout(() => setBalanceFlash(false), 1200)
+    // Som de venda aceita / dinheiro creditado.
+    playSaleAccepted()
 
     // Persiste no servidor em segundo plano; revalidacao agrupada (debounce)
     acceptSale(saleId).then((res) => {
@@ -975,10 +987,8 @@ function AppDashboard() {
     resetPackForm()
     mutatePacks()
 
-    // Dispara a atividade inicial: views, pedidos pendentes e notificacoes
-    generatePackActivity({ initial: true }).then(() => {
-      refreshActivity()
-    })
+    // A atividade inicial (views, pedidos, notificacoes) NAO dispara na hora:
+    // o motor de atividade abaixo agenda a primeira leva ~20s apos a publicacao.
   }
 
   function closeWelcome() {
@@ -1112,7 +1122,11 @@ function AppDashboard() {
           <button
             key={item.label}
             type="button"
-            onClick={() => setActiveTab(item.label as any)}
+            onClick={() => {
+              primeSounds()
+              playTabTap()
+              setActiveTab(item.label as any)
+            }}
             className="flex w-14 flex-col items-center gap-1"
           >
             {item.center ? (
@@ -2005,9 +2019,15 @@ function HomeScreen({
                   <p className="truncate text-[0.8rem] font-semibold text-foreground">
                     {sale.buyer_name} quer {sale.pack?.title || 'seu pack'}
                   </p>
-                  {sale.is_direct && (
-                    <span className="shrink-0 rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {sale.is_direct ? (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-positive/30 bg-positive/10 px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-positive">
+                      <Zap className="size-2.5" aria-hidden="true" />
                       Direto
+                    </span>
+                  ) : (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-primary">
+                      <MessageSquare className="size-2.5" aria-hidden="true" />
+                      Com chat
                     </span>
                   )}
                 </div>
@@ -2131,7 +2151,7 @@ function StatCard({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ��────────────────────────────────────────────────────────────────────────────
 // Tela Packs
 // ─────────────��───────────────────────────────────────────────────────────────
 
@@ -2236,7 +2256,7 @@ function PacksScreen({
   )
 }
 
-// ───────────────────────────────────────────────────────────���─────────────────
+// ────────────────────────────────────────────────���──────────���─────────────────
 // Tela Detalhe do Pack (visualizar, métricas e editar)
 // ─────────────────────────────────────────────────────────────────────────────
 

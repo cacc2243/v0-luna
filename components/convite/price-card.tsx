@@ -1,13 +1,13 @@
 'use client'
 
-import { Check, ChevronRight } from 'lucide-react'
+import { Check, ChevronRight, Gift } from 'lucide-react'
 
 const benefits = [
-  'Plano Criadora Luna Privé',
-  'Publique seus packs e comece a vender',
-  'Anonimato e privacidade do perfil',
+  'Código de convite exclusivo Luna Privé',
+  'Acesso imediato à plataforma após a confirmação',
+  'Anonimato e privacidade total do seu perfil',
   'Suporte 24h por WhatsApp + Chat',
-  'Garantia de 30 dias para suas primeiras vendas',
+  'Garantia de 30 dias',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -105,9 +105,10 @@ export function PriceCard({
           type="button"
           onClick={onAcquire}
           disabled={!priceReady}
-          className="luna-gradient relative mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
+          className="luna-gradient relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
         >
-          {priceReady ? 'Ativar meu Plano' : 'Carregando valor...'}
+          {priceReady && <Gift className="size-5" aria-hidden="true" />}
+          {priceReady ? 'Adquirir meu Convite' : 'Carregando valor...'}
           {priceReady && <ChevronRight className="size-5" aria-hidden="true" />}
         </button>
       </div>
