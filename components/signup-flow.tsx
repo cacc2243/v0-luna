@@ -301,7 +301,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         ) : (
           <div
             key={step}
-            className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
+            className="animate-pop luna-border max-h-[92dvh] w-full max-w-sm overflow-y-auto overflow-x-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
           >
             {/* Progresso */}
             <div className="mb-7">
@@ -1144,7 +1144,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
   }, [phase])
 
   return (
-    <div className="animate-pop luna-border relative w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
+    <div className="animate-pop luna-border relative flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
       {/* Imagem de fundo */}
       <div className="absolute inset-0" aria-hidden="true">
         <img
@@ -1155,8 +1155,10 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
         <div className="absolute inset-0 bg-gradient-to-b from-background/65 via-background/60 to-background/80" />
       </div>
 
+      {/* Conteúdo rolável (evita corte em telas baixas) */}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto">
       {/* Mentora */}
-      <div className="relative z-10 flex flex-col items-center px-6 pt-7">
+      <div className="flex flex-col items-center px-6 pt-7">
         <div className="relative">
           <span className="absolute -inset-1.5 rounded-full luna-gradient opacity-70 blur-lg" aria-hidden="true" />
           <img
@@ -1175,7 +1177,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
         </p>
       </div>
 
-      <div className="relative z-10 px-6 pb-7 pt-4">
+      <div className="px-6 pb-7 pt-4">
         {/* FASE: etapas iniciais */}
         {phase === 'steps' && (
           <>
@@ -1307,6 +1309,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   )
