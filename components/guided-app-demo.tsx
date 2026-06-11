@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { CtaButton } from '@/components/cta-button'
+import { primeSounds, playNewSale, playSaleAccepted } from '@/lib/sounds'
 import { SignupFlow } from '@/components/signup-flow'
 
 interface GuidedAppDemoProps {
@@ -198,6 +199,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     if (phase !== 'selling' && phase !== 'selling2') return
     const t = setTimeout(() => {
       setActiveSale(saleIndex)
+      // Som de novo pedido chegando (igual ao /minha-conta).
+      playNewSale()
     }, 500)
     return () => clearTimeout(t)
   }, [phase, saleIndex])
@@ -234,7 +237,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   function acceptSale(e: React.MouseEvent) {
     const list = phase === 'selling2' ? sales2 : sales
     const sale = list[saleIndex]
-    
+
+    // Libera o áudio e toca o som de venda aceita (dinheiro creditado).
+    primeSounds()
+    playSaleAccepted()
+
     // Criar partículas de dinheiro no local do clique
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const baseX = e.clientX
