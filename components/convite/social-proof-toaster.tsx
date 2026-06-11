@@ -75,10 +75,52 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
   const [current, setCurrent] = useState<ToastData | null>(null)
   const [leaving, setLeaving] = useState(false)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const audioCtxRef = useRef<AudioContext | null>(null)
 
   const clearTimers = useCallback(() => {
     timers.current.forEach(clearTimeout)
     timers.current = []
+  }, [])
+
+  // Som leve de notificação (chime suave de dois tons) gerado via Web Audio.
+  const playChime = useCallback(() => {
+    try {
+      if (typeof window === 'undefined') return
+      const Ctx =
+        window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      if (!Ctx) return
+      if (!audioCtxRef.current) audioCtxRef.current = new Ctx()
+      const ctx = audioCtxRef.current
+      if (ctx.state === 'suspended') void ctx.resume()
+
+      const now = ctx.currentTime
+      // Volume mestre baixo para um som discreto.
+      const master = ctx.createGain()
+      master.gain.value = 0.06
+      master.connect(ctx.destination)
+
+      // Dois tons curtos e cristalinos (C6 -> E6) com decaimento suave.
+      const notes = [
+        { freq: 1046.5, start: 0, dur: 0.28 },
+        { freq: 1318.5, start: 0.09, dur: 0.34 },
+      ]
+      for (const n of notes) {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.frequency.value = n.freq
+        const t0 = now + n.start
+        gain.gain.setValueAtTime(0, t0)
+        gain.gain.linearRampToValueAtTime(1, t0 + 0.015)
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + n.dur)
+        osc.connect(gain)
+        gain.connect(master)
+        osc.start(t0)
+        osc.stop(t0 + n.dur + 0.02)
+      }
+    } catch {
+      // Silencia qualquer erro de áudio (ex.: política de autoplay).
+    }
   }, [])
 
   useEffect(() => {
@@ -93,6 +135,8 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
     function showOne() {
       setLeaving(false)
       setCurrent(buildToast())
+      // Som sincronizado com a entrada da notificação.
+      playChime()
       const hide = setTimeout(() => {
         setLeaving(true)
         const next = setTimeout(() => {
@@ -109,7 +153,7 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
     timers.current.push(first)
 
     return () => clearTimers()
-  }, [active, clearTimers])
+  }, [active, clearTimers, playChime])
 
   if (!current) return null
 
