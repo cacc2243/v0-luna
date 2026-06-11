@@ -31,7 +31,7 @@ export function PriceCard({
 
   return (
     <section aria-labelledby="investimento">
-      <div className="luna-border-soft overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
+      <div className="luna-border-soft overflow-hidden rounded-3xl border border-border/60 bg-card px-6 py-7 shadow-2xl shadow-black/40">
         {/* Logo Luna Privé */}
         <div className="mb-6 flex justify-center">
           <img
@@ -80,9 +80,9 @@ export function PriceCard({
         </div>
 
         {/* Benefícios — lista única */}
-        <ul className="mt-7 flex flex-col gap-3.5">
+        <ul className="mt-7 flex flex-col items-center gap-3.5">
           {benefits.map((b) => (
-            <li key={b} className="flex items-center gap-3">
+            <li key={b} className="flex items-center justify-center gap-3 text-center">
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15 text-positive">
                 <Check className="size-3.5" aria-hidden="true" />
               </span>
