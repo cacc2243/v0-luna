@@ -46,10 +46,17 @@ function CircleLoader({ label }: { label: string }) {
   )
 }
 
-export function WelcomePopup() {
+export function WelcomePopup({ onClose }: { onClose?: () => void }) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<Step>('intro')
   const [code, setCode] = useState('')
+
+  // Notifica o pai quando o modal fecha (para iniciar as notificações de prova social)
+  const prevOpen = useRef(false)
+  useEffect(() => {
+    if (prevOpen.current && !open) onClose?.()
+    prevOpen.current = open
+  }, [open, onClose])
 
   // Abre o modal automaticamente ao entrar na tela.
   useEffect(() => {

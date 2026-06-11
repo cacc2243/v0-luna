@@ -9,6 +9,7 @@ import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
 import { WelcomePopup } from '@/components/convite/welcome-popup'
+import { SocialProofToaster } from '@/components/convite/social-proof-toaster'
 
 interface SignupData {
   username: string
@@ -43,6 +44,8 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
     return { username: '', email: '', pixType: '', pixKey: '' }
   })
   const [showPixModal, setShowPixModal] = useState(false)
+  // Ativa as notificações de prova social no topo após o modal de convite fechar
+  const [socialProofActive, setSocialProofActive] = useState(false)
   // Valor do convite ja chega resolvido do servidor (Server Component), entao
   // o preco aparece imediatamente, sem blur nem fetch no cliente.
   const [inviteCents] = useState(initialInviteCents)
@@ -183,7 +186,10 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
       />
 
       {/* Modal de código de convite (abre ao entrar na tela) */}
-      <WelcomePopup />
+      <WelcomePopup onClose={() => setSocialProofActive(true)} />
+
+      {/* Notificações de prova social no topo (após fechar o modal) */}
+      <SocialProofToaster active={socialProofActive} />
     </main>
   )
 }
