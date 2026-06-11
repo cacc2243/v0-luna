@@ -76,6 +76,7 @@ import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/comp
 import { ChatsActive } from '@/components/minha-conta/chats-active'
  import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
  import { SupportModal } from '@/components/minha-conta/support-modal'
+import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
 
 // Valor do Chat Exclusivo (pagamento unico)
 const CHAT_PRICE = 99.0
@@ -831,6 +832,8 @@ function AppDashboard() {
     // Dispara destaque no saldo
     setBalanceFlash(true)
     setTimeout(() => setBalanceFlash(false), 1200)
+    // Som de venda aceita / dinheiro creditado.
+    playSaleAccepted()
 
     // Persiste no servidor em segundo plano; revalidacao agrupada (debounce)
     acceptSale(saleId).then((res) => {
@@ -1112,7 +1115,11 @@ function AppDashboard() {
           <button
             key={item.label}
             type="button"
-            onClick={() => setActiveTab(item.label as any)}
+            onClick={() => {
+              primeSounds()
+              playTabTap()
+              setActiveTab(item.label as any)
+            }}
             className="flex w-14 flex-col items-center gap-1"
           >
             {item.center ? (

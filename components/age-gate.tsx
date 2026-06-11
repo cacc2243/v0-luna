@@ -2,11 +2,14 @@
 
 import { useState } from 'react'
 import { CtaButton } from '@/components/cta-button'
+import { primeSounds } from '@/lib/sounds'
 
 export function AgeGate({ onConfirm }: { onConfirm: () => void }) {
   const [leaving, setLeaving] = useState(false)
 
   const handleConfirm = () => {
+    // Libera o áudio no primeiro gesto do usuário (para o feed soar na home).
+    primeSounds()
     setLeaving(true)
     setTimeout(onConfirm, 320)
   }
