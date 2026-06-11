@@ -90,9 +90,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const [showPass, setShowPass] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [pixOpen, setPixOpen] = useState(false)
-  const [ageOpen, setAgeOpen] = useState(false)
-  const [appearanceOpen, setAppearanceOpen] = useState(false)
-  const [weeklyTimeOpen, setWeeklyTimeOpen] = useState(false)
 
   // Configuracoes publicas do servidor (fonte da verdade no backend).
   // verificationEnabled controla se a etapa de verificacao PIX aparece no fluxo.
@@ -364,17 +361,11 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                 description="Você precisa ter no mínimo 18 anos para criar uma conta."
               >
                 <SafetyNote>Informação confidencial e nunca exibida</SafetyNote>
-                <SelectDropdown
+                <NativeSelect
                   value={age}
                   options={ageOptions}
                   placeholder="Selecione sua idade"
-                  open={ageOpen}
-                  onToggle={() => setAgeOpen((o) => !o)}
-                  onSelect={(v) => {
-                    setAge(v)
-                    setAgeOpen(false)
-                  }}
-                  maxHeight
+                  onChange={setAge}
                 />
                 <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
               </StepShell>
@@ -388,16 +379,11 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                 title="Você prefere aparecer ou não?"
                 description="Defina como quer trabalhar. Você pode mudar isso quando quiser."
               >
-                <SelectDropdown
+                <NativeSelect
                   value={appearance}
                   options={appearanceOptions}
                   placeholder="Escolha uma opção"
-                  open={appearanceOpen}
-                  onToggle={() => setAppearanceOpen((o) => !o)}
-                  onSelect={(v) => {
-                    setAppearance(v)
-                    setAppearanceOpen(false)
-                  }}
+                  onChange={setAppearance}
                 />
                 <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
               </StepShell>
@@ -411,16 +397,11 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                 title="Quanto tempo por semana você tem disponível?"
                 description="Isso nos ajuda a recomendar o melhor ritmo para você começar."
               >
-                <SelectDropdown
+                <NativeSelect
                   value={weeklyTime}
                   options={weeklyTimeOptions}
                   placeholder="Selecione sua disponibilidade"
-                  open={weeklyTimeOpen}
-                  onToggle={() => setWeeklyTimeOpen((o) => !o)}
-                  onSelect={(v) => {
-                    setWeeklyTime(v)
-                    setWeeklyTimeOpen(false)
-                  }}
+                  onChange={setWeeklyTime}
                 />
                 <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
               </StepShell>
@@ -615,69 +596,41 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
 /* ---------- Subcomponentes ---------- */
 
-function SelectDropdown({
+function NativeSelect({
   value,
   options,
   placeholder,
-  open,
-  onToggle,
-  onSelect,
-  maxHeight,
+  onChange,
 }: {
   value: string
   options: string[]
   placeholder: string
-  open: boolean
-  onToggle: () => void
-  onSelect: (v: string) => void
-  maxHeight?: boolean
+  onChange: (v: string) => void
 }) {
   return (
     <div className="relative">
-      <button
-        type="button"
-        onClick={onToggle}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         className={cn(
-          'flex w-full items-center justify-between rounded-2xl border bg-secondary/60 px-4 py-3.5 text-left text-base transition-colors',
-          open ? 'border-primary/60 ring-2 ring-primary/20' : 'border-border',
+          'h-[52px] w-full appearance-none rounded-2xl border border-border bg-secondary/60 px-4 pr-11 text-base outline-none transition-colors',
+          'focus:border-primary/60 focus:ring-2 focus:ring-primary/20',
           value ? 'text-foreground' : 'text-muted-foreground/70',
         )}
       >
-        {value || placeholder}
-        <ChevronDown
-          className={cn(
-            'size-4 shrink-0 text-muted-foreground transition-transform',
-            open && 'rotate-180',
-          )}
-          aria-hidden="true"
-        />
-      </button>
-      {open && (
-        <ul
-          className={cn(
-            'luna-border absolute left-0 right-0 top-full z-10 mt-2 overflow-y-auto rounded-2xl bg-popover py-1 shadow-2xl',
-            maxHeight ? 'max-h-60' : '',
-          )}
-        >
-          {options.map((opt) => (
-            <li key={opt}>
-              <button
-                type="button"
-                onClick={() => onSelect(opt)}
-                className={cn(
-                  'flex w-full items-center justify-between px-4 py-3 text-left text-base transition-colors',
-                  opt === value
-                    ? 'bg-primary/15 font-semibold text-primary'
-                    : 'text-foreground hover:bg-secondary/60',
-                )}
-              >
-                {opt}
-                {opt === value && <Check className="size-4 shrink-0" aria-hidden="true" />}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+        <option value="" disabled>
+          {placeholder}
+        </option>
+        {options.map((opt) => (
+          <option key={opt} value={opt} className="bg-popover text-foreground">
+            {opt}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
     </div>
   )
 }
