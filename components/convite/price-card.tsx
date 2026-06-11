@@ -31,7 +31,7 @@ export function PriceCard({
 
   return (
     <section aria-labelledby="investimento">
-      <div className="luna-border-soft overflow-hidden rounded-3xl border border-border/60 bg-card px-6 py-7 shadow-2xl shadow-black/40">
+      <div className="luna-border overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
         {/* Logo Luna Privé */}
         <div className="mb-6 flex justify-center">
           <img
