@@ -9,6 +9,7 @@ import { PriceCard } from '@/components/convite/price-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
+import { WelcomePopup } from '@/components/convite/welcome-popup'
 
 interface SignupData {
   username: string
@@ -175,6 +176,9 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
         trackInitiateCheckout
         onPaymentConfirmed={handlePaymentConfirmed}
       />
+
+      {/* Modal de código de convite (abre ao entrar na tela) */}
+      <WelcomePopup />
     </main>
   )
 }
