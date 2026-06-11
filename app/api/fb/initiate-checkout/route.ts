@@ -16,12 +16,16 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}))
-    const { eventId, eventSourceUrl, fbp, fbc, email, value, attribution } = body as {
+    const { eventId, eventSourceUrl, fbp, fbc, email, name, firstName, lastName, phone, value, attribution } = body as {
       eventId?: string
       eventSourceUrl?: string | null
       fbp?: string | null
       fbc?: string | null
       email?: string | null
+      name?: string | null
+      firstName?: string | null
+      lastName?: string | null
+      phone?: string | null
       value?: number
       attribution?: Record<string, unknown> | null
     }
@@ -56,6 +60,17 @@ export async function POST(request: NextRequest) {
       if (typeof att[key] === 'string' && att[key]) attributionData[key] = att[key]
     }
 
+    // Deriva nome/sobrenome a partir do nome completo quando nao vierem prontos.
+    const fullName = typeof name === 'string' ? name.trim() : ''
+    const resolvedFirstName =
+      (typeof firstName === 'string' && firstName.trim()) ||
+      (fullName ? fullName.split(/\s+/)[0] : null)
+    const resolvedLastName =
+      (typeof lastName === 'string' && lastName.trim()) ||
+      (fullName && fullName.split(/\s+/).length > 1
+        ? fullName.split(/\s+/).slice(1).join(' ')
+        : null)
+
     await sendServerEvent({
       eventName: 'InitiateCheckout',
       eventId,
@@ -70,6 +85,9 @@ export async function POST(request: NextRequest) {
       },
       user: {
         email: typeof email === 'string' ? email : null,
+        phone: typeof phone === 'string' ? phone : null,
+        firstName: resolvedFirstName,
+        lastName: resolvedLastName,
         fbp: typeof fbp === 'string' ? fbp : null,
         fbc: resolvedFbc,
         clientIp,

@@ -883,9 +883,10 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       {/* Modal — Vamos vender de verdade? */}
       {showSellModal && phase !== 'signup' && (
         <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
+          {/* Backdrop sem dismiss: este é um passo obrigatório do fluxo.
+              Fechar por clique no fundo travava a demo (coach já oculto). */}
           <div
             className="absolute inset-0 bg-background/85 backdrop-blur-sm"
-            onClick={() => setShowSellModal(false)}
             aria-hidden="true"
           />
           <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/40 bg-card shadow-2xl shadow-primary/25 ring-1 ring-primary/10">
