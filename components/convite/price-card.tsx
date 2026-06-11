@@ -1,12 +1,13 @@
 'use client'
 
-import { Check, ChevronRight, ShieldCheck } from 'lucide-react'
+import { Check, ChevronRight } from 'lucide-react'
 
 const benefits = [
   'Plano Criadora Luna Privé',
   'Publique seus packs e comece a vender',
   'Anonimato e privacidade do perfil',
   'Suporte 24h por WhatsApp + Chat',
+  'Garantia de 30 dias para suas primeiras vendas',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -109,16 +110,6 @@ export function PriceCard({
           {priceReady ? 'Ativar meu Plano' : 'Carregando valor...'}
           {priceReady && <ChevronRight className="size-5" aria-hidden="true" />}
         </button>
-
-        {/* Garantia integrada */}
-        <div className="luna-border-soft relative mt-5 flex items-start gap-3 rounded-2xl bg-background/40 px-4 py-3.5">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
-          <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-            Experimente o <span className="font-semibold text-foreground">Luna Privé</span> por{' '}
-            <span className="font-semibold text-foreground">7 dias</span>. Se você preferir, poderá
-            solicitar a <span className="font-semibold text-positive">devolução em até 7 dias</span>.
-          </p>
-        </div>
       </div>
     </section>
   )
