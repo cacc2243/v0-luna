@@ -1,4 +1,8 @@
+import { unstable_cache, revalidateTag } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+
+/** Tag de cache das configuracoes. Invalidada ao salvar (updateAppSettings). */
+export const APP_SETTINGS_TAG = 'app-settings'
 
 /** Planos de impulsionamento: dias -> valor em centavos. */
 export type BoostAmounts = Record<string, number>
@@ -68,7 +72,7 @@ function normalizeBoost(raw: unknown): BoostAmounts {
  * Le as configuracoes do app a partir do banco (fonte unica da verdade).
  * Sempre executado no servidor.
  */
-export async function getAppSettings(): Promise<AppSettings> {
+async function readAppSettings(): Promise<AppSettings> {
   const supabase = createAdminClient()
   const { data, error } = await supabase.from('app_settings').select('key, value')
 
@@ -136,6 +140,16 @@ export async function getAppSettings(): Promise<AppSettings> {
     utmifyApiToken,
   }
 }
+
+/**
+ * Versao cacheada de readAppSettings. Evita travar o render na latencia do
+ * banco a cada request. O cache e invalidado por tag sempre que as
+ * configuracoes sao salvas (ver updateAppSettings).
+ */
+export const getAppSettings = unstable_cache(readAppSettings, ['app-settings'], {
+  tags: [APP_SETTINGS_TAG],
+  revalidate: 60,
+})
 
 /**
  * Atualiza uma ou mais configuracoes. Faz upsert por chave.
@@ -228,4 +242,7 @@ export async function updateAppSettings(
   if (error) {
     throw new Error(`Falha ao salvar configurações: ${error.message}`)
   }
+
+  // Invalida o cache para que as paginas (ex.: /convite) leiam o valor novo.
+  revalidateTag(APP_SETTINGS_TAG, 'max')
 }
