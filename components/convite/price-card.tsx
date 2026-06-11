@@ -48,18 +48,15 @@ export function PriceCard({
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
-            className="h-9 w-auto"
+            className="h-11 w-auto"
           />
         </div>
 
         {/* Preço centralizado */}
         <div className="relative flex flex-col items-center text-center">
-          <span
-            id="investimento"
-            className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
-          >
+          <h2 id="investimento" className="sr-only">
             Investimento único
-          </span>
+          </h2>
 
           <div
             className={`mt-3 flex items-center justify-center gap-2.5 transition-all duration-300 ${
