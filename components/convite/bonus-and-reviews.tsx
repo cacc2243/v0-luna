@@ -1,6 +1,27 @@
 'use client'
 
-import { BookOpen, Users, Images, Gift, Star, BadgeCheck } from 'lucide-react'
+import { BookOpen, Users, Images, Gift, Star, BadgeCheck, Percent, Banknote, Zap, Receipt } from 'lucide-react'
+
+const fees = [
+  {
+    icon: Percent,
+    title: 'Taxa por pedido',
+    value: '2%',
+    description: 'Apenas 2% sobre o valor de cada pedido vendido na plataforma.',
+  },
+  {
+    icon: Banknote,
+    title: 'Taxa de saque',
+    value: 'R$ 1,99',
+    description: 'Valor fixo por saque, independente do valor que você retirar.',
+  },
+  {
+    icon: Zap,
+    title: 'Prazo de recebimento',
+    value: 'Imediato',
+    description: 'Seu dinheiro cai na hora, sem espera após a confirmação do pedido.',
+  },
+]
 
 const bonuses = [
   {
@@ -98,7 +119,7 @@ export function BonusAndReviews() {
             <h2 id="bonus" className="text-sm font-bold text-foreground">
               Bônus incluído
             </h2>
-            <p className="text-xs text-muted-foreground">Grátis com seu convite</p>
+            <p className="text-xs text-muted-foreground">Grátis com seu Plano Criadora</p>
           </div>
         </div>
 
@@ -117,6 +138,38 @@ export function BonusAndReviews() {
                   Incluso no Luna Privé
                 </p>
               </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Taxas da plataforma */}
+      <section aria-labelledby="taxas">
+        <div className="mb-3 flex items-center gap-3 px-1">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-primary/12 text-primary">
+            <Receipt className="size-5" aria-hidden="true" />
+          </span>
+          <div className="leading-tight">
+            <h2 id="taxas" className="text-sm font-bold text-foreground">
+              Taxas da plataforma
+            </h2>
+            <p className="text-xs text-muted-foreground">Transparência total no seu plano</p>
+          </div>
+        </div>
+
+        <div className="luna-border-soft divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
+          {fees.map((f) => (
+            <div key={f.title} className="flex items-center gap-3 px-4 py-4">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
+                <f.icon className="size-4" aria-hidden="true" />
+              </span>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-foreground">{f.title}</p>
+                <p className="mt-0.5 text-pretty text-xs leading-relaxed text-muted-foreground">
+                  {f.description}
+                </p>
+              </div>
+              <span className="shrink-0 text-sm font-extrabold text-primary">{f.value}</span>
             </div>
           ))}
         </div>

@@ -17,6 +17,9 @@ import {
   Check,
   Loader2,
   AlertCircle,
+  CalendarDays,
+  Eye as EyeIcon,
+  Clock,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 import { cn } from '@/lib/utils'
@@ -25,9 +28,28 @@ interface SignupFlowProps {
   onComplete: () => void
 }
 
-const TOTAL = 6
+const TOTAL = 9
 
 const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
+
+// Idades disponiveis para selecao (18 a 65+).
+const ageOptions = [
+  ...Array.from({ length: 47 }, (_, i) => String(i + 18)),
+  '65+',
+]
+
+const appearanceOptions = [
+  'Prefiro aparecer',
+  'Prefiro não aparecer',
+  'Tanto faz / decido depois',
+]
+
+const weeklyTimeOptions = [
+  'Menos de 5 horas',
+  '5 a 10 horas',
+  '10 a 20 horas',
+  'Mais de 20 horas',
+]
 
 // Nomes muito comuns/genericos: sugerimos algo mais criativo quando o usuario
 // digita apenas um nome simples sem nenhum diferencial (numero, sufixo, etc).
@@ -55,6 +77,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
   // Campos
   const [username, setUsername] = useState('')
+  const [age, setAge] = useState('')
+  const [appearance, setAppearance] = useState('')
+  const [weeklyTime, setWeeklyTime] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -122,6 +147,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             phone: phone.replace(/\D/g, ''),
             pix_type: pixType,
             pix_key: pixKey.trim(),
+            age: age,
+            appearance_preference: appearance,
+            weekly_availability: weeklyTime,
             is_creator: true,
           },
         },
@@ -218,19 +246,25 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       case 0:
         return username.trim().length >= 3
       case 1:
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+        return age.length > 0
       case 2:
-        return password.length >= 6
+        return appearance.length > 0
       case 3:
-        return confirm.length >= 6 && confirm === password
+        return weeklyTime.length > 0
       case 4:
-        return phone.replace(/\D/g, '').length >= 10
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
       case 5:
+        return password.length >= 6
+      case 6:
+        return confirm.length >= 6 && confirm === password
+      case 7:
+        return phone.replace(/\D/g, '').length >= 10
+      case 8:
         return pixKey.trim().length >= 3
       default:
         return false
     }
-  }, [step, username, email, password, confirm, phone, pixKey])
+  }, [step, username, age, appearance, weeklyTime, email, password, confirm, phone, pixKey])
 
   return (
     <div className="absolute inset-0 z-[60] flex flex-col">
@@ -267,7 +301,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         ) : (
           <div
             key={step}
-            className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
+            className="animate-pop luna-border max-h-[92dvh] w-full max-w-sm overflow-y-auto overflow-x-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
           >
             {/* Progresso */}
             <div className="mb-7">
@@ -318,8 +352,63 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               </StepShell>
             )}
 
-            {/* SEU EMAIL */}
+            {/* IDADE */}
             {step === 1 && (
+              <StepShell
+                icon={CalendarDays}
+                eyebrow="Sua idade"
+                title="Quantos anos você tem?"
+                description="Você precisa ter no mínimo 18 anos para criar uma conta."
+              >
+                <SafetyNote>Informação confidencial e nunca exibida</SafetyNote>
+                <NativeSelect
+                  value={age}
+                  options={ageOptions}
+                  placeholder="Selecione sua idade"
+                  onChange={setAge}
+                />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+              </StepShell>
+            )}
+
+            {/* APARECER OU NÃO */}
+            {step === 2 && (
+              <StepShell
+                icon={EyeIcon}
+                eyebrow="Privacidade"
+                title="Você prefere aparecer ou não?"
+                description="Defina como quer trabalhar. Você pode mudar isso quando quiser."
+              >
+                <NativeSelect
+                  value={appearance}
+                  options={appearanceOptions}
+                  placeholder="Escolha uma opção"
+                  onChange={setAppearance}
+                />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+              </StepShell>
+            )}
+
+            {/* TEMPO DISPONÍVEL */}
+            {step === 3 && (
+              <StepShell
+                icon={Clock}
+                eyebrow="Disponibilidade"
+                title="Quanto tempo por semana você tem disponível?"
+                description="Isso nos ajuda a recomendar o melhor ritmo para você começar."
+              >
+                <NativeSelect
+                  value={weeklyTime}
+                  options={weeklyTimeOptions}
+                  placeholder="Selecione sua disponibilidade"
+                  onChange={setWeeklyTime}
+                />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+              </StepShell>
+            )}
+
+            {/* SEU EMAIL */}
+            {step === 4 && (
               <StepShell
                 icon={Mail}
                 eyebrow="Seu email"
@@ -340,7 +429,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CRIE UMA SENHA */}
-            {step === 2 && (
+            {step === 5 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Crie uma senha"
@@ -360,7 +449,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CONFIRME SUA SENHA */}
-            {step === 3 && (
+            {step === 6 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Confirme sua senha"
@@ -384,7 +473,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   type="button"
                   onClick={() => {
                     setConfirm('')
-                    setStep(2)
+                    setStep(5)
                   }}
                   className="mt-2.5 text-xs font-medium text-primary transition-opacity hover:opacity-80"
                 >
@@ -395,7 +484,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* SEU TELEFONE */}
-            {step === 4 && (
+            {step === 7 && (
               <StepShell
                 icon={Phone}
                 eyebrow="Seu telefone"
@@ -416,7 +505,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CHAVE PIX */}
-            {step === 5 && (
+            {step === 8 && (
               <StepShell
                 icon={KeyRound}
                 eyebrow="Chave PIX"
@@ -506,6 +595,45 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 }
 
 /* ---------- Subcomponentes ---------- */
+
+function NativeSelect({
+  value,
+  options,
+  placeholder,
+  onChange,
+}: {
+  value: string
+  options: string[]
+  placeholder: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(
+          'h-[52px] w-full appearance-none rounded-2xl border border-border bg-secondary/60 px-4 pr-11 text-base outline-none transition-colors',
+          'focus:border-primary/60 focus:ring-2 focus:ring-primary/20',
+          value ? 'text-foreground' : 'text-muted-foreground/70',
+        )}
+      >
+        <option value="" disabled>
+          {placeholder}
+        </option>
+        {options.map((opt) => (
+          <option key={opt} value={opt} className="bg-popover text-foreground">
+            {opt}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+    </div>
+  )
+}
 
 function StepShell({
   icon: Icon,
@@ -1016,7 +1144,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
   }, [phase])
 
   return (
-    <div className="animate-pop luna-border relative w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
+    <div className="animate-pop luna-border relative flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
       {/* Imagem de fundo */}
       <div className="absolute inset-0" aria-hidden="true">
         <img
@@ -1027,8 +1155,10 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
         <div className="absolute inset-0 bg-gradient-to-b from-background/65 via-background/60 to-background/80" />
       </div>
 
+      {/* Conteúdo rolável (evita corte em telas baixas) */}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto">
       {/* Mentora */}
-      <div className="relative z-10 flex flex-col items-center px-6 pt-7">
+      <div className="flex flex-col items-center px-6 pt-7">
         <div className="relative">
           <span className="absolute -inset-1.5 rounded-full luna-gradient opacity-70 blur-lg" aria-hidden="true" />
           <img
@@ -1040,51 +1170,55 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
         </div>
         <p className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">
           {phase === 'offer' || phase === 'redirecting'
-            ? 'Convite Especial'
+            ? 'Plano Criadora'
             : sub === 0
               ? 'Meus parabens!'
               : 'Atencao'}
         </p>
       </div>
 
-      <div className="relative z-10 px-6 pb-7 pt-4">
+      <div className="px-6 pb-7 pt-4">
         {/* FASE: etapas iniciais */}
         {phase === 'steps' && (
           <>
-            {/* ETAPA 0 — Parabens + convite */}
+            {/* ETAPA 0 — Parabens + escolha do plano */}
             {sub === 0 && (
               <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
                 <p>
-                  Sua conta foi criada com{' '}
-                  <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
-                  <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
+                  Seu perfil foi criado com{' '}
+                  <span className="font-semibold text-positive">sucesso!</span> Agora é hora de escolher o seu{' '}
+                  <span className="font-semibold text-primary">Plano de Criadora Luna</span>.
                 </p>
                 <p className="mt-3">
-                  Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
+                  Toda usuária escolhe um plano para{' '}
+                  <span className="font-semibold">começar a vender</span> dentro da plataforma — é ele que
+                  ativa suas ferramentas de criadora.
                 </p>
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
-                  acesso esta muito barato e confiavel.
+                  Para publicar seus packs, receber pedidos privados e usar o painel de vendas da
+                  LUNA.PRIVÉ, você precisa ter um Plano Criadora ativo.
                 </p>
               </div>
             )}
 
-            {/* ETAPA 1 — Convites limitados + conformidade */}
+            {/* ETAPA 1 — O que o plano libera + vagas limitadas */}
             {sub === 1 && (
               <div key="invite-1" className="animate-pop rounded-2xl border border-primary/30 bg-primary/5 p-5">
                 <div className="flex items-center gap-2.5">
                   <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
                     <ShieldCheck className="size-[1.1rem] text-primary" aria-hidden="true" />
                   </span>
-                  <p className="text-sm font-bold text-foreground">Convites limitados</p>
+                  <p className="text-sm font-bold text-foreground">O que o plano libera</p>
                 </div>
                 <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
-                  Existem <span className="font-semibold text-primary">poucos convites disponiveis</span> no momento. Eles sao liberados
-                  em pequenas quantidades para manter a qualidade da plataforma.
+                  O Plano Criadora habilita sua conta com{' '}
+                  <span className="font-semibold text-primary">anonimato, segurança nas transações</span> e
+                  todas as ferramentas de venda da plataforma.
                 </p>
-                <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
-                  <span className="font-semibold text-foreground">Toda usuaria possui um convite ativo</span> para garantir a conformidade e a
-                  seguranca de todos dentro do Luna Prive.
+                <p className="mt-3 text-pretty text-sm leading-relaxed text-foreground/85">
+                  Você ainda conta com <span className="font-semibold text-foreground">suporte 24h por chat ou WhatsApp</span>{' '}
+                  para começar com segurança. Em outras plataformas esse acesso é caro ou nem está mais
+                  disponível — aqui ainda temos <span className="font-semibold text-primary">alguns planos disponíveis</span>.
                 </p>
               </div>
             )}
@@ -1107,7 +1241,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
               {sub < INVITE_STEPS - 1 ? (
                 <CtaButton onClick={() => setSub((s) => s + 1)}>Continuar</CtaButton>
               ) : (
-                <CtaButton onClick={() => setPhase('searching')}>Quero um Convite</CtaButton>
+                <CtaButton onClick={() => setPhase('searching')}>Escolher meu Plano</CtaButton>
               )}
               {sub > 0 && (
                 <button
@@ -1122,28 +1256,28 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
           </>
         )}
 
-        {/* FASE: buscando convites */}
+        {/* FASE: buscando planos */}
         {phase === 'searching' && (
           <div className="flex flex-col items-center justify-center gap-4 py-10">
             <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
             <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
-              Buscando convites disponiveis...
+              Buscando planos disponiveis...
             </p>
           </div>
         )}
 
-        {/* FASE: convite especial */}
+        {/* FASE: plano especial */}
         {phase === 'offer' && (
           <>
             <div className="animate-pop rounded-3xl border border-border/80 bg-secondary/40 p-6 text-center text-pretty">
               <p className="text-[0.95rem] leading-relaxed text-foreground">
-                Infelizmente nao temos mais{' '}
-                <span className="font-bold">convites gratuitos</span> disponiveis.
+                Os <span className="font-bold">planos gratuitos</span> de criadora já não estão mais
+                disponíveis.
               </p>
               <div className="mt-5 rounded-2xl border border-primary/60 bg-transparent px-5 py-5">
                 <p className="text-[0.95rem] font-bold leading-relaxed text-foreground">
-                  Mas como voce chegou ate aqui, preparamos{' '}
-                  <span className="text-primary">algo especial</span> para voce.
+                  Mas como voce chegou ate aqui, conseguimos liberar um{' '}
+                  <span className="text-primary">Plano Criadora especial</span> para voce.
                 </p>
               </div>
             </div>
@@ -1151,12 +1285,12 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
             <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
               <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
               <p className="text-xs text-muted-foreground">
-                Restam apenas <span className="font-bold text-primary">6 convites</span> para resgate
+                Restam apenas <span className="font-bold text-primary">6 planos</span> com esta condição
               </p>
             </div>
 
             <div className="mt-4">
-              <CtaButton onClick={() => setPhase('redirecting')}>Resgatar meu convite</CtaButton>
+              <CtaButton onClick={() => setPhase('redirecting')}>Ativar meu Plano Criadora</CtaButton>
             </div>
           </>
         )}
@@ -1166,15 +1300,16 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
           <div className="flex flex-col items-center justify-center gap-4 py-10">
             <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
             <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
-              Resgatando seu convite...
+              Preparando seu Plano Criadora...
             </p>
             {showFallback && (
               <div className="animate-pop mt-2 w-full">
-                <CtaButton onClick={() => onAcceptRef.current()}>Resgatar convite</CtaButton>
+                <CtaButton onClick={() => onAcceptRef.current()}>Continuar para o plano</CtaButton>
               </div>
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   )
