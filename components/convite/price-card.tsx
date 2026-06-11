@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, Gift, ShieldCheck } from 'lucide-react'
+import { Check, ChevronRight, ShieldCheck } from 'lucide-react'
 
 const benefits = [
   'Plano Criadora Luna Privé',
@@ -31,7 +31,7 @@ export function PriceCard({
 
   return (
     <section aria-labelledby="investimento">
-      <div className="luna-border relative overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
+      <div className="luna-border-top relative overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
         {/* Imagem de fundo (mesma do /convite) com degradê escuro por cima */}
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <img
@@ -39,8 +39,8 @@ export function PriceCard({
             alt=""
             className="size-full object-cover opacity-60"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/80 to-background/95" />
-          <div className="absolute inset-0 bg-background/40" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/55 via-background/80 to-background/95" />
+          <div className="absolute inset-0 bg-background/30" />
         </div>
 
         {/* Logo Luna Privé */}
@@ -109,8 +109,8 @@ export function PriceCard({
           disabled={!priceReady}
           className="luna-gradient relative mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
         >
-          <Gift className="size-5" aria-hidden="true" />
           {priceReady ? 'Ativar meu Plano' : 'Carregando valor...'}
+          {priceReady && <ChevronRight className="size-5" aria-hidden="true" />}
         </button>
 
         {/* Garantia integrada */}
