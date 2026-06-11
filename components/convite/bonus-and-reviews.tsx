@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { BookOpen, Users, Images, Gift, Star, BadgeCheck, Percent, Banknote, Zap, Receipt } from 'lucide-react'
 
 const fees = [
@@ -66,6 +67,29 @@ const reviews = [
 ]
 
 export function BonusAndReviews() {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+
+  // Avança os depoimentos automaticamente a cada 3s (loop infinito).
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+
+    const interval = setInterval(() => {
+      const card = scroller.querySelector<HTMLElement>('[data-review-card]')
+      if (!card) return
+      const gap = 12 // gap-3
+      const step = card.offsetWidth + gap
+      const maxScroll = scroller.scrollWidth - scroller.clientWidth
+      const next = scroller.scrollLeft + step
+      scroller.scrollTo({
+        left: next > maxScroll + 4 ? 0 : next,
+        behavior: 'smooth',
+      })
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <div className="flex flex-col gap-8">
       {/* Depoimentos */}
@@ -78,10 +102,14 @@ export function BonusAndReviews() {
           O que nossas Lunas falam
         </h2>
 
-        <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          ref={scrollerRef}
+          className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {reviews.map((r) => (
             <article
               key={r.handle}
+              data-review-card
               className="luna-border-soft w-[85%] shrink-0 snap-center rounded-2xl bg-card p-4"
             >
               <div className="flex items-center justify-between">
