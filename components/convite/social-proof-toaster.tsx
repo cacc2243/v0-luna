@@ -121,7 +121,7 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
       aria-label="Atividade recente"
     >
       <div
-        className={`pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border border-primary/25 bg-card/95 px-3.5 py-3 shadow-xl shadow-primary/25 backdrop-blur-md ring-1 ring-primary/10 ${
+        className={`pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border border-primary/15 bg-card/95 px-3.5 py-3 shadow-lg shadow-primary/10 backdrop-blur-md ${
           leaving ? 'animate-toast-leave' : 'animate-toast-enter'
         }`}
       >
