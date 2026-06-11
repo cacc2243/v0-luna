@@ -68,6 +68,7 @@ import {
   AlertCircle,
   Gift,
   Clock,
+  Zap,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
   import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead } from './actions'
@@ -740,13 +741,13 @@ function AppDashboard() {
   }, [refreshActivity])
 
   // Instante em que o PRIMEIRO pack foi publicado (created_at mais antigo).
-  // Pedidos e chats só começam a aparecer 10s após esse marco.
+  // Pedidos e chats só começam a aparecer 20s após esse marco.
   const firstPackAt = useMemo(() => {
     if (packs.length === 0) return 0
     return Math.min(...packs.map((p) => new Date(p.created_at).getTime()))
   }, [packs])
 
-  const ACTIVITY_DELAY = 10000 // 10s após publicar o primeiro pack
+  const ACTIVITY_DELAY = 20000 // 20s após publicar o primeiro pack
 
   // Motor de atividade: enquanto houver packs publicados, gera views/pedidos periodicamente
   useEffect(() => {
@@ -754,7 +755,7 @@ function AppDashboard() {
     const initialDelay = Math.max(ACTIVITY_DELAY - (Date.now() - firstPackAt), 0)
     let interval: ReturnType<typeof setInterval> | null = null
     const startTimer = setTimeout(async () => {
-      await generatePackActivity()
+      await generatePackActivity({ initial: true })
       refreshActivity()
       interval = setInterval(async () => {
         await generatePackActivity()
@@ -978,10 +979,8 @@ function AppDashboard() {
     resetPackForm()
     mutatePacks()
 
-    // Dispara a atividade inicial: views, pedidos pendentes e notificacoes
-    generatePackActivity({ initial: true }).then(() => {
-      refreshActivity()
-    })
+    // A atividade inicial (views, pedidos, notificacoes) NAO dispara na hora:
+    // o motor de atividade abaixo agenda a primeira leva ~20s apos a publicacao.
   }
 
   function closeWelcome() {
@@ -2012,9 +2011,15 @@ function HomeScreen({
                   <p className="truncate text-[0.8rem] font-semibold text-foreground">
                     {sale.buyer_name} quer {sale.pack?.title || 'seu pack'}
                   </p>
-                  {sale.is_direct && (
-                    <span className="shrink-0 rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {sale.is_direct ? (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-positive/30 bg-positive/10 px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-positive">
+                      <Zap className="size-2.5" aria-hidden="true" />
                       Direto
+                    </span>
+                  ) : (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-primary">
+                      <MessageSquare className="size-2.5" aria-hidden="true" />
+                      Com chat
                     </span>
                   )}
                 </div>

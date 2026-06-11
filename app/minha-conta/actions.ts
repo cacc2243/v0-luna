@@ -549,7 +549,7 @@ export async function settleExpiredWithdrawals() {
 
 // ───────���─────────────────────────────────────────────────────────────────────
 // Conversation Actions
-// ───────────────────����───────────────────────────────────────────────────────�����─
+// ───────────────────�����───────────────────────────────────────────────────────�����─
 
 // Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
 const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
@@ -1345,7 +1345,8 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
   }
 
   // Contagem total de pedidos ja gerados (para a regra de pedido direto).
-  // Regra: a cada 5 pedidos com chat exclusivo, 1 pedido direto (o 6o).
+  // Regra: os 4 PRIMEIROS pedidos sao diretos (sem chat). Depois disso,
+  // a cada 10 pedidos apenas 1 e direto e os outros 9 sao com chat exclusivo.
   const { count: existingOrders } = await supabase
     .from('sales')
     .select('id', { count: 'exact', head: true })
@@ -1409,9 +1410,11 @@ export async function generatePackActivity(opts?: { initial?: boolean }) {
       const netAmount = amount
       const buyer = generateBuyerName(usedNames)
 
-      // Regra: a cada 5 pedidos com chat, o 6o e um pedido direto (sem chat).
+      // Regra de pedido direto:
+      // - os 4 primeiros pedidos (orderIndex 1..4) sao sempre diretos;
+      // - a partir do 5o, a cada bloco de 10 pedidos apenas 1 e direto.
       orderIndex++
-      const isDirect = orderIndex % 6 === 0
+      const isDirect = orderIndex <= 4 || (orderIndex - 4) % 10 === 1
 
       const { data: sale } = await supabase
         .from('sales')
