@@ -231,6 +231,31 @@
   pointer-events: none;
 }
 
+/* Pink gradient border that is strong at the top and fades out toward the bottom */
+.luna-border-top {
+  position: relative;
+}
+.luna-border-top::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    oklch(0.66 0.17 15 / 0.95) 0%,
+    oklch(0.66 0.17 15 / 0.55) 38%,
+    oklch(0.66 0.17 15 / 0.18) 70%,
+    oklch(0.66 0.17 15 / 0) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 /* Infinite horizontal marquee for testimonials */
 @keyframes marquee-x {
   from {
