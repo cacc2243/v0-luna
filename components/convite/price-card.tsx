@@ -81,8 +81,8 @@ export function PriceCard({
             }`}
             aria-hidden={!priceReady}
           >
-            <span className="text-2xl font-bold text-foreground">R$</span>
-            <span className="text-5xl font-extrabold leading-none tracking-tight text-foreground">
+            <span className="text-xl font-bold text-foreground sm:text-2xl">R$</span>
+            <span className="text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">
               {formatCents(amountCents)}
             </span>
           </div>
