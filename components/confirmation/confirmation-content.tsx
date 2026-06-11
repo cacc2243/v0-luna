@@ -47,11 +47,11 @@ export function ConfirmationContent() {
         </span>
 
         <h1 className="text-balance text-2xl font-bold leading-tight text-foreground">
-          Sua conta já está ativa no Luna Privé
+          Seu Plano Criadora já está ativo
         </h1>
 
         <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
-          Recebemos a confirmação do seu PIX e seu acesso foi liberado com sucesso. Agora é só
+          Recebemos a confirmação do seu PIX e seu Plano Criadora foi ativado com sucesso. Agora é só
           entrar na sua conta para aproveitar tudo o que preparamos para você.
         </p>
 

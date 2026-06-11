@@ -131,7 +131,7 @@ export default function ConvitePage() {
       <div className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-md items-center gap-2 px-5 py-3.5">
           <Lock className="size-4 text-primary" aria-hidden="true" />
-          <span className="text-sm font-semibold text-foreground">Finalizar cadastro</span>
+          <span className="text-sm font-semibold text-foreground">Ativar Plano Criadora</span>
         </div>
       </div>
 
@@ -149,10 +149,10 @@ export default function ConvitePage() {
               className="h-7 w-auto self-start"
             />
             <h1 className="mt-5 text-balance text-3xl font-extrabold leading-tight tracking-tight text-foreground">
-              Conquiste seu convite
+              Ative seu Plano Criadora
             </h1>
             <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-              Confirme seus dados abaixo e garanta seu Convite Exclusivo ao Luna Privé.
+              Confirme seus dados abaixo e ative seu Plano de Criadora Luna para começar a vender.
             </p>
 
             <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-border/60 bg-background/50 px-4 py-3">
@@ -160,7 +160,7 @@ export default function ConvitePage() {
                 <Mail className="size-4" aria-hidden="true" />
               </span>
               <p className="text-pretty text-xs font-medium leading-relaxed text-foreground">
-                Você receberá o acesso ao Luna Privé por e-mail.
+                Você receberá a confirmação do seu Plano Criadora por e-mail.
               </p>
             </div>
           </div>

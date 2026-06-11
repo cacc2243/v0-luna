@@ -3,10 +3,11 @@
 import { Check, ChevronRight, Gift, ShieldCheck } from 'lucide-react'
 
 const benefits = [
-  'Acesso completo ao Luna Privé',
-  'Comece a vender imediatamente',
-  'Receba seu código e acesso por e-mail',
-  'Suporte anônimo 24h WhatsApp + Chat',
+  'Plano Criadora ativo na LUNA.PRIVÉ',
+  'Publique seus packs e comece a vender',
+  'Painel de pedidos e recebimento via PIX',
+  'Anonimato e privacidade do perfil',
+  'Suporte 24h por WhatsApp + Chat',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -90,7 +91,7 @@ export function PriceCard({
           className="luna-gradient mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
         >
           <Gift className="size-5" aria-hidden="true" />
-          {priceReady ? 'Adquirir meu Convite!' : 'Carregando valor...'}
+          {priceReady ? 'Ativar meu Plano Criadora!' : 'Carregando valor...'}
           <ChevronRight className="size-5" aria-hidden="true" />
         </button>
 

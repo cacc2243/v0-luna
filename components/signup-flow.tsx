@@ -1040,7 +1040,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
         </div>
         <p className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">
           {phase === 'offer' || phase === 'redirecting'
-            ? 'Convite Especial'
+            ? 'Plano Criadora'
             : sub === 0
               ? 'Meus parabens!'
               : 'Atencao'}
@@ -1051,40 +1051,45 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
         {/* FASE: etapas iniciais */}
         {phase === 'steps' && (
           <>
-            {/* ETAPA 0 — Parabens + convite */}
+            {/* ETAPA 0 — Parabens + escolha do plano */}
             {sub === 0 && (
               <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
                 <p>
-                  Sua conta foi criada com{' '}
-                  <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
-                  <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
+                  Seu perfil foi criado com{' '}
+                  <span className="font-semibold text-positive">sucesso!</span> Agora é hora de escolher o seu{' '}
+                  <span className="font-semibold text-primary">Plano de Criadora Luna</span>.
                 </p>
                 <p className="mt-3">
-                  Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
+                  Toda usuária escolhe um plano para{' '}
+                  <span className="font-semibold">começar a vender</span> dentro da plataforma — é ele que
+                  ativa suas ferramentas de criadora.
                 </p>
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
-                  acesso esta muito barato e confiavel.
+                  Para publicar seus packs, receber pedidos privados e usar o painel de vendas da
+                  LUNA.PRIVÉ, você precisa ter um Plano Criadora ativo.
                 </p>
               </div>
             )}
 
-            {/* ETAPA 1 — Convites limitados + conformidade */}
+            {/* ETAPA 1 — O que o plano libera + vagas limitadas */}
             {sub === 1 && (
               <div key="invite-1" className="animate-pop rounded-2xl border border-primary/30 bg-primary/5 p-5">
                 <div className="flex items-center gap-2.5">
                   <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
                     <ShieldCheck className="size-[1.1rem] text-primary" aria-hidden="true" />
                   </span>
-                  <p className="text-sm font-bold text-foreground">Convites limitados</p>
+                  <p className="text-sm font-bold text-foreground">O que o plano libera</p>
                 </div>
                 <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
-                  Existem <span className="font-semibold text-primary">poucos convites disponiveis</span> no momento. Eles sao liberados
-                  em pequenas quantidades para manter a qualidade da plataforma.
+                  O Plano Criadora habilita sua conta com{' '}
+                  <span className="font-semibold text-primary">anonimato, segurança nas transações</span> e
+                  todas as ferramentas de venda: publicação de packs, painel de pedidos, recebimento via
+                  PIX e privacidade do perfil.
                 </p>
                 <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
-                  <span className="font-semibold text-foreground">Toda usuaria possui um convite ativo</span> para garantir a conformidade e a
-                  seguranca de todos dentro do Luna Prive.
+                  Você ainda conta com <span className="font-semibold text-foreground">suporte 24h por chat ou WhatsApp</span>{' '}
+                  para começar com segurança. Em outras plataformas esse acesso é caro ou nem está mais
+                  disponível — aqui ainda temos <span className="font-semibold text-primary">alguns planos disponíveis</span>.
                 </p>
               </div>
             )}
@@ -1107,7 +1112,7 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
               {sub < INVITE_STEPS - 1 ? (
                 <CtaButton onClick={() => setSub((s) => s + 1)}>Continuar</CtaButton>
               ) : (
-                <CtaButton onClick={() => setPhase('searching')}>Quero um Convite</CtaButton>
+                <CtaButton onClick={() => setPhase('searching')}>Escolher meu Plano</CtaButton>
               )}
               {sub > 0 && (
                 <button
@@ -1122,28 +1127,28 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
           </>
         )}
 
-        {/* FASE: buscando convites */}
+        {/* FASE: buscando planos */}
         {phase === 'searching' && (
           <div className="flex flex-col items-center justify-center gap-4 py-10">
             <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
             <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
-              Buscando convites disponiveis...
+              Buscando planos disponiveis...
             </p>
           </div>
         )}
 
-        {/* FASE: convite especial */}
+        {/* FASE: plano especial */}
         {phase === 'offer' && (
           <>
             <div className="animate-pop rounded-3xl border border-border/80 bg-secondary/40 p-6 text-center text-pretty">
               <p className="text-[0.95rem] leading-relaxed text-foreground">
-                Infelizmente nao temos mais{' '}
-                <span className="font-bold">convites gratuitos</span> disponiveis.
+                Os <span className="font-bold">planos gratuitos</span> de criadora já não estão mais
+                disponíveis.
               </p>
               <div className="mt-5 rounded-2xl border border-primary/60 bg-transparent px-5 py-5">
                 <p className="text-[0.95rem] font-bold leading-relaxed text-foreground">
-                  Mas como voce chegou ate aqui, preparamos{' '}
-                  <span className="text-primary">algo especial</span> para voce.
+                  Mas como voce chegou ate aqui, conseguimos liberar um{' '}
+                  <span className="text-primary">Plano Criadora especial</span> para voce.
                 </p>
               </div>
             </div>
@@ -1151,12 +1156,12 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
             <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
               <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
               <p className="text-xs text-muted-foreground">
-                Restam apenas <span className="font-bold text-primary">6 convites</span> para resgate
+                Restam apenas <span className="font-bold text-primary">6 planos</span> com esta condição
               </p>
             </div>
 
             <div className="mt-4">
-              <CtaButton onClick={() => setPhase('redirecting')}>Resgatar meu convite</CtaButton>
+              <CtaButton onClick={() => setPhase('redirecting')}>Ativar meu Plano Criadora</CtaButton>
             </div>
           </>
         )}
@@ -1166,11 +1171,11 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
           <div className="flex flex-col items-center justify-center gap-4 py-10">
             <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
             <p className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
-              Resgatando seu convite...
+              Preparando seu Plano Criadora...
             </p>
             {showFallback && (
               <div className="animate-pop mt-2 w-full">
-                <CtaButton onClick={() => onAcceptRef.current()}>Resgatar convite</CtaButton>
+                <CtaButton onClick={() => onAcceptRef.current()}>Continuar para o plano</CtaButton>
               </div>
             )}
           </div>

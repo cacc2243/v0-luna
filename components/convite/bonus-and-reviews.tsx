@@ -98,7 +98,7 @@ export function BonusAndReviews() {
             <h2 id="bonus" className="text-sm font-bold text-foreground">
               Bônus incluído
             </h2>
-            <p className="text-xs text-muted-foreground">Grátis com seu convite</p>
+            <p className="text-xs text-muted-foreground">Grátis com seu Plano Criadora</p>
           </div>
         </div>
 
