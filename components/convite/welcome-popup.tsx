@@ -102,9 +102,9 @@ export function WelcomePopup() {
           className="pointer-events-none absolute inset-0 z-20 rounded-3xl"
           aria-hidden="true"
           style={{
-            padding: '1.5px',
+            padding: '1.25px',
             background:
-              'linear-gradient(to bottom, oklch(0.66 0.17 15 / 0.9), oklch(0.66 0.17 15 / 0.35) 45%, oklch(0.66 0.17 15 / 0.08) 100%)',
+              'linear-gradient(to bottom, oklch(0.5 0.15 15 / 0.95), oklch(0.6 0.16 15 / 0.32) 45%, oklch(0.66 0.17 15 / 0.08) 100%)',
             WebkitMask:
               'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
             WebkitMaskComposite: 'xor',
