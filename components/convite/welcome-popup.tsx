@@ -93,7 +93,7 @@ export function WelcomePopup() {
       aria-labelledby="invite-modal-title"
     >
       {/* Backdrop (sem fechar ao tocar — fluxo obrigatório) */}
-      <div className="absolute inset-0 bg-background/72 backdrop-blur-[2px]" aria-hidden="true" />
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" aria-hidden="true" />
 
       {/* Card */}
       <div className="animate-pop relative flex max-h-[90dvh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/25">
