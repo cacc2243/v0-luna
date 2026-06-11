@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Mail } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
@@ -19,25 +19,33 @@ interface SignupData {
 
 export function ConviteClient({ initialInviteCents }: { initialInviteCents: number }) {
   const router = useRouter()
-  const [data, setData] = useState<SignupData>({
-    username: '',
-    email: '',
-    pixType: '',
-    pixKey: '',
+  // Le os dados do cadastro de forma sincrona no primeiro render do cliente
+  // (lazy initializer), evitando o "flash" de placeholders que acontecia
+  // quando a leitura era feita dentro de um useEffect (depois do paint).
+  const [data, setData] = useState<SignupData>(() => {
+    if (typeof window === 'undefined') {
+      return { username: '', email: '', pixType: '', pixKey: '' }
+    }
+    try {
+      const raw = sessionStorage.getItem('luna_signup')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        return {
+          username: parsed.username ?? '',
+          email: parsed.email ?? '',
+          pixType: parsed.pixType ?? '',
+          pixKey: parsed.pixKey ?? '',
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return { username: '', email: '', pixType: '', pixKey: '' }
   })
   const [showPixModal, setShowPixModal] = useState(false)
   // Valor do convite ja chega resolvido do servidor (Server Component), entao
   // o preco aparece imediatamente, sem blur nem fetch no cliente.
   const [inviteCents] = useState(initialInviteCents)
-
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('luna_signup')
-      if (raw) setData(JSON.parse(raw))
-    } catch {
-      // ignore
-    }
-  }, [])
 
   function updateField(field: keyof SignupData, value: string) {
     setData((prev) => {
