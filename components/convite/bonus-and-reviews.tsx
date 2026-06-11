@@ -119,7 +119,7 @@ export function BonusAndReviews() {
             <h2 id="bonus" className="text-sm font-bold text-foreground">
               Bônus incluído
             </h2>
-            <p className="text-xs text-muted-foreground">Grátis com seu Plano Criadora</p>
+            <p className="text-xs text-muted-foreground">Grátis com seu Código de Convite</p>
           </div>
         </div>
 
@@ -153,7 +153,7 @@ export function BonusAndReviews() {
             <h2 id="taxas" className="text-sm font-bold text-foreground">
               Taxas da plataforma
             </h2>
-            <p className="text-xs text-muted-foreground">Transparência total no seu plano</p>
+            <p className="text-xs text-muted-foreground">Transparência total no Luna Privé</p>
           </div>
         </div>
 

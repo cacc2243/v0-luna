@@ -2,12 +2,23 @@
 
 import { Check, ChevronRight } from 'lucide-react'
 
+// Ícone do PIX (logo oficial simplificado em SVG)
+function PixIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 512 512" className={className} fill="currentColor" aria-hidden="true">
+      <path d="M242.4 292.5c-7.6 7.6-20.9 7.6-28.5 0l-44.8-44.8c-3.5-3.5-9.2-3.5-12.7 0l-50.6 50.6c10.4 1.4 20.3 6.1 28.1 13.9l44.8 44.8c20.2 20.2 53.1 20.2 73.3 0l44.8-44.8c7.8-7.8 17.7-12.5 28.1-13.9l-50.6-50.6c-3.5 3.5-9.2 3.5-12.7 0l-44.8 44.8z" />
+      <path d="M213.9 219.5c7.6-7.6 20.9-7.6 28.5 0l44.8 44.8c3.5 3.5 9.2 3.5 12.7 0l50.6-50.6c-10.4-1.4-20.3-6.1-28.1-13.9l-44.8-44.8c-20.2-20.2-53.1-20.2-73.3 0l-44.8 44.8c-7.8 7.8-17.7 12.5-28.1 13.9l50.6 50.6c3.5-3.5 9.2-3.5 12.7 0l44.8-44.8z" transform="translate(0 -3)" />
+      <path d="M414.2 219.5l-31.7-31.7c-.7.3-1.5.4-2.3.4h-29.1c-7 0-13.8 2.8-18.7 7.8l-44.8 44.8c-9.1 9.1-25 9.1-34.1 0l-44.8-44.8c-5-5-11.7-7.8-18.7-7.8h-35.7c-.8 0-1.5-.1-2.3-.4L98.5 219.5c-20.2 20.2-20.2 53.1 0 73.3l31.7 31.7c.7-.3 1.5-.4 2.3-.4h35.7c7 0 13.8-2.8 18.7-7.8l44.8-44.8c9.4-9.4 24.8-9.4 34.1 0l44.8 44.8c5 5 11.7 7.8 18.7 7.8h29.1c.8 0 1.5.1 2.3.4l31.7-31.7c20.2-20.2 20.2-53.1 0-73.3z" />
+    </svg>
+  )
+}
+
 const benefits = [
-  'Plano Criadora Luna Privé',
-  'Publique seus packs e comece a vender',
-  'Anonimato e privacidade do perfil',
+  'Código de convite exclusivo Luna Privé',
+  'Acesso imediato à plataforma após a confirmação',
+  'Anonimato e privacidade total do seu perfil',
   'Suporte 24h por WhatsApp + Chat',
-  'Garantia de 30 dias para suas primeiras vendas',
+  'Garantia de 30 dias',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -105,9 +116,10 @@ export function PriceCard({
           type="button"
           onClick={onAcquire}
           disabled={!priceReady}
-          className="luna-gradient relative mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
+          className="luna-gradient relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
         >
-          {priceReady ? 'Ativar meu Plano' : 'Carregando valor...'}
+          {priceReady && <PixIcon className="size-5" />}
+          {priceReady ? 'Adquirir meu Convite' : 'Carregando valor...'}
           {priceReady && <ChevronRight className="size-5" aria-hidden="true" />}
         </button>
       </div>

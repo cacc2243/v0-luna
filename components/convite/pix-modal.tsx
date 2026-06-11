@@ -549,9 +549,9 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
               <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
                 <Mail className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                 <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-                    Após o pagamento, a confirmação do seu{' '}
-                    <span className="font-semibold text-foreground">Plano Criadora</span> será
-                    enviada no e-mail cadastrado.
+                    Após o pagamento, o seu{' '}
+                    <span className="font-semibold text-foreground">Código de Convite</span> será
+                    enviado no e-mail cadastrado.
                 </p>
               </div>
             </>
