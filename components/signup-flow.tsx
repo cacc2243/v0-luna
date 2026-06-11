@@ -17,6 +17,9 @@ import {
   Check,
   Loader2,
   AlertCircle,
+  CalendarDays,
+  Eye as EyeIcon,
+  Clock,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 import { cn } from '@/lib/utils'
@@ -25,9 +28,28 @@ interface SignupFlowProps {
   onComplete: () => void
 }
 
-const TOTAL = 6
+const TOTAL = 9
 
 const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
+
+// Idades disponiveis para selecao (18 a 65+).
+const ageOptions = [
+  ...Array.from({ length: 47 }, (_, i) => String(i + 18)),
+  '65+',
+]
+
+const appearanceOptions = [
+  'Prefiro aparecer',
+  'Prefiro não aparecer',
+  'Tanto faz / decido depois',
+]
+
+const weeklyTimeOptions = [
+  'Menos de 5 horas',
+  '5 a 10 horas',
+  '10 a 20 horas',
+  'Mais de 20 horas',
+]
 
 // Nomes muito comuns/genericos: sugerimos algo mais criativo quando o usuario
 // digita apenas um nome simples sem nenhum diferencial (numero, sufixo, etc).
@@ -55,6 +77,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
   // Campos
   const [username, setUsername] = useState('')
+  const [age, setAge] = useState('')
+  const [appearance, setAppearance] = useState('')
+  const [weeklyTime, setWeeklyTime] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -65,6 +90,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const [showPass, setShowPass] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [pixOpen, setPixOpen] = useState(false)
+  const [ageOpen, setAgeOpen] = useState(false)
+  const [appearanceOpen, setAppearanceOpen] = useState(false)
+  const [weeklyTimeOpen, setWeeklyTimeOpen] = useState(false)
 
   // Configuracoes publicas do servidor (fonte da verdade no backend).
   // verificationEnabled controla se a etapa de verificacao PIX aparece no fluxo.
@@ -122,6 +150,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             phone: phone.replace(/\D/g, ''),
             pix_type: pixType,
             pix_key: pixKey.trim(),
+            age: age,
+            appearance_preference: appearance,
+            weekly_availability: weeklyTime,
             is_creator: true,
           },
         },
@@ -218,19 +249,25 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       case 0:
         return username.trim().length >= 3
       case 1:
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+        return age.length > 0
       case 2:
-        return password.length >= 6
+        return appearance.length > 0
       case 3:
-        return confirm.length >= 6 && confirm === password
+        return weeklyTime.length > 0
       case 4:
-        return phone.replace(/\D/g, '').length >= 10
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
       case 5:
+        return password.length >= 6
+      case 6:
+        return confirm.length >= 6 && confirm === password
+      case 7:
+        return phone.replace(/\D/g, '').length >= 10
+      case 8:
         return pixKey.trim().length >= 3
       default:
         return false
     }
-  }, [step, username, email, password, confirm, phone, pixKey])
+  }, [step, username, age, appearance, weeklyTime, email, password, confirm, phone, pixKey])
 
   return (
     <div className="absolute inset-0 z-[60] flex flex-col">
@@ -318,8 +355,79 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               </StepShell>
             )}
 
-            {/* SEU EMAIL */}
+            {/* IDADE */}
             {step === 1 && (
+              <StepShell
+                icon={CalendarDays}
+                eyebrow="Sua idade"
+                title="Quantos anos você tem?"
+                description="Você precisa ter no mínimo 18 anos para criar uma conta."
+              >
+                <SafetyNote>Informação confidencial e nunca exibida</SafetyNote>
+                <SelectDropdown
+                  value={age}
+                  options={ageOptions}
+                  placeholder="Selecione sua idade"
+                  open={ageOpen}
+                  onToggle={() => setAgeOpen((o) => !o)}
+                  onSelect={(v) => {
+                    setAge(v)
+                    setAgeOpen(false)
+                  }}
+                  maxHeight
+                />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+              </StepShell>
+            )}
+
+            {/* APARECER OU NÃO */}
+            {step === 2 && (
+              <StepShell
+                icon={EyeIcon}
+                eyebrow="Privacidade"
+                title="Você prefere aparecer ou não?"
+                description="Defina como quer trabalhar. Você pode mudar isso quando quiser."
+              >
+                <SelectDropdown
+                  value={appearance}
+                  options={appearanceOptions}
+                  placeholder="Escolha uma opção"
+                  open={appearanceOpen}
+                  onToggle={() => setAppearanceOpen((o) => !o)}
+                  onSelect={(v) => {
+                    setAppearance(v)
+                    setAppearanceOpen(false)
+                  }}
+                />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+              </StepShell>
+            )}
+
+            {/* TEMPO DISPONÍVEL */}
+            {step === 3 && (
+              <StepShell
+                icon={Clock}
+                eyebrow="Disponibilidade"
+                title="Quanto tempo por semana você tem disponível?"
+                description="Isso nos ajuda a recomendar o melhor ritmo para você começar."
+              >
+                <SelectDropdown
+                  value={weeklyTime}
+                  options={weeklyTimeOptions}
+                  placeholder="Selecione sua disponibilidade"
+                  open={weeklyTimeOpen}
+                  onToggle={() => setWeeklyTimeOpen((o) => !o)}
+                  onSelect={(v) => {
+                    setWeeklyTime(v)
+                    setWeeklyTimeOpen(false)
+                  }}
+                />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+              </StepShell>
+            )}
+
+            {/* SEU EMAIL */}
+            {step === 4 && (
               <StepShell
                 icon={Mail}
                 eyebrow="Seu email"
@@ -340,7 +448,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CRIE UMA SENHA */}
-            {step === 2 && (
+            {step === 5 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Crie uma senha"
@@ -360,7 +468,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CONFIRME SUA SENHA */}
-            {step === 3 && (
+            {step === 6 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Confirme sua senha"
@@ -384,7 +492,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   type="button"
                   onClick={() => {
                     setConfirm('')
-                    setStep(2)
+                    setStep(5)
                   }}
                   className="mt-2.5 text-xs font-medium text-primary transition-opacity hover:opacity-80"
                 >
@@ -395,7 +503,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* SEU TELEFONE */}
-            {step === 4 && (
+            {step === 7 && (
               <StepShell
                 icon={Phone}
                 eyebrow="Seu telefone"
@@ -416,7 +524,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CHAVE PIX */}
-            {step === 5 && (
+            {step === 8 && (
               <StepShell
                 icon={KeyRound}
                 eyebrow="Chave PIX"
@@ -506,6 +614,73 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 }
 
 /* ---------- Subcomponentes ---------- */
+
+function SelectDropdown({
+  value,
+  options,
+  placeholder,
+  open,
+  onToggle,
+  onSelect,
+  maxHeight,
+}: {
+  value: string
+  options: string[]
+  placeholder: string
+  open: boolean
+  onToggle: () => void
+  onSelect: (v: string) => void
+  maxHeight?: boolean
+}) {
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onToggle}
+        className={cn(
+          'flex w-full items-center justify-between rounded-2xl border bg-secondary/60 px-4 py-3.5 text-left text-base transition-colors',
+          open ? 'border-primary/60 ring-2 ring-primary/20' : 'border-border',
+          value ? 'text-foreground' : 'text-muted-foreground/70',
+        )}
+      >
+        {value || placeholder}
+        <ChevronDown
+          className={cn(
+            'size-4 shrink-0 text-muted-foreground transition-transform',
+            open && 'rotate-180',
+          )}
+          aria-hidden="true"
+        />
+      </button>
+      {open && (
+        <ul
+          className={cn(
+            'luna-border absolute left-0 right-0 top-full z-10 mt-2 overflow-y-auto rounded-2xl bg-popover py-1 shadow-2xl',
+            maxHeight ? 'max-h-60' : '',
+          )}
+        >
+          {options.map((opt) => (
+            <li key={opt}>
+              <button
+                type="button"
+                onClick={() => onSelect(opt)}
+                className={cn(
+                  'flex w-full items-center justify-between px-4 py-3 text-left text-base transition-colors',
+                  opt === value
+                    ? 'bg-primary/15 font-semibold text-primary'
+                    : 'text-foreground hover:bg-secondary/60',
+                )}
+              >
+                {opt}
+                {opt === value && <Check className="size-4 shrink-0" aria-hidden="true" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 function StepShell({
   icon: Icon,
