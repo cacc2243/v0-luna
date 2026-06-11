@@ -19,6 +19,14 @@ interface InviteRow {
   created_at: string
   paid_at: string | null
   pix_expiration: string | null
+  utm_source: string | null
+  utm_campaign: string | null
+  utm_medium: string | null
+  utm_content: string | null
+  utm_term: string | null
+  fbclid: string | null
+  referrer: string | null
+  landing_url: string | null
 }
 
 interface ProfileRow {
@@ -44,7 +52,7 @@ export async function GET() {
     supabase
       .from('invites')
       .select(
-        'id, user_id, email, amount, status, type, transaction_id, pix_code, pix_copied_at, gateway, created_at, paid_at, pix_expiration',
+        'id, user_id, email, amount, status, type, transaction_id, pix_code, pix_copied_at, gateway, created_at, paid_at, pix_expiration, utm_source, utm_campaign, utm_medium, utm_content, utm_term, fbclid, referrer, landing_url',
       )
       .order('created_at', { ascending: false }),
     supabase
