@@ -114,7 +114,7 @@ export function WelcomePopup() {
         {/* Imagem de fundo */}
         <div className="absolute inset-0" aria-hidden="true">
           <img
-            src="/images/luna-fundo-leve.webp"
+            src="/images/convite-fundo.jpg"
             alt=""
             className="size-full object-cover object-center"
           />

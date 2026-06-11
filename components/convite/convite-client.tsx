@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Mail } from 'lucide-react'
-import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
@@ -102,8 +101,14 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">
       <div className="fixed inset-0 z-0">
-        <PageBackground />
-        <div className="absolute inset-0 bg-background/70" aria-hidden="true" />
+        <img
+          src="/images/convite-fundo.jpg"
+          alt=""
+          className="size-full object-cover object-center"
+        />
+        {/* Camadas de legibilidade */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/75 to-background/95" />
+        <div className="absolute inset-0 bg-background/30" aria-hidden="true" />
       </div>
 
       {/* Top bar */}
