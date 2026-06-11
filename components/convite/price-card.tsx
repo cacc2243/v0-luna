@@ -1,11 +1,10 @@
 'use client'
 
-import { Check, ChevronRight, Gift, ShieldCheck } from 'lucide-react'
+import { Check, Gift, ShieldCheck } from 'lucide-react'
 
 const benefits = [
-  'Plano Criadora ativo na LUNA.PRIVÉ',
+  'Plano Criadora Luna Privé',
   'Publique seus packs e comece a vender',
-  'Painel de pedidos e recebimento via PIX',
   'Anonimato e privacidade do perfil',
   'Suporte 24h por WhatsApp + Chat',
 ]
@@ -33,6 +32,15 @@ export function PriceCard({
   return (
     <section aria-labelledby="investimento">
       <div className="luna-border-soft overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
+        {/* Logo Luna Privé */}
+        <div className="mb-6 flex justify-center">
+          <img
+            src="/images/luna-prive-logo.png"
+            alt="Luna Privé"
+            className="h-9 w-auto"
+          />
+        </div>
+
         {/* Preço centralizado */}
         <div className="flex flex-col items-center text-center">
           <span
@@ -91,8 +99,7 @@ export function PriceCard({
           className="luna-gradient mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
         >
           <Gift className="size-5" aria-hidden="true" />
-          {priceReady ? 'Ativar meu Plano Criadora!' : 'Carregando valor...'}
-          <ChevronRight className="size-5" aria-hidden="true" />
+          {priceReady ? 'Ativar meu Plano' : 'Carregando valor...'}
         </button>
 
         {/* Garantia integrada */}
