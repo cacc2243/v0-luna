@@ -136,7 +136,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
               className="h-6 w-auto self-start"
             />
             <h1 className="mt-4 text-balance text-2xl font-extrabold leading-tight tracking-tight text-foreground">
-              Adquira seu Código de Convite
+              Resgate seu Convite Oficial
             </h1>
             <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
               O Luna Privé é exclusivo para convidadas. Confirme seus dados abaixo e garanta seu código de convite para entrar na plataforma.
