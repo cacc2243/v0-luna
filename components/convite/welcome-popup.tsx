@@ -102,9 +102,11 @@ export function WelcomePopup() {
           <img
             src="/images/luna-fundo-leve.webp"
             alt=""
-            className="size-full object-cover object-top opacity-40"
+            className="size-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-card/85 via-card/90 to-card" />
+          {/* Camadas para legibilidade do texto sobre a imagem */}
+          <div className="absolute inset-0 bg-card/55" />
+          <div className="absolute inset-0 bg-gradient-to-b from-card/30 via-card/60 to-card/90" />
         </div>
 
         {/* Conteúdo */}
