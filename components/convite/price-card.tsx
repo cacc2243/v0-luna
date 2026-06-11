@@ -31,9 +31,20 @@ export function PriceCard({
 
   return (
     <section aria-labelledby="investimento">
-      <div className="luna-border overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
+      <div className="luna-border relative overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
+        {/* Imagem de fundo (mesma do /convite) com degradê escuro por cima */}
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <img
+            src="/images/background.png"
+            alt=""
+            className="size-full object-cover opacity-60"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/80 to-background/95" />
+          <div className="absolute inset-0 bg-background/40" />
+        </div>
+
         {/* Logo Luna Privé */}
-        <div className="mb-6 flex justify-center">
+        <div className="relative mb-6 flex justify-center">
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
@@ -42,7 +53,7 @@ export function PriceCard({
         </div>
 
         {/* Preço centralizado */}
-        <div className="flex flex-col items-center text-center">
+        <div className="relative flex flex-col items-center text-center">
           <span
             id="investimento"
             className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
@@ -80,7 +91,7 @@ export function PriceCard({
         </div>
 
         {/* Benefícios — lista única */}
-        <ul className="mt-7 flex flex-col gap-3.5">
+        <ul className="relative mt-7 flex flex-col gap-3.5">
           {benefits.map((b) => (
             <li key={b} className="flex items-center gap-3">
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15 text-positive">
@@ -96,14 +107,14 @@ export function PriceCard({
           type="button"
           onClick={onAcquire}
           disabled={!priceReady}
-          className="luna-gradient mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
+          className="luna-gradient relative mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
         >
           <Gift className="size-5" aria-hidden="true" />
           {priceReady ? 'Ativar meu Plano' : 'Carregando valor...'}
         </button>
 
         {/* Garantia integrada */}
-        <div className="luna-border-soft mt-5 flex items-start gap-3 rounded-2xl bg-background/40 px-4 py-3.5">
+        <div className="luna-border-soft relative mt-5 flex items-start gap-3 rounded-2xl bg-background/40 px-4 py-3.5">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
           <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
             Experimente o <span className="font-semibold text-foreground">Luna Privé</span> por{' '}
