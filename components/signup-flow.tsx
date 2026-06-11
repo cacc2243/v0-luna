@@ -1083,10 +1083,9 @@ function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => 
                 <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
                   O Plano Criadora habilita sua conta com{' '}
                   <span className="font-semibold text-primary">anonimato, segurança nas transações</span> e
-                  todas as ferramentas de venda: publicação de packs, painel de pedidos, recebimento via
-                  PIX e privacidade do perfil.
+                  todas as ferramentas de venda da plataforma.
                 </p>
-                <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
+                <p className="mt-3 text-pretty text-sm leading-relaxed text-foreground/85">
                   Você ainda conta com <span className="font-semibold text-foreground">suporte 24h por chat ou WhatsApp</span>{' '}
                   para começar com segurança. Em outras plataformas esse acesso é caro ou nem está mais
                   disponível — aqui ainda temos <span className="font-semibold text-primary">alguns planos disponíveis</span>.
