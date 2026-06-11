@@ -115,7 +115,7 @@ export function playSaleAccepted() {
 
 /** Toque leve ao trocar de aba: um único "tick" suave e curto. */
 export function playTabTap() {
-  playNotes([{ freq: 660, start: 0, dur: 0.09, type: 'triangle' }], 0.04)
+  playNotes([{ freq: 660, start: 0, dur: 0.07, type: 'triangle' }], 0.018)
 }
 
 /** Enviar mensagem no chat: "pop" curto ascendente. */
