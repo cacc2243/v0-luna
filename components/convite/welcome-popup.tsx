@@ -96,7 +96,21 @@ export function WelcomePopup() {
       <div className="absolute inset-0 bg-background/85 backdrop-blur-md" aria-hidden="true" />
 
       {/* Card */}
-      <div className="animate-pop luna-border relative flex max-h-[90dvh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/25">
+      <div className="animate-pop relative flex max-h-[90dvh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/25">
+        {/* Borda em gradiente: forte no topo, suavizando até a base */}
+        <div
+          className="pointer-events-none absolute inset-0 z-20 rounded-3xl"
+          aria-hidden="true"
+          style={{
+            padding: '1.5px',
+            background:
+              'linear-gradient(to bottom, oklch(0.66 0.17 15 / 0.9), oklch(0.66 0.17 15 / 0.35) 45%, oklch(0.66 0.17 15 / 0.08) 100%)',
+            WebkitMask:
+              'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+            WebkitMaskComposite: 'xor',
+            maskComposite: 'exclude',
+          }}
+        />
         {/* Imagem de fundo */}
         <div className="absolute inset-0" aria-hidden="true">
           <img
@@ -131,13 +145,12 @@ export function WelcomePopup() {
             </div>
           ) : (
             <>
-              {/* Ícone presente */}
-              <span
-                className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-[0_0_24px_oklch(0.66_0.17_15/0.45)] ring-1 ring-primary/40"
-                aria-hidden="true"
-              >
-                <Gift className="size-7" />
-              </span>
+              {/* Logo completa */}
+              <img
+                src="/images/luna-prive-logo.png"
+                alt="Luna Privé"
+                className="mx-auto h-11 w-auto"
+              />
 
               <h2
                 id="invite-modal-title"
