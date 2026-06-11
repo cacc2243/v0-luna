@@ -14,7 +14,6 @@ type Kind = 'withdraw' | 'gift'
 type ToastData = {
   key: string
   username: string
-  sender: string
   kind: Kind
   amount: number
 }
@@ -51,16 +50,11 @@ function randomInRange(min: number, max: number) {
 
 function buildToast(): ToastData {
   const username = USERNAMES[Math.floor(Math.random() * USERNAMES.length)]
-  let sender = USERNAMES[Math.floor(Math.random() * USERNAMES.length)]
-  while (sender === username) {
-    sender = USERNAMES[Math.floor(Math.random() * USERNAMES.length)]
-  }
   const isWithdraw = Math.random() < 0.55
   if (isWithdraw) {
     return {
       key: `${Date.now()}-${Math.random()}`,
       username,
-      sender,
       kind: 'withdraw',
       amount: randomInRange(2880, 3880),
     }
@@ -68,7 +62,6 @@ function buildToast(): ToastData {
   return {
     key: `${Date.now()}-${Math.random()}`,
     username,
-    sender,
     kind: 'gift',
     amount: randomInRange(380, 690),
   }
@@ -145,10 +138,7 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
           {current.kind === 'withdraw' ? (
             <>acabou de sacar </>
           ) : (
-            <>
-              acabou de receber um presente de{' '}
-              <span className="font-semibold">@{current.sender}</span> no valor de{' '}
-            </>
+            <>acabou de receber um presente no valor de </>
           )}
           <span className="font-bold text-emerald-400">{brl(current.amount)}</span>
         </p>
