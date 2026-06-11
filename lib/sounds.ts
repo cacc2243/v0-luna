@@ -118,6 +118,19 @@ export function playTabTap() {
   playNotes([{ freq: 660, start: 0, dur: 0.07, type: 'triangle' }], 0.018)
 }
 
+/** Sucesso/conquista: arpejo maior ascendente, alegre e suave (volume baixo). */
+export function playSuccess() {
+  playNotes(
+    [
+      { freq: 523.25, start: 0, dur: 0.26, type: 'triangle' },
+      { freq: 659.25, start: 0.1, dur: 0.28, type: 'triangle' },
+      { freq: 783.99, start: 0.2, dur: 0.3, type: 'triangle' },
+      { freq: 1046.5, start: 0.32, dur: 0.5, type: 'triangle' },
+    ],
+    0.05,
+  )
+}
+
 /** Enviar mensagem no chat: "pop" curto ascendente. */
 export function playMessageSent() {
   playNotes(

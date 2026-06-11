@@ -31,7 +31,7 @@ import {
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { CtaButton } from '@/components/cta-button'
-import { primeSounds, playNewSale, playSaleAccepted } from '@/lib/sounds'
+import { primeSounds, playNewSale, playSaleAccepted, playSuccess } from '@/lib/sounds'
 import { SignupFlow } from '@/components/signup-flow'
 
 interface GuidedAppDemoProps {
@@ -208,6 +208,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   // Confetes na tela de parabéns
   useEffect(() => {
     if (phase !== 'celebrate') return
+    // Som de sucesso suave sincronizado com o confete.
+    playSuccess()
     const colors = ['#ff3d77', '#ff7aa2', '#ffd1dc', '#ffffff']
     const end = Date.now() + 1600
     confetti({ particleCount: 35, spread: 60, startVelocity: 30, origin: { y: 0.4 }, colors, zIndex: 100 })
