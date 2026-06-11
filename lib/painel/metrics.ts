@@ -12,6 +12,14 @@ export interface InviteRow {
   created_at: string
   paid_at: string | null
   pix_expiration: string | null
+  utm_source?: string | null
+  utm_campaign?: string | null
+  utm_medium?: string | null
+  utm_content?: string | null
+  utm_term?: string | null
+  fbclid?: string | null
+  referrer?: string | null
+  landing_url?: string | null
 }
 
 export interface ProfileRow {
@@ -21,6 +29,8 @@ export interface ProfileRow {
   created_at: string
   chat_unlocked?: boolean | null
   chat_unlocked_at?: string | null
+  balance?: number | null
+  total_earned?: number | null
 }
 
 export interface PixVerificationRow {
@@ -552,5 +562,94 @@ export function buildTimeSeries(
       paid: paidInBucket.length,
       signups,
     }
+  })
+}
+
+/* ===================== Atribuição / UTMs ===================== */
+
+// Chaves de UTM rastreadas na plataforma.
+export type UtmKey = 'utm_source' | 'utm_campaign' | 'utm_medium' | 'utm_content' | 'utm_term'
+
+export const UTM_LABELS: Record<UtmKey, string> = {
+  utm_source: 'Origem (source)',
+  utm_campaign: 'Campanha',
+  utm_medium: 'Conjunto (medium)',
+  utm_content: 'Anúncio (content)',
+  utm_term: 'Posicionamento (term)',
+}
+
+// O Facebook injeta as UTMs no padrão "Nome|ID" (ex.: "Campanha Verão|123456").
+// Esta função separa o nome legível do id numérico para exibição no painel.
+export function parseUtmValue(raw: string | null | undefined): { name: string; id: string | null } {
+  if (!raw) return { name: '—', id: null }
+  const value = raw.trim()
+  if (!value) return { name: '—', id: null }
+  const sepIndex = value.lastIndexOf('|')
+  if (sepIndex === -1) return { name: value, id: null }
+  const name = value.slice(0, sepIndex).trim()
+  const id = value.slice(sepIndex + 1).trim()
+  return { name: name || value, id: id || null }
+}
+
+// Considera um invite com atribuição quando há qualquer sinal de campanha.
+export function hasAttribution(inv: InviteRow): boolean {
+  return !!(inv.utm_source || inv.utm_campaign || inv.utm_medium || inv.utm_content || inv.utm_term || inv.fbclid)
+}
+
+// Estatística agregada de um valor de UTM (ex.: uma campanha específica).
+export interface UtmStat {
+  /** Valor bruto da UTM (como salvo no banco, com "Nome|ID"). */
+  raw: string
+  /** Nome legível, sem o id. */
+  name: string
+  /** Id numérico extraído (quando houver). */
+  id: string | null
+  /** PIX gerados atribuídos a este valor. */
+  generated: number
+  /** Vendas pagas atribuídas a este valor. */
+  paid: number
+  /** Receita confirmada atribuída a este valor. */
+  revenue: number
+  /** % de conversão: gerou PIX -> pagou. */
+  conversionRate: number
+}
+
+// Agrupa os invites por uma chave de UTM, somando geração, vendas e receita.
+// Invites sem aquela UTM caem em "Sem atribuição".
+export function aggregateByUtm(invites: InviteRow[], key: UtmKey): UtmStat[] {
+  const map = new Map<string, UtmStat>()
+
+  for (const inv of invites) {
+    const raw = (inv[key] || '').trim()
+    const mapKey = raw || '__none__'
+    let stat = map.get(mapKey)
+    if (!stat) {
+      const parsed = raw ? parseUtmValue(raw) : { name: 'Sem atribuição', id: null }
+      stat = {
+        raw: raw || '',
+        name: parsed.name,
+        id: parsed.id,
+        generated: 0,
+        paid: 0,
+        revenue: 0,
+        conversionRate: 0,
+      }
+      map.set(mapKey, stat)
+    }
+    stat.generated += 1
+    if (isPaid(inv.status)) {
+      stat.paid += 1
+      stat.revenue += Number(inv.amount) || 0
+    }
+  }
+
+  const list = Array.from(map.values())
+  for (const s of list) {
+    s.conversionRate = s.generated > 0 ? (s.paid / s.generated) * 100 : 0
+  }
+  // Maior receita primeiro; depois mais vendas; "Sem atribuição" tende ao fim.
+  return list.sort((a, b) => {
+    if (b.revenue !== a.revenue) return b.revenue - a.revenue
+    return b.paid - a.paid
   })
 }
