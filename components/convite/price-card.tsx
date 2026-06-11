@@ -80,9 +80,9 @@ export function PriceCard({
         </div>
 
         {/* Benefícios — lista única */}
-        <ul className="mt-7 flex flex-col items-center gap-3.5">
+        <ul className="mt-7 flex flex-col gap-3.5">
           {benefits.map((b) => (
-            <li key={b} className="flex items-center justify-center gap-3 text-center">
+            <li key={b} className="flex items-center gap-3">
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15 text-positive">
                 <Check className="size-3.5" aria-hidden="true" />
               </span>
