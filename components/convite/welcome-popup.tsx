@@ -119,7 +119,7 @@ export function WelcomePopup() {
             className="size-full object-cover object-center"
           />
           {/* Camadas para legibilidade do texto sobre a imagem */}
-          <div className="absolute inset-0 bg-card/55" />
+          <div className="absolute inset-0 bg-card/65" />
           <div className="absolute inset-0 bg-gradient-to-b from-card/30 via-card/60 to-card/90" />
         </div>
 
