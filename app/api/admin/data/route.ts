@@ -28,6 +28,8 @@ interface ProfileRow {
   created_at: string
   chat_unlocked: boolean | null
   chat_unlocked_at: string | null
+  balance: number | null
+  total_earned: number | null
 }
 
 export async function GET() {
@@ -47,7 +49,7 @@ export async function GET() {
       .order('created_at', { ascending: false }),
     supabase
       .from('profiles')
-      .select('id, username, display_name, created_at, chat_unlocked, chat_unlocked_at')
+      .select('id, username, display_name, created_at, chat_unlocked, chat_unlocked_at, balance, total_earned')
       .order('created_at', { ascending: false }),
     supabase
       .from('pix_verifications')

@@ -17,12 +17,14 @@ import {
   Settings,
   Facebook,
   Mail,
+  Wallet,
   Menu,
   X,
 } from 'lucide-react'
 import { logoutAction } from '@/app/painel/actions'
 import { SummaryTab } from './summary-tab'
 import { ClientsTab } from './clients-tab'
+import { BalancesTab } from './balances-tab'
 import { TransactionsTab } from './transactions-tab'
 import { GatewayTestTab } from './gateway-test-tab'
 import { ImagesTab } from './images-tab'
@@ -52,11 +54,12 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'pix' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails'
+type TabKey = 'resumo' | 'clientes' | 'saldos' | 'pix' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
   { key: 'clientes', label: 'Clientes', icon: Users },
+  { key: 'saldos', label: 'Saldos', icon: Wallet },
   { key: 'pix', label: 'Transações', icon: Receipt },
   { key: 'verificacoes', label: 'Verificações', icon: ShieldCheck },
   { key: 'imagens', label: 'Imagens', icon: ImageIcon },
@@ -236,7 +239,7 @@ export function AdminDashboard() {
             </div>
           ) : (
             <>
-              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && (
+              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && tab !== 'saldos' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
                   {tab !== 'clientes' && (
@@ -274,6 +277,7 @@ export function AdminDashboard() {
                 />
               )}
               {tab === 'clientes' && <ClientsTab profiles={profiles} invites={invites} />}
+              {tab === 'saldos' && <BalancesTab profiles={profiles} />}
               {tab === 'verificacoes' && <VerificationsTab verifications={verifications} />}
               {tab === 'imagens' && <ImagesTab />}
               {tab === 'gateways' && <GatewayTestTab />}

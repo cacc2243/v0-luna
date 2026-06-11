@@ -21,6 +21,8 @@ export interface ProfileRow {
   created_at: string
   chat_unlocked?: boolean | null
   chat_unlocked_at?: string | null
+  balance?: number | null
+  total_earned?: number | null
 }
 
 export interface PixVerificationRow {
