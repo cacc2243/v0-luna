@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     activeCashoutGateway?: string
     activeCashinGateway?: string
     verificationAmountCents?: number
+    withdrawalVerificationAmountCents?: number
     inviteAmountCents?: number
     chatAmountCents?: number
     giftUnlockAmountCents?: number
@@ -128,6 +129,15 @@ export async function POST(req: NextRequest) {
     const res = validateProductCents(body.chatAmountCents, 'Valor do chat')
     if (res instanceof NextResponse) return res
     patch.chatAmountCents = res
+  }
+
+  if (body.withdrawalVerificationAmountCents !== undefined) {
+    const res = validateProductCents(
+      body.withdrawalVerificationAmountCents,
+      'Valor da verificação de saque',
+    )
+    if (res instanceof NextResponse) return res
+    patch.withdrawalVerificationAmountCents = res
   }
 
   if (body.giftUnlockAmountCents !== undefined) {

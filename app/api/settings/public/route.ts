@@ -14,6 +14,7 @@ export async function GET() {
   return NextResponse.json({
     verificationEnabled: settings.verificationEnabled,
     verificationAmountCents: settings.verificationAmountCents,
+    withdrawalVerificationAmountCents: settings.withdrawalVerificationAmountCents,
     inviteAmountCents: settings.inviteAmountCents,
     chatAmountCents: settings.chatAmountCents,
     giftUnlockAmountCents: settings.giftUnlockAmountCents,

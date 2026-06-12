@@ -14,6 +14,8 @@ export interface AppSettings {
   activeCashoutGateway: string
   activeCashinGateway: string
   verificationAmountCents: number
+  /** Valor cobrado na verificação de saque (/minha-conta). */
+  withdrawalVerificationAmountCents: number
   inviteAmountCents: number
   chatAmountCents: number
   giftUnlockAmountCents: number
@@ -35,6 +37,7 @@ const DEFAULTS: AppSettings = {
   activeCashoutGateway: 'pixup',
   activeCashinGateway: 'bynet',
   verificationAmountCents: 4990,
+  withdrawalVerificationAmountCents: 4990,
   inviteAmountCents: 2480,
   chatAmountCents: 9900,
   giftUnlockAmountCents: 3860,
@@ -47,6 +50,7 @@ const KEY_MAP = {
   activeCashoutGateway: 'active_cashout_gateway',
   activeCashinGateway: 'active_cashin_gateway',
   verificationAmountCents: 'verification_amount_cents',
+  withdrawalVerificationAmountCents: 'withdrawal_verification_amount_cents',
   inviteAmountCents: 'invite_amount_cents',
   chatAmountCents: 'chat_amount_cents',
   giftUnlockAmountCents: 'gift_unlock_amount_cents',
@@ -103,6 +107,12 @@ async function readAppSettings(): Promise<AppSettings> {
       ? Math.round(rawAmount)
       : DEFAULTS.verificationAmountCents
 
+  const rawWithdrawalAmount = map.get(KEY_MAP.withdrawalVerificationAmountCents)
+  const withdrawalVerificationAmountCents =
+    typeof rawWithdrawalAmount === 'number' && Number.isFinite(rawWithdrawalAmount)
+      ? Math.round(rawWithdrawalAmount)
+      : DEFAULTS.withdrawalVerificationAmountCents
+
   const rawInvite = map.get(KEY_MAP.inviteAmountCents)
   const inviteAmountCents =
     typeof rawInvite === 'number' && Number.isFinite(rawInvite)
@@ -133,6 +143,7 @@ async function readAppSettings(): Promise<AppSettings> {
     activeCashoutGateway,
     activeCashinGateway,
     verificationAmountCents,
+    withdrawalVerificationAmountCents,
     inviteAmountCents,
     chatAmountCents,
     giftUnlockAmountCents,
@@ -191,6 +202,14 @@ export async function updateAppSettings(
     rows.push({
       key: KEY_MAP.verificationAmountCents,
       value: Math.round(patch.verificationAmountCents),
+      updated_at: now,
+      updated_by: updatedBy,
+    })
+  }
+  if (typeof patch.withdrawalVerificationAmountCents === 'number') {
+    rows.push({
+      key: KEY_MAP.withdrawalVerificationAmountCents,
+      value: Math.round(patch.withdrawalVerificationAmountCents),
       updated_at: now,
       updated_by: updatedBy,
     })
