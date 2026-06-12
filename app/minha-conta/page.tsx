@@ -68,6 +68,7 @@ import {
   AlertCircle,
   Gift,
   Clock,
+  DollarSign,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
   import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead } from './actions'
@@ -2008,7 +2009,7 @@ function HomeScreen({
           </h3>
           {pendingSales.length > 0 && (
             <span className="rounded-full border border-primary/40 px-2 py-0.5 text-xs font-semibold text-primary">
-              {pendingSales.length} novos
+              {pendingSales.length === 1 ? '1 novo' : `${pendingSales.length} novos`}
             </span>
           )}
         </div>
@@ -2018,35 +2019,35 @@ function HomeScreen({
           <div
             key={`pending-${sale.id}`}
             className={`luna-border relative mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3 transition ${
-              accepting === sale.id ? 'ring-1 ring-positive/40' : accepting ? 'opacity-50' : ''
+              accepting === sale.id ? 'ring-1 ring-primary/40' : accepting ? 'opacity-50' : ''
             }`}
           >
             <div className="flex items-center gap-2.5">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                <Bell className="size-4 text-primary" aria-hidden="true" />
+                <DollarSign className="size-4 text-primary" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1 leading-snug">
                 <div className="flex items-center gap-1.5">
                   <p className="truncate text-[0.8rem] font-semibold text-foreground">
-                    {sale.buyer_name} quer {sale.pack?.title || 'seu pack'}
+                    {sale.buyer_name}
                   </p>
-                  {sale.is_direct ? (
-                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-positive/30 bg-positive/10 px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-positive">
-                      <Zap className="size-2.5" aria-hidden="true" />
-                      Direto
-                    </span>
-                  ) : (
-                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-primary">
+                  <span className="shrink-0 text-[0.8rem] font-semibold text-primary">· Novo!</span>
+                </div>
+                <p className="flex items-center gap-1 text-[0.65rem] text-muted-foreground">
+                  <span className="truncate">Comprou “{sale.pack?.title || 'seu pack'}”</span>
+                  {!sale.is_direct && (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 text-primary">
+                      ·
                       <MessageSquare className="size-2.5" aria-hidden="true" />
-                      Com chat
+                      Chat
                     </span>
                   )}
-                </div>
-                <p className="text-[0.65rem] text-muted-foreground">
-                  {relativeTime(sale.created_at)} · você recebe {brl(Number(sale.net_amount))}
                 </p>
               </div>
-              <span className="text-sm font-bold text-positive">{brl(Number(sale.amount))}</span>
+              <div className="shrink-0 text-right leading-snug">
+                <p className="text-sm font-bold text-positive">{brl(Number(sale.amount))}</p>
+                <p className="text-[0.6rem] text-muted-foreground">{relativeTime(sale.created_at)}</p>
+              </div>
             </div>
 
             {accepting === sale.id && (
@@ -2062,18 +2063,13 @@ function HomeScreen({
                 onClick={() => onReject(sale.id)}
                 className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98] disabled:opacity-60"
               >
-                <X className="size-3.5" aria-hidden="true" />
                 Recusar
               </button>
               <button
                 type="button"
                 disabled={accepting !== null}
                 onClick={() => handleAccept(sale.id)}
-                style={{
-                  backgroundImage:
-                    'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
-                }}
-                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
+                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg bg-primary py-2 text-[0.8rem] font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
               >
                 {accepting === sale.id ? (
                   <>
