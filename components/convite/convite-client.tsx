@@ -110,8 +110,8 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
           className="size-full object-cover object-center"
         />
         {/* Camadas de legibilidade */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/55 to-background/85" />
-        <div className="absolute inset-0 bg-background/40" aria-hidden="true" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/75 to-background/95" />
+        <div className="absolute inset-0 bg-background/65" aria-hidden="true" />
       </div>
 
       {/* Top bar */}
