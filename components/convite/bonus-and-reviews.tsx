@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import { BookOpen, Users, Images, Gift, Star, BadgeCheck, Percent, Banknote, Zap, Receipt } from 'lucide-react'
 
 const fees = [
@@ -56,7 +55,7 @@ const reviews = [
     handle: '@lara_priv',
     avatar: '/images/avatar-2.png',
     time: 'há 2 semanas',
-    text: 'achei que não ia dar certo, mas na primeira semana já tinha vendido 4 packs. recomendo demais.',
+    text: 'achei que não ia dar certo, mas na primeira semana já tinha vendido mais de 40 packs. recomendo demais.',
   },
   {
     handle: '@drih.rs',
@@ -67,28 +66,8 @@ const reviews = [
 ]
 
 export function BonusAndReviews() {
-  const scrollerRef = useRef<HTMLDivElement>(null)
-
-  // Avança os depoimentos automaticamente a cada 3s (loop infinito).
-  useEffect(() => {
-    const scroller = scrollerRef.current
-    if (!scroller) return
-
-    const interval = setInterval(() => {
-      const card = scroller.querySelector<HTMLElement>('[data-review-card]')
-      if (!card) return
-      const gap = 12 // gap-3
-      const step = card.offsetWidth + gap
-      const maxScroll = scroller.scrollWidth - scroller.clientWidth
-      const next = scroller.scrollLeft + step
-      scroller.scrollTo({
-        left: next > maxScroll + 4 ? 0 : next,
-        behavior: 'smooth',
-      })
-    }, 3000)
-
-    return () => clearInterval(interval)
-  }, [])
+  // Duplicamos a lista para o marquee criar um loop contínuo e infinito.
+  const loopReviews = [...reviews, ...reviews]
 
   return (
     <div className="flex flex-col gap-8">
@@ -102,38 +81,37 @@ export function BonusAndReviews() {
           O que nossas Lunas falam
         </h2>
 
-        <div
-          ref={scrollerRef}
-          className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {reviews.map((r) => (
-            <article
-              key={r.handle}
-              data-review-card
-              className="luna-border-soft w-[85%] shrink-0 snap-center rounded-2xl bg-card p-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <img
-                    src={r.avatar || '/placeholder.svg'}
-                    alt=""
-                    className="size-9 rounded-full object-cover"
-                  />
-                  <div className="leading-tight">
-                    <p className="flex items-center gap-1 text-sm font-semibold text-foreground">
-                      {r.handle}
-                      <BadgeCheck className="size-3.5 text-positive" aria-hidden="true" />
-                    </p>
-                    <p className="text-[0.7rem] text-muted-foreground">Usuária verificada</p>
+        <div className="group -mx-5 overflow-hidden px-5 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
+          <div className="flex w-max animate-marquee gap-3">
+            {loopReviews.map((r, i) => (
+              <article
+                key={`${r.handle}-${i}`}
+                aria-hidden={i >= reviews.length}
+                className="luna-border-soft w-[80vw] max-w-[320px] shrink-0 rounded-2xl bg-card p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src={r.avatar || '/placeholder.svg'}
+                      alt=""
+                      className="size-9 rounded-full object-cover"
+                    />
+                    <div className="leading-tight">
+                      <p className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                        {r.handle}
+                        <BadgeCheck className="size-3.5 text-positive" aria-hidden="true" />
+                      </p>
+                      <p className="text-[0.7rem] text-muted-foreground">Usuária verificada</p>
+                    </div>
                   </div>
+                  <span className="text-[0.7rem] text-muted-foreground">{r.time}</span>
                 </div>
-                <span className="text-[0.7rem] text-muted-foreground">{r.time}</span>
-              </div>
-              <p className="mt-3 text-pretty text-sm leading-relaxed text-foreground">
-                &ldquo;{r.text}&rdquo;
-              </p>
-            </article>
-          ))}
+                <p className="mt-3 text-pretty text-sm leading-relaxed text-foreground">
+                  &ldquo;{r.text}&rdquo;
+                </p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 

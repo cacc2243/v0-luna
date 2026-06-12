@@ -22,21 +22,23 @@ export function BalancesTab({ profiles, invites }: BalancesTabProps) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortKey>('balance')
 
-  // Conjunto de usuárias que possuem um convite PAGO (apenas tipo convite).
-  const paidInviteUserIds = useMemo(() => {
-    const ids = new Set<string>()
+  // Conjunto de e-mails que pagaram o convite de acesso.
+  // O vinculo convite <-> usuaria e feito por EMAIL (o user_id do convite fica nulo),
+  // entao so entram na lista as pessoas cujo e-mail tem um convite PAGO.
+  const paidEmails = useMemo(() => {
+    const set = new Set<string>()
     for (const i of invites) {
-      if (i.user_id && isPaid(i.status) && isInviteType(i.type)) {
-        ids.add(i.user_id)
+      if (i.email && isPaid(i.status) && isInviteType(i.type)) {
+        set.add(i.email.trim().toLowerCase())
       }
     }
-    return ids
+    return set
   }, [invites])
 
-  // Apenas perfis com convite pago entram na lista de saldos.
+  // Apenas perfis cujo e-mail consta como convite pago.
   const paidProfiles = useMemo(
-    () => profiles.filter((p) => paidInviteUserIds.has(p.id)),
-    [profiles, paidInviteUserIds],
+    () => profiles.filter((p) => p.email && paidEmails.has(p.email.trim().toLowerCase())),
+    [profiles, paidEmails],
   )
 
   const rows = useMemo(() => {
@@ -45,7 +47,8 @@ export function BalancesTab({ profiles, invites }: BalancesTabProps) {
       if (!q) return true
       return (
         (p.username || '').toLowerCase().includes(q) ||
-        (p.display_name || '').toLowerCase().includes(q)
+        (p.display_name || '').toLowerCase().includes(q) ||
+        (p.email || '').toLowerCase().includes(q)
       )
     })
     return filtered.sort((a, b) => {

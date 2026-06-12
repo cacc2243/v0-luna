@@ -10,6 +10,7 @@ import {
   Layers,
   CheckCircle2,
   Globe,
+  BarChart3,
 } from 'lucide-react'
 import {
   aggregateByUtm,
@@ -26,6 +27,7 @@ import {
   type InviteRow,
   type PeriodKey,
   type UtmKey,
+  type UtmStat,
 } from '@/lib/painel/metrics'
 import { cn } from '@/lib/utils'
 
@@ -48,6 +50,7 @@ type ViewMode = 'sales' | 'breakdown'
 export function UtmsTab({ invites, period }: UtmsTabProps) {
   const [view, setView] = useState<ViewMode>('sales')
   const [dimension, setDimension] = useState<UtmKey>('utm_campaign')
+  const [chartMetric, setChartMetric] = useState<'paid' | 'revenue'>('paid')
   const [query, setQuery] = useState('')
 
   const range = useMemo(() => getPeriodRange(period), [period])
@@ -208,6 +211,14 @@ export function UtmsTab({ invites, period }: UtmsTabProps) {
             ))}
           </div>
 
+          {/* Gráfico de barras: ranking por vendas ou receita */}
+          <UtmBarChart
+            stats={breakdown}
+            metric={chartMetric}
+            onMetricChange={setChartMetric}
+            dimensionLabel={UTM_LABELS[dimension]}
+          />
+
           <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
             <h2 className="mb-1 text-base font-bold text-foreground">
               {UTM_LABELS[dimension]}
@@ -253,6 +264,107 @@ export function UtmsTab({ invites, period }: UtmsTabProps) {
         </>
       )}
     </div>
+  )
+}
+
+// Gráfico de barras horizontais: ranking dos valores de UTM por vendas ou receita.
+function UtmBarChart({
+  stats,
+  metric,
+  onMetricChange,
+  dimensionLabel,
+}: {
+  stats: UtmStat[]
+  metric: 'paid' | 'revenue'
+  onMetricChange: (m: 'paid' | 'revenue') => void
+  dimensionLabel: string
+}) {
+  // Considera apenas valores que tiveram ao menos uma venda paga, top 8.
+  const data = useMemo(() => {
+    return stats
+      .filter((s) => s.paid > 0)
+      .slice(0, 8)
+      .map((s) => ({
+        key: s.raw || 'none',
+        label: s.id ? `${s.name} · #${s.id}` : s.name,
+        value: metric === 'paid' ? s.paid : s.revenue,
+        paid: s.paid,
+        revenue: s.revenue,
+      }))
+  }, [stats, metric])
+
+  const max = useMemo(() => Math.max(...data.map((d) => d.value), 0), [data])
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="size-4 text-primary" />
+          <h2 className="text-base font-bold text-foreground">
+            Ranking por {dimensionLabel.toLowerCase()}
+          </h2>
+        </div>
+        <div className="flex gap-1 rounded-full bg-background/60 p-0.5">
+          <button
+            onClick={() => onMetricChange('paid')}
+            className={cn(
+              'rounded-full px-3 py-1 text-xs font-medium transition',
+              metric === 'paid'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            Vendas
+          </button>
+          <button
+            onClick={() => onMetricChange('revenue')}
+            className={cn(
+              'rounded-full px-3 py-1 text-xs font-medium transition',
+              metric === 'revenue'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            Receita
+          </button>
+        </div>
+      </div>
+
+      {data.length === 0 ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">
+          Nenhuma venda paga atribuída no período.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {data.map((d, i) => {
+            const pct = max > 0 ? (d.value / max) * 100 : 0
+            return (
+              <div key={d.key} className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="flex min-w-0 items-center gap-1.5 font-medium text-foreground">
+                    <span className="inline-flex size-4 shrink-0 items-center justify-center rounded bg-secondary text-[0.6rem] tabular-nums text-muted-foreground">
+                      {i + 1}
+                    </span>
+                    <span className="truncate">{d.label}</span>
+                  </span>
+                  <span className="shrink-0 font-bold tabular-nums text-foreground">
+                    {metric === 'paid'
+                      ? `${d.paid} venda${d.paid === 1 ? '' : 's'}`
+                      : formatBRL(d.revenue)}
+                  </span>
+                </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-background/60">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${Math.max(pct, 3)}%` }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </section>
   )
 }
 

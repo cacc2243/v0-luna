@@ -26,6 +26,7 @@ export interface ProfileRow {
   id: string
   username: string | null
   display_name: string | null
+  email?: string | null
   created_at: string
   chat_unlocked?: boolean | null
   chat_unlocked_at?: string | null
