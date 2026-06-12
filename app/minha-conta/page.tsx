@@ -2712,7 +2712,22 @@ function WalletScreen({
   >('form')
   const [showVerifyPix, setShowVerifyPix] = useState(false)
   const isVerified = !!profile?.withdrawal_verified
-  const VERIFICATION_PRICE = 49
+  // Valor da verificação de saque vem das configurações (painel). Fallback: R$ 49,90.
+  const [VERIFICATION_PRICE, setVerificationPrice] = useState(49.9)
+  useEffect(() => {
+    let active = true
+    fetch('/api/settings/public')
+      .then((r) => r.json())
+      .then((d) => {
+        if (active && typeof d?.withdrawalVerificationAmountCents === 'number') {
+          setVerificationPrice(d.withdrawalVerificationAmountCents / 100)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
   const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [withdrawAmount, setWithdrawAmount] = useState('')

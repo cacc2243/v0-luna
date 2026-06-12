@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       }
       effectiveAmount = cents / 100
     } else if (inviteType === 'verification') {
-      effectiveAmount = settings.verificationAmountCents / 100
+      effectiveAmount = settings.withdrawalVerificationAmountCents / 100
     } else {
       effectiveAmount = Number(amount)
     }
