@@ -73,11 +73,11 @@ export function ConfirmationContent() {
           </span>
 
           <h1 className="text-balance text-2xl font-bold leading-tight text-foreground">
-            Seu Plano Criadora já está ativo
+            Seu código de convite já está ativo
           </h1>
 
           <p className="mx-auto mt-3 max-w-[20rem] text-pretty text-sm leading-relaxed text-muted-foreground">
-            Recebemos a confirmação do seu PIX e seu Plano Criadora foi ativado com sucesso. Agora é
+            Recebemos a confirmação do seu PIX e seu código de convite foi ativado com sucesso. Agora é
             só entrar na sua conta para aproveitar tudo o que preparamos para você.
           </p>
 
