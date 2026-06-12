@@ -428,9 +428,11 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             className="h-7 w-auto"
           />
         )}
-        <h2 className={`${embedded ? 'text-lg' : 'mt-4 text-2xl'} font-bold tracking-tight text-foreground`}>
-          {title || 'Pagamento via PIX'}
-        </h2>
+        {!embedded && (
+          <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+            {title || 'Pagamento via PIX'}
+          </h2>
+        )}
         {!embedded && (
           <p className="mt-1 text-sm text-muted-foreground">
             {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
@@ -487,7 +489,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Valor */}
           <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Valor a pagar
+              Valor com desconto
             </p>
             <div className="mt-1 flex items-center justify-center gap-2.5">
               <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
