@@ -56,7 +56,7 @@ const reviews = [
     handle: '@lara_priv',
     avatar: '/images/avatar-2.png',
     time: 'há 2 semanas',
-    text: 'achei que não ia dar certo, mas na primeira semana já tinha vendido 4 packs. recomendo demais.',
+    text: 'achei que não ia dar certo, mas na primeira semana já tinha vendido mais de 40 packs. recomendo demais.',
   },
   {
     handle: '@drih.rs',
