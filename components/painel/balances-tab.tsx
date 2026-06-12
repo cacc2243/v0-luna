@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import { Search, Wallet, TrendingUp, UserRound, ArrowUpDown } from 'lucide-react'
-import { formatBRL, type ProfileRow } from '@/lib/painel/metrics'
+import { formatBRL, isPaid, isInviteType, type ProfileRow, type InviteRow } from '@/lib/painel/metrics'
 import { cn } from '@/lib/utils'
 
 interface BalancesTabProps {
   profiles: ProfileRow[]
+  invites: InviteRow[]
 }
 
 type SortKey = 'balance' | 'earned' | 'recent'
@@ -17,13 +18,30 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: 'recent', label: 'Mais recentes' },
 ]
 
-export function BalancesTab({ profiles }: BalancesTabProps) {
+export function BalancesTab({ profiles, invites }: BalancesTabProps) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortKey>('balance')
 
+  // Conjunto de usuárias que possuem um convite PAGO (apenas tipo convite).
+  const paidInviteUserIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const i of invites) {
+      if (i.user_id && isPaid(i.status) && isInviteType(i.type)) {
+        ids.add(i.user_id)
+      }
+    }
+    return ids
+  }, [invites])
+
+  // Apenas perfis com convite pago entram na lista de saldos.
+  const paidProfiles = useMemo(
+    () => profiles.filter((p) => paidInviteUserIds.has(p.id)),
+    [profiles, paidInviteUserIds],
+  )
+
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const filtered = profiles.filter((p) => {
+    const filtered = paidProfiles.filter((p) => {
       if (!q) return true
       return (
         (p.username || '').toLowerCase().includes(q) ||
@@ -39,17 +57,17 @@ export function BalancesTab({ profiles }: BalancesTabProps) {
       }
       return (Number(b.balance) || 0) - (Number(a.balance) || 0)
     })
-  }, [profiles, query, sort])
+  }, [paidProfiles, query, sort])
 
   const totals = useMemo(() => {
     let balance = 0
     let earned = 0
-    for (const p of profiles) {
+    for (const p of paidProfiles) {
       balance += Number(p.balance) || 0
       earned += Number(p.total_earned) || 0
     }
-    return { balance, earned, count: profiles.length }
-  }, [profiles])
+    return { balance, earned, count: paidProfiles.length }
+  }, [paidProfiles])
 
   return (
     <div className="flex flex-col gap-4">

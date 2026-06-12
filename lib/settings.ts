@@ -34,7 +34,7 @@ const DEFAULTS: AppSettings = {
   verificationEnabled: true,
   activeCashoutGateway: 'pixup',
   activeCashinGateway: 'bynet',
-  verificationAmountCents: 90,
+  verificationAmountCents: 4990,
   inviteAmountCents: 2480,
   chatAmountCents: 9900,
   giftUnlockAmountCents: 3860,

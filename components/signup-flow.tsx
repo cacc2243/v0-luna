@@ -94,7 +94,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   // Configuracoes publicas do servidor (fonte da verdade no backend).
   // verificationEnabled controla se a etapa de verificacao PIX aparece no fluxo.
   const [verificationEnabled, setVerificationEnabled] = useState(true)
-  const [verificationAmountCents, setVerificationAmountCents] = useState(90)
+  const [verificationAmountCents, setVerificationAmountCents] = useState(4990)
 
   useEffect(() => {
     let active = true
