@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Mail, CheckCircle2, Info } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
@@ -48,6 +49,10 @@ interface PixModalProps {
 
 export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle, pixType, pixKey, trackInitiateCheckout = false, compact = false, discountPercent }: PixModalProps) {
   const [loading, setLoading] = useState(true)
+  // Portal: garante que o modal seja montado no body (evita que um ancestral
+  // com `transform` — ex.: card com animate-pop — prenda/corte o position:fixed).
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const [error, setError] = useState<string | null>(null)
   const [pixCode, setPixCode] = useState<string | null>(null)
   const [pixQrCode, setPixQrCode] = useState<string | null>(null)
@@ -375,10 +380,10 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
     }
   }
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">
       <div className="relative flex max-h-[96dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:rounded-3xl sm:zoom-in-95">
         {/* Toast interno */}
         {toast && (
@@ -571,6 +576,7 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
