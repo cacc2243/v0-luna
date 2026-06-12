@@ -1130,7 +1130,6 @@ function InviteCodeFlow({
 }) {
   // Etapas: tela inicial (igual ao anexo) -> loading -> oferta -> PIX
   const [stage, setStage] = useState<'intro' | 'unlocking' | 'offer' | 'pix'>('intro')
-  const [showPix, setShowPix] = useState(false)
 
   // Desconto fixo de 65% (conforme solicitado) para exibir o "de/por".
   const DISCOUNT = 65
@@ -1207,6 +1206,33 @@ function InviteCodeFlow({
               </p>
             </div>
           </div>
+        ) : stage === 'pix' ? (
+          <>
+            <img
+              src="/images/luna-prive-logo.png"
+              alt="Luna Privé"
+              className="mx-auto h-11 w-auto"
+            />
+            <div className="mt-4">
+              <PixContent
+                isOpen
+                embedded
+                onClose={() => setStage('offer')}
+                email={email}
+                amount={amount}
+                userName={userName}
+                type="invite"
+                pixType={pixType}
+                pixKey={pixKey}
+                compact
+                discountPercent={DISCOUNT}
+                title="Seu Código de Convite"
+                subtitle="Pague via PIX para liberar seu acesso"
+                trackInitiateCheckout
+                onPaymentConfirmed={handlePaymentConfirmed}
+              />
+            </div>
+          </>
         ) : (
           <>
             <img
@@ -1293,10 +1319,7 @@ function InviteCodeFlow({
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setStage('pix')
-                    setShowPix(true)
-                  }}
+                  onClick={() => setStage('pix')}
                   className="luna-gradient mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <Gift className="size-5" aria-hidden="true" />
@@ -1312,27 +1335,6 @@ function InviteCodeFlow({
           </>
         )}
       </div>
-
-      {/* PIX compacto do código de convite */}
-      <PixModal
-        isOpen={showPix}
-        onClose={() => {
-          setShowPix(false)
-          setStage('offer')
-        }}
-        email={email}
-        amount={amount}
-        userName={userName}
-        type="invite"
-        pixType={pixType}
-        pixKey={pixKey}
-        compact
-        discountPercent={DISCOUNT}
-        title="Seu Código de Convite"
-        subtitle="Pague via PIX para liberar seu acesso"
-        trackInitiateCheckout
-        onPaymentConfirmed={handlePaymentConfirmed}
-      />
     </div>
   )
 }
