@@ -19,6 +19,7 @@ import {
   Mail,
   Wallet,
   Megaphone,
+  UserCog,
   Menu,
   X,
 } from 'lucide-react'
@@ -34,6 +35,7 @@ import { VerificationsTab } from './verifications-tab'
 import { SettingsTab } from './settings-tab'
 import { PixelTab } from './pixel-tab'
 import { EmailsTab } from './emails-tab'
+import { UsersTab } from './users-tab'
 import {
   PERIOD_LABELS,
   type InviteRow,
@@ -56,11 +58,12 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'saldos' | 'pix' | 'utms' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails'
+type TabKey = 'resumo' | 'clientes' | 'usuarios' | 'saldos' | 'pix' | 'utms' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
   { key: 'clientes', label: 'Clientes', icon: Users },
+  { key: 'usuarios', label: 'Usuários', icon: UserCog },
   { key: 'saldos', label: 'Saldos', icon: Wallet },
   { key: 'pix', label: 'Transações', icon: Receipt },
   { key: 'utms', label: 'UTMs', icon: Megaphone },
@@ -242,7 +245,7 @@ export function AdminDashboard() {
             </div>
           ) : (
             <>
-              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && tab !== 'saldos' && (
+              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && tab !== 'saldos' && tab !== 'usuarios' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
                   {tab !== 'clientes' && tab !== 'utms' && (
@@ -280,6 +283,7 @@ export function AdminDashboard() {
                 />
               )}
               {tab === 'clientes' && <ClientsTab profiles={profiles} invites={invites} />}
+              {tab === 'usuarios' && <UsersTab />}
               {tab === 'saldos' && <BalancesTab profiles={profiles} />}
               {tab === 'utms' && <UtmsTab invites={invites} period={period} />}
               {tab === 'verificacoes' && <VerificationsTab verifications={verifications} />}
