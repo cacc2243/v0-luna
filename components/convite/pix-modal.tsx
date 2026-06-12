@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Mail, CheckCircle2, Info } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
@@ -40,10 +41,23 @@ interface PixModalProps {
    * no fluxo de convite (/convite).
    */
   trackInitiateCheckout?: boolean
+  /** Layout reduzido (QR menor, espacamentos compactos) para uso em fluxos curtos. */
+  compact?: boolean
+  /** Percentual de desconto usado para calcular o valor "de" (riscado). Padrao 40%. */
+  discountPercent?: number
+  /**
+   * Quando true, renderiza apenas o conteúdo do PIX (sem overlay/portal/fundo/logo),
+   * para ser embutido diretamente dentro de outro card (ex.: fluxo de convite).
+   */
+  embedded?: boolean
 }
 
-export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle, pixType, pixKey, trackInitiateCheckout = false }: PixModalProps) {
+export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle, pixType, pixKey, trackInitiateCheckout = false, compact = false, discountPercent, embedded = false }: PixModalProps) {
   const [loading, setLoading] = useState(true)
+  // Portal: garante que o modal seja montado no body (evita que um ancestral
+  // com `transform` — ex.: card com animate-pop — prenda/corte o position:fixed).
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const [error, setError] = useState<string | null>(null)
   const [pixCode, setPixCode] = useState<string | null>(null)
   const [pixQrCode, setPixQrCode] = useState<string | null>(null)
@@ -87,8 +101,9 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
     }
   }, [isOpen])
 
-  // Preço "de" (âncora) com ~40% de desconto, igual ao PriceCard.
-  const originalAmount = amount / 0.6
+  // Preço "de" (âncora) com desconto configuravel (padrao ~40%), igual ao PriceCard.
+  const discountFraction = Math.min(Math.max((discountPercent ?? 40) / 100, 0), 0.95)
+  const originalAmount = amount / (1 - discountFraction)
 
   // Exibe um toast temporário dentro do modal.
   function showToast(variant: 'success' | 'error' | 'info', message: string) {
@@ -372,36 +387,216 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
 
   if (!isOpen) return null
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="relative flex max-h-[96dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:rounded-3xl sm:zoom-in-95">
-        {/* Toast interno */}
-        {toast && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="absolute inset-x-3 top-3 z-30 flex items-start gap-2.5 rounded-2xl border bg-background/95 px-4 py-3 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-200"
-            style={{
-              borderColor:
-                toast.variant === 'success'
-                  ? 'rgb(34 197 94 / 0.5)'
-                  : toast.variant === 'error'
-                    ? 'rgb(239 68 68 / 0.5)'
-                    : 'var(--border)',
-            }}
-          >
-            {toast.variant === 'success' ? (
-              <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-green-500" aria-hidden="true" />
-            ) : toast.variant === 'error' ? (
-              <AlertCircle className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
-            ) : (
-              <Info className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
-            )}
-            <p className="text-pretty text-sm font-medium leading-relaxed text-foreground">
-              {toast.message}
-            </p>
-          </div>
+  // Toast interno (posicionado de forma absoluta sobre o ancestral relativo).
+  const toastEl = toast && (
+    <div
+      role="status"
+      aria-live="polite"
+      className="absolute inset-x-3 top-3 z-30 flex items-start gap-2.5 rounded-2xl border bg-background/95 px-4 py-3 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-200"
+      style={{
+        borderColor:
+          toast.variant === 'success'
+            ? 'rgb(34 197 94 / 0.5)'
+            : toast.variant === 'error'
+              ? 'rgb(239 68 68 / 0.5)'
+              : 'var(--border)',
+      }}
+    >
+      {toast.variant === 'success' ? (
+        <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-green-500" aria-hidden="true" />
+      ) : toast.variant === 'error' ? (
+        <AlertCircle className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
+      ) : (
+        <Info className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+      )}
+      <p className="text-pretty text-sm font-medium leading-relaxed text-foreground">
+        {toast.message}
+      </p>
+    </div>
+  )
+
+  // Conteúdo do PIX (header + estados loading/erro/sucesso). Reutilizado tanto no
+  // modal cheio quanto embutido em outro card (fluxo de convite).
+  const content = (
+    <>
+      {/* Header (logo só no modal cheio; no embutido o card pai já mostra a logo) */}
+      <div className="flex flex-col items-center text-center">
+        {!embedded && (
+          <img
+            src="/images/luna-prive-logo.png"
+            alt="Luna Privé"
+            className="h-7 w-auto"
+          />
         )}
+        {!embedded && (
+          <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+            {title || 'Pagamento via PIX'}
+          </h2>
+        )}
+        {!embedded && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
+          </p>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-14">
+          <div className="size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="mt-4 text-sm text-muted-foreground">Gerando PIX...</p>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-14 text-center">
+          <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10">
+            <AlertCircle className="size-8 text-destructive" />
+          </div>
+          <p className="mt-4 text-sm font-medium text-foreground">{error}</p>
+          <button
+            onClick={generatePix}
+            className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+          >
+            <RefreshCw className="size-4" />
+            Tentar novamente
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Timer de reserva */}
+          <div className={`${compact ? 'mt-4 py-2' : 'mt-6 py-2.5'} flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-4`}>
+            <Clock className="size-4 text-primary" aria-hidden="true" />
+            <span className="text-sm font-medium text-foreground">
+              {timeLeft === 'Expirado' ? (
+                <span className="font-bold text-primary">Resgate agora seu convite</span>
+              ) : (
+                <>
+                  Código reservado por{' '}
+                  <span className="font-bold text-primary">{timeLeft || '--:--'}</span>
+                </>
+              )}
+            </span>
+          </div>
+
+          {/* QR Code */}
+          {pixQrCode && (
+            <div className={compact ? 'mt-3 flex justify-center' : 'mt-6 flex justify-center'}>
+              <div className="rounded-2xl bg-white p-2.5 shadow-lg shadow-black/30">
+                <Image
+                  src={pixQrCode}
+                  alt="QR Code PIX"
+                  width={180}
+                  height={180}
+                  className={compact ? 'size-[120px]' : 'size-[160px] sm:size-[180px]'}
+                  unoptimized
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Valor */}
+          <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Valor com desconto
+            </p>
+            <div className="mt-1 flex items-center justify-center gap-2.5">
+              <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
+                R${originalAmount.toFixed(2).replace('.', ',')}
+              </span>
+              <span className={`${compact ? 'text-2xl' : 'text-3xl'} font-extrabold tracking-tight text-foreground`}>
+                R${amount.toFixed(2).replace('.', ',')}
+              </span>
+            </div>
+          </div>
+
+          {/* Código copia e cola */}
+          <div className={compact ? 'mt-4' : 'mt-6'}>
+            <p className="mb-2 text-center text-xs font-medium text-muted-foreground">
+              Código PIX (copia e cola)
+            </p>
+            <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-2.5">
+              <p className="break-all font-mono text-xs leading-relaxed text-muted-foreground line-clamp-2">
+                {pixCode || ''}
+              </p>
+            </div>
+          </div>
+
+          {/* Botão copiar */}
+          <button
+            onClick={copyPixCode}
+            className={`luna-gradient-cta ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground shadow-lg shadow-primary/40 ring-1 ring-inset ring-white/20 transition active:scale-[0.98]`}
+          >
+            {copied ? (
+              <>
+                <Check className="size-5" />
+                Código copiado!
+              </>
+            ) : (
+              <>
+                <Copy className="size-5" />
+                Copiar código PIX
+              </>
+            )}
+          </button>
+
+          {/* Já fiz o pagamento (apenas no modal cheio) */}
+          {!embedded && (
+            <button
+              onClick={handleAlreadyPaid}
+              disabled={verifying}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 py-3.5 text-sm font-semibold text-foreground transition hover:bg-muted/60 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {verifying ? (
+                <>
+                  <RefreshCw className="size-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="size-4" />
+                  Já fiz o pagamento
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Aviso de e-mail */}
+          <div className={`${compact ? 'mt-3 py-2.5' : 'mt-4 py-3'} flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 px-4`}>
+            <Mail className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+            {compact ? (
+              <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                Após o pagamento confirmado, seu{' '}
+                <span className="font-semibold text-foreground">acesso é liberado automaticamente</span>.
+                Você receberá o e-mail de confirmação imediatamente.
+              </p>
+            ) : (
+              <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                Após o pagamento, o seu{' '}
+                <span className="font-semibold text-foreground">Código de Convite</span> será
+                enviado no e-mail cadastrado.
+              </p>
+            )}
+          </div>
+        </>
+      )}
+    </>
+  )
+
+  // Modo embutido: retorna apenas o conteúdo, posicionado pelo card pai.
+  if (embedded) {
+    return (
+      <div className="relative">
+        {toastEl}
+        {content}
+      </div>
+    )
+  }
+
+  // Modo modal: portal no body com overlay, fundo e botão fechar.
+  if (!mounted) return null
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="relative flex max-h-[96dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:rounded-3xl sm:zoom-in-95">
+        {toastEl}
 
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
@@ -420,144 +615,15 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
 
         {/* Conteúdo */}
         <div className="relative z-10 overflow-y-auto px-5 pb-6 pt-7 sm:px-7">
-          {/* Logo + título */}
-          <div className="flex flex-col items-center text-center">
-            <img
-              src="/images/luna-prive-logo.png"
-              alt="Luna Privé"
-              className="h-7 w-auto"
-            />
-            <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-              Pagamento via PIX
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Escaneie o QR Code ou copie o código abaixo
-            </p>
-          </div>
-
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-14">
-              <div className="size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="mt-4 text-sm text-muted-foreground">Gerando PIX...</p>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center py-14 text-center">
-              <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10">
-                <AlertCircle className="size-8 text-destructive" />
-              </div>
-              <p className="mt-4 text-sm font-medium text-foreground">{error}</p>
-              <button
-                onClick={generatePix}
-                className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-              >
-                <RefreshCw className="size-4" />
-                Tentar novamente
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* Timer de reserva */}
-              <div className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-4 py-2.5">
-                <Clock className="size-4 text-primary" aria-hidden="true" />
-                <span className="text-sm font-medium text-foreground">
-                  Código reservado por{' '}
-                  <span className="font-bold text-primary">{timeLeft || '--:--'}</span>
-                </span>
-              </div>
-
-              {/* QR Code */}
-              {pixQrCode && (
-                <div className="mt-6 flex justify-center">
-                  <div className="rounded-2xl bg-white p-3 shadow-lg shadow-black/30">
-                    <Image
-                      src={pixQrCode}
-                      alt="QR Code PIX"
-                      width={180}
-                      height={180}
-                      className="size-[160px] sm:size-[180px]"
-                      unoptimized
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Valor */}
-              <div className="mt-6 text-center">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Valor a pagar
-                </p>
-                <div className="mt-1 flex items-center justify-center gap-2.5">
-                  <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
-                    R${originalAmount.toFixed(2).replace('.', ',')}
-                  </span>
-                  <span className="text-3xl font-extrabold tracking-tight text-foreground">
-                    R${amount.toFixed(2).replace('.', ',')}
-                  </span>
-                </div>
-              </div>
-
-              {/* Código copia e cola */}
-              <div className="mt-6">
-                <p className="mb-2 text-center text-xs font-medium text-muted-foreground">
-                  Código PIX (copia e cola)
-                </p>
-                <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-3">
-                  <p className="break-all font-mono text-xs leading-relaxed text-muted-foreground line-clamp-2">
-                    {pixCode || ''}
-                  </p>
-                </div>
-              </div>
-
-              {/* Botão copiar */}
-              <button
-                onClick={copyPixCode}
-                className="luna-gradient mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
-              >
-                {copied ? (
-                  <>
-                    <Check className="size-5" />
-                    Código copiado!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="size-5" />
-                    Copiar código PIX
-                  </>
-                )}
-              </button>
-
-              {/* Já fiz o pagamento */}
-              <button
-                onClick={handleAlreadyPaid}
-                disabled={verifying}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 py-3.5 text-sm font-semibold text-foreground transition hover:bg-muted/60 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {verifying ? (
-                  <>
-                    <RefreshCw className="size-4 animate-spin" />
-                    Verificando...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="size-4" />
-                    Já fiz o pagamento
-                  </>
-                )}
-              </button>
-
-              {/* Aviso de e-mail */}
-              <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
-                <Mail className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-                    Após o pagamento, o seu{' '}
-                    <span className="font-semibold text-foreground">Código de Convite</span> será
-                    enviado no e-mail cadastrado.
-                </p>
-              </div>
-            </>
-          )}
+          {content}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
+}
+
+// Mantém a API existente: PixModal renderiza o conteúdo em um modal cheio.
+export function PixModal(props: PixModalProps) {
+  return <PixContent {...props} embedded={false} />
 }

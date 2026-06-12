@@ -20,8 +20,11 @@ import {
   CalendarDays,
   Eye as EyeIcon,
   Clock,
+  Gift,
+  ChevronRight,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
+import { PixContent } from '@/components/convite/pix-modal'
 import { cn } from '@/lib/utils'
 
 interface SignupFlowProps {
@@ -95,6 +98,8 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   // verificationEnabled controla se a etapa de verificacao PIX aparece no fluxo.
   const [verificationEnabled, setVerificationEnabled] = useState(true)
   const [verificationAmountCents, setVerificationAmountCents] = useState(4990)
+  // Valor do codigo de convite (editavel no painel). Usado no fluxo pos-cadastro.
+  const [inviteAmountCents, setInviteAmountCents] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -107,6 +112,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         }
         if (typeof data.verificationAmountCents === 'number') {
           setVerificationAmountCents(data.verificationAmountCents)
+        }
+        if (typeof data.inviteAmountCents === 'number') {
+          setInviteAmountCents(data.inviteAmountCents)
         }
       })
       .catch(() => {})
@@ -230,16 +238,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
     }
   }
 
-  const goToConvite = () => {
-    // Navegacao "hard": nao e cancelada por re-renders do React (router.push
-    // estava sendo interrompido pelo re-render que onComplete dispara no pai).
-    window.location.assign('/convite')
-  }
-
-  const goToMinhaConta = () => {
-    window.location.assign('/minha-conta')
-  }
-
   // Validação por etapa
   const canContinue = useMemo(() => {
     switch (step) {
@@ -273,7 +271,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
       <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-6">
           {status === 'invite' ? (
-            <InviteCard onAccept={goToConvite} onSkip={goToMinhaConta} />
+            <InviteCodeFlow
+              email={email}
+              userName={username}
+              pixType={pixType}
+              pixKey={pixKey}
+              amountCents={inviteAmountCents}
+            />
           ) : status === 'error' ? (
             <ErrorCard message={errorMessage} onRetry={() => setStatus('form')} />
           ) : status === 'sending' ? (
@@ -1111,62 +1115,230 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
   )
 }
 
-function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => void }) {
-  void onSkip
+function InviteCodeFlow({
+  email,
+  userName,
+  pixType,
+  pixKey,
+  amountCents,
+}: {
+  email: string
+  userName: string
+  pixType: string
+  pixKey: string
+  amountCents: number
+}) {
+  // Etapas: tela inicial (igual ao anexo) -> loading -> oferta -> PIX
+  const [stage, setStage] = useState<'intro' | 'unlocking' | 'offer' | 'pix'>('intro')
+
+  // Desconto fixo de 65% (conforme solicitado) para exibir o "de/por".
+  const DISCOUNT = 65
+  const amount = amountCents / 100
+  const originalAmount = amountCents > 0 ? amount / (1 - DISCOUNT / 100) : 0
+  const brl = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`
+
+  // Códigos "restantes hoje": valor pequeno e fixo para senso de escassez.
+  const CODES_LEFT = 4
+
+  // Loading de "desbloqueio" antes de revelar a oferta.
+  useEffect(() => {
+    if (stage !== 'unlocking') return
+    const t = setTimeout(() => setStage('offer'), 2200)
+    return () => clearTimeout(t)
+  }, [stage])
+
+  function handlePaymentConfirmed() {
+    window.location.assign('/confirmation')
+  }
 
   return (
-    <div className="animate-pop luna-border relative flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/20">
-      {/* Imagem de fundo sutil */}
+    <div className="animate-pop relative flex max-h-[92dvh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/25">
+      {/* Borda em gradiente */}
+      <div
+        className="pointer-events-none absolute inset-0 z-20 rounded-3xl"
+        aria-hidden="true"
+        style={{
+          padding: '1.25px',
+          background:
+            'linear-gradient(to bottom, oklch(0.5 0.15 15 / 0.95), oklch(0.6 0.16 15 / 0.32) 45%, oklch(0.66 0.17 15 / 0.08) 100%)',
+          WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude',
+        }}
+      />
+      {/* Imagem de fundo */}
       <div className="absolute inset-0" aria-hidden="true">
         <img
-          src="/images/luna-fundo-leve.webp"
+          src="/images/convite-fundo.jpg"
           alt=""
-          className="size-full object-cover object-top opacity-60"
+          className="size-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/80 to-background/95" />
+        <div className="absolute inset-0 bg-card/65" />
+        <div className="absolute inset-0 bg-gradient-to-b from-card/30 via-card/60 to-card/90" />
       </div>
 
-      {/* Conteúdo */}
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-7 pb-8 pt-9 text-center">
-        {/* Logo completa */}
-        <div className="flex justify-center">
-          <img
-            src="/images/luna-prive-logo.png"
-            alt="Luna Privé"
-            className="h-12 w-auto"
-          />
-        </div>
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-7 pt-8 text-center">
+        {stage === 'unlocking' ? (
+          <div className="flex flex-1 flex-col items-center justify-center py-10">
+            <h2 className="text-balance text-xl font-bold leading-tight text-foreground">
+              Desbloqueando seu código
+            </h2>
+            <div className="mt-7 flex flex-col items-center gap-5">
+              <span className="relative flex size-20 items-center justify-center" aria-hidden="true">
+                <svg className="size-20 animate-spin [animation-duration:1.1s]" viewBox="0 0 50 50">
+                  <circle cx="25" cy="25" r="20" fill="none" className="stroke-border" strokeWidth="4" />
+                  <circle
+                    cx="25"
+                    cy="25"
+                    r="20"
+                    fill="none"
+                    className="stroke-primary"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeDasharray="125.6"
+                    strokeDashoffset="88"
+                  />
+                </svg>
+                <Gift className="absolute size-7 text-primary" />
+              </span>
+              <p className="text-pretty text-sm font-medium leading-relaxed text-muted-foreground" role="status" aria-live="polite">
+                Verificando códigos disponíveis...
+              </p>
+            </div>
+          </div>
+        ) : stage === 'pix' ? (
+          <>
+            <img
+              src="/images/luna-prive-logo.png"
+              alt="Luna Privé"
+              className="mx-auto h-11 w-auto"
+            />
+            <div className="mt-4">
+              <PixContent
+                isOpen
+                embedded
+                onClose={() => setStage('offer')}
+                email={email}
+                amount={amount}
+                userName={userName}
+                type="invite"
+                pixType={pixType}
+                pixKey={pixKey}
+                compact
+                discountPercent={DISCOUNT}
+                title="Seu Código de Convite"
+                subtitle="Pague via PIX para liberar seu acesso"
+                trackInitiateCheckout
+                onPaymentConfirmed={handlePaymentConfirmed}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <img
+              src="/images/luna-prive-logo.png"
+              alt="Luna Privé"
+              className="mx-auto h-11 w-auto"
+            />
 
-        {/* Selo de sucesso */}
-        <div className="mt-8 flex justify-center">
-          <span className="flex size-16 items-center justify-center rounded-full bg-positive/15">
-            <Check className="size-8 text-positive" aria-hidden="true" />
-          </span>
-        </div>
+            <h2 className="mt-5 text-balance text-2xl font-bold leading-tight text-foreground">
+              Código de Convite
+            </h2>
+            <p className="mx-auto mt-2.5 max-w-[18rem] text-pretty text-sm leading-relaxed text-muted-foreground">
+              {stage === 'offer'
+                ? 'Todas as usuárias precisam de um código de convite para entrar no Luna Privé.'
+                : 'Apenas usuárias convidadas podem se inscrever na plataforma. Digite seu código abaixo para ativar sua conta.'}
+            </p>
 
-        {/* Título */}
-        <h2 className="mt-6 text-balance text-2xl font-bold leading-tight text-foreground">
-          Bem-vinda ao Luna Privé!
-        </h2>
+            {stage === 'intro' && (
+              <>
+                <input
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  disabled
+                  placeholder="DIGITE SEU CÓDIGO"
+                  aria-label="Código de convite"
+                  className="mt-6 w-full rounded-2xl border border-border/70 bg-background/60 px-5 py-3.5 text-center text-sm font-semibold uppercase tracking-[0.25em] text-foreground placeholder:tracking-[0.2em] placeholder:text-muted-foreground/60 disabled:opacity-60"
+                />
+                <p className="mt-3.5 text-pretty text-[0.8rem] font-medium leading-relaxed text-primary">
+                  Os códigos grátis estão desativados no momento, desbloqueie seu código no botão abaixo:
+                </p>
+                <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/50 px-5 py-3.5">
+                  <span className="size-1.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
+                  <p className="text-sm text-muted-foreground">
+                    Restam apenas <span className="font-bold text-primary">{CODES_LEFT}</span> códigos hoje
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStage('unlocking')}
+                  className="luna-gradient mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Gift className="size-5" aria-hidden="true" />
+                  Resgatar meu código
+                  <ChevronRight className="size-5" aria-hidden="true" />
+                </button>
+                <p className="mt-4 flex items-center justify-center gap-1.5 text-[0.7rem] text-muted-foreground/80">
+                  <ShieldCheck className="size-3.5 text-positive" aria-hidden="true" />
+                  Ambiente seguro e verificado
+                </p>
+              </>
+            )}
 
-        {/* Mensagem */}
-        <p className="mt-4 text-pretty text-base leading-relaxed text-foreground/90">
-          Sua conta foi criada com{' '}
-          <span className="font-semibold text-positive">sucesso!</span>
-        </p>
-        <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
-          Ela já está <span className="font-semibold text-primary">apta a receber um convite de acesso</span>{' '}
-          à plataforma. É só continuar para dar o próximo passo.
-        </p>
+            {stage === 'offer' && (
+              <>
+                {/* Escassez */}
+                <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-primary/[0.07] px-5 py-3">
+                  <span className="size-1.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
+                  <p className="text-sm text-foreground">
+                    Restam apenas{' '}
+                    <span className="font-bold text-primary">{CODES_LEFT} códigos</span> hoje
+                  </p>
+                </div>
 
-        {/* Ação */}
-        <div className="mt-8">
-          <CtaButton onClick={onAccept}>Continuar</CtaButton>
-        </div>
+                {/* Desconto + valor */}
+                <div className="mt-4 rounded-2xl border border-border/60 bg-background/55 px-5 py-5">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-[0.7rem] font-bold uppercase tracking-wide text-primary">
+                    {DISCOUNT}% OFF hoje
+                  </span>
+                  <div className="mt-3 flex items-center justify-center gap-2.5">
+                    {originalAmount > 0 && (
+                      <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
+                        {brl(originalAmount)}
+                      </span>
+                    )}
+                    <span className="text-3xl font-extrabold tracking-tight text-foreground">
+                      {amountCents > 0 ? brl(amount) : '--'}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-pretty text-[0.78rem] leading-relaxed text-muted-foreground">
+                    Valor único do seu código de convite para liberar o acesso completo à plataforma.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setStage('pix')}
+                  className="luna-gradient mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Gift className="size-5" aria-hidden="true" />
+                  Obter meu Código
+                  <ChevronRight className="size-5" aria-hidden="true" />
+                </button>
+                <p className="mt-4 flex items-center justify-center gap-1.5 text-[0.7rem] text-muted-foreground/80">
+                  <ShieldCheck className="size-3.5 text-positive" aria-hidden="true" />
+                  Ambiente seguro e verificado
+                </p>
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
 }
+
 
 /* ---------- Helpers ---------- */
 

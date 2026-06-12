@@ -1,9 +1,10 @@
 'use client'
 
-import { Lock, MessageCircleHeart, Sparkles, ShieldCheck, BadgeCheck, X, Wallet, Crown, Gift, MessagesSquare, HandCoins, Zap, Flame, Eye } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Lock, MessageCircleHeart, ShieldCheck, X, MessagesSquare, Zap, Flame, Eye, DollarSign, Star, MessageSquare, AlertTriangle, Loader2 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Modal 1: Pedido bloqueado — venda personalizada exige Chat Exclusivo
+// Modal 1: Nova Venda! — pedido recebido (aceitar exige Chat Exclusivo)
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface PersonalizedSaleModalProps {
@@ -13,6 +14,8 @@ interface PersonalizedSaleModalProps {
   buyerName?: string | null
   packTitle?: string | null
   amount?: number
+  /** Valor que o comprador está disposto a pagar pelo pedido exclusivo. */
+  maxAmount?: number
 }
 
 function brl(value: number) {
@@ -26,115 +29,165 @@ export function PersonalizedSaleModal({
   buyerName,
   packTitle,
   amount,
+  maxAmount = 2000,
 }: PersonalizedSaleModalProps) {
+  if (!isOpen) return null
+
+  const handle = buyerName?.trim() || 'Um comprador'
+  const displayHandle = buyerName?.trim()
+    ? buyerName.startsWith('@')
+      ? buyerName
+      : `@${buyerName}`
+    : 'Um comprador'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
+      <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        <button
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute right-3 top-3 z-10 rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-5" />
+        </button>
+
+        {/* Conteúdo */}
+        <div className="overflow-y-auto px-5 pb-5 pt-7">
+          {/* Ícone + título */}
+          <div className="flex flex-col items-center text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-positive/15 ring-1 ring-positive/30">
+              <DollarSign className="size-8 text-positive" />
+            </div>
+            <h2 className="mt-3 text-2xl font-bold text-foreground">Nova Venda! 🎉</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{displayHandle}</span> comprou seu pack
+            </p>
+          </div>
+
+          {/* Card de detalhes da venda */}
+          <div className="mt-5 rounded-2xl border border-positive/25 bg-positive/5 p-4">
+            <dl className="flex flex-col gap-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Pack</dt>
+                <dd className="truncate font-semibold text-foreground">{packTitle || 'Pack exclusivo'}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Valor</dt>
+                <dd className="font-bold text-positive">{typeof amount === 'number' ? brl(amount) : '—'}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Comprador</dt>
+                <dd className="truncate font-semibold text-foreground">{displayHandle}</dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Pedido personalizado */}
+          <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <p className="flex items-center gap-2 text-sm font-bold text-foreground">
+              <MessageSquare className="size-4 text-primary" />
+              Pedido personalizado
+            </p>
+            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+              O comprador deseja um <span className="font-semibold text-primary">pack exclusivo de pé</span> e
+              quer conversar por chat. Está disposto a pagar até{' '}
+              <span className="font-semibold text-positive">{brl(maxAmount)}</span> para conversar com você.
+            </p>
+            <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Star className="size-3.5 text-primary" />
+              Pedido exclusivo disponível
+            </p>
+          </div>
+
+          {/* Ações */}
+          <div className="mt-5 flex items-center gap-3">
+            <button
+              onClick={onClose}
+              className="shrink-0 rounded-xl border border-border px-5 py-3.5 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
+              Recusar
+            </button>
+            <button
+              onClick={onUnlock}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
+            >
+              <ShieldCheck className="size-4" />
+              Aceitar pedido
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal 1.5: Chat não desbloqueado — aviso antes de oferecer a ativação do chat
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ChatLockedModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onUnlock: () => void
+  /** Valor da ativação do chat exibido no botão. */
+  price: number
+  /** Valor que o comprador está disposto a pagar. Padrão R$ 2.000. */
+  maxAmount?: number
+}
+
+export function ChatLockedModal({
+  isOpen,
+  onClose,
+  onUnlock,
+  price,
+  maxAmount = 2000,
+}: ChatLockedModalProps) {
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
       <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-        {/* Header */}
-        <div className="relative shrink-0 overflow-hidden border-b border-border bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 py-5">
-          <button
-            onClick={onClose}
-            aria-label="Fechar"
-            className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          >
-            <X className="size-5" />
-          </button>
-          <div className="flex items-center gap-3 pr-10">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/20 ring-1 ring-primary/30">
-              <MessagesSquare className="size-6 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-lg font-bold leading-tight text-foreground">Pedido de venda personalizado</h2>
-              <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Lock className="size-3.5" />
-                Requer Chat Exclusivo ativo
-              </p>
-            </div>
-          </div>
-        </div>
+        <button
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute right-3 top-3 z-10 rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-5" />
+        </button>
 
-        {/* Conteúdo */}
-        <div className="overflow-y-auto px-5 py-5">
-          {/* Card da venda */}
-          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
-            <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-primary">
-              Novo pedido recebido
+        <div className="overflow-y-auto px-5 pb-5 pt-7">
+          {/* Ícone + título */}
+          <div className="flex flex-col items-center text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30">
+              <Lock className="size-8 text-primary" />
+            </div>
+            <h2 className="mt-3 text-2xl font-bold text-foreground">Chat não desbloqueado</h2>
+            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+              Para aceitar pedidos personalizados e conversar com os compradores, você precisa
+              desbloquear o chat.
             </p>
-            <div className="mt-2 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm leading-snug text-foreground">
-                  {buyerName ? (
-                    <>
-                      <span className="font-bold">{buyerName}</span> quer comprar{' '}
-                      {packTitle ? <span className="font-semibold">{packTitle}</span> : 'um pack seu'}
-                    </>
-                  ) : (
-                    'Um cliente quer comprar um pack seu'
-                  )}
-                </p>
-              </div>
-              {typeof amount === 'number' && (
-                <div className="shrink-0 text-right">
-                  <p className="text-[0.65rem] text-muted-foreground">Valor</p>
-                  <p className="text-lg font-bold leading-none text-foreground">{brl(amount)}</p>
-                </div>
-              )}
-            </div>
           </div>
 
-          <p className="mt-4 text-pretty text-sm leading-relaxed text-muted-foreground">
-            Para <span className="font-semibold text-foreground">aceitar este pedido</span> e receber o
-            valor no seu saldo, você precisa ter o{' '}
-            <span className="font-semibold text-foreground">Chat Exclusivo</span> ativo. É por ele que
-            você conversa, combina os detalhes e fecha cada venda com seus clientes.
-          </p>
-
-          {/* Destaque: presentes */}
-          <div className="mt-4 overflow-hidden rounded-2xl border border-positive/30 bg-positive/5 p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-positive/15">
-                <Gift className="size-5 text-positive" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-foreground">
-                  Receba até <span className="text-positive">R$ 10 mil</span> em presentes
-                </p>
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  Com o chat ativo, compradores podem te enviar presentes exclusivos que viram saldo na
-                  hora.
-                </p>
-              </div>
-            </div>
+          {/* Destaque do valor que o comprador paga */}
+          <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-positive/25 bg-positive/5 p-4">
+            <DollarSign className="mt-0.5 size-4 shrink-0 text-positive" />
+            <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
+              O comprador está disposto a pagar até{' '}
+              <span className="font-semibold text-positive">{brl(maxAmount)}</span> para conversar.
+              Desbloqueie o chat para não perder essa oportunidade!
+            </p>
           </div>
-
-          <ul className="mt-4 flex flex-col gap-2.5">
-            {[
-              { icon: MessagesSquare, text: 'Converse diretamente com seus compradores' },
-              { icon: HandCoins, text: 'Aceite e receba por todas as suas vendas' },
-              { icon: BadgeCheck, text: 'Atendimento personalizado que aumenta a conversão' },
-            ].map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-start gap-2.5">
-                <Icon className="mt-0.5 size-4 shrink-0 text-positive" />
-                <span className="text-sm text-foreground">{text}</span>
-              </li>
-            ))}
-          </ul>
 
           <button
             onClick={onUnlock}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
           >
-            <Sparkles className="size-4" />
-            Liberar Chat Privé
+            <Lock className="size-4" />
+            Desbloquear Chat · {brl(price)}
           </button>
-          <button
-            onClick={onClose}
-            className="mt-2 w-full rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-          >
-            Agora não
-          </button>
+          <p className="mt-3 text-center text-[0.7rem] text-muted-foreground">
+            Pagamento único · Acesso permanente
+          </p>
         </div>
       </div>
     </div>
@@ -150,97 +203,96 @@ interface UnlockChatModalProps {
   onClose: () => void
   onConfirm: () => void
   price: number
+  /** Preço "cheio" exibido riscado. Padrão R$ 697. */
+  fullPrice?: number
+  /** Quanto cada fã paga para conversar. Padrão R$ 299. */
+  perFanPrice?: number
 }
 
-export function UnlockChatModal({ isOpen, onClose, onConfirm, price }: UnlockChatModalProps) {
+export function UnlockChatModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  price,
+  fullPrice = 697,
+  perFanPrice = 299,
+}: UnlockChatModalProps) {
   if (!isOpen) return null
 
-  const benefits = [
-    {
-      icon: MessageCircleHeart,
-      title: 'Chat direto com clientes',
-      desc: 'Converse em tempo real e feche vendas personalizadas.',
-    },
-    {
-      icon: Wallet,
-      title: 'Receba por suas vendas',
-      desc: 'Aceite pedidos e veja o valor cair no seu saldo na hora.',
-    },
-    {
-      icon: Crown,
-      title: 'Perfil em destaque',
-      desc: 'Criadoras com chat ativo aparecem como verificadas.',
-    },
-    {
-      icon: ShieldCheck,
-      title: 'Acesso vitalício',
-      desc: 'Pagamento único. Sem mensalidade, sem renovação.',
-    },
-  ]
+  const discountPct =
+    fullPrice > price ? Math.round((1 - price / fullPrice) * 100) : 0
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
       <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-        {/* Header */}
-        <div className="relative border-b border-border bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 py-6">
-          <button
-            onClick={onClose}
-            aria-label="Fechar"
-            className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          >
-            <X className="size-5" />
-          </button>
-          <div className="flex flex-col items-center text-center">
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
-              <MessageCircleHeart className="size-7 text-primary-foreground" />
-            </div>
-            <h2 className="mt-3 text-xl font-bold text-foreground">Chat Exclusivo Luna Privé</h2>
-            <p className="mt-1 text-pretty text-sm text-muted-foreground">
-              Desbloqueie as conversas e comece a vender de verdade
-            </p>
-          </div>
-        </div>
+        <button
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute right-3 top-3 z-10 rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-5" />
+        </button>
 
         {/* Conteúdo */}
-        <div className="overflow-y-auto px-5 py-5">
-          <ul className="flex flex-col gap-3">
-            {benefits.map((b) => {
-              const Icon = b.icon
-              return (
-                <li key={b.title} className="flex items-start gap-3 rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/15">
-                    <Icon className="size-4 text-primary" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{b.title}</p>
-                    <p className="text-xs leading-relaxed text-muted-foreground">{b.desc}</p>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-
-          {/* Preço */}
-          <div className="mt-5 flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3.5">
-            <div>
-              <p className="text-xs text-muted-foreground">Valor único</p>
-              <p className="text-2xl font-bold text-foreground">{brl(price)}</p>
+        <div className="overflow-y-auto px-5 pb-5 pt-7">
+          {/* Ícone + título */}
+          <div className="flex flex-col items-center text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30">
+              <MessageCircleHeart className="size-8 text-primary" />
             </div>
-            <span className="rounded-full bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive">
-              Acesso vitalício
-            </span>
+            <h2 className="mt-3 text-2xl font-bold text-foreground">Desbloquear Chat</h2>
+            <p className="mt-1 text-pretty text-sm text-muted-foreground">
+              Receba mensagens pagas dos seus fans
+            </p>
+          </div>
+
+          {/* Card de preço */}
+          <div className="mt-5 rounded-2xl border border-primary/25 bg-gradient-to-b from-primary/10 to-transparent p-5 text-center">
+            <p className="text-xs text-muted-foreground">Ativação do Chat</p>
+            <div className="mt-1 flex items-center justify-center gap-2">
+              {discountPct > 0 && (
+                <span className="text-lg font-medium text-muted-foreground line-through">
+                  {brl(fullPrice)}
+                </span>
+              )}
+              <span className="text-3xl font-bold text-primary">{brl(price)}</span>
+            </div>
+            {discountPct > 0 && (
+              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive">
+                <Zap className="size-3.5" />
+                {discountPct}% OFF
+              </span>
+            )}
+          </div>
+
+          {/* Aviso promocional */}
+          <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary" />
+            <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+              Valor promocional <span className="font-semibold text-primary">válido apenas para novos
+              usuários no primeiro dia</span> de criação da conta. Após isso, o valor volta para{' '}
+              {brl(fullPrice)}.
+            </p>
+          </div>
+
+          {/* Quanto cada fã paga */}
+          <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-positive/25 bg-positive/5 p-4">
+            <DollarSign className="mt-0.5 size-4 shrink-0 text-positive" />
+            <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+              Cada fan paga <span className="font-semibold text-positive">{brl(perFanPrice)} para
+              conversar</span> · Valor direto no seu saldo
+            </p>
           </div>
 
           <button
             onClick={onConfirm}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
           >
-            <Sparkles className="size-4" />
-            Liberar Chat Privé · {brl(price)}
+            <Lock className="size-4" />
+            Desbloquear por {brl(price)}
           </button>
-          <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[0.7rem] text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-positive" />
-            Pagamento seguro via PIX
+          <p className="mt-3 text-center text-[0.7rem] text-muted-foreground">
+            Pagamento único · Acesso permanente
           </p>
         </div>
       </div>
@@ -367,6 +419,68 @@ export function FansWaitingModal({
           >
             Agora não
           </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal 4: Gerando seu PIX... — tela de transição com spinner + barra de progresso
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface GeneratingPixModalProps {
+  isOpen: boolean
+  /** Disparado quando a barra de progresso completa. */
+  onDone: () => void
+  /** Duração da animação em ms. Padrão 2200ms. */
+  duration?: number
+}
+
+export function GeneratingPixModal({ isOpen, onDone, duration = 2200 }: GeneratingPixModalProps) {
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    if (!isOpen) {
+      setProgress(0)
+      return
+    }
+
+    // Anima a barra de 0 a 100% e dispara onDone ao concluir.
+    const start = performance.now()
+    let raf = 0
+    const tick = (now: number) => {
+      const pct = Math.min(100, ((now - start) / duration) * 100)
+      setProgress(pct)
+      if (pct < 100) {
+        raf = requestAnimationFrame(tick)
+      } else {
+        onDone()
+      }
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [isOpen, duration, onDone])
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6">
+      <div className="flex w-full max-w-[260px] flex-col items-center text-center animate-in fade-in zoom-in-95 duration-300">
+        <Loader2 className="size-10 animate-spin text-primary" aria-hidden="true" />
+        <p className="mt-5 text-base font-semibold text-foreground">Gerando seu PIX...</p>
+        <div
+          className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress)}
+          aria-label="Progresso da geração do PIX"
+        >
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-100 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
     </div>

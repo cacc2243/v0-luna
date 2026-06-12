@@ -100,6 +100,8 @@ export async function createHorsepayPixCharge(
 
   const body: Record<string, unknown> = {
     payer_name: input.client.name,
+    // A HorsePay espera o valor em REAIS (decimal), ex.: 109 = R$ 109,00.
+    // input.amount ja vem em reais, entao enviamos direto (sem * 100).
     amount: input.amount,
   }
   // client_reference_id e retornado no callback — usamos nosso identifier para
@@ -193,6 +195,8 @@ export async function createHorsepayWithdraw(
   }
 
   const body: Record<string, unknown> = {
+    // A HorsePay espera o valor em REAIS (decimal), ex.: 109 = R$ 109,00.
+    // input.amount ja vem em reais, entao enviamos direto (sem * 100).
     amount: input.amount,
     pix_key: input.pixKey,
     pix_type: input.pixType,
