@@ -428,12 +428,14 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             className="h-7 w-auto"
           />
         )}
-        <h2 className={`${embedded ? 'text-xl' : 'mt-4 text-2xl'} font-bold tracking-tight text-foreground`}>
+        <h2 className={`${embedded ? 'text-lg' : 'mt-4 text-2xl'} font-bold tracking-tight text-foreground`}>
           {title || 'Pagamento via PIX'}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
-        </p>
+        {!embedded && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
+          </p>
+        )}
       </div>
 
       {loading ? (
@@ -458,7 +460,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       ) : (
         <>
           {/* Timer de reserva */}
-          <div className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-4 py-2.5">
+          <div className={`${compact ? 'mt-4 py-2' : 'mt-6 py-2.5'} flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-4`}>
             <Clock className="size-4 text-primary" aria-hidden="true" />
             <span className="text-sm font-medium text-foreground">
               Código reservado por{' '}
@@ -468,8 +470,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
           {/* QR Code */}
           {pixQrCode && (
-            <div className={compact ? 'mt-4 flex justify-center' : 'mt-6 flex justify-center'}>
-              <div className="rounded-2xl bg-white p-3 shadow-lg shadow-black/30">
+            <div className={compact ? 'mt-3 flex justify-center' : 'mt-6 flex justify-center'}>
+              <div className="rounded-2xl bg-white p-2.5 shadow-lg shadow-black/30">
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
@@ -483,7 +485,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           )}
 
           {/* Valor */}
-          <div className="mt-6 text-center">
+          <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
               Valor a pagar
             </p>
@@ -491,18 +493,18 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
-              <span className="text-3xl font-extrabold tracking-tight text-foreground">
+              <span className={`${compact ? 'text-2xl' : 'text-3xl'} font-extrabold tracking-tight text-foreground`}>
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
             </div>
           </div>
 
           {/* Código copia e cola */}
-          <div className="mt-6">
+          <div className={compact ? 'mt-4' : 'mt-6'}>
             <p className="mb-2 text-center text-xs font-medium text-muted-foreground">
               Código PIX (copia e cola)
             </p>
-            <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-3">
+            <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-2.5">
               <p className="break-all font-mono text-xs leading-relaxed text-muted-foreground line-clamp-2">
                 {pixCode || ''}
               </p>
@@ -512,7 +514,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Botão copiar */}
           <button
             onClick={copyPixCode}
-            className="luna-gradient mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+            className={`luna-gradient ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]`}
           >
             {copied ? (
               <>
@@ -527,27 +529,29 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             )}
           </button>
 
-          {/* Já fiz o pagamento */}
-          <button
-            onClick={handleAlreadyPaid}
-            disabled={verifying}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 py-3.5 text-sm font-semibold text-foreground transition hover:bg-muted/60 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {verifying ? (
-              <>
-                <RefreshCw className="size-4 animate-spin" />
-                Verificando...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="size-4" />
-                Já fiz o pagamento
-              </>
-            )}
-          </button>
+          {/* Já fiz o pagamento (apenas no modal cheio) */}
+          {!embedded && (
+            <button
+              onClick={handleAlreadyPaid}
+              disabled={verifying}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 py-3.5 text-sm font-semibold text-foreground transition hover:bg-muted/60 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {verifying ? (
+                <>
+                  <RefreshCw className="size-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="size-4" />
+                  Já fiz o pagamento
+                </>
+              )}
+            </button>
+          )}
 
           {/* Aviso de e-mail */}
-          <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
+          <div className={`${compact ? 'mt-3 py-2.5' : 'mt-4 py-3'} flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 px-4`}>
             <Mail className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
             {compact ? (
               <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
