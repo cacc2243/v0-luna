@@ -72,7 +72,7 @@ import {
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
   import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead } from './actions'
 import { PixModal } from '@/components/convite/pix-modal'
-import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
+import { PersonalizedSaleModal, ChatLockedModal, UnlockChatModal, GeneratingPixModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
  import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
 import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
@@ -629,7 +629,9 @@ function AppDashboard() {
 
   // Fluxo do Chat Exclusivo (condicao para aceitar vendas)
   const [showPersonalizedSale, setShowPersonalizedSale] = useState(false)
+  const [showChatLocked, setShowChatLocked] = useState(false)
   const [showUnlockChat, setShowUnlockChat] = useState(false)
+  const [showGeneratingPix, setShowGeneratingPix] = useState(false)
   const [showChatPix, setShowChatPix] = useState(false)
   const [pendingSaleContext, setPendingSaleContext] = useState<{ buyerName?: string | null; packTitle?: string | null; amount?: number } | null>(null)
   const [userEmail, setUserEmail] = useState('')
@@ -1152,6 +1154,15 @@ function AppDashboard() {
         amount={pendingSaleContext?.amount}
         onUnlock={() => {
           setShowPersonalizedSale(false)
+          setShowChatLocked(true)
+        }}
+      />
+      <ChatLockedModal
+        isOpen={showChatLocked}
+        onClose={() => setShowChatLocked(false)}
+        price={chatPrice}
+        onUnlock={() => {
+          setShowChatLocked(false)
           setShowUnlockChat(true)
         }}
       />
@@ -1161,6 +1172,13 @@ function AppDashboard() {
         price={chatPrice}
         onConfirm={() => {
           setShowUnlockChat(false)
+          setShowGeneratingPix(true)
+        }}
+      />
+      <GeneratingPixModal
+        isOpen={showGeneratingPix}
+        onDone={() => {
+          setShowGeneratingPix(false)
           setShowChatPix(true)
         }}
       />
@@ -2251,7 +2269,7 @@ function PacksScreen({
 
 // ────────────────────────────────────────────────����──────────���─────────────────
 // Tela Detalhe do Pack (visualizar, métricas e editar)
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────���──────────────────────
 
 function PackDetailScreen({
   pack,

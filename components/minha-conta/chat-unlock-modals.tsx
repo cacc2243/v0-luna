@@ -1,6 +1,7 @@
 'use client'
 
-import { Lock, MessageCircleHeart, ShieldCheck, X, MessagesSquare, Zap, Flame, Eye, DollarSign, Star, MessageSquare, AlertTriangle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Lock, MessageCircleHeart, ShieldCheck, X, MessagesSquare, Zap, Flame, Eye, DollarSign, Star, MessageSquare, AlertTriangle, Loader2 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal 1: Nova Venda! — pedido recebido (aceitar exige Chat Exclusivo)
@@ -114,6 +115,79 @@ export function PersonalizedSaleModal({
               Aceitar pedido
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal 1.5: Chat não desbloqueado — aviso antes de oferecer a ativação do chat
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ChatLockedModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onUnlock: () => void
+  /** Valor da ativação do chat exibido no botão. */
+  price: number
+  /** Valor que o comprador está disposto a pagar. Padrão R$ 2.000. */
+  maxAmount?: number
+}
+
+export function ChatLockedModal({
+  isOpen,
+  onClose,
+  onUnlock,
+  price,
+  maxAmount = 2000,
+}: ChatLockedModalProps) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
+      <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        <button
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute right-3 top-3 z-10 rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-5" />
+        </button>
+
+        <div className="overflow-y-auto px-5 pb-5 pt-7">
+          {/* Ícone + título */}
+          <div className="flex flex-col items-center text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30">
+              <Lock className="size-8 text-primary" />
+            </div>
+            <h2 className="mt-3 text-2xl font-bold text-foreground">Chat não desbloqueado</h2>
+            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+              Para aceitar pedidos personalizados e conversar com os compradores, você precisa
+              desbloquear o chat.
+            </p>
+          </div>
+
+          {/* Destaque do valor que o comprador paga */}
+          <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-positive/25 bg-positive/5 p-4">
+            <DollarSign className="mt-0.5 size-4 shrink-0 text-positive" />
+            <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
+              O comprador está disposto a pagar até{' '}
+              <span className="font-semibold text-positive">{brl(maxAmount)}</span> para conversar.
+              Desbloqueie o chat para não perder essa oportunidade!
+            </p>
+          </div>
+
+          <button
+            onClick={onUnlock}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
+          >
+            <Lock className="size-4" />
+            Desbloquear Chat · {brl(price)}
+          </button>
+          <p className="mt-3 text-center text-[0.7rem] text-muted-foreground">
+            Pagamento único · Acesso permanente
+          </p>
         </div>
       </div>
     </div>
@@ -345,6 +419,68 @@ export function FansWaitingModal({
           >
             Agora não
           </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal 4: Gerando seu PIX... — tela de transição com spinner + barra de progresso
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface GeneratingPixModalProps {
+  isOpen: boolean
+  /** Disparado quando a barra de progresso completa. */
+  onDone: () => void
+  /** Duração da animação em ms. Padrão 2200ms. */
+  duration?: number
+}
+
+export function GeneratingPixModal({ isOpen, onDone, duration = 2200 }: GeneratingPixModalProps) {
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    if (!isOpen) {
+      setProgress(0)
+      return
+    }
+
+    // Anima a barra de 0 a 100% e dispara onDone ao concluir.
+    const start = performance.now()
+    let raf = 0
+    const tick = (now: number) => {
+      const pct = Math.min(100, ((now - start) / duration) * 100)
+      setProgress(pct)
+      if (pct < 100) {
+        raf = requestAnimationFrame(tick)
+      } else {
+        onDone()
+      }
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [isOpen, duration, onDone])
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6">
+      <div className="flex w-full max-w-[260px] flex-col items-center text-center animate-in fade-in zoom-in-95 duration-300">
+        <Loader2 className="size-10 animate-spin text-primary" aria-hidden="true" />
+        <p className="mt-5 text-base font-semibold text-foreground">Gerando seu PIX...</p>
+        <div
+          className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress)}
+          aria-label="Progresso da geração do PIX"
+        >
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-100 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
     </div>
