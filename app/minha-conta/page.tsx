@@ -1964,6 +1964,24 @@ function HomeScreen({
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
       </div>
 
+      {/* Saldo pendente — soma dos pedidos ainda nao aceitos */}
+      {pendingSales.length > 0 && (
+        <div className="luna-border mt-2.5 flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+            <Clock className="size-4 text-primary" aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="text-[0.7rem] text-muted-foreground">Saldo pendente</p>
+            <p className="text-lg font-bold text-primary">
+              {brl(pendingSales.reduce((sum, s) => sum + Number(s.amount), 0))}
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[0.7rem] font-semibold text-primary">
+            {pendingSales.length === 1 ? '1 pedido' : `${pendingSales.length} pedidos`}
+          </span>
+        </div>
+      )}
+
       {/* Visualizações recentes */}
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
