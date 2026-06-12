@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Gift, ChevronRight, ShieldCheck } from 'lucide-react'
 
-type Step = 'intro' | 'loading' | 'surprise' | 'closing'
+type Step = 'booting' | 'intro' | 'loading' | 'surprise' | 'closing'
 
 const CODES_LEFT = 11
 
@@ -47,8 +47,8 @@ function CircleLoader({ label }: { label: string }) {
 }
 
 export function WelcomePopup({ onClose }: { onClose?: () => void }) {
-  const [open, setOpen] = useState(false)
-  const [step, setStep] = useState<Step>('intro')
+  const [open, setOpen] = useState(true)
+  const [step, setStep] = useState<Step>('booting')
   const [code, setCode] = useState('')
 
   // Notifica o pai quando o modal fecha (para iniciar as notificações de prova social)
@@ -58,11 +58,13 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
     prevOpen.current = open
   }, [open, onClose])
 
-  // Abre o modal automaticamente ao entrar na tela.
+  // O modal ja entra aberto exibindo um carregamento; apos um instante curto,
+  // revela o conteudo do codigo de convite (evita a sensacao de "demora").
   useEffect(() => {
-    const t = setTimeout(() => setOpen(true), 350)
+    if (step !== 'booting') return
+    const t = setTimeout(() => setStep('intro'), 900)
     return () => clearTimeout(t)
-  }, [])
+  }, [step])
 
   // Trava o scroll do body enquanto o modal estiver aberto.
   useEffect(() => {
@@ -132,20 +134,26 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
 
         {/* Conteúdo */}
         <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-7 pt-8 text-center">
-          {step === 'loading' || step === 'closing' ? (
+          {step === 'booting' || step === 'loading' || step === 'closing' ? (
             <div className="flex flex-1 flex-col items-center justify-center py-6">
               <h2
                 id="invite-modal-title"
                 className="text-balance text-xl font-bold leading-tight text-foreground"
               >
-                {step === 'loading' ? 'Aguarde um momento' : 'Preparando sua surpresa'}
+                {step === 'loading'
+                  ? 'Aguarde um momento'
+                  : step === 'closing'
+                    ? 'Preparando sua surpresa'
+                    : 'Carregando convite'}
               </h2>
               <div className="mt-6">
                 <CircleLoader
                   label={
                     step === 'loading'
                       ? 'Buscando códigos de convites...'
-                      : 'Só um instante...'
+                      : step === 'closing'
+                        ? 'Só um instante...'
+                        : 'Carregando...'
                   }
                 />
               </div>
