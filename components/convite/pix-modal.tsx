@@ -40,9 +40,13 @@ interface PixModalProps {
    * no fluxo de convite (/convite).
    */
   trackInitiateCheckout?: boolean
+  /** Layout reduzido (QR menor, espacamentos compactos) para uso em fluxos curtos. */
+  compact?: boolean
+  /** Percentual de desconto usado para calcular o valor "de" (riscado). Padrao 40%. */
+  discountPercent?: number
 }
 
-export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle, pixType, pixKey, trackInitiateCheckout = false }: PixModalProps) {
+export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle, pixType, pixKey, trackInitiateCheckout = false, compact = false, discountPercent }: PixModalProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pixCode, setPixCode] = useState<string | null>(null)
@@ -87,8 +91,9 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
     }
   }, [isOpen])
 
-  // Preço "de" (âncora) com ~40% de desconto, igual ao PriceCard.
-  const originalAmount = amount / 0.6
+  // Preço "de" (âncora) com desconto configuravel (padrao ~40%), igual ao PriceCard.
+  const discountFraction = Math.min(Math.max((discountPercent ?? 40) / 100, 0), 0.95)
+  const originalAmount = amount / (1 - discountFraction)
 
   // Exibe um toast temporário dentro do modal.
   function showToast(variant: 'success' | 'error' | 'info', message: string) {
@@ -428,10 +433,10 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
               className="h-7 w-auto"
             />
             <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-              Pagamento via PIX
+              {title || 'Pagamento via PIX'}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Escaneie o QR Code ou copie o código abaixo
+              {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
             </p>
           </div>
 
@@ -467,14 +472,14 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
 
               {/* QR Code */}
               {pixQrCode && (
-                <div className="mt-6 flex justify-center">
+                <div className={compact ? 'mt-4 flex justify-center' : 'mt-6 flex justify-center'}>
                   <div className="rounded-2xl bg-white p-3 shadow-lg shadow-black/30">
                     <Image
                       src={pixQrCode}
                       alt="QR Code PIX"
                       width={180}
                       height={180}
-                      className="size-[160px] sm:size-[180px]"
+                      className={compact ? 'size-[120px]' : 'size-[160px] sm:size-[180px]'}
                       unoptimized
                     />
                   </div>
@@ -548,11 +553,19 @@ export function PixModal({ isOpen, onClose, email, amount, userName, onPaymentCo
               {/* Aviso de e-mail */}
               <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
                 <Mail className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-                    Após o pagamento, o seu{' '}
-                    <span className="font-semibold text-foreground">Código de Convite</span> será
-                    enviado no e-mail cadastrado.
-                </p>
+                {compact ? (
+                  <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                    Após o pagamento confirmado, seu{' '}
+                    <span className="font-semibold text-foreground">acesso é liberado automaticamente</span>.
+                    Você receberá o e-mail de confirmação imediatamente.
+                  </p>
+                ) : (
+                  <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                      Após o pagamento, o seu{' '}
+                      <span className="font-semibold text-foreground">Código de Convite</span> será
+                      enviado no e-mail cadastrado.
+                  </p>
+                )}
               </div>
             </>
           )}
