@@ -24,7 +24,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
-import { PixModal } from '@/components/convite/pix-modal'
+import { PixContent } from '@/components/convite/pix-modal'
 import { cn } from '@/lib/utils'
 
 interface SignupFlowProps {
