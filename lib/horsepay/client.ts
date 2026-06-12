@@ -100,7 +100,9 @@ export async function createHorsepayPixCharge(
 
   const body: Record<string, unknown> = {
     payer_name: input.client.name,
-    amount: input.amount,
+    // A HorsePay espera o valor em CENTAVOS (ex.: 4990 = R$ 49,90).
+    // input.amount vem em reais (decimal), entao convertemos aqui.
+    amount: Math.round(input.amount * 100),
   }
   // client_reference_id e retornado no callback — usamos nosso identifier para
   // conciliar o webhook com o registro local.
@@ -193,7 +195,9 @@ export async function createHorsepayWithdraw(
   }
 
   const body: Record<string, unknown> = {
-    amount: input.amount,
+    // A HorsePay espera o valor em CENTAVOS (ex.: 4990 = R$ 49,90).
+    // input.amount vem em reais (decimal), entao convertemos aqui.
+    amount: Math.round(input.amount * 100),
     pix_key: input.pixKey,
     pix_type: input.pixType,
   }
