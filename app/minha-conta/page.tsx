@@ -75,6 +75,7 @@ import { PixModal } from '@/components/convite/pix-modal'
 import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
  import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
+import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
  import { SupportModal } from '@/components/minha-conta/support-modal'
 import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
 
@@ -621,8 +622,8 @@ function AppDashboard() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [packError, setPackError] = useState<string | null>(null)
-  const [showWelcome, setShowWelcome] = useState(false)
-  const [welcomeClosing, setWelcomeClosing] = useState(false)
+  // Onboarding em 3 passos: aparece na primeira vez que a criadora entra no /minha-conta
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [balanceFlash, setBalanceFlash] = useState(false)
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null)
 
@@ -991,12 +992,24 @@ function AppDashboard() {
     // o motor de atividade abaixo agenda a primeira leva ~20s apos a publicacao.
   }
 
-  function closeWelcome() {
-    setWelcomeClosing(true)
-    setTimeout(() => {
-      setShowWelcome(false)
-      setWelcomeClosing(false)
-    }, 400)
+  // Onboarding: dispara apenas na primeira visita ao /minha-conta
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const seen = localStorage.getItem('luna_onboarding_seen')
+      if (!seen) setShowOnboarding(true)
+    } catch {
+      setShowOnboarding(true)
+    }
+  }, [])
+
+  function closeOnboarding() {
+    try {
+      localStorage.setItem('luna_onboarding_seen', '1')
+    } catch {
+      // ignora indisponibilidade do localStorage
+    }
+    setShowOnboarding(false)
   }
 
   // Logout
@@ -1019,28 +1032,8 @@ function AppDashboard() {
         <div className="absolute inset-0 bg-black/65" />
       </div>
 
-      {/* Modal de boas-vindas */}
-      {showWelcome && (
-        <div
-          className={`absolute inset-0 z-[60] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm ${
-            welcomeClosing ? 'animate-welcome-out' : 'animate-welcome-in'
-          }`}
-          onClick={closeWelcome}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && closeWelcome()}
-        >
-          <div className="relative w-full max-w-sm rounded-[28px] bg-gradient-to-br from-primary via-primary/70 to-primary/40 p-[3px] shadow-2xl shadow-primary/30">
-            <div className="overflow-hidden rounded-[25px]">
-              <img
-                src="/images/welcome-banner.png"
-                alt="Seja Bem Vinda ao Luna Prive!"
-                className="h-auto w-full"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Onboarding em 3 passos (primeira visita) */}
+      {showOnboarding && <OnboardingFlow onClose={closeOnboarding} />}
 
       {/* Conteudo rolavel do app */}
       <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
@@ -2256,7 +2249,7 @@ function PacksScreen({
   )
 }
 
-// ────────────────────────────────────────────────���──────────���─────────────────
+// ────────────────────────────────────────────────����──────────���─────────────────
 // Tela Detalhe do Pack (visualizar, métricas e editar)
 // ─────────────────────────────────────────────────────────────────────────────
 
