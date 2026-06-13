@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
-import { createAdminClient } from '@/lib/supabase/admin'
 import {
   getZapiConfig,
   isConfigured,
   sendText,
   normalizePhone,
+  getMessageLog,
+  appendMessageLog,
 } from '@/lib/whatsapp/zapi'
 
 export const dynamic = 'force-dynamic'
@@ -16,19 +17,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
-  const supabase = createAdminClient()
-  const { data, error } = await supabase
-    .from('whatsapp_messages')
-    .select('id, phone, message, status, error, created_at')
-    .order('created_at', { ascending: false })
-    .limit(50)
-
-  if (error) {
-    console.error('[v0] Erro ao listar mensagens WhatsApp:', error.message)
-    return NextResponse.json({ messages: [] })
-  }
-
-  return NextResponse.json({ messages: data || [] })
+  const messages = await getMessageLog()
+  return NextResponse.json({ messages })
 }
 
 /** Envia uma mensagem de teste e grava no histórico. */
@@ -63,14 +53,11 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await sendText(cfg, phone, message)
-  const supabase = createAdminClient()
 
-  await supabase.from('whatsapp_messages').insert({
+  await appendMessageLog({
     phone,
     message,
     status: result.ok ? 'sent' : 'failed',
-    zaap_id: result.zaapId || null,
-    message_id: result.messageId || null,
     error: result.ok ? null : result.error || null,
   })
 

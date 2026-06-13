@@ -21,6 +21,7 @@ const KEYS = {
   instanceToken: 'whatsapp_zapi_instance_token',
   clientToken: 'whatsapp_zapi_client_token',
   testMessage: 'whatsapp_test_message',
+  messageLog: 'whatsapp_message_log',
 } as const
 
 export interface ZapiConfig {
@@ -176,4 +177,55 @@ export async function sendText(
     zaapId: json?.zaapId,
     messageId: json?.messageId || json?.id,
   }
+}
+
+export interface WhatsappLogEntry {
+  id: string
+  phone: string
+  message: string
+  status: 'sent' | 'failed'
+  error: string | null
+  created_at: string
+}
+
+const MAX_LOG = 50
+
+/** Lê o histórico de envios salvo em app_settings (mais recentes primeiro). */
+export async function getMessageLog(): Promise<WhatsappLogEntry[]> {
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', KEYS.messageLog)
+    .maybeSingle()
+
+  const value = data?.value
+  if (!Array.isArray(value)) return []
+  return value as WhatsappLogEntry[]
+}
+
+/** Anexa uma entrada ao histórico (mantém os últimos MAX_LOG envios). */
+export async function appendMessageLog(
+  entry: Omit<WhatsappLogEntry, 'id' | 'created_at'>,
+): Promise<void> {
+  const supabase = createAdminClient()
+  const current = await getMessageLog()
+  const next: WhatsappLogEntry[] = [
+    {
+      id:
+        globalThis.crypto?.randomUUID?.() ??
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      created_at: new Date().toISOString(),
+      ...entry,
+    },
+    ...current,
+  ].slice(0, MAX_LOG)
+
+  const { error } = await supabase
+    .from('app_settings')
+    .upsert(
+      { key: KEYS.messageLog, value: next, updated_at: new Date().toISOString(), updated_by: 'admin' },
+      { onConflict: 'key' },
+    )
+  if (error) console.error('[v0] Falha ao gravar histórico WhatsApp:', error.message)
 }
