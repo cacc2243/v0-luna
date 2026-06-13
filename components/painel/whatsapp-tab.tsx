@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   XCircle,
   Smartphone,
+  ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -32,6 +33,9 @@ interface ConfigPayload {
     hasInstanceToken: boolean
     hasClientToken: boolean
     testMessage: string
+    verificationEnabled: boolean
+    verificationCode: string
+    verificationMessage: string
     configured: boolean
   }
 }
@@ -68,6 +72,14 @@ export function WhatsappTab() {
   const [savedCfg, setSavedCfg] = useState(false)
   const [cfgError, setCfgError] = useState<string | null>(null)
 
+  // Verificação no cadastro
+  const [verificationEnabled, setVerificationEnabled] = useState(true)
+  const [verificationCode, setVerificationCode] = useState('')
+  const [verificationMessage, setVerificationMessage] = useState('')
+  const [savingVerif, setSavingVerif] = useState(false)
+  const [savedVerif, setSavedVerif] = useState(false)
+  const [verifError, setVerifError] = useState<string | null>(null)
+
   // Envio
   const [phone, setPhone] = useState('')
   const [sending, setSending] = useState(false)
@@ -80,6 +92,9 @@ export function WhatsappTab() {
     if (cfg) {
       setInstanceId(cfg.instanceId)
       setTestMessage(cfg.testMessage)
+      setVerificationEnabled(cfg.verificationEnabled)
+      setVerificationCode(cfg.verificationCode)
+      setVerificationMessage(cfg.verificationMessage)
     }
   }, [cfg])
 
@@ -107,6 +122,34 @@ export function WhatsappTab() {
       setCfgError('Erro de conexão ao salvar.')
     } finally {
       setSavingCfg(false)
+    }
+  }
+
+  const saveVerification = async () => {
+    setVerifError(null)
+    if (verificationCode && !/^\d{4,8}$/.test(verificationCode.trim())) {
+      setVerifError('O código deve ter de 4 a 8 dígitos.')
+      return
+    }
+    setSavingVerif(true)
+    try {
+      const res = await fetch('/api/admin/whatsapp/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verificationEnabled, verificationCode, verificationMessage }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setVerifError(json?.error || 'Falha ao salvar.')
+        return
+      }
+      await mutate(json, { revalidate: false })
+      setSavedVerif(true)
+      setTimeout(() => setSavedVerif(false), 2000)
+    } catch {
+      setVerifError('Erro de conexão ao salvar.')
+    } finally {
+      setSavingVerif(false)
     }
   }
 
@@ -232,6 +275,85 @@ export function WhatsappTab() {
             <Check className="size-4" />
           ) : null}
           {savedCfg ? 'Salvo' : 'Salvar credenciais'}
+        </button>
+      </section>
+
+      {/* Verificação no cadastro */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <ShieldCheck className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">Verificação no cadastro</h2>
+            <p className="text-sm text-muted-foreground">
+              Quando ativo, o cadastro envia um código por WhatsApp e o usuário precisa digitá-lo.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-4">
+          {/* Toggle ativar */}
+          <button
+            type="button"
+            onClick={() => setVerificationEnabled((v) => !v)}
+            className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-left"
+          >
+            <span className="text-sm font-semibold text-foreground">
+              Exigir verificação por WhatsApp
+            </span>
+            <span
+              className={cn(
+                'relative h-6 w-11 shrink-0 rounded-full transition-colors',
+                verificationEnabled ? 'bg-primary' : 'bg-muted',
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute top-0.5 size-5 rounded-full bg-background transition-all',
+                  verificationEnabled ? 'left-[1.375rem]' : 'left-0.5',
+                )}
+              />
+            </span>
+          </button>
+
+          <Field label="Código de verificação" hint="O mesmo para todos os usuários (4 a 8 dígitos)">
+            <input
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              inputMode="numeric"
+              placeholder="4687"
+              className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm tracking-[0.3em] text-foreground outline-none focus:border-primary"
+            />
+          </Field>
+
+          <Field label="Mensagem da verificação" hint="Use {codigo} onde o código deve aparecer">
+            <textarea
+              value={verificationMessage}
+              onChange={(e) => setVerificationMessage(e.target.value)}
+              rows={3}
+              className="w-full resize-y rounded-xl border border-border bg-background px-4 py-2.5 text-sm leading-relaxed text-foreground outline-none focus:border-primary"
+            />
+          </Field>
+        </div>
+
+        {verifError && (
+          <p className="mt-3 flex items-center gap-2 text-sm text-destructive">
+            <AlertTriangle className="size-4" /> {verifError}
+          </p>
+        )}
+
+        <button
+          onClick={saveVerification}
+          disabled={savingVerif}
+          className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+        >
+          {savingVerif ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : savedVerif ? (
+            <Check className="size-4" />
+          ) : null}
+          {savedVerif ? 'Salvo' : 'Salvar verificação'}
         </button>
       </section>
 

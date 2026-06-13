@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
     instanceToken?: string
     clientToken?: string
     testMessage?: string
+    verificationEnabled?: boolean
+    verificationCode?: string
+    verificationMessage?: string
   } = {}
 
   if (typeof body.instanceId === 'string') patch.instanceId = body.instanceId
@@ -44,6 +47,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Mensagem muito longa' }, { status: 400 })
     }
     patch.testMessage = body.testMessage
+  }
+  if (typeof body.verificationEnabled === 'boolean') {
+    patch.verificationEnabled = body.verificationEnabled
+  }
+  if (typeof body.verificationCode === 'string') {
+    const code = body.verificationCode.trim()
+    if (code.length > 0 && !/^\d{4,8}$/.test(code)) {
+      return NextResponse.json({ error: 'O código deve ter de 4 a 8 dígitos.' }, { status: 400 })
+    }
+    patch.verificationCode = code
+  }
+  if (typeof body.verificationMessage === 'string') {
+    if (body.verificationMessage.length > 2000) {
+      return NextResponse.json({ error: 'Mensagem muito longa' }, { status: 400 })
+    }
+    patch.verificationMessage = body.verificationMessage
   }
 
   try {

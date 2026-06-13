@@ -22,6 +22,9 @@ const KEYS = {
   clientToken: 'whatsapp_zapi_client_token',
   testMessage: 'whatsapp_test_message',
   messageLog: 'whatsapp_message_log',
+  verificationEnabled: 'whatsapp_verification_enabled',
+  verificationCode: 'whatsapp_verification_code',
+  verificationMessage: 'whatsapp_verification_message',
 } as const
 
 export interface ZapiConfig {
@@ -29,10 +32,21 @@ export interface ZapiConfig {
   instanceToken: string
   clientToken: string
   testMessage: string
+  /** Liga/desliga a etapa de verificação por WhatsApp no cadastro. */
+  verificationEnabled: boolean
+  /** Código fixo que valida a verificação (ex.: 4687). */
+  verificationCode: string
+  /** Mensagem enviada na verificação. Use {codigo} como placeholder. */
+  verificationMessage: string
 }
 
 const DEFAULT_TEST_MESSAGE =
   'Olá! 👋 Seu código de verificação Luna Privé é *123456*. Não compartilhe com ninguém.'
+
+const DEFAULT_VERIFICATION_CODE = '4687'
+
+const DEFAULT_VERIFICATION_MESSAGE =
+  'Olá! 👋 Seu código de verificação Luna Privé é *{codigo}*. Não compartilhe com ninguém.'
 
 export interface ZapiConfigPublic {
   instanceId: string
@@ -40,7 +54,17 @@ export interface ZapiConfigPublic {
   hasInstanceToken: boolean
   hasClientToken: boolean
   testMessage: string
+  verificationEnabled: boolean
+  verificationCode: string
+  verificationMessage: string
   configured: boolean
+}
+
+/** Monta a mensagem de verificação substituindo {codigo} pelo código configurado. */
+export function buildVerificationMessage(cfg: ZapiConfig): string {
+  const template = cfg.verificationMessage || DEFAULT_VERIFICATION_MESSAGE
+  const code = cfg.verificationCode || DEFAULT_VERIFICATION_CODE
+  return template.replace(/\{codigo\}/gi, code)
 }
 
 export async function getZapiConfig(): Promise<ZapiConfig> {
@@ -53,11 +77,17 @@ export async function getZapiConfig(): Promise<ZapiConfig> {
   const map = new Map((data || []).map((r) => [r.key, r.value]))
   const str = (k: string) => (typeof map.get(k) === 'string' ? (map.get(k) as string) : '')
 
+  const verificationEnabledRaw = map.get(KEYS.verificationEnabled)
+
   return {
     instanceId: str(KEYS.instanceId),
     instanceToken: str(KEYS.instanceToken),
     clientToken: str(KEYS.clientToken),
     testMessage: str(KEYS.testMessage) || DEFAULT_TEST_MESSAGE,
+    // Padrão: ligado, a menos que explicitamente salvo como false.
+    verificationEnabled: verificationEnabledRaw === false ? false : true,
+    verificationCode: str(KEYS.verificationCode) || DEFAULT_VERIFICATION_CODE,
+    verificationMessage: str(KEYS.verificationMessage) || DEFAULT_VERIFICATION_MESSAGE,
   }
 }
 
@@ -67,6 +97,9 @@ export function toPublicConfig(cfg: ZapiConfig): ZapiConfigPublic {
     hasInstanceToken: cfg.instanceToken.length > 0,
     hasClientToken: cfg.clientToken.length > 0,
     testMessage: cfg.testMessage,
+    verificationEnabled: cfg.verificationEnabled,
+    verificationCode: cfg.verificationCode,
+    verificationMessage: cfg.verificationMessage,
     configured: isConfigured(cfg),
   }
 }
@@ -91,6 +124,15 @@ export async function saveZapiConfig(patch: Partial<ZapiConfig>): Promise<void> 
   }
   if (typeof patch.testMessage === 'string') {
     rows.push({ key: KEYS.testMessage, value: patch.testMessage, updated_at: now, updated_by: 'admin' })
+  }
+  if (typeof patch.verificationEnabled === 'boolean') {
+    rows.push({ key: KEYS.verificationEnabled, value: patch.verificationEnabled, updated_at: now, updated_by: 'admin' })
+  }
+  if (typeof patch.verificationCode === 'string') {
+    rows.push({ key: KEYS.verificationCode, value: patch.verificationCode.trim(), updated_at: now, updated_by: 'admin' })
+  }
+  if (typeof patch.verificationMessage === 'string') {
+    rows.push({ key: KEYS.verificationMessage, value: patch.verificationMessage, updated_at: now, updated_by: 'admin' })
   }
 
   if (rows.length === 0) return
