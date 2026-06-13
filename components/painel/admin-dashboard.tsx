@@ -20,6 +20,7 @@ import {
   Wallet,
   Megaphone,
   UserCog,
+  MessageCircle,
   Menu,
   X,
 } from 'lucide-react'
@@ -36,6 +37,7 @@ import { SettingsTab } from './settings-tab'
 import { PixelTab } from './pixel-tab'
 import { EmailsTab } from './emails-tab'
 import { UsersTab } from './users-tab'
+import { WhatsappTab } from './whatsapp-tab'
 import {
   PERIOD_LABELS,
   type InviteRow,
@@ -58,7 +60,7 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'usuarios' | 'saldos' | 'pix' | 'utms' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails'
+type TabKey = 'resumo' | 'clientes' | 'usuarios' | 'saldos' | 'pix' | 'utms' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails' | 'whatsapp'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
@@ -72,6 +74,7 @@ const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'gateways', label: 'Gateways', icon: FlaskConical },
   { key: 'pixel', label: 'Pixel', icon: Facebook },
   { key: 'emails', label: 'E-mails', icon: Mail },
+  { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
   { key: 'config', label: 'Configurações', icon: Settings },
 ]
 
@@ -245,7 +248,7 @@ export function AdminDashboard() {
             </div>
           ) : (
             <>
-              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && tab !== 'saldos' && tab !== 'usuarios' && (
+              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && tab !== 'whatsapp' && tab !== 'saldos' && tab !== 'usuarios' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
                   {tab !== 'clientes' && tab !== 'utms' && (
@@ -291,6 +294,7 @@ export function AdminDashboard() {
               {tab === 'gateways' && <GatewayTestTab />}
               {tab === 'pixel' && <PixelTab />}
               {tab === 'emails' && <EmailsTab />}
+              {tab === 'whatsapp' && <WhatsappTab />}
               {tab === 'config' && <SettingsTab />}
             </>
           )}

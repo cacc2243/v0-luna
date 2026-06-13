@@ -22,6 +22,7 @@ import {
   Clock,
   Gift,
   ChevronRight,
+  MessageCircle,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 import { PixContent } from '@/components/convite/pix-modal'
@@ -75,7 +76,7 @@ function isGenericUsername(raw: string) {
 export function SignupFlow({ onComplete }: SignupFlowProps) {
   void onComplete
   const [step, setStep] = useState(0)
-  const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error'>('form')
+  const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error' | 'whatsappCode'>('form')
   const [errorMessage, setErrorMessage] = useState('')
 
   // Campos
@@ -93,6 +94,10 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const [showPass, setShowPass] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [pixOpen, setPixOpen] = useState(false)
+
+  // Verificacao por WhatsApp no passo do telefone.
+  const [sendingCode, setSendingCode] = useState(false)
+  const [phoneError, setPhoneError] = useState('')
 
   // Configuracoes publicas do servidor (fonte da verdade no backend).
   // verificationEnabled controla se a etapa de verificacao PIX aparece no fluxo.
@@ -137,10 +142,50 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
     }, 1500)
   }
 
+  // Envia o codigo de verificacao por WhatsApp e avanca para a etapa de digitacao.
+  // Se a verificacao estiver desligada no painel, pula direto para o proximo passo.
+  const sendWhatsappCode = async () => {
+    if (sendingCode) return
+    setPhoneError('')
+    setSendingCode(true)
+    try {
+      const res = await fetch('/api/whatsapp/verify/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      })
+      const json = await res.json().catch(() => null)
+
+      // Verificação desativada, Z-API offline ou falha no envio: segue sem pedir código.
+      if (json?.skipped || !res.ok || !json?.success) {
+        advance()
+        return
+      }
+
+      setStatus('whatsappCode')
+    } catch {
+      // Erro de conexão: não trava o cadastro, segue o fluxo normal.
+      advance()
+    } finally {
+      setSendingCode(false)
+    }
+  }
+
+  // Valida o codigo digitado no servidor (comparado com o codigo do painel).
+  const verifyWhatsappCode = async (code: string) => {
+    const res = await fetch('/api/whatsapp/verify/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+    const json = await res.json().catch(() => null)
+    return Boolean(json?.valid)
+  }
+
   const finish = async () => {
     setStatus('loading')
     setErrorMessage('')
-    
+
     try {
       const supabase = createClient()
       
@@ -299,6 +344,21 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               amountCents={verificationAmountCents}
               onConfirm={finish}
               onBack={() => setStatus('form')}
+            />
+          ) : status === 'whatsappCode' ? (
+            <WhatsappCodeCard
+              phone={phone}
+              onVerify={verifyWhatsappCode}
+              onConfirmed={() => {
+                setStatus('form')
+                advance()
+              }}
+              onResend={sendWhatsappCode}
+              resending={sendingCode}
+              onBack={() => {
+                setStatus('form')
+                setPhoneError('')
+              }}
             />
           ) : status === 'loading' ? (
           <LoadingCard />
@@ -487,24 +547,39 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               </StepShell>
             )}
 
-            {/* SEU TELEFONE */}
+            {/* SEU TELEFONE / VERIFICAÇÃO WHATSAPP */}
             {step === 7 && (
               <StepShell
                 icon={Phone}
                 eyebrow="Seu telefone"
                 title="Informe seu número com DDD"
-                description="Usado apenas para envio de confirmações ou para você tirar dúvidas. Seu número nunca será compartilhado."
+                description="Enviaremos um código de verificação no seu WhatsApp para confirmar o número."
               >
                 <SafetyNote>Visível apenas para nossa plataforma</SafetyNote>
                 <BaseInput
                   type="tel"
                   inputMode="tel"
                   value={phone}
-                  onChange={(v) => setPhone(formatPhone(v))}
+                  onChange={(v) => {
+                    setPhone(formatPhone(v))
+                    if (phoneError) setPhoneError('')
+                  }}
                   placeholder="(00) 00000-0000"
                   autoFocus
                 />
-                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+                {phoneError && (
+                  <p className="animate-pop mt-3 flex items-center gap-2 text-sm font-medium text-destructive">
+                    <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+                    {phoneError}
+                  </p>
+                )}
+                <StepFooter
+                  onBack={back}
+                  disabled={!canContinue || sendingCode}
+                  onNext={sendWhatsappCode}
+                  loading={sendingCode}
+                  loadingText="Enviando código..."
+                />
               </StepShell>
             )}
 
@@ -818,6 +893,103 @@ function StepFooter({
         ← Voltar para o passo anterior
       </button>
     </>
+  )
+}
+
+function WhatsappCodeCard({
+  phone,
+  onVerify,
+  onConfirmed,
+  onResend,
+  resending,
+  onBack,
+}: {
+  phone: string
+  onVerify: (code: string) => Promise<boolean>
+  onConfirmed: () => void
+  onResend: () => void
+  resending: boolean
+  onBack: () => void
+}) {
+  const [code, setCode] = useState('')
+  const [checking, setChecking] = useState(false)
+  const [error, setError] = useState('')
+
+  const submit = async () => {
+    if (checking || code.trim().length < 4) return
+    setError('')
+    setChecking(true)
+    try {
+      const ok = await onVerify(code.trim())
+      if (ok) {
+        onConfirmed()
+      } else {
+        setError('Código incorreto. Verifique a mensagem no WhatsApp.')
+      }
+    } catch {
+      setError('Erro ao validar. Tente novamente.')
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  return (
+    <div
+      key="whatsapp-code"
+      className="animate-pop luna-border max-h-[92dvh] w-full max-w-sm overflow-y-auto overflow-x-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
+    >
+      <StepShell
+        icon={MessageCircle}
+        eyebrow="Verificação"
+        title="Digite o código que enviamos"
+        description={`Enviamos um código por WhatsApp para ${phone}. Insira-o abaixo para confirmar.`}
+        iconPositive
+      >
+        <BaseInput
+          type="tel"
+          inputMode="numeric"
+          value={code}
+          onChange={(v) => {
+            setCode(v.replace(/\D/g, '').slice(0, 8))
+            if (error) setError('')
+          }}
+          placeholder="0000"
+          autoFocus
+        />
+        {error && (
+          <p className="animate-pop mt-3 flex items-center gap-2 text-sm font-medium text-destructive">
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+            {error}
+          </p>
+        )}
+
+        <CtaButton
+          className="mt-6"
+          disabled={code.trim().length < 4 || checking}
+          onClick={submit}
+          loading={checking}
+          loadingText="Confirmando..."
+        >
+          Confirmar código
+        </CtaButton>
+
+        <button
+          type="button"
+          onClick={onResend}
+          disabled={resending}
+          className="mt-3 w-full text-center text-xs font-semibold text-primary transition-opacity hover:opacity-80 disabled:opacity-50"
+        >
+          {resending ? 'Reenviando...' : 'Reenviar código'}
+        </button>
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-2 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+        >
+          ← Corrigir número
+        </button>
+      </StepShell>
+    </div>
   )
 }
 
