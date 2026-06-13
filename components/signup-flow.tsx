@@ -155,18 +155,17 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         body: JSON.stringify({ phone }),
       })
       const json = await res.json().catch(() => null)
-      if (json?.skipped) {
-        // Verificacao desativada: segue o fluxo normal.
+
+      // Verificação desativada, Z-API offline ou falha no envio: segue sem pedir código.
+      if (json?.skipped || !res.ok || !json?.success) {
         advance()
         return
       }
-      if (!res.ok || !json?.success) {
-        setPhoneError(json?.error || 'Não foi possível enviar o código. Tente novamente.')
-        return
-      }
+
       setStatus('whatsappCode')
     } catch {
-      setPhoneError('Erro de conexão. Tente novamente.')
+      // Erro de conexão: não trava o cadastro, segue o fluxo normal.
+      advance()
     } finally {
       setSendingCode(false)
     }

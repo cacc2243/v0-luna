@@ -31,20 +31,21 @@ export async function POST(req: NextRequest) {
 
   const cfg = await getZapiConfig()
 
-  // Se a verificação estiver desligada, sinaliza ao cliente para pular a etapa.
-  if (!cfg.verificationEnabled) {
+  // Verificação desligada OU Z-API não configurada: pula a etapa do código.
+  if (!cfg.verificationEnabled || !isConfigured(cfg)) {
     return NextResponse.json({ skipped: true })
   }
 
-  if (!isConfigured(cfg)) {
-    return NextResponse.json(
-      { error: 'Verificação por WhatsApp indisponível no momento.' },
-      { status: 503 },
-    )
-  }
-
   const message = buildVerificationMessage(cfg)
-  const result = await sendText(cfg, phone, message)
+
+  let result: { ok: boolean; error?: string }
+  try {
+    result = await sendText(cfg, phone, message)
+  } catch (err) {
+    // Falha inesperada ao falar com a Z-API: não bloqueia o cadastro.
+    console.log('[v0] Falha ao enviar código WhatsApp:', (err as Error)?.message)
+    return NextResponse.json({ skipped: true })
+  }
 
   await appendMessageLog({
     phone,
@@ -53,11 +54,10 @@ export async function POST(req: NextRequest) {
     error: result.ok ? null : result.error || null,
   })
 
+  // Se a Z-API recusou o envio (desconectada, número inválido na instância, etc.),
+  // seguimos o cadastro sem pedir código em vez de travar o usuário.
   if (!result.ok) {
-    return NextResponse.json(
-      { error: 'Não foi possível enviar o código. Verifique o número e tente novamente.' },
-      { status: 502 },
-    )
+    return NextResponse.json({ skipped: true })
   }
 
   return NextResponse.json({ success: true })
