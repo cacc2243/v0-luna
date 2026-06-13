@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Check,
   Plug,
-  QrCode,
   Send,
   MessageCircle,
   RefreshCw,
@@ -75,11 +74,6 @@ export function WhatsappTab() {
   const [sendOk, setSendOk] = useState<string | null>(null)
   const [sendErr, setSendErr] = useState<string | null>(null)
 
-  // QR
-  const [qr, setQr] = useState<string | null>(null)
-  const [qrLoading, setQrLoading] = useState(false)
-  const [qrError, setQrError] = useState<string | null>(null)
-
   const cfg = data?.config
 
   useEffect(() => {
@@ -113,25 +107,6 @@ export function WhatsappTab() {
       setCfgError('Erro de conexão ao salvar.')
     } finally {
       setSavingCfg(false)
-    }
-  }
-
-  const loadQr = async () => {
-    setQrError(null)
-    setQrLoading(true)
-    setQr(null)
-    try {
-      const res = await fetch('/api/admin/whatsapp/qr')
-      const json = await res.json()
-      if (!res.ok) {
-        setQrError(json?.error || 'Falha ao obter QR Code.')
-        return
-      }
-      setQr(json.qr)
-    } catch {
-      setQrError('Erro de conexão ao obter QR Code.')
-    } finally {
-      setQrLoading(false)
     }
   }
 
@@ -258,55 +233,6 @@ export function WhatsappTab() {
           ) : null}
           {savedCfg ? 'Salvo' : 'Salvar credenciais'}
         </button>
-      </section>
-
-      {/* Conectar via QR Code */}
-      <section className="rounded-2xl border border-border bg-card p-5">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            <QrCode className="size-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-foreground">Conectar WhatsApp</h2>
-            <p className="text-sm text-muted-foreground">
-              Abra o WhatsApp → Aparelhos conectados → Conectar aparelho e escaneie o QR.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-col items-center gap-4">
-          <div className="flex size-56 items-center justify-center rounded-2xl border border-border bg-background">
-            {qrLoading ? (
-              <Loader2 className="size-7 animate-spin text-primary" />
-            ) : qr ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={qr || '/placeholder.svg'} alt="QR Code para conectar o WhatsApp" className="size-52 rounded-xl" />
-            ) : (
-              <div className="flex flex-col items-center gap-2 px-4 text-center text-muted-foreground">
-                <QrCode className="size-8" />
-                <span className="text-xs">Gere o QR Code para conectar</span>
-              </div>
-            )}
-          </div>
-
-          {qrError && (
-            <p className="flex items-center gap-2 text-center text-sm text-destructive">
-              <AlertTriangle className="size-4" /> {qrError}
-            </p>
-          )}
-
-          <button
-            onClick={loadQr}
-            disabled={qrLoading || !cfg?.configured}
-            className="flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-5 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary/70 disabled:opacity-60"
-          >
-            <RefreshCw className={cn('size-4', qrLoading && 'animate-spin')} />
-            {qr ? 'Gerar novo QR Code' : 'Gerar QR Code'}
-          </button>
-          {!cfg?.configured && (
-            <p className="text-xs text-muted-foreground">Salve as credenciais primeiro.</p>
-          )}
-        </div>
       </section>
 
       {/* Enviar mensagem de teste */}
@@ -483,7 +409,7 @@ function ConnectionStatus({ configured }: { configured: boolean }) {
           <p className="text-sm font-bold text-foreground">{statusLabel}</p>
         </div>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          {data?.error || (connected ? 'WhatsApp pronto para enviar mensagens.' : 'Conecte um WhatsApp via QR Code.')}
+          {data?.error || (connected ? 'WhatsApp pronto para enviar mensagens.' : 'Conecte o WhatsApp no painel da Z-API.')}
         </p>
       </div>
     </section>

@@ -1,16 +1,18 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
- * Integração com a Z-API (WhatsApp via QR Code).
+ * Integração com a Z-API (WhatsApp).
+ *
+ * A conexão do WhatsApp é feita diretamente no painel da Z-API. Aqui apenas
+ * consumimos a API REST para verificar o status e enviar mensagens.
  *
  * A configuração (instance id, token e client-token) fica na tabela
  * `app_settings` (key/value) — a mesma usada pelo restante do painel — para
  * manter tudo persistido sem variáveis de ambiente.
  *
  * Docs: https://developer.z-api.io
- *  - QR Code (imagem base64): GET /instances/{id}/token/{token}/qr-code/image
- *  - Status:                  GET /instances/{id}/token/{token}/status
- *  - Enviar texto:            POST /instances/{id}/token/{token}/send-text
+ *  - Status:       GET  /instances/{id}/token/{token}/status
+ *  - Enviar texto: POST /instances/{id}/token/{token}/send-text
  *  Header obrigatório em todas: Client-Token: <account security token>
  */
 
@@ -130,24 +132,6 @@ export async function fetchStatus(cfg: ZapiConfig): Promise<ZapiStatus> {
     smartphoneConnected: Boolean(json?.smartphoneConnected),
     error: typeof json?.error === 'string' ? json.error : undefined,
   }
-}
-
-/** Retorna o QR Code (data URI base64) para conectar o WhatsApp. */
-export async function fetchQrCode(cfg: ZapiConfig): Promise<string> {
-  const res = await fetch(`${baseUrl(cfg)}/qr-code/image`, {
-    method: 'GET',
-    headers: headers(cfg),
-    cache: 'no-store',
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`Z-API qr-code ${res.status}: ${text.slice(0, 200)}`)
-  }
-  const json = await res.json()
-  // A Z-API retorna { value: "data:image/png;base64,..." }
-  const value = typeof json?.value === 'string' ? json.value : ''
-  if (!value) throw new Error('QR Code indisponível. A instância pode já estar conectada.')
-  return value
 }
 
 export interface SendResult {
