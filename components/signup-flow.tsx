@@ -105,6 +105,8 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const [verificationAmountCents, setVerificationAmountCents] = useState(4990)
   // Valor do codigo de convite (editavel no painel). Usado no fluxo pos-cadastro.
   const [inviteAmountCents, setInviteAmountCents] = useState(0)
+  // Controla se o passo do telefone pede verificacao por WhatsApp.
+  const [whatsappVerificationEnabled, setWhatsappVerificationEnabled] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -120,6 +122,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         }
         if (typeof data.inviteAmountCents === 'number') {
           setInviteAmountCents(data.inviteAmountCents)
+        }
+        if (typeof data.whatsappVerificationEnabled === 'boolean') {
+          setWhatsappVerificationEnabled(data.whatsappVerificationEnabled)
         }
       })
       .catch(() => {})
@@ -553,7 +558,11 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                 icon={Phone}
                 eyebrow="Seu telefone"
                 title="Informe seu número com DDD"
-                description="Enviaremos um código de verificação no seu WhatsApp para confirmar o número."
+                description={
+                  whatsappVerificationEnabled
+                    ? 'Enviaremos um código de verificação no seu WhatsApp para confirmar o número.'
+                    : 'Usado apenas para envio de confirmações ou para você tirar dúvidas. Seu número nunca será compartilhado.'
+                }
               >
                 <SafetyNote>Visível apenas para nossa plataforma</SafetyNote>
                 <BaseInput
