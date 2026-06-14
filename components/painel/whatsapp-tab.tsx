@@ -14,6 +14,7 @@ import {
   XCircle,
   Smartphone,
   ShieldCheck,
+  ShieldOff,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -287,55 +288,88 @@ export function WhatsappTab() {
           <div>
             <h2 className="text-base font-bold text-foreground">Verificação no cadastro</h2>
             <p className="text-sm text-muted-foreground">
-              Quando ativo, o cadastro envia um código por WhatsApp e o usuário precisa digitá-lo.
+              Controle se o número de WhatsApp precisa ser confirmado por código no cadastro.
             </p>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-col gap-4">
-          {/* Toggle ativar */}
-          <button
-            type="button"
-            onClick={() => setVerificationEnabled((v) => !v)}
-            className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-left"
+        {/* Toggle de destaque */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={verificationEnabled}
+          onClick={() => setVerificationEnabled((v) => !v)}
+          className={cn(
+            'mt-4 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-colors',
+            verificationEnabled
+              ? 'border-primary/50 bg-primary/5'
+              : 'border-border bg-background',
+          )}
+        >
+          <div
+            className={cn(
+              'flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors',
+              verificationEnabled
+                ? 'bg-primary/15 text-primary'
+                : 'bg-muted text-muted-foreground',
+            )}
           >
-            <span className="text-sm font-semibold text-foreground">
-              Exigir verificação por WhatsApp
-            </span>
+            {verificationEnabled ? (
+              <ShieldCheck className="size-5" />
+            ) : (
+              <ShieldOff className="size-5" />
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-foreground">
+              {verificationEnabled ? 'Verificação ativada' : 'Verificação desativada'}
+            </p>
+            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+              {verificationEnabled
+                ? 'O usuário recebe um código no WhatsApp e precisa digitá-lo para concluir.'
+                : 'O cadastro pede apenas o número, sem enviar código de confirmação.'}
+            </p>
+          </div>
+
+          <span
+            className={cn(
+              'relative h-7 w-12 shrink-0 rounded-full transition-colors',
+              verificationEnabled ? 'bg-primary' : 'bg-muted-foreground/30',
+            )}
+          >
             <span
               className={cn(
-                'relative h-6 w-11 shrink-0 rounded-full transition-colors',
-                verificationEnabled ? 'bg-primary' : 'bg-muted',
+                'absolute top-1 size-5 rounded-full bg-background shadow-sm transition-all',
+                verificationEnabled ? 'left-[1.625rem]' : 'left-1',
               )}
-            >
-              <span
-                className={cn(
-                  'absolute top-0.5 size-5 rounded-full bg-background transition-all',
-                  verificationEnabled ? 'left-[1.375rem]' : 'left-0.5',
-                )}
+            />
+          </span>
+        </button>
+
+        {/* Campos visíveis apenas quando ativa */}
+        {verificationEnabled && (
+          <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4">
+            <Field label="Código de verificação" hint="O mesmo para todos os usuários (4 a 8 dígitos)">
+              <input
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                inputMode="numeric"
+                placeholder="4687"
+                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm tracking-[0.3em] text-foreground outline-none focus:border-primary"
               />
-            </span>
-          </button>
+            </Field>
 
-          <Field label="Código de verificação" hint="O mesmo para todos os usuários (4 a 8 dígitos)">
-            <input
-              value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-              inputMode="numeric"
-              placeholder="4687"
-              className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm tracking-[0.3em] text-foreground outline-none focus:border-primary"
-            />
-          </Field>
-
-          <Field label="Mensagem da verificação" hint="Use {codigo} onde o código deve aparecer">
-            <textarea
-              value={verificationMessage}
-              onChange={(e) => setVerificationMessage(e.target.value)}
-              rows={3}
-              className="w-full resize-y rounded-xl border border-border bg-background px-4 py-2.5 text-sm leading-relaxed text-foreground outline-none focus:border-primary"
-            />
-          </Field>
-        </div>
+            <Field label="Mensagem da verificação" hint="Use {codigo} onde o código deve aparecer">
+              <textarea
+                value={verificationMessage}
+                onChange={(e) => setVerificationMessage(e.target.value)}
+                rows={3}
+                className="w-full resize-y rounded-xl border border-border bg-background px-4 py-2.5 text-sm leading-relaxed text-foreground outline-none focus:border-primary"
+              />
+            </Field>
+          </div>
+        )}
 
         {verifError && (
           <p className="mt-3 flex items-center gap-2 text-sm text-destructive">
