@@ -14,10 +14,7 @@ export async function POST(request: NextRequest) {
     // - Bynet: campos planos (id, status, paid_at)
     // - SigiloPay: aninhado em `transaction` (id, identifier, status, payedAt)
     //   com o tipo de evento em `event` (TRANSACTION_PAID, TRANSACTION_CANCELED...).
-    // - PixUp: aninhado em `requestBody` (transactionType: RECEIVEPIX,
-    //   transactionId, external_id, status: PAID, dateApproval).
     const tx = body.transaction || {}
-    const pix = body.requestBody || {} // PixUp (cash-in)
     const event = String(body.event || '').toUpperCase()
 
     // Possiveis identificadores da transacao (tentamos casar por qualquer um).
@@ -28,22 +25,13 @@ export async function POST(request: NextRequest) {
       body.transactionId,
       body.external_id,
       body.externalId,
-      pix.transactionId,
-      pix.external_id,
-    ]
-      .map((v) => (v === undefined || v === null ? '' : String(v)))
-      .filter((v): v is string => v.length > 0)
+    ].filter((v): v is string => typeof v === 'string' && v.length > 0)
 
     const rawStatus = String(
-      tx.status || body.status || body.payment_status || pix.status || ''
+      tx.status || body.status || body.payment_status || ''
     ).toUpperCase()
     const paidAt =
-      tx.payedAt ||
-      body.paid_at ||
-      body.paidAt ||
-      body.payment_date ||
-      pix.dateApproval ||
-      null
+      tx.payedAt || body.paid_at || body.paidAt || body.payment_date || null
 
     // Sem ID = provavelmente um ping de teste do painel do gateway ou um evento
     // sem transacao. A doc da SigiloPay exige responder 2XX, caso contrario ela
