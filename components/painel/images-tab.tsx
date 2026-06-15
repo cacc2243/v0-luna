@@ -41,6 +41,7 @@ interface PackGroup {
   ownerEmail: string | null
   images: AdminImage[]
   latestAt: string
+  postedAt: string
 }
 
 export function ImagesTab() {
@@ -89,12 +90,17 @@ export function ImagesTab() {
           ownerEmail: img.ownerEmail,
           images: [],
           latestAt: img.createdAt,
+          postedAt: img.createdAt,
         }
         map.set(groupKey, g)
       }
       g.images.push(img)
       if (new Date(img.createdAt).getTime() > new Date(g.latestAt).getTime()) {
         g.latestAt = img.createdAt
+      }
+      // postedAt = momento em que o pack foi postado (imagem mais antiga do grupo)
+      if (new Date(img.createdAt).getTime() < new Date(g.postedAt).getTime()) {
+        g.postedAt = img.createdAt
       }
     }
     const list = Array.from(map.values())
@@ -355,6 +361,10 @@ function PackRow({
               <UserRound className="size-3 shrink-0" />
               {name}
               {group.ownerUsername ? ` · @${group.ownerUsername}` : ''}
+            </p>
+            <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground/80">
+              <Clock className="size-3 shrink-0" />
+              Postado em {formatDateTime(group.postedAt)}
             </p>
           </div>
         </div>

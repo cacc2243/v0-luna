@@ -1,4 +1,5 @@
 import { createPixupCashout, type PixupCashoutInput } from '@/lib/pixup/client'
+import { createHorsepayWithdraw } from '@/lib/horsepay/client'
 
 /**
  * Entrada normalizada de cashout, independente do gateway.
@@ -100,11 +101,42 @@ const pixupGateway: CashoutGateway = {
 }
 
 /**
+ * Gateway HorsePay (OAuth Bearer). Valores em reais decimais.
+ * Requer IP do servidor autorizado no painel HorsePay para saques.
+ */
+const horsepayGateway: CashoutGateway = {
+  id: 'horsepay',
+  label: 'HorsePay',
+  description: 'Cash-out PIX via HorsePay (requer IP autorizado no painel).',
+  isConfigured: () =>
+    Boolean(process.env.HORSEPAY_CLIENT_KEY && process.env.HORSEPAY_CLIENT_SECRET),
+  send: async (input) => {
+    const result = await createHorsepayWithdraw({
+      externalId: input.externalId,
+      amount: input.amountCents / 100, // HorsePay usa reais decimais
+      pixKey: input.pixKey,
+      pixType: input.pixType,
+      description: input.description,
+      callbackUrl: input.postbackUrl,
+    })
+
+    return {
+      ok: result.ok,
+      status: result.status,
+      transactionId: result.transactionId,
+      endToEndId: result.endToEndId,
+      errorMessage: result.errorMessage,
+      raw: result.raw,
+    }
+  },
+}
+
+/**
  * Registro central de gateways. Para adicionar um novo gateway,
  * implemente CashoutGateway e registre-o aqui — ele aparece
  * automaticamente no painel de configuracoes.
  */
-const GATEWAYS: CashoutGateway[] = [pixupGateway]
+const GATEWAYS: CashoutGateway[] = [pixupGateway, horsepayGateway]
 
 export function listCashoutGateways(): CashoutGateway[] {
   return GATEWAYS

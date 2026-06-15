@@ -136,6 +136,102 @@ export async function createPixupCashout(
   return { ok: success, status: res.status, data, errorMessage }
 }
 
+export interface PixupCashinInput {
+  /** Identificador unico gerado pela nossa aplicacao. */
+  externalId: string
+  /** Valor em reais (decimal). */
+  amount: number
+  /** URL de notificacao (webhook) do pagamento. */
+  postbackUrl?: string
+  client?: {
+    name?: string
+    email?: string
+    document?: string
+  }
+}
+
+export interface PixupCashinResult {
+  ok: boolean
+  status: number
+  /** ID da transacao no gateway. */
+  transactionId: string | null
+  /** Codigo PIX copia e cola (EMV). */
+  pixCode: string | null
+  errorMessage: string | null
+  raw: any
+}
+
+/**
+ * Gera uma cobranca PIX (cash-in) na PixUp.
+ *
+ * Diferente do cash-out, o cash-in NAO exige assinatura HMAC — apenas o
+ * Bearer token. O QR Code (copia e cola) volta em `data.payment_info.qrcode`.
+ */
+export async function createPixupPixCharge(
+  input: PixupCashinInput
+): Promise<PixupCashinResult> {
+  const token = await getPixupAccessToken()
+
+  const bodyObj: Record<string, unknown> = {
+    amount: input.amount,
+    currency: 'BRL',
+    external_id: input.externalId,
+  }
+  if (input.postbackUrl) bodyObj.postback_url = input.postbackUrl
+  if (input.client?.name || input.client?.email || input.client?.document) {
+    bodyObj.payer = {
+      ...(input.client?.name ? { name: input.client.name } : {}),
+      ...(input.client?.email ? { email: input.client.email } : {}),
+      ...(input.client?.document ? { document: input.client.document } : {}),
+    }
+  }
+
+  const res = await fetch(`${PIXUP_API_URL}/v2/transactions/cashin`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(bodyObj),
+  })
+
+  let data: any = {}
+  try {
+    data = await res.json()
+  } catch {
+    data = {}
+  }
+
+  // A resposta pode vir em `data` ou na raiz, conforme o ambiente.
+  const payload = data?.data || data
+  const info = payload?.payment_info || payload?.paymentInfo || {}
+  const pixCode =
+    info.qrcode ||
+    info.qrCode ||
+    info.copy_paste ||
+    info.emv ||
+    payload?.qrcode ||
+    null
+  const transactionId =
+    payload?.transaction_id || payload?.transactionId || payload?.id || null
+
+  const success = res.ok && Boolean(pixCode)
+  const errorMessage = success
+    ? null
+    : data?.error?.message ||
+      data?.message ||
+      `Falha ao gerar PIX na PixUp (status ${res.status})`
+
+  return {
+    ok: success,
+    status: res.status,
+    transactionId: transactionId ? String(transactionId) : null,
+    pixCode,
+    errorMessage,
+    raw: payload,
+  }
+}
+
 /**
  * Valida a assinatura HMAC de um webhook da PixUp.
  * X-Webhook-Signature = hex(hmac_sha256(rawBody, webhook_secret)).

@@ -16,6 +16,7 @@ import {
   MessageCircle,
   Rocket,
   BarChart3,
+  Banknote,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -34,6 +35,7 @@ interface SettingsPayload {
     activeCashoutGateway: string
     activeCashinGateway: string
     verificationAmountCents: number
+    withdrawalVerificationAmountCents: number
     inviteAmountCents: number
     chatAmountCents: number
     giftUnlockAmountCents: number
@@ -66,6 +68,7 @@ export function SettingsTab() {
   const [gateway, setGateway] = useState('pixup')
   const [cashinGateway, setCashinGateway] = useState('bynet')
   const [amountReais, setAmountReais] = useState('0,90')
+  const [withdrawVerifyReais, setWithdrawVerifyReais] = useState('49,90')
   const [inviteReais, setInviteReais] = useState('24,80')
   const [chatReais, setChatReais] = useState('99,00')
   const [giftReais, setGiftReais] = useState('38,60')
@@ -83,6 +86,11 @@ export function SettingsTab() {
       setCashinGateway(data.settings.activeCashinGateway)
       setAmountReais(
         ((data.settings.verificationAmountCents || 0) / 100)
+          .toFixed(2)
+          .replace('.', ','),
+      )
+      setWithdrawVerifyReais(
+        ((data.settings.withdrawalVerificationAmountCents || 0) / 100)
           .toFixed(2)
           .replace('.', ','),
       )
@@ -129,6 +137,7 @@ export function SettingsTab() {
       gateway !== data.settings.activeCashoutGateway ||
       cashinGateway !== data.settings.activeCashinGateway ||
       parseAmountCents(amountReais) !== data.settings.verificationAmountCents ||
+      parseAmountCents(withdrawVerifyReais) !== data.settings.withdrawalVerificationAmountCents ||
       parseAmountCents(inviteReais) !== data.settings.inviteAmountCents ||
       parseAmountCents(chatReais) !== data.settings.chatAmountCents ||
       parseAmountCents(giftReais) !== data.settings.giftUnlockAmountCents ||
@@ -145,6 +154,11 @@ export function SettingsTab() {
     const inviteCents = parseAmountCents(inviteReais)
     if (inviteCents === null || inviteCents < 100 || inviteCents > 100000) {
       setSaveError('Valor do convite inválido. Use algo entre R$ 1,00 e R$ 1.000,00.')
+      return
+    }
+    const withdrawVerifyCents = parseAmountCents(withdrawVerifyReais)
+    if (withdrawVerifyCents === null || withdrawVerifyCents < 100 || withdrawVerifyCents > 100000) {
+      setSaveError('Valor da verificação de saque inválido. Use algo entre R$ 1,00 e R$ 1.000,00.')
       return
     }
     const chatCents = parseAmountCents(chatReais)
@@ -177,6 +191,7 @@ export function SettingsTab() {
           activeCashoutGateway: gateway,
           activeCashinGateway: cashinGateway,
           verificationAmountCents: cents,
+          withdrawalVerificationAmountCents: withdrawVerifyCents,
           inviteAmountCents: inviteCents,
           chatAmountCents: chatCents,
           giftUnlockAmountCents: giftCents,
@@ -297,6 +312,45 @@ export function SettingsTab() {
               inputMode="decimal"
               value={amountReais}
               onChange={(e) => setAmountReais(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-sm font-semibold text-foreground outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Valor da verificacao de saque (/minha-conta) */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Banknote className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">Valor da verificação de saque</h2>
+            <p className="text-sm text-muted-foreground">
+              Cobrança PIX exigida para liberar o saque em{' '}
+              <span className="font-medium">/minha-conta</span>.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label htmlFor="withdraw-verify-amount" className="text-sm font-semibold text-foreground">
+            Valor da verificação de saque (PIX)
+          </label>
+          <p className="mb-3 mt-1 text-xs text-muted-foreground">
+            Define o valor exibido no modal e o PIX gerado quando a usuária solicita o primeiro
+            saque. Aplicado no servidor — o cliente não consegue alterar.
+          </p>
+          <div className="relative max-w-[12rem]">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+              R$
+            </span>
+            <input
+              id="withdraw-verify-amount"
+              type="text"
+              inputMode="decimal"
+              value={withdrawVerifyReais}
+              onChange={(e) => setWithdrawVerifyReais(e.target.value)}
               className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-sm font-semibold text-foreground outline-none focus:border-primary"
             />
           </div>
