@@ -1,5 +1,4 @@
 import { createSigilopayPixCharge } from '@/lib/sigilopay/client'
-import { createHorsepayPixCharge } from '@/lib/horsepay/client'
 import { createPixupPixCharge } from '@/lib/pixup/client'
 
 const BYNET_API_URL = 'https://api-gateway.techbynet.com'
@@ -308,62 +307,8 @@ const sigilopayGateway: CashinGateway = {
 }
 
 /**
- * Gateway HorsePay. Autenticacao OAuth (client_key/client_secret -> Bearer).
- * O CPF nao e exigido na cobranca; usamos nome/telefone do cliente.
- */
-const horsepayGateway: CashinGateway = {
-  id: 'horsepay',
-  label: 'HorsePay',
-  description: 'Geração de PIX (cash-in) via HorsePay.',
-  isConfigured: () =>
-    Boolean(process.env.HORSEPAY_CLIENT_KEY && process.env.HORSEPAY_CLIENT_SECRET),
-  create: async (input) => {
-    const cleanPhone = (input.client.phone || '').replace(/\D/g, '')
-    const safeName =
-      input.client.name && input.client.name.trim().length >= 3
-        ? input.client.name.trim()
-        : FALLBACK_NAMES[0]
-    const phone = cleanPhone.length >= 10 ? cleanPhone : '11999999999'
-
-    try {
-      const result = await createHorsepayPixCharge({
-        identifier: input.identifier,
-        amount: input.amount,
-        client: {
-          name: safeName,
-          email: input.client.email,
-          phone,
-          document: (input.client.document || '').replace(/\D/g, ''),
-        },
-        callbackUrl: input.callbackUrl,
-      })
-
-      return {
-        ok: result.ok,
-        status: result.status,
-        transactionId: result.transactionId,
-        pixCode: result.pixCode,
-        errorMessage: result.errorMessage,
-        raw: result.raw,
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erro ao contatar a HorsePay'
-      console.error('[v0] Erro no gateway HorsePay:', msg)
-      return {
-        ok: false,
-        status: 502,
-        transactionId: null,
-        pixCode: null,
-        errorMessage: msg,
-        raw: null,
-      }
-    }
-  },
-}
-
-/**
- * Gateway PixUp (cash-in). Autenticacao OAuth2 client_credentials (Basic ->
- * Bearer). O cash-in NAO exige assinatura HMAC (so o cash-out exige).
+ * Gateway PixUp (OAuth2). Gera cobranca PIX via QR Code dinamico.
+ * A confirmacao chega no webhook no envelope { requestBody: { status: 'PAID' } }.
  */
 const pixupGateway: CashinGateway = {
   id: 'pixup',
@@ -372,21 +317,23 @@ const pixupGateway: CashinGateway = {
   isConfigured: () =>
     Boolean(process.env.PIXUP_CLIENT_ID && process.env.PIXUP_CLIENT_SECRET),
   create: async (input) => {
+    const cleanDoc = (input.client.document || '').replace(/\D/g, '')
     const safeName =
       input.client.name && input.client.name.trim().length >= 3
         ? input.client.name.trim()
         : FALLBACK_NAMES[0]
-    const cleanDoc = (input.client.document || '').replace(/\D/g, '')
+    const document = isValidCPF(cleanDoc) ? cleanDoc : generateValidCPF()
 
     try {
       const result = await createPixupPixCharge({
         externalId: input.identifier,
         amount: input.amount,
+        description: input.itemTitle,
         postbackUrl: input.callbackUrl,
-        client: {
+        payer: {
           name: safeName,
+          document,
           email: input.client.email,
-          document: isValidCPF(cleanDoc) ? cleanDoc : undefined,
         },
       })
 
@@ -418,7 +365,7 @@ const pixupGateway: CashinGateway = {
  * implemente CashinGateway e registre-o aqui — ele aparece automaticamente
  * no painel de configuracoes.
  */
-const GATEWAYS: CashinGateway[] = [bynetGateway, sigilopayGateway, horsepayGateway, pixupGateway]
+const GATEWAYS: CashinGateway[] = [bynetGateway, sigilopayGateway, pixupGateway]
 
 export function listCashinGateways(): CashinGateway[] {
   return GATEWAYS

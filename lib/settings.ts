@@ -1,8 +1,4 @@
-import { unstable_cache, revalidateTag } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-
-/** Tag de cache das configuracoes. Invalidada ao salvar (updateAppSettings). */
-export const APP_SETTINGS_TAG = 'app-settings'
 
 /** Planos de impulsionamento: dias -> valor em centavos. */
 export type BoostAmounts = Record<string, number>
@@ -14,8 +10,6 @@ export interface AppSettings {
   activeCashoutGateway: string
   activeCashinGateway: string
   verificationAmountCents: number
-  /** Valor cobrado na verificação de saque (/minha-conta). */
-  withdrawalVerificationAmountCents: number
   inviteAmountCents: number
   chatAmountCents: number
   giftUnlockAmountCents: number
@@ -36,8 +30,7 @@ const DEFAULTS: AppSettings = {
   verificationEnabled: true,
   activeCashoutGateway: 'pixup',
   activeCashinGateway: 'bynet',
-  verificationAmountCents: 4990,
-  withdrawalVerificationAmountCents: 4990,
+  verificationAmountCents: 90,
   inviteAmountCents: 2480,
   chatAmountCents: 9900,
   giftUnlockAmountCents: 3860,
@@ -50,7 +43,6 @@ const KEY_MAP = {
   activeCashoutGateway: 'active_cashout_gateway',
   activeCashinGateway: 'active_cashin_gateway',
   verificationAmountCents: 'verification_amount_cents',
-  withdrawalVerificationAmountCents: 'withdrawal_verification_amount_cents',
   inviteAmountCents: 'invite_amount_cents',
   chatAmountCents: 'chat_amount_cents',
   giftUnlockAmountCents: 'gift_unlock_amount_cents',
@@ -76,7 +68,7 @@ function normalizeBoost(raw: unknown): BoostAmounts {
  * Le as configuracoes do app a partir do banco (fonte unica da verdade).
  * Sempre executado no servidor.
  */
-async function readAppSettings(): Promise<AppSettings> {
+export async function getAppSettings(): Promise<AppSettings> {
   const supabase = createAdminClient()
   const { data, error } = await supabase.from('app_settings').select('key, value')
 
@@ -106,12 +98,6 @@ async function readAppSettings(): Promise<AppSettings> {
     typeof rawAmount === 'number' && Number.isFinite(rawAmount)
       ? Math.round(rawAmount)
       : DEFAULTS.verificationAmountCents
-
-  const rawWithdrawalAmount = map.get(KEY_MAP.withdrawalVerificationAmountCents)
-  const withdrawalVerificationAmountCents =
-    typeof rawWithdrawalAmount === 'number' && Number.isFinite(rawWithdrawalAmount)
-      ? Math.round(rawWithdrawalAmount)
-      : DEFAULTS.withdrawalVerificationAmountCents
 
   const rawInvite = map.get(KEY_MAP.inviteAmountCents)
   const inviteAmountCents =
@@ -143,7 +129,6 @@ async function readAppSettings(): Promise<AppSettings> {
     activeCashoutGateway,
     activeCashinGateway,
     verificationAmountCents,
-    withdrawalVerificationAmountCents,
     inviteAmountCents,
     chatAmountCents,
     giftUnlockAmountCents,
@@ -151,16 +136,6 @@ async function readAppSettings(): Promise<AppSettings> {
     utmifyApiToken,
   }
 }
-
-/**
- * Versao cacheada de readAppSettings. Evita travar o render na latencia do
- * banco a cada request. O cache e invalidado por tag sempre que as
- * configuracoes sao salvas (ver updateAppSettings).
- */
-export const getAppSettings = unstable_cache(readAppSettings, ['app-settings'], {
-  tags: [APP_SETTINGS_TAG],
-  revalidate: 60,
-})
 
 /**
  * Atualiza uma ou mais configuracoes. Faz upsert por chave.
@@ -202,14 +177,6 @@ export async function updateAppSettings(
     rows.push({
       key: KEY_MAP.verificationAmountCents,
       value: Math.round(patch.verificationAmountCents),
-      updated_at: now,
-      updated_by: updatedBy,
-    })
-  }
-  if (typeof patch.withdrawalVerificationAmountCents === 'number') {
-    rows.push({
-      key: KEY_MAP.withdrawalVerificationAmountCents,
-      value: Math.round(patch.withdrawalVerificationAmountCents),
       updated_at: now,
       updated_by: updatedBy,
     })
@@ -261,7 +228,4 @@ export async function updateAppSettings(
   if (error) {
     throw new Error(`Falha ao salvar configurações: ${error.message}`)
   }
-
-  // Invalida o cache para que as paginas (ex.: /convite) leiam o valor novo.
-  revalidateTag(APP_SETTINGS_TAG, 'max')
 }

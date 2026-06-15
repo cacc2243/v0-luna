@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { ShoppingBag, MessageCircle, X } from 'lucide-react'
 import type { Notification } from '@/app/minha-conta/actions'
-import { playNewSale, playNotification } from '@/lib/sounds'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Toaster estilo notificacao de app: aparece no topo, sobre todo o conteudo,
@@ -64,9 +63,6 @@ export function NotificationToaster({ notifications }: NotificationToasterProps)
     const next = queue.current.shift()
     if (!next) return
     setCurrent(next)
-    // Som ao exibir: venda usa o som de nova venda, mensagem usa o de notificação.
-    if (next.kind === 'sale') playNewSale()
-    else playNotification()
     const t = setTimeout(() => dismissRef.current(), DISPLAY_MS)
     timers.current.push(t)
   }, [])

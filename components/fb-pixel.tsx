@@ -44,30 +44,18 @@ export function FbPixel() {
     const tryInit = () => {
       const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq
       if (typeof fbq === 'function') {
-        // Registro global dos pixels ja inicializados nesta pagina. Evita que
-        // o fbq('init') rode mais de uma vez para o mesmo Pixel ID (ex.: ao
-        // remontar o componente em navegacao/StrictMode), o que duplicaria os
-        // listeners automaticos do Meta e faria eventos como
-        // "SubscribedButtonClick" dispararem 2x com dados identicos.
-        const w = window as unknown as {
-          __fbqInitialized?: Set<string>
-          __fbqReady?: boolean
-          __fbqQueue?: Array<() => void>
-        }
-        if (!w.__fbqInitialized) w.__fbqInitialized = new Set<string>()
-
-        // Deduplica os IDs vindos da API antes de inicializar.
-        const uniqueIds = Array.from(new Set(pixels.map((p) => p.pixel_id)))
-        for (const id of uniqueIds) {
-          if (w.__fbqInitialized.has(id)) continue
-          fbq('init', id)
-          w.__fbqInitialized.add(id)
+        for (const p of pixels) {
+          fbq('init', p.pixel_id)
         }
         fbq('track', 'PageView')
         initializedRef.current = true
         // Sinaliza que os pixels foram inicializados, para que eventos
         // disparados cedo (ex.: InitiateCheckout) aguardem e nao se percam.
         // Em seguida, drena a fila de eventos que ficaram pendentes.
+        const w = window as unknown as {
+          __fbqReady?: boolean
+          __fbqQueue?: Array<() => void>
+        }
         w.__fbqReady = true
         if (Array.isArray(w.__fbqQueue)) {
           for (const fn of w.__fbqQueue) {

@@ -68,17 +68,13 @@ import {
   AlertCircle,
   Gift,
   Clock,
-  DollarSign,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
   import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead } from './actions'
 import { PixModal } from '@/components/convite/pix-modal'
-import { PersonalizedSaleModal, ChatLockedModal, UnlockChatModal, GeneratingPixModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
+import { PersonalizedSaleModal, UnlockChatModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
- import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
-import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
- import { SupportModal } from '@/components/minha-conta/support-modal'
-import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
+import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
 
 // Valor do Chat Exclusivo (pagamento unico)
 const CHAT_PRICE = 99.0
@@ -284,44 +280,32 @@ async function fetchNotifications() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function MinhaContaPage() {
-  const [authState, setAuthState] = useState<'checking' | 'logged_in' | 'logged_out' | 'no_invite'>('checking')
-  const [noInviteEmail, setNoInviteEmail] = useState('')
-
+  const [authState, setAuthState] = useState<'checking' | 'logged_in' | 'logged_out'>('checking')
+  
   // Verificar autenticacao
   useEffect(() => {
     const supabase = createClient()
-
+    
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
-      if (!user) {
-        setAuthState('logged_out')
-        return
-      }
-
-      // Sessao existe — mas so pode acessar quem tem convite pago.
-      const email = user.email || ''
-      const allowed = await hasPaidInvite(email)
-      if (allowed) {
-        setAuthState('logged_in')
-      } else {
-        setNoInviteEmail(email)
-        setAuthState('no_invite')
-      }
+      setAuthState(user ? 'logged_in' : 'logged_out')
     }
-
+    
     checkAuth()
-
+    
     // Escutar mudancas de autenticacao
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         setAuthState('logged_out')
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        setAuthState('logged_in')
       }
     })
-
+    
     return () => subscription.unsubscribe()
   }, [])
-
+  
   if (authState === 'checking') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -333,133 +317,19 @@ export default function MinhaContaPage() {
       </div>
     )
   }
-
-  if (authState === 'no_invite') {
-    return <NoInviteScreen email={noInviteEmail} />
-  }
-
+  
   if (authState === 'logged_out') {
-    return (
-      <LoginScreen
-        onSuccess={() => setAuthState('logged_in')}
-        onNoInvite={(email) => {
-          setNoInviteEmail(email)
-          setAuthState('no_invite')
-        }}
-      />
-    )
+    return <LoginScreen onSuccess={() => setAuthState('logged_in')} />
   }
 
   return <AppDashboard />
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Verificacao de convite pago (compartilhada)
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function hasPaidInvite(email: string): Promise<boolean> {
-  if (!email) return false
-  try {
-    const res = await fetch(`/api/pix/status?email=${encodeURIComponent(email.trim())}`)
-    if (!res.ok) return false
-    const data = await res.json()
-    return !!data.hasPaidInvite
-  } catch (err) {
-    console.error('[v0] Erro ao verificar convite:', err)
-    return false
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tela "Sem convite ativo"
-// ─────────────────────────────────────────────────────────────────────────────
-
-function NoInviteScreen({ email }: { email: string }) {
-  const router = useRouter()
-  const [signingOut, setSigningOut] = useState(false)
-
-  async function handleSignOut() {
-    setSigningOut(true)
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
-  return (
-    <div className="relative flex min-h-screen flex-col bg-background">
-      <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-20"
-        style={{ backgroundImage: 'url(/images/hero-bg.png)' }}
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(to bottom, oklch(0.11 0.02 360 / 0.3) 0%, oklch(0.11 0.02 360) 60%)',
-        }}
-        aria-hidden="true"
-      />
-
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-12">
-        <img
-          src="/images/luna-prive-logo.png"
-          alt="Luna Prive"
-          className="mb-8 h-10 w-auto"
-        />
-
-        <div className="w-full max-w-sm">
-          <div className="luna-border rounded-3xl bg-card p-6 text-center shadow-2xl">
-            <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-destructive/10">
-              <AlertCircle className="size-8 text-destructive" />
-            </div>
-
-            <h1 className="text-xl font-bold text-foreground">Nenhum convite ativo</h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Não encontramos um convite pago para esta conta. Resgate seu convite para
-              ter acesso completo à plataforma.
-            </p>
-
-            {email && (
-              <p className="mt-3 truncate rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground">
-                {email}
-              </p>
-            )}
-
-            <button
-              type="button"
-              onClick={() => router.push('/convite')}
-              className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
-            >
-              Resgatar convite
-              <ChevronRight className="size-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSignOut}
-              disabled={signingOut}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-secondary py-3.5 text-sm font-semibold text-foreground transition active:scale-[0.98] disabled:opacity-70"
-            >
-              {signingOut ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <LogOut className="size-4" />
-              )}
-              Sair da conta
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Tela de Login (integrada)
-// ────────────────────────────────────────────────────────────────────────────��
+// ─────────────────────────────────────────────────────────────────────────────
 
-function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInvite: (email: string) => void }) {
+function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -474,7 +344,7 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
     
     const supabase = createClient()
     
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     })
@@ -491,14 +361,25 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
       return
     }
     
-    // Verificar se o convite está pago — somente contas com convite pago acessam.
-    const allowed = await hasPaidInvite(email.trim())
-    setIsLoading(false)
-    if (allowed) {
-      onSuccess()
-    } else {
-      onNoInvite(email.trim())
+    // Verificar se o convite está pago
+    try {
+      const inviteResponse = await fetch(`/api/pix/status?email=${encodeURIComponent(email.trim())}`)
+      const inviteData = await inviteResponse.json()
+      
+      if (!inviteData.hasPaidInvite) {
+        // Fazer logout e redirecionar para página de convite
+        await supabase.auth.signOut()
+        setIsLoading(false)
+        setError('Seu convite ainda não foi pago. Complete o pagamento para acessar.')
+        return
+      }
+    } catch (err) {
+      console.error('[v0] Erro ao verificar convite:', err)
+      // Em caso de erro, permitir login (fail-open para não bloquear usuários)
     }
+    
+    setIsLoading(false)
+    onSuccess()
   }
 
   return (
@@ -623,16 +504,14 @@ function AppDashboard() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [packError, setPackError] = useState<string | null>(null)
-  // Onboarding em 3 passos: aparece na primeira vez que a criadora entra no /minha-conta
-  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(false)
+  const [welcomeClosing, setWelcomeClosing] = useState(false)
   const [balanceFlash, setBalanceFlash] = useState(false)
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null)
 
   // Fluxo do Chat Exclusivo (condicao para aceitar vendas)
   const [showPersonalizedSale, setShowPersonalizedSale] = useState(false)
-  const [showChatLocked, setShowChatLocked] = useState(false)
   const [showUnlockChat, setShowUnlockChat] = useState(false)
-  const [showGeneratingPix, setShowGeneratingPix] = useState(false)
   const [showChatPix, setShowChatPix] = useState(false)
   const [pendingSaleContext, setPendingSaleContext] = useState<{ buyerName?: string | null; packTitle?: string | null; amount?: number } | null>(null)
   const [userEmail, setUserEmail] = useState('')
@@ -743,67 +622,28 @@ function AppDashboard() {
     }, 600)
   }, [refreshActivity])
 
-  // Instante em que o PRIMEIRO pack foi publicado (created_at mais antigo).
-  // Pedidos e chats só começam a aparecer 20s após esse marco.
-  const firstPackAt = useMemo(() => {
-    if (packs.length === 0) return 0
-    return Math.min(...packs.map((p) => new Date(p.created_at).getTime()))
-  }, [packs])
-
-  const ACTIVITY_DELAY = 20000 // 20s após publicar o primeiro pack
-
-  // Motor de atividade: enquanto houver packs publicados, gera views/pedidos periodicamente.
-  // Os pedidos aparecem UM DE CADA VEZ, com intervalo aleatorio de 7 a 25s entre eles,
-  // para nao chegarem rapido demais nem em lote.
+  // Motor de atividade: enquanto houver packs publicados, gera views/pedidos periodicamente
   useEffect(() => {
     if (packs.length === 0) return
-    const initialDelay = Math.max(ACTIVITY_DELAY - (Date.now() - firstPackAt), 0)
-    let timer: ReturnType<typeof setTimeout> | null = null
-    let cancelled = false
-
-    // Delay aleatorio entre 7s e 25s.
-    const nextDelay = () => 7000 + Math.floor(Math.random() * 18001)
-
-    const runCycle = async (isFirst: boolean) => {
-      if (cancelled) return
-      await generatePackActivity({ initial: isFirst, maxOrders: 1 })
-      if (cancelled) return
+    const interval = setInterval(async () => {
+      await generatePackActivity()
       refreshActivity()
-      timer = setTimeout(() => runCycle(false), nextDelay())
-    }
-
-    const startTimer = setTimeout(() => runCycle(true), initialDelay)
-    return () => {
-      cancelled = true
-      clearTimeout(startTimer)
-      if (timer) clearTimeout(timer)
-    }
-  }, [packs.length, firstPackAt, refreshActivity])
+    }, 45000)
+    return () => clearInterval(interval)
+  }, [packs.length, refreshActivity])
 
   // Motor de chat: novos clientes mandam mensagem periodicamente (gera toast).
-  // So funciona quando a usuaria tem o Chat Exclusivo pago/desbloqueado.
   // Acumula no maximo 4 conversas — quando atinge o limite, o motor para.
   useEffect(() => {
     if (packs.length === 0) return
-    if (!profile?.chat_unlocked) return
     if (conversations.length >= 4) return
-    const initialDelay = Math.max(ACTIVITY_DELAY - (Date.now() - firstPackAt), 0)
-    let interval: ReturnType<typeof setInterval> | null = null
-    const startTimer = setTimeout(async () => {
+    const interval = setInterval(async () => {
       await generateChatActivity()
       mutateConversations()
       mutateNotifications()
-      interval = setInterval(async () => {
-        await generateChatActivity()
-        mutateConversations()
-        mutateNotifications()
-      }, 38000)
-    }, initialDelay)
-    return () => {
-      clearTimeout(startTimer)
-      if (interval) clearInterval(interval)
-    }
-  }, [packs.length, conversations.length, firstPackAt, profile?.chat_unlocked, mutateConversations, mutateNotifications])
+    }, 38000)
+    return () => clearInterval(interval)
+  }, [packs.length, conversations.length, mutateConversations, mutateNotifications])
 
   // Aceitar / recusar pedidos (atualizacao otimista = instantaneo)
   async function handleAcceptSale(saleId: string) {
@@ -845,8 +685,6 @@ function AppDashboard() {
     // Dispara destaque no saldo
     setBalanceFlash(true)
     setTimeout(() => setBalanceFlash(false), 1200)
-    // Som de venda aceita / dinheiro creditado.
-    playSaleAccepted()
 
     // Persiste no servidor em segundo plano; revalidacao agrupada (debounce)
     acceptSale(saleId).then((res) => {
@@ -991,28 +829,18 @@ function AppDashboard() {
     resetPackForm()
     mutatePacks()
 
-    // A atividade inicial (views, pedidos, notificacoes) NAO dispara na hora:
-    // o motor de atividade abaixo agenda a primeira leva ~20s apos a publicacao.
+    // Dispara a atividade inicial: views, pedidos pendentes e notificacoes
+    generatePackActivity({ initial: true }).then(() => {
+      refreshActivity()
+    })
   }
 
-  // Onboarding: dispara apenas na primeira visita ao /minha-conta
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const seen = localStorage.getItem('luna_onboarding_seen')
-      if (!seen) setShowOnboarding(true)
-    } catch {
-      setShowOnboarding(true)
-    }
-  }, [])
-
-  function closeOnboarding() {
-    try {
-      localStorage.setItem('luna_onboarding_seen', '1')
-    } catch {
-      // ignora indisponibilidade do localStorage
-    }
-    setShowOnboarding(false)
+  function closeWelcome() {
+    setWelcomeClosing(true)
+    setTimeout(() => {
+      setShowWelcome(false)
+      setWelcomeClosing(false)
+    }, 400)
   }
 
   // Logout
@@ -1035,8 +863,28 @@ function AppDashboard() {
         <div className="absolute inset-0 bg-black/65" />
       </div>
 
-      {/* Onboarding em 3 passos (primeira visita) */}
-      {showOnboarding && <OnboardingFlow onClose={closeOnboarding} />}
+      {/* Modal de boas-vindas */}
+      {showWelcome && (
+        <div
+          className={`absolute inset-0 z-[60] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm ${
+            welcomeClosing ? 'animate-welcome-out' : 'animate-welcome-in'
+          }`}
+          onClick={closeWelcome}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && closeWelcome()}
+        >
+          <div className="relative w-full max-w-sm rounded-[28px] bg-gradient-to-br from-primary via-primary/70 to-primary/40 p-[3px] shadow-2xl shadow-primary/30">
+            <div className="overflow-hidden rounded-[25px]">
+              <img
+                src="/images/welcome-banner.png"
+                alt="Seja Bem Vinda ao Luna Prive!"
+                className="h-auto w-full"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Conteudo rolavel do app */}
       <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
@@ -1118,11 +966,7 @@ function AppDashboard() {
           <button
             key={item.label}
             type="button"
-            onClick={() => {
-              primeSounds()
-              playTabTap()
-              setActiveTab(item.label as any)
-            }}
+            onClick={() => setActiveTab(item.label as any)}
             className="flex w-14 flex-col items-center gap-1"
           >
             {item.center ? (
@@ -1155,15 +999,6 @@ function AppDashboard() {
         amount={pendingSaleContext?.amount}
         onUnlock={() => {
           setShowPersonalizedSale(false)
-          setShowChatLocked(true)
-        }}
-      />
-      <ChatLockedModal
-        isOpen={showChatLocked}
-        onClose={() => setShowChatLocked(false)}
-        price={chatPrice}
-        onUnlock={() => {
-          setShowChatLocked(false)
           setShowUnlockChat(true)
         }}
       />
@@ -1173,13 +1008,6 @@ function AppDashboard() {
         price={chatPrice}
         onConfirm={() => {
           setShowUnlockChat(false)
-          setShowGeneratingPix(true)
-        }}
-      />
-      <GeneratingPixModal
-        isOpen={showGeneratingPix}
-        onDone={() => {
-          setShowGeneratingPix(false)
           setShowChatPix(true)
         }}
       />
@@ -1964,24 +1792,6 @@ function HomeScreen({
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
       </div>
 
-      {/* Saldo pendente — soma dos pedidos ainda nao aceitos */}
-      {pendingSales.length > 0 && (
-        <div className="luna-border mt-2.5 flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-            <Clock className="size-4 text-primary" aria-hidden="true" />
-          </span>
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className="text-[0.7rem] text-muted-foreground">Saldo pendente</p>
-            <p className="text-lg font-bold text-primary">
-              {brl(pendingSales.reduce((sum, s) => sum + Number(s.amount), 0))}
-            </p>
-          </div>
-          <span className="shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[0.7rem] font-semibold text-primary">
-            {pendingSales.length === 1 ? '1 pedido' : `${pendingSales.length} pedidos`}
-          </span>
-        </div>
-      )}
-
       {/* Visualizações recentes */}
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
@@ -2027,7 +1837,7 @@ function HomeScreen({
           </h3>
           {pendingSales.length > 0 && (
             <span className="rounded-full border border-primary/40 px-2 py-0.5 text-xs font-semibold text-primary">
-              {pendingSales.length === 1 ? '1 novo' : `${pendingSales.length} novos`}
+              {pendingSales.length} novos
             </span>
           )}
         </div>
@@ -2037,35 +1847,29 @@ function HomeScreen({
           <div
             key={`pending-${sale.id}`}
             className={`luna-border relative mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3 transition ${
-              accepting === sale.id ? 'ring-1 ring-primary/40' : accepting ? 'opacity-50' : ''
+              accepting === sale.id ? 'ring-1 ring-positive/40' : accepting ? 'opacity-50' : ''
             }`}
           >
             <div className="flex items-center gap-2.5">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                <DollarSign className="size-4 text-primary" aria-hidden="true" />
+                <Bell className="size-4 text-primary" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1 leading-snug">
                 <div className="flex items-center gap-1.5">
                   <p className="truncate text-[0.8rem] font-semibold text-foreground">
-                    {sale.buyer_name}
+                    {sale.buyer_name} quer {sale.pack?.title || 'seu pack'}
                   </p>
-                  <span className="shrink-0 text-[0.8rem] font-semibold text-primary">· Novo!</span>
-                </div>
-                <p className="flex items-center gap-1 text-[0.65rem] text-muted-foreground">
-                  <span className="truncate">Comprou “{sale.pack?.title || 'seu pack'}”</span>
-                  {!sale.is_direct && (
-                    <span className="inline-flex shrink-0 items-center gap-0.5 text-primary">
-                      ·
-                      <MessageSquare className="size-2.5" aria-hidden="true" />
-                      Chat
+                  {sale.is_direct && (
+                    <span className="shrink-0 rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Direto
                     </span>
                   )}
+                </div>
+                <p className="text-[0.65rem] text-muted-foreground">
+                  {relativeTime(sale.created_at)} · você recebe {brl(Number(sale.net_amount))}
                 </p>
               </div>
-              <div className="shrink-0 text-right leading-snug">
-                <p className="text-sm font-bold text-positive">{brl(Number(sale.amount))}</p>
-                <p className="text-[0.6rem] text-muted-foreground">{relativeTime(sale.created_at)}</p>
-              </div>
+              <span className="text-sm font-bold text-positive">{brl(Number(sale.amount))}</span>
             </div>
 
             {accepting === sale.id && (
@@ -2081,13 +1885,18 @@ function HomeScreen({
                 onClick={() => onReject(sale.id)}
                 className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98] disabled:opacity-60"
               >
+                <X className="size-3.5" aria-hidden="true" />
                 Recusar
               </button>
               <button
                 type="button"
                 disabled={accepting !== null}
                 onClick={() => handleAccept(sale.id)}
-                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg bg-primary py-2 text-[0.8rem] font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
+                }}
+                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
               >
                 {accepting === sale.id ? (
                   <>
@@ -2176,7 +1985,7 @@ function StatCard({
   )
 }
 
-// ��────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // Tela Packs
 // ─────────────��───────────────────────────────────────────────────────────────
 
@@ -2281,9 +2090,9 @@ function PacksScreen({
   )
 }
 
-// ────────────────────────────────────────────────����──────────���─────────────────
+// ───────────────────────────────────────────────────────────���─────────────────
 // Tela Detalhe do Pack (visualizar, métricas e editar)
-// ──────────────────────────────────────────────────────���──────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
 function PackDetailScreen({
   pack,
@@ -2737,22 +2546,7 @@ function WalletScreen({
   >('form')
   const [showVerifyPix, setShowVerifyPix] = useState(false)
   const isVerified = !!profile?.withdrawal_verified
-  // Valor da verificação de saque vem das configurações (painel). Fallback: R$ 49,90.
-  const [VERIFICATION_PRICE, setVerificationPrice] = useState(49.9)
-  useEffect(() => {
-    let active = true
-    fetch('/api/settings/public')
-      .then((r) => r.json())
-      .then((d) => {
-        if (active && typeof d?.withdrawalVerificationAmountCents === 'number') {
-          setVerificationPrice(d.withdrawalVerificationAmountCents / 100)
-        }
-      })
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [])
+  const VERIFICATION_PRICE = 49
   const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [withdrawAmount, setWithdrawAmount] = useState('')
@@ -3712,7 +3506,6 @@ function ProfileScreen({
   onNotificationsChange?: () => void
 }) {
   const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help'>('main')
-  const [supportOpen, setSupportOpen] = useState(false)
   const [localProfile, setLocalProfile] = useState({
     username: userProfile?.username || '@usuario',
     displayName: userProfile?.display_name || 'Usuario',
@@ -4615,7 +4408,7 @@ function ProfileScreen({
         
         <button
           type="button"
-          onClick={() => setSupportOpen(true)}
+          onClick={() => setCurrentView('help')}
           className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
         >
           <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
@@ -4641,8 +4434,6 @@ function ProfileScreen({
       <p className="mt-6 text-center text-xs text-muted-foreground/50">
         Luna Prive v1.0.0
       </p>
-
-      <SupportModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
     </div>
   )
 }

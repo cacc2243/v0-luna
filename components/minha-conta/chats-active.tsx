@@ -44,7 +44,6 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { PixModal } from '@/components/convite/pix-modal'
 import { GiftReceivedModal, GiftEnableModal } from '@/components/minha-conta/gift-modals'
-import { playMessageSent, playMessageReceived } from '@/lib/sounds'
 
 // Valor da habilitação de presentes (pagamento único)
 const GIFT_UNLOCK_PRICE = 38.6
@@ -486,8 +485,6 @@ function ChatConversation({
     nudgeSent.current = new Set()
     // Mostra a mensagem da criadora imediatamente (otimista)
     const optimisticId = `local-${Date.now()}`
-    // Som leve de mensagem enviada.
-    playMessageSent()
     setMessages((prev) => [
       ...prev,
       {
@@ -520,15 +517,12 @@ function ChatConversation({
           ? 1400
           : Math.min(5500, Math.max(1600, content.length * 95))
       // pausa antes de comecar a digitar a proxima bolha (mais natural/lenta)
-      // +3000ms para deixar o ritmo geral mais devagar
-      const gapMs = (i === 0 ? 1400 : 1100 + Math.random() * 1200) + 3000
+      const gapMs = i === 0 ? 1400 : 1100 + Math.random() * 1200
 
       const tStart = setTimeout(() => setTyping(true), delay + gapMs)
       delay += gapMs + typingMs
       const tEnd = setTimeout(() => {
         setTyping(false)
-        // Som leve de mensagem recebida/respondida.
-        playMessageReceived()
         setMessages((prev) => [...prev, toChatMessage(bm)])
       }, delay)
       timers.current.push(tStart, tEnd)
@@ -642,7 +636,7 @@ function ChatConversation({
     lockedMsgs.forEach((lm, i) => {
       const content = lm.content ?? ''
       const typingMs = Math.min(5500, Math.max(1600, content.length * 95))
-      const gapMs = (i === 0 ? 1200 : 1100 + Math.random() * 1200) + 3000
+      const gapMs = i === 0 ? 1200 : 1100 + Math.random() * 1200
       const tStart = setTimeout(() => setTyping(true), delay + gapMs)
       delay += gapMs + typingMs
       const tEnd = setTimeout(() => {

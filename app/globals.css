@@ -184,53 +184,6 @@
   );
 }
 
-/* Bold, eye-catching CTA gradient — diagonal with bright highlight + glossy sheen */
-.luna-gradient-cta {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background-image: linear-gradient(
-    115deg,
-    oklch(0.78 0.17 22) 0%,
-    oklch(0.7 0.2 16) 38%,
-    oklch(0.62 0.21 10) 70%,
-    oklch(0.55 0.19 6) 100%
-  );
-  background-size: 160% 160%;
-  animation: luna-cta-pan 6s ease-in-out infinite;
-}
-.luna-gradient-cta::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image: linear-gradient(
-    180deg,
-    oklch(1 0 0 / 0.28) 0%,
-    oklch(1 0 0 / 0.06) 42%,
-    oklch(0 0 0 / 0.1) 100%
-  );
-  pointer-events: none;
-}
-
-@keyframes luna-cta-pan {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .luna-gradient-cta {
-    animation: none;
-  }
-}
-
 /* Pink gradient border via mask trick — lateral */
 .luna-border {
   position: relative;
@@ -269,31 +222,6 @@
     180deg,
     oklch(1 0 0 / 0.07) 0%,
     oklch(1 0 0 / 0.02) 100%
-  );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* Pink gradient border that is strong at the top and fades out toward the bottom */
-.luna-border-top {
-  position: relative;
-}
-.luna-border-top::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(
-    180deg,
-    oklch(0.66 0.17 15 / 0.95) 0%,
-    oklch(0.66 0.17 15 / 0.55) 38%,
-    oklch(0.66 0.17 15 / 0.18) 70%,
-    oklch(0.66 0.17 15 / 0) 100%
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
@@ -753,7 +681,7 @@
 @supports (scrollbar-width: thin) {
   html {
     scrollbar-width: thin;
-    scrollbar-color: oklch(0.7 0.005 320 / 0.35) transparent;
+    scrollbar-color: oklch(0.56 0.23 9) transparent;
   }
 }
 
@@ -763,18 +691,27 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: oklch(0.15 0.012 350);
 }
 
 ::-webkit-scrollbar-thumb {
   border-radius: 9999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  background-color: oklch(0.7 0.005 320 / 0.3);
+  border: 2px solid oklch(0.15 0.012 350);
+  background-image: linear-gradient(
+    180deg,
+    oklch(0.72 0.16 18) 0%,
+    oklch(0.66 0.17 15) 50%,
+    oklch(0.6 0.18 12) 100%
+  );
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: oklch(0.75 0.005 320 / 0.45);
+  background-image: linear-gradient(
+    180deg,
+    oklch(0.76 0.15 18) 0%,
+    oklch(0.7 0.17 15) 50%,
+    oklch(0.64 0.18 12) 100%
+  );
 }
 
 ::-webkit-scrollbar-corner {

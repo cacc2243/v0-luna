@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { SaleNotification } from '@/components/sale-notification'
-import { playNotification } from '@/lib/sounds'
 
 interface SaleItem {
   title: string
@@ -40,11 +39,7 @@ export function AnimatedSalesFeed({
 
     notifications.forEach((_, i) => {
       timers.push(
-        setTimeout(() => {
-          setVisibleCount(i + 1)
-          // Som leve sincronizado com cada notificação que aparece.
-          playNotification()
-        }, startDelay + i * stagger),
+        setTimeout(() => setVisibleCount(i + 1), startDelay + i * stagger),
       )
     })
 

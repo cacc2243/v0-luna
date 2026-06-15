@@ -1,13 +1,12 @@
 'use client'
 
-import { Check, ChevronRight, Gift } from 'lucide-react'
+import { Check, ChevronRight, Gift, ShieldCheck } from 'lucide-react'
 
 const benefits = [
-  'Código de convite exclusivo Luna Privé',
-  'Acesso imediato à plataforma após a confirmação',
-  'Anonimato e privacidade total do seu perfil',
-  'Suporte 24h por WhatsApp + Chat',
-  'Garantia de 30 dias',
+  'Código de convite Luna Privé',
+  'Comece a vender imediatamente',
+  'Receba seu código e acesso por e-mail',
+  'Suporte anônimo 24h',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -32,32 +31,15 @@ export function PriceCard({
 
   return (
     <section aria-labelledby="investimento">
-      <div className="luna-border-top relative overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
-        {/* Imagem de fundo (mesma do /convite) com degradê escuro por cima */}
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          <img
-            src="/images/background.png"
-            alt=""
-            className="size-full object-cover opacity-75"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/35 via-background/65 to-background/90" />
-          <div className="absolute inset-0 bg-background/15" />
-        </div>
-
-        {/* Logo Luna Privé */}
-        <div className="relative mb-6 flex justify-center">
-          <img
-            src="/images/luna-prive-logo.png"
-            alt="Luna Privé"
-            className="h-11 w-auto"
-          />
-        </div>
-
+      <div className="luna-border-soft overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
         {/* Preço centralizado */}
-        <div className="relative flex flex-col items-center text-center">
-          <h2 id="investimento" className="sr-only">
+        <div className="flex flex-col items-center text-center">
+          <span
+            id="investimento"
+            className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
+          >
             Investimento único
-          </h2>
+          </span>
 
           <div
             className={`mt-3 flex items-center justify-center gap-2.5 transition-all duration-300 ${
@@ -79,8 +61,8 @@ export function PriceCard({
             }`}
             aria-hidden={!priceReady}
           >
-            <span className="text-xl font-bold text-foreground sm:text-2xl">R$</span>
-            <span className="text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">
+            <span className="text-2xl font-bold text-foreground">R$</span>
+            <span className="text-5xl font-extrabold leading-none tracking-tight text-foreground">
               {formatCents(amountCents)}
             </span>
           </div>
@@ -89,7 +71,7 @@ export function PriceCard({
         </div>
 
         {/* Benefícios — lista única */}
-        <ul className="relative mt-7 flex flex-col gap-3.5">
+        <ul className="mt-7 flex flex-col gap-3.5">
           {benefits.map((b) => (
             <li key={b} className="flex items-center gap-3">
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15 text-positive">
@@ -105,12 +87,22 @@ export function PriceCard({
           type="button"
           onClick={onAcquire}
           disabled={!priceReady}
-          className="luna-gradient relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
+          className="luna-gradient mt-7 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
         >
-          {priceReady && <Gift className="size-5" aria-hidden="true" />}
-          {priceReady ? 'Adquirir meu Convite' : 'Carregando valor...'}
-          {priceReady && <ChevronRight className="size-5" aria-hidden="true" />}
+          <Gift className="size-5" aria-hidden="true" />
+          {priceReady ? 'Adquirir meu Convite!' : 'Carregando valor...'}
+          <ChevronRight className="size-5" aria-hidden="true" />
         </button>
+
+        {/* Garantia integrada */}
+        <div className="luna-border-soft mt-5 flex items-start gap-3 rounded-2xl bg-background/40 px-4 py-3.5">
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+          <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+            Experimente o <span className="font-semibold text-foreground">Luna Privé</span> por{' '}
+            <span className="font-semibold text-foreground">7 dias</span>. Se você preferir, poderá
+            solicitar a <span className="font-semibold text-positive">devolução em até 7 dias</span>.
+          </p>
+        </div>
       </div>
     </section>
   )

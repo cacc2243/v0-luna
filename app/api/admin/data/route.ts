@@ -19,47 +19,15 @@ interface InviteRow {
   created_at: string
   paid_at: string | null
   pix_expiration: string | null
-  utm_source: string | null
-  utm_campaign: string | null
-  utm_medium: string | null
-  utm_content: string | null
-  utm_term: string | null
-  fbclid: string | null
-  referrer: string | null
-  landing_url: string | null
 }
 
 interface ProfileRow {
   id: string
   username: string | null
   display_name: string | null
-  email: string | null
   created_at: string
   chat_unlocked: boolean | null
   chat_unlocked_at: string | null
-  balance: number | null
-  total_earned: number | null
-}
-
-// Busca todos os usuarios de auth (paginado) para obter o email de cada perfil.
-async function listAllAuthEmails(supabase: ReturnType<typeof createAdminClient>) {
-  const map = new Map<string, string | null>()
-  let page = 1
-  const perPage = 1000
-  while (page <= 20) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage })
-    if (error) {
-      console.error('[v0] Erro ao listar auth users:', error)
-      break
-    }
-    const users = data?.users || []
-    for (const u of users) {
-      map.set(u.id, u.email ?? null)
-    }
-    if (users.length < perPage) break
-    page++
-  }
-  return map
 }
 
 export async function GET() {
@@ -70,16 +38,16 @@ export async function GET() {
   const supabase = createAdminClient()
 
   // Buscar convites (PIX), perfis (cadastros) e verificacoes de chave PIX (cashout)
-  const [invitesRes, profilesRes, verificationsRes, authEmails] = await Promise.all([
+  const [invitesRes, profilesRes, verificationsRes] = await Promise.all([
     supabase
       .from('invites')
       .select(
-        'id, user_id, email, amount, status, type, transaction_id, pix_code, pix_copied_at, gateway, created_at, paid_at, pix_expiration, utm_source, utm_campaign, utm_medium, utm_content, utm_term, fbclid, referrer, landing_url',
+        'id, user_id, email, amount, status, type, transaction_id, pix_code, pix_copied_at, gateway, created_at, paid_at, pix_expiration',
       )
       .order('created_at', { ascending: false }),
     supabase
       .from('profiles')
-      .select('id, username, display_name, created_at, chat_unlocked, chat_unlocked_at, balance, total_earned')
+      .select('id, username, display_name, created_at, chat_unlocked, chat_unlocked_at')
       .order('created_at', { ascending: false }),
     supabase
       .from('pix_verifications')
@@ -87,7 +55,6 @@ export async function GET() {
         'id, user_id, email, pix_key, pix_key_normalized, pix_type, amount_cents, status, attempts, transaction_id, last_error, request_ip, created_at, updated_at',
       )
       .order('created_at', { ascending: false }),
-    listAllAuthEmails(supabase),
   ])
 
   if (invitesRes.error) {
@@ -101,10 +68,7 @@ export async function GET() {
   }
 
   const invites = (invitesRes.data || []) as InviteRow[]
-  const profiles = ((profilesRes.data || []) as ProfileRow[]).map((p) => ({
-    ...p,
-    email: authEmails.get(p.id) ?? null,
-  }))
+  const profiles = (profilesRes.data || []) as ProfileRow[]
   const verifications = verificationsRes.data || []
 
   // Gateway de cash-in ativo + lista de todos os gateways configurados,

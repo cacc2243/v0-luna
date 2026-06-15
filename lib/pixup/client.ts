@@ -50,6 +50,120 @@ export async function getPixupAccessToken(): Promise<string> {
   return data.access_token
 }
 
+// ---------------------------------------------------------------------------
+// Cash-in (geracao de cobranca PIX / QR Code)
+// ---------------------------------------------------------------------------
+
+export interface PixupChargeInput {
+  /** ID externo unico gerado pela nossa aplicacao (volta no webhook). */
+  externalId: string
+  /** Valor em reais (decimal). */
+  amount: number
+  /** Descricao da transacao exibida ao pagador. */
+  description?: string
+  /** URL do webhook que recebe a confirmacao de pagamento. */
+  postbackUrl?: string
+  payer?: {
+    name?: string
+    /** CPF/CNPJ (so digitos). */
+    document?: string
+    email?: string
+  }
+}
+
+export interface PixupChargeResult {
+  ok: boolean
+  status: number
+  /** ID da transacao na PixUp. */
+  transactionId: string | null
+  /** Codigo PIX copia e cola (EMV). */
+  pixCode: string | null
+  /** Mensagem de erro legivel da gateway, se houver. */
+  errorMessage: string | null
+  raw: any
+}
+
+/**
+ * Cria uma cobranca PIX (cash-in) na PixUp via QR Code dinamico.
+ *
+ * POST /v2/pix/qrcode (Bearer token OAuth2)
+ * body: { amount, external_id, postbackUrl, payerQuestion, payer }
+ * resposta: { transactionId, status, qrcode, ... }
+ *
+ * A confirmacao do pagamento chega depois via webhook (postbackUrl) no
+ * formato { requestBody: { transactionType: 'RECEIVEPIX', status: 'PAID', ... } }.
+ */
+export async function createPixupPixCharge(
+  input: PixupChargeInput
+): Promise<PixupChargeResult> {
+  let token: string
+  try {
+    token = await getPixupAccessToken()
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro ao autenticar na PixUp'
+    return { ok: false, status: 401, transactionId: null, pixCode: null, errorMessage: msg, raw: null }
+  }
+
+  const bodyObj: Record<string, unknown> = {
+    amount: input.amount,
+    external_id: input.externalId,
+  }
+  if (input.postbackUrl) bodyObj.postbackUrl = input.postbackUrl
+  if (input.description) bodyObj.payerQuestion = input.description
+  if (input.payer && (input.payer.name || input.payer.document || input.payer.email)) {
+    const payer: Record<string, unknown> = {}
+    if (input.payer.name) payer.name = input.payer.name
+    if (input.payer.document) payer.document = input.payer.document
+    if (input.payer.email) payer.email = input.payer.email
+    bodyObj.payer = payer
+  }
+
+  const res = await fetch(`${PIXUP_API_URL}/v2/pix/qrcode`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(bodyObj),
+  })
+
+  let data: any = {}
+  try {
+    data = await res.json()
+  } catch {
+    data = {}
+  }
+
+  // O codigo PIX copia-e-cola pode vir em diferentes campos conforme a versao.
+  const pixCode =
+    data?.qrcode ||
+    data?.qrCode ||
+    data?.emv ||
+    data?.pixCopiaECola ||
+    data?.pix?.qrcode ||
+    data?.pix?.code ||
+    null
+  const transactionId =
+    data?.transactionId || data?.transaction_id || data?.id || null
+
+  const success = res.ok && Boolean(pixCode)
+  const errorMessage = success
+    ? null
+    : data?.error?.message ||
+      data?.message ||
+      data?.error ||
+      `Falha ao gerar PIX na PixUp (status ${res.status})`
+
+  return {
+    ok: success,
+    status: res.status,
+    transactionId: transactionId ? String(transactionId) : null,
+    pixCode,
+    errorMessage: errorMessage ? String(errorMessage) : null,
+    raw: data,
+  }
+}
+
 export interface PixupCashoutInput {
   externalId: string
   amount: number
@@ -134,102 +248,6 @@ export async function createPixupCashout(
       `Falha no cashout (status ${res.status})`
 
   return { ok: success, status: res.status, data, errorMessage }
-}
-
-export interface PixupCashinInput {
-  /** Identificador unico gerado pela nossa aplicacao. */
-  externalId: string
-  /** Valor em reais (decimal). */
-  amount: number
-  /** URL de notificacao (webhook) do pagamento. */
-  postbackUrl?: string
-  client?: {
-    name?: string
-    email?: string
-    document?: string
-  }
-}
-
-export interface PixupCashinResult {
-  ok: boolean
-  status: number
-  /** ID da transacao no gateway. */
-  transactionId: string | null
-  /** Codigo PIX copia e cola (EMV). */
-  pixCode: string | null
-  errorMessage: string | null
-  raw: any
-}
-
-/**
- * Gera uma cobranca PIX (cash-in) na PixUp.
- *
- * Diferente do cash-out, o cash-in NAO exige assinatura HMAC — apenas o
- * Bearer token. O QR Code (copia e cola) volta em `data.payment_info.qrcode`.
- */
-export async function createPixupPixCharge(
-  input: PixupCashinInput
-): Promise<PixupCashinResult> {
-  const token = await getPixupAccessToken()
-
-  const bodyObj: Record<string, unknown> = {
-    amount: input.amount,
-    currency: 'BRL',
-    external_id: input.externalId,
-  }
-  if (input.postbackUrl) bodyObj.postback_url = input.postbackUrl
-  if (input.client?.name || input.client?.email || input.client?.document) {
-    bodyObj.payer = {
-      ...(input.client?.name ? { name: input.client.name } : {}),
-      ...(input.client?.email ? { email: input.client.email } : {}),
-      ...(input.client?.document ? { document: input.client.document } : {}),
-    }
-  }
-
-  const res = await fetch(`${PIXUP_API_URL}/v2/transactions/cashin`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(bodyObj),
-  })
-
-  let data: any = {}
-  try {
-    data = await res.json()
-  } catch {
-    data = {}
-  }
-
-  // A resposta pode vir em `data` ou na raiz, conforme o ambiente.
-  const payload = data?.data || data
-  const info = payload?.payment_info || payload?.paymentInfo || {}
-  const pixCode =
-    info.qrcode ||
-    info.qrCode ||
-    info.copy_paste ||
-    info.emv ||
-    payload?.qrcode ||
-    null
-  const transactionId =
-    payload?.transaction_id || payload?.transactionId || payload?.id || null
-
-  const success = res.ok && Boolean(pixCode)
-  const errorMessage = success
-    ? null
-    : data?.error?.message ||
-      data?.message ||
-      `Falha ao gerar PIX na PixUp (status ${res.status})`
-
-  return {
-    ok: success,
-    status: res.status,
-    transactionId: transactionId ? String(transactionId) : null,
-    pixCode,
-    errorMessage,
-    raw: payload,
-  }
 }
 
 /**
