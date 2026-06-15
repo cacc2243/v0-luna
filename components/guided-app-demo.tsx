@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { CtaButton } from '@/components/cta-button'
+import { primeSounds, playNewSale, playSaleAccepted, playSuccess } from '@/lib/sounds'
 import { SignupFlow } from '@/components/signup-flow'
 
 interface GuidedAppDemoProps {
@@ -198,6 +199,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     if (phase !== 'selling' && phase !== 'selling2') return
     const t = setTimeout(() => {
       setActiveSale(saleIndex)
+      // Som de novo pedido chegando (igual ao /minha-conta).
+      playNewSale()
     }, 500)
     return () => clearTimeout(t)
   }, [phase, saleIndex])
@@ -205,6 +208,8 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   // Confetes na tela de parabéns
   useEffect(() => {
     if (phase !== 'celebrate') return
+    // Som de sucesso suave sincronizado com o confete.
+    playSuccess()
     const colors = ['#ff3d77', '#ff7aa2', '#ffd1dc', '#ffffff']
     const end = Date.now() + 1600
     confetti({ particleCount: 35, spread: 60, startVelocity: 30, origin: { y: 0.4 }, colors, zIndex: 100 })
@@ -234,7 +239,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   function acceptSale(e: React.MouseEvent) {
     const list = phase === 'selling2' ? sales2 : sales
     const sale = list[saleIndex]
-    
+
+    // Libera o áudio e toca o som de venda aceita (dinheiro creditado).
+    primeSounds()
+    playSaleAccepted()
+
     // Criar partículas de dinheiro no local do clique
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const baseX = e.clientX
@@ -883,9 +892,10 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       {/* Modal — Vamos vender de verdade? */}
       {showSellModal && phase !== 'signup' && (
         <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
+          {/* Backdrop sem dismiss: este é um passo obrigatório do fluxo.
+              Fechar por clique no fundo travava a demo (coach já oculto). */}
           <div
             className="absolute inset-0 bg-background/85 backdrop-blur-sm"
-            onClick={() => setShowSellModal(false)}
             aria-hidden="true"
           />
           <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/40 bg-card shadow-2xl shadow-primary/25 ring-1 ring-primary/10">

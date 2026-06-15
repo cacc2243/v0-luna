@@ -26,7 +26,6 @@ interface ProfileRow {
   id: string
   username: string | null
   display_name: string | null
-  balance: number | null
 }
 
 export interface AdminImage {
@@ -43,7 +42,6 @@ export interface AdminImage {
   ownerName: string | null
   ownerUsername: string | null
   ownerEmail: string | null
-  ownerBalance: number | null
 }
 
 export async function GET() {
@@ -62,7 +60,7 @@ export async function GET() {
       .from('pack_images')
       .select('id, pack_id, image_url, is_preview, order_index, created_at')
       .order('created_at', { ascending: false }),
-    supabase.from('profiles').select('id, username, display_name, balance'),
+    supabase.from('profiles').select('id, username, display_name'),
   ])
 
   if (packsRes.error) console.error('[v0] Erro ao buscar packs:', packsRes.error)

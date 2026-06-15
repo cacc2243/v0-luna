@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { fbTrack } from '@/lib/fb/track'
 import {
@@ -18,26 +17,73 @@ import {
   Check,
   Loader2,
   AlertCircle,
+  CalendarDays,
+  Eye as EyeIcon,
+  Clock,
+  Gift,
+  ChevronRight,
+  MessageCircle,
 } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
+import { PixContent } from '@/components/convite/pix-modal'
 import { cn } from '@/lib/utils'
 
 interface SignupFlowProps {
   onComplete: () => void
 }
 
-const TOTAL = 6
+const TOTAL = 9
 
 const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 
+// Idades disponiveis para selecao (18 a 65+).
+const ageOptions = [
+  ...Array.from({ length: 47 }, (_, i) => String(i + 18)),
+  '65+',
+]
+
+const appearanceOptions = [
+  'Prefiro aparecer',
+  'Prefiro não aparecer',
+  'Tanto faz / decido depois',
+]
+
+const weeklyTimeOptions = [
+  'Menos de 5 horas',
+  '5 a 10 horas',
+  '10 a 20 horas',
+  'Mais de 20 horas',
+]
+
+// Nomes muito comuns/genericos: sugerimos algo mais criativo quando o usuario
+// digita apenas um nome simples sem nenhum diferencial (numero, sufixo, etc).
+const GENERIC_USERNAMES = [
+  'luna', 'amanda', 'maria', 'ana', 'julia', 'joao', 'jose', 'pedro', 'lucas',
+  'gabriel', 'rafael', 'bruna', 'carla', 'paula', 'fernanda', 'camila', 'beatriz',
+  'larissa', 'leticia', 'vitoria', 'isabela', 'sophia', 'sofia', 'helena', 'laura',
+  'manuela', 'alice', 'valentina', 'rosa', 'bella', 'lia', 'mia', 'teste', 'admin',
+  'user', 'usuario', 'love', 'baby', 'anjo', 'gata', 'princesa',
+]
+
+function isGenericUsername(raw: string) {
+  const value = raw.trim().toLowerCase()
+  if (value.length < 3) return false
+  // Possui algum diferencial (numero, _, ., sufixo) -> nao e generico.
+  if (/[0-9._]/.test(value)) return false
+  return GENERIC_USERNAMES.includes(value)
+}
+
 export function SignupFlow({ onComplete }: SignupFlowProps) {
-  const router = useRouter()
+  void onComplete
   const [step, setStep] = useState(0)
-  const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error'>('form')
+  const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error' | 'whatsappCode'>('form')
   const [errorMessage, setErrorMessage] = useState('')
 
   // Campos
   const [username, setUsername] = useState('')
+  const [age, setAge] = useState('')
+  const [appearance, setAppearance] = useState('')
+  const [weeklyTime, setWeeklyTime] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -49,10 +95,18 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const [showConfirm, setShowConfirm] = useState(false)
   const [pixOpen, setPixOpen] = useState(false)
 
+  // Verificacao por WhatsApp no passo do telefone.
+  const [sendingCode, setSendingCode] = useState(false)
+  const [phoneError, setPhoneError] = useState('')
+
   // Configuracoes publicas do servidor (fonte da verdade no backend).
   // verificationEnabled controla se a etapa de verificacao PIX aparece no fluxo.
   const [verificationEnabled, setVerificationEnabled] = useState(true)
-  const [verificationAmountCents, setVerificationAmountCents] = useState(90)
+  const [verificationAmountCents, setVerificationAmountCents] = useState(4990)
+  // Valor do codigo de convite (editavel no painel). Usado no fluxo pos-cadastro.
+  const [inviteAmountCents, setInviteAmountCents] = useState(0)
+  // Controla se o passo do telefone pede verificacao por WhatsApp.
+  const [whatsappVerificationEnabled, setWhatsappVerificationEnabled] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -66,6 +120,12 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         if (typeof data.verificationAmountCents === 'number') {
           setVerificationAmountCents(data.verificationAmountCents)
         }
+        if (typeof data.inviteAmountCents === 'number') {
+          setInviteAmountCents(data.inviteAmountCents)
+        }
+        if (typeof data.whatsappVerificationEnabled === 'boolean') {
+          setWhatsappVerificationEnabled(data.whatsappVerificationEnabled)
+        }
       })
       .catch(() => {})
     return () => {
@@ -76,10 +136,61 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const back = () => setStep((s) => Math.max(0, s - 1))
   const advance = () => setStep((s) => Math.min(TOTAL - 1, s + 1))
 
+  // Loading visual (apenas) ao avancar da etapa de email.
+  const [verifyingEmail, setVerifyingEmail] = useState(false)
+  const advanceEmail = () => {
+    if (verifyingEmail) return
+    setVerifyingEmail(true)
+    setTimeout(() => {
+      setVerifyingEmail(false)
+      advance()
+    }, 1500)
+  }
+
+  // Envia o codigo de verificacao por WhatsApp e avanca para a etapa de digitacao.
+  // Se a verificacao estiver desligada no painel, pula direto para o proximo passo.
+  const sendWhatsappCode = async () => {
+    if (sendingCode) return
+    setPhoneError('')
+    setSendingCode(true)
+    try {
+      const res = await fetch('/api/whatsapp/verify/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      })
+      const json = await res.json().catch(() => null)
+
+      // Verificação desativada, Z-API offline ou falha no envio: segue sem pedir código.
+      if (json?.skipped || !res.ok || !json?.success) {
+        advance()
+        return
+      }
+
+      setStatus('whatsappCode')
+    } catch {
+      // Erro de conexão: não trava o cadastro, segue o fluxo normal.
+      advance()
+    } finally {
+      setSendingCode(false)
+    }
+  }
+
+  // Valida o codigo digitado no servidor (comparado com o codigo do painel).
+  const verifyWhatsappCode = async (code: string) => {
+    const res = await fetch('/api/whatsapp/verify/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+    const json = await res.json().catch(() => null)
+    return Boolean(json?.valid)
+  }
+
   const finish = async () => {
     setStatus('loading')
     setErrorMessage('')
-    
+
     try {
       const supabase = createClient()
       
@@ -94,6 +205,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             phone: phone.replace(/\D/g, ''),
             pix_type: pixType,
             pix_key: pixKey.trim(),
+            age: age,
+            appearance_preference: appearance,
+            weekly_availability: weeklyTime,
             is_creator: true,
           },
         },
@@ -174,35 +288,31 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
     }
   }
 
-  const goToConvite = () => {
-    onComplete()
-    router.push('/convite')
-  }
-  
-  const goToMinhaConta = () => {
-    onComplete()
-    router.push('/minha-conta')
-  }
-
   // Validação por etapa
   const canContinue = useMemo(() => {
     switch (step) {
       case 0:
         return username.trim().length >= 3
       case 1:
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+        return age.length > 0
       case 2:
-        return password.length >= 6
+        return appearance.length > 0
       case 3:
-        return confirm.length >= 6 && confirm === password
+        return weeklyTime.length > 0
       case 4:
-        return phone.replace(/\D/g, '').length >= 10
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
       case 5:
+        return password.length >= 6
+      case 6:
+        return confirm.length >= 6 && confirm === password
+      case 7:
+        return phone.replace(/\D/g, '').length >= 10
+      case 8:
         return pixKey.trim().length >= 3
       default:
         return false
     }
-  }, [step, username, email, password, confirm, phone, pixKey])
+  }, [step, username, age, appearance, weeklyTime, email, password, confirm, phone, pixKey])
 
   return (
     <div className="absolute inset-0 z-[60] flex flex-col">
@@ -211,7 +321,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
       <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-6">
           {status === 'invite' ? (
-            <InviteCard onAccept={goToConvite} onSkip={goToMinhaConta} />
+            <InviteCodeFlow
+              email={email}
+              userName={username}
+              pixType={pixType}
+              pixKey={pixKey}
+              amountCents={inviteAmountCents}
+            />
           ) : status === 'error' ? (
             <ErrorCard message={errorMessage} onRetry={() => setStatus('form')} />
           ) : status === 'sending' ? (
@@ -234,12 +350,27 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               onConfirm={finish}
               onBack={() => setStatus('form')}
             />
+          ) : status === 'whatsappCode' ? (
+            <WhatsappCodeCard
+              phone={phone}
+              onVerify={verifyWhatsappCode}
+              onConfirmed={() => {
+                setStatus('form')
+                advance()
+              }}
+              onResend={sendWhatsappCode}
+              resending={sendingCode}
+              onBack={() => {
+                setStatus('form')
+                setPhoneError('')
+              }}
+            />
           ) : status === 'loading' ? (
           <LoadingCard />
         ) : (
           <div
             key={step}
-            className="animate-pop luna-border w-full max-w-sm overflow-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
+            className="animate-pop luna-border max-h-[92dvh] w-full max-w-sm overflow-y-auto overflow-x-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
           >
             {/* Progresso */}
             <div className="mb-7">
@@ -274,22 +405,79 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   placeholder="seu_nome"
                   autoFocus
                 />
-                <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3">
-                  <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                  <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
-                    Dica: use algo mais criativo, como{' '}
-                    <span className="font-semibold text-primary">@{username || 'seu_nome'}_oficial</span> ou{' '}
-                    <span className="font-semibold text-primary">@{username || 'seu_nome'}_real</span>.
-                  </p>
-                </div>
+                {isGenericUsername(username) && (
+                  <div className="animate-pop mt-3 flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3">
+                    <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                    <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
+                      Esse nome é muito comum. Use algo mais criativo, como{' '}
+                      <span className="font-semibold text-primary">@{username}_oficial</span> ou{' '}
+                      <span className="font-semibold text-primary">@{username}_real</span>.
+                    </p>
+                  </div>
+                )}
                 <CtaButton className="mt-6" disabled={!canContinue} onClick={advance}>
                   Continuar
                 </CtaButton>
               </StepShell>
             )}
 
-            {/* SEU EMAIL */}
+            {/* IDADE */}
             {step === 1 && (
+              <StepShell
+                icon={CalendarDays}
+                eyebrow="Sua idade"
+                title="Quantos anos você tem?"
+                description="Você precisa ter no mínimo 18 anos para criar uma conta."
+              >
+                <SafetyNote>Informação confidencial e nunca exibida</SafetyNote>
+                <NativeSelect
+                  value={age}
+                  options={ageOptions}
+                  placeholder="Selecione sua idade"
+                  onChange={setAge}
+                />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+              </StepShell>
+            )}
+
+            {/* APARECER OU NÃO */}
+            {step === 2 && (
+              <StepShell
+                icon={EyeIcon}
+                eyebrow="Privacidade"
+                title="Você prefere aparecer ou não?"
+                description="Defina como quer trabalhar. Você pode mudar isso quando quiser."
+              >
+                <NativeSelect
+                  value={appearance}
+                  options={appearanceOptions}
+                  placeholder="Escolha uma opção"
+                  onChange={setAppearance}
+                />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+              </StepShell>
+            )}
+
+            {/* TEMPO DISPONÍVEL */}
+            {step === 3 && (
+              <StepShell
+                icon={Clock}
+                eyebrow="Disponibilidade"
+                title="Quanto tempo por semana você tem disponível?"
+                description="Isso nos ajuda a recomendar o melhor ritmo para você começar."
+              >
+                <NativeSelect
+                  value={weeklyTime}
+                  options={weeklyTimeOptions}
+                  placeholder="Selecione sua disponibilidade"
+                  onChange={setWeeklyTime}
+                />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+              </StepShell>
+            )}
+
+            {/* SEU EMAIL */}
+            {step === 4 && (
               <StepShell
                 icon={Mail}
                 eyebrow="Seu email"
@@ -305,12 +493,12 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   placeholder="seu@email.com"
                   autoFocus
                 />
-                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+                <StepFooter onBack={back} disabled={!canContinue} onNext={advanceEmail} loading={verifyingEmail} loadingText="Verificando email..." />
               </StepShell>
             )}
 
             {/* CRIE UMA SENHA */}
-            {step === 2 && (
+            {step === 5 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Crie uma senha"
@@ -330,7 +518,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CONFIRME SUA SENHA */}
-            {step === 3 && (
+            {step === 6 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Confirme sua senha"
@@ -354,7 +542,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   type="button"
                   onClick={() => {
                     setConfirm('')
-                    setStep(2)
+                    setStep(5)
                   }}
                   className="mt-2.5 text-xs font-medium text-primary transition-opacity hover:opacity-80"
                 >
@@ -364,29 +552,48 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               </StepShell>
             )}
 
-            {/* SEU TELEFONE */}
-            {step === 4 && (
+            {/* SEU TELEFONE / VERIFICAÇÃO WHATSAPP */}
+            {step === 7 && (
               <StepShell
                 icon={Phone}
                 eyebrow="Seu telefone"
                 title="Informe seu número com DDD"
-                description="Usado apenas para envio de confirmações ou para você tirar dúvidas. Seu número nunca será compartilhado."
+                description={
+                  whatsappVerificationEnabled
+                    ? 'Enviaremos um código de verificação no seu WhatsApp para confirmar o número.'
+                    : 'Usado apenas para envio de confirmações ou para você tirar dúvidas. Seu número nunca será compartilhado.'
+                }
               >
                 <SafetyNote>Visível apenas para nossa plataforma</SafetyNote>
                 <BaseInput
                   type="tel"
                   inputMode="tel"
                   value={phone}
-                  onChange={(v) => setPhone(formatPhone(v))}
+                  onChange={(v) => {
+                    setPhone(formatPhone(v))
+                    if (phoneError) setPhoneError('')
+                  }}
                   placeholder="(00) 00000-0000"
                   autoFocus
                 />
-                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
+                {phoneError && (
+                  <p className="animate-pop mt-3 flex items-center gap-2 text-sm font-medium text-destructive">
+                    <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+                    {phoneError}
+                  </p>
+                )}
+                <StepFooter
+                  onBack={back}
+                  disabled={!canContinue || sendingCode}
+                  onNext={sendWhatsappCode}
+                  loading={sendingCode}
+                  loadingText="Enviando código..."
+                />
               </StepShell>
             )}
 
             {/* CHAVE PIX */}
-            {step === 5 && (
+            {step === 8 && (
               <StepShell
                 icon={KeyRound}
                 eyebrow="Chave PIX"
@@ -476,6 +683,45 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 }
 
 /* ---------- Subcomponentes ---------- */
+
+function NativeSelect({
+  value,
+  options,
+  placeholder,
+  onChange,
+}: {
+  value: string
+  options: string[]
+  placeholder: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(
+          'h-[52px] w-full appearance-none rounded-2xl border border-border bg-secondary/60 px-4 pr-11 text-base outline-none transition-colors',
+          'focus:border-primary/60 focus:ring-2 focus:ring-primary/20',
+          value ? 'text-foreground' : 'text-muted-foreground/70',
+        )}
+      >
+        <option value="" disabled>
+          {placeholder}
+        </option>
+        {options.map((opt) => (
+          <option key={opt} value={opt} className="bg-popover text-foreground">
+            {opt}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+    </div>
+  )
+}
 
 function StepShell({
   icon: Icon,
@@ -634,24 +880,125 @@ function StepFooter({
   onBack,
   onNext,
   disabled,
-}: {
+  loading,
+  loadingText,
+  }: {
   onBack: () => void
   onNext: () => void
   disabled: boolean
-}) {
+  loading?: boolean
+  loadingText?: string
+  }) {
   return (
-    <>
-      <CtaButton className="mt-6" disabled={disabled} onClick={onNext}>
-        Continuar
-      </CtaButton>
-      <button
-        type="button"
-        onClick={onBack}
-        className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
-      >
+  <>
+  <CtaButton className="mt-6" disabled={disabled} onClick={onNext} loading={loading} loadingText={loadingText}>
+  Continuar
+  </CtaButton>
+  <button
+  type="button"
+  onClick={onBack}
+  className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+  >
         ← Voltar para o passo anterior
       </button>
     </>
+  )
+}
+
+function WhatsappCodeCard({
+  phone,
+  onVerify,
+  onConfirmed,
+  onResend,
+  resending,
+  onBack,
+}: {
+  phone: string
+  onVerify: (code: string) => Promise<boolean>
+  onConfirmed: () => void
+  onResend: () => void
+  resending: boolean
+  onBack: () => void
+}) {
+  const [code, setCode] = useState('')
+  const [checking, setChecking] = useState(false)
+  const [error, setError] = useState('')
+
+  const submit = async () => {
+    if (checking || code.trim().length < 4) return
+    setError('')
+    setChecking(true)
+    try {
+      const ok = await onVerify(code.trim())
+      if (ok) {
+        onConfirmed()
+      } else {
+        setError('Código incorreto. Verifique a mensagem no WhatsApp.')
+      }
+    } catch {
+      setError('Erro ao validar. Tente novamente.')
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  return (
+    <div
+      key="whatsapp-code"
+      className="animate-pop luna-border max-h-[92dvh] w-full max-w-sm overflow-y-auto overflow-x-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
+    >
+      <StepShell
+        icon={MessageCircle}
+        eyebrow="Verificação"
+        title="Digite o código que enviamos"
+        description={`Enviamos um código por WhatsApp para ${phone}. Insira-o abaixo para confirmar.`}
+        iconPositive
+      >
+        <BaseInput
+          type="tel"
+          inputMode="numeric"
+          value={code}
+          onChange={(v) => {
+            setCode(v.replace(/\D/g, '').slice(0, 8))
+            if (error) setError('')
+          }}
+          placeholder="0000"
+          autoFocus
+        />
+        {error && (
+          <p className="animate-pop mt-3 flex items-center gap-2 text-sm font-medium text-destructive">
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+            {error}
+          </p>
+        )}
+
+        <CtaButton
+          className="mt-6"
+          disabled={code.trim().length < 4 || checking}
+          onClick={submit}
+          loading={checking}
+          loadingText="Confirmando..."
+        >
+          Confirmar código
+        </CtaButton>
+
+        <button
+          type="button"
+          onClick={onResend}
+          disabled={resending}
+          className="mt-3 w-full text-center text-xs font-semibold text-primary transition-opacity hover:opacity-80 disabled:opacity-50"
+        >
+          {resending ? 'Reenviando...' : 'Reenviar código'}
+        </button>
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-2 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
+        >
+          ← Corrigir número
+        </button>
+      </StepShell>
+    </div>
   )
 }
 
@@ -949,111 +1296,230 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
   )
 }
 
-function InviteCard({ onAccept, onSkip }: { onAccept: () => void; onSkip: () => void }) {
-  const INVITE_STEPS = 2
-  const [sub, setSub] = useState(0)
+function InviteCodeFlow({
+  email,
+  userName,
+  pixType,
+  pixKey,
+  amountCents,
+}: {
+  email: string
+  userName: string
+  pixType: string
+  pixKey: string
+  amountCents: number
+}) {
+  // Etapas: tela inicial (igual ao anexo) -> loading -> oferta -> PIX
+  const [stage, setStage] = useState<'intro' | 'unlocking' | 'offer' | 'pix'>('intro')
+
+  // Desconto fixo de 65% (conforme solicitado) para exibir o "de/por".
+  const DISCOUNT = 65
+  const amount = amountCents / 100
+  const originalAmount = amountCents > 0 ? amount / (1 - DISCOUNT / 100) : 0
+  const brl = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`
+
+  // Códigos "restantes hoje": valor pequeno e fixo para senso de escassez.
+  const CODES_LEFT = 4
+
+  // Loading de "desbloqueio" antes de revelar a oferta.
+  useEffect(() => {
+    if (stage !== 'unlocking') return
+    const t = setTimeout(() => setStage('offer'), 2200)
+    return () => clearTimeout(t)
+  }, [stage])
+
+  function handlePaymentConfirmed() {
+    window.location.assign('/confirmation')
+  }
 
   return (
-    <div className="animate-pop luna-border relative w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-primary/20">
+    <div className="animate-pop relative flex max-h-[92dvh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/25">
+      {/* Borda em gradiente */}
+      <div
+        className="pointer-events-none absolute inset-0 z-20 rounded-3xl"
+        aria-hidden="true"
+        style={{
+          padding: '1.25px',
+          background:
+            'linear-gradient(to bottom, oklch(0.5 0.15 15 / 0.95), oklch(0.6 0.16 15 / 0.32) 45%, oklch(0.66 0.17 15 / 0.08) 100%)',
+          WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude',
+        }}
+      />
       {/* Imagem de fundo */}
       <div className="absolute inset-0" aria-hidden="true">
         <img
-          src="/images/luna-fundo-leve.webp"
+          src="/images/convite-fundo.jpg"
           alt=""
-          className="size-full object-cover object-top"
+          className="size-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/65 via-background/60 to-background/80" />
+        <div className="absolute inset-0 bg-card/65" />
+        <div className="absolute inset-0 bg-gradient-to-b from-card/30 via-card/60 to-card/90" />
       </div>
 
-      {/* Mentora */}
-      <div className="relative z-10 flex flex-col items-center px-6 pt-7">
-        <div className="relative">
-          <span className="absolute -inset-1.5 rounded-full luna-gradient opacity-70 blur-lg" aria-hidden="true" />
-          <img
-            src="/images/mentor.png"
-            alt="Mentora do Luna Prive"
-            className="relative size-24 rounded-full border-2 border-primary/60 object-cover"
-          />
-          <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-card bg-positive" aria-hidden="true" />
-        </div>
-        <p className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-primary">
-          {sub === 0 ? 'Meus parabens!' : 'Atencao'}
-        </p>
-      </div>
-
-      <div className="relative z-10 px-6 pb-7 pt-4">
-        {/* ETAPA 0 — Parabens + convite */}
-        {sub === 0 && (
-          <div key="invite-0" className="animate-pop rounded-2xl border border-border bg-secondary/50 p-5 text-pretty text-base leading-relaxed text-foreground">
-            <p>
-              Sua conta foi criada com{' '}
-              <span className="font-semibold text-positive">sucesso!</span> Agora chegou a hora do seu{' '}
-              <span className="font-semibold text-primary">Convite de Acesso ao Luna Prive</span>.
-            </p>
-            <p className="mt-3">
-              Ele garante que voce e uma usuaria <span className="font-semibold">real e comprometida</span> aqui dentro.
-            </p>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Os convites de acesso gratuitos foram removidos do Luna, mas o investimento para o seu
-              acesso esta muito barato e confiavel.
-            </p>
-          </div>
-        )}
-
-        {/* ETAPA 1 — Convites limitados + conformidade */}
-        {sub === 1 && (
-          <div key="invite-1" className="animate-pop rounded-2xl border border-primary/30 bg-primary/5 p-5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15">
-                <ShieldCheck className="size-[1.1rem] text-primary" aria-hidden="true" />
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-7 pt-8 text-center">
+        {stage === 'unlocking' ? (
+          <div className="flex flex-1 flex-col items-center justify-center py-10">
+            <h2 className="text-balance text-xl font-bold leading-tight text-foreground">
+              Desbloqueando seu código
+            </h2>
+            <div className="mt-7 flex flex-col items-center gap-5">
+              <span className="relative flex size-20 items-center justify-center" aria-hidden="true">
+                <svg className="size-20 animate-spin [animation-duration:1.1s]" viewBox="0 0 50 50">
+                  <circle cx="25" cy="25" r="20" fill="none" className="stroke-border" strokeWidth="4" />
+                  <circle
+                    cx="25"
+                    cy="25"
+                    r="20"
+                    fill="none"
+                    className="stroke-primary"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeDasharray="125.6"
+                    strokeDashoffset="88"
+                  />
+                </svg>
+                <Gift className="absolute size-7 text-primary" />
               </span>
-              <p className="text-sm font-bold text-foreground">Convites limitados</p>
+              <p className="text-pretty text-sm font-medium leading-relaxed text-muted-foreground" role="status" aria-live="polite">
+                Verificando códigos disponíveis...
+              </p>
             </div>
-            <p className="mt-3.5 text-pretty text-sm leading-relaxed text-foreground">
-              Existem <span className="font-semibold text-primary">poucos convites disponiveis</span> no momento. Eles sao liberados
-              em pequenas quantidades para manter a qualidade da plataforma.
-            </p>
-            <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
-              <span className="font-semibold text-foreground">Toda usuaria possui um convite ativo</span> para garantir a conformidade e a
-              seguranca de todos dentro do Luna Prive.
-            </p>
           </div>
-        )}
-
-        {/* Indicador de etapas */}
-        <div className="mt-5 flex items-center justify-center gap-2" aria-hidden="true">
-          {Array.from({ length: INVITE_STEPS }).map((_, i) => (
-            <span
-              key={i}
-              className={cn(
-                'h-1.5 rounded-full transition-all duration-300',
-                i === sub ? 'w-6 bg-primary' : 'w-1.5 bg-muted',
-              )}
+        ) : stage === 'pix' ? (
+          <>
+            <img
+              src="/images/luna-prive-logo.png"
+              alt="Luna Privé"
+              className="mx-auto h-11 w-auto"
             />
-          ))}
-        </div>
+            <div className="mt-4">
+              <PixContent
+                isOpen
+                embedded
+                onClose={() => setStage('offer')}
+                email={email}
+                amount={amount}
+                userName={userName}
+                type="invite"
+                pixType={pixType}
+                pixKey={pixKey}
+                compact
+                discountPercent={DISCOUNT}
+                title="Seu Código de Convite"
+                subtitle="Pague via PIX para liberar seu acesso"
+                trackInitiateCheckout
+                onPaymentConfirmed={handlePaymentConfirmed}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <img
+              src="/images/luna-prive-logo.png"
+              alt="Luna Privé"
+              className="mx-auto h-11 w-auto"
+            />
 
-        {/* Acoes */}
-        <div className="mt-4">
-          {sub < INVITE_STEPS - 1 ? (
-            <CtaButton onClick={() => setSub((s) => s + 1)}>Continuar</CtaButton>
-          ) : (
-            <CtaButton onClick={onAccept}>Quero um Convite</CtaButton>
-          )}
-          {sub > 0 && (
-            <button
-              type="button"
-              onClick={() => setSub((s) => Math.max(0, s - 1))}
-              className="mt-3 w-full text-center text-xs font-medium text-muted-foreground transition-opacity hover:opacity-80"
-            >
-              ← Voltar
-            </button>
-          )}
-        </div>
+            <h2 className="mt-5 text-balance text-2xl font-bold leading-tight text-foreground">
+              Código de Convite
+            </h2>
+            <p className="mx-auto mt-2.5 max-w-[18rem] text-pretty text-sm leading-relaxed text-muted-foreground">
+              {stage === 'offer'
+                ? 'Todas as usuárias precisam de um código de convite para entrar no Luna Privé.'
+                : 'Apenas usuárias convidadas podem se inscrever na plataforma. Digite seu código abaixo para ativar sua conta.'}
+            </p>
+
+            {stage === 'intro' && (
+              <>
+                <input
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  disabled
+                  placeholder="DIGITE SEU CÓDIGO"
+                  aria-label="Código de convite"
+                  className="mt-6 w-full rounded-2xl border border-border/70 bg-background/60 px-5 py-3.5 text-center text-sm font-semibold uppercase tracking-[0.25em] text-foreground placeholder:tracking-[0.2em] placeholder:text-muted-foreground/60 disabled:opacity-60"
+                />
+                <p className="mt-3.5 text-pretty text-[0.8rem] font-medium leading-relaxed text-primary">
+                  Os códigos grátis estão desativados no momento, desbloqueie seu código no botão abaixo:
+                </p>
+                <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/50 px-5 py-3.5">
+                  <span className="size-1.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
+                  <p className="text-sm text-muted-foreground">
+                    Restam apenas <span className="font-bold text-primary">{CODES_LEFT}</span> códigos hoje
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStage('unlocking')}
+                  className="luna-gradient mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Gift className="size-5" aria-hidden="true" />
+                  Resgatar meu código
+                  <ChevronRight className="size-5" aria-hidden="true" />
+                </button>
+                <p className="mt-4 flex items-center justify-center gap-1.5 text-[0.7rem] text-muted-foreground/80">
+                  <ShieldCheck className="size-3.5 text-positive" aria-hidden="true" />
+                  Ambiente seguro e verificado
+                </p>
+              </>
+            )}
+
+            {stage === 'offer' && (
+              <>
+                {/* Escassez */}
+                <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-primary/[0.07] px-5 py-3">
+                  <span className="size-1.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
+                  <p className="text-sm text-foreground">
+                    Restam apenas{' '}
+                    <span className="font-bold text-primary">{CODES_LEFT} códigos</span> hoje
+                  </p>
+                </div>
+
+                {/* Desconto + valor */}
+                <div className="mt-4 rounded-2xl border border-border/60 bg-background/55 px-5 py-5">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-[0.7rem] font-bold uppercase tracking-wide text-primary">
+                    {DISCOUNT}% OFF hoje
+                  </span>
+                  <div className="mt-3 flex items-center justify-center gap-2.5">
+                    {originalAmount > 0 && (
+                      <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
+                        {brl(originalAmount)}
+                      </span>
+                    )}
+                    <span className="text-3xl font-extrabold tracking-tight text-foreground">
+                      {amountCents > 0 ? brl(amount) : '--'}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-pretty text-[0.78rem] leading-relaxed text-muted-foreground">
+                    Valor único do seu código de convite para liberar o acesso completo à plataforma.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setStage('pix')}
+                  className="luna-gradient mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Gift className="size-5" aria-hidden="true" />
+                  Obter meu Código
+                  <ChevronRight className="size-5" aria-hidden="true" />
+                </button>
+                <p className="mt-4 flex items-center justify-center gap-1.5 text-[0.7rem] text-muted-foreground/80">
+                  <ShieldCheck className="size-3.5 text-positive" aria-hidden="true" />
+                  Ambiente seguro e verificado
+                </p>
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
 }
+
 
 /* ---------- Helpers ---------- */
 
