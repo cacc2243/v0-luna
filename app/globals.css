@@ -129,6 +129,12 @@
   }
 }
 
+/* Card um pouco mais claro, usado apenas na tela /convite para dar
+   mais contraste sobre a imagem de fundo. */
+.convite-card {
+  background-color: oklch(0.235 0.014 350);
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

@@ -110,8 +110,8 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
           className="size-full object-cover object-center"
         />
         {/* Camadas de legibilidade */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/75 to-background/95" />
-        <div className="absolute inset-0 bg-background/65" aria-hidden="true" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/55 to-background/85" />
+        <div className="absolute inset-0 bg-background/35" aria-hidden="true" />
       </div>
 
       {/* Top bar */}
@@ -124,7 +124,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
 
       <div className="relative mx-auto flex w-full max-w-md flex-col gap-7 px-5 pb-12 pt-8">
         {/* Hero */}
-        <header className="relative overflow-hidden rounded-3xl border border-border/40 bg-card/80 px-5 py-5 backdrop-blur-sm">
+        <header className="convite-card relative overflow-hidden rounded-3xl border border-border/50 px-5 py-5 backdrop-blur-sm">
           <div
             className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-primary/20 blur-3xl"
             aria-hidden="true"
