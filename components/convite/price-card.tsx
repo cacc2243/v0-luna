@@ -4,7 +4,6 @@ import { Check, ChevronRight, Gift } from 'lucide-react'
 
 const benefits = [
   'Código de convite exclusivo Luna Privé',
-  'Acesso imediato à plataforma após a confirmação',
   'Anonimato e privacidade total do seu perfil',
   'Suporte 24h por WhatsApp + Chat',
   'Garantia de 30 dias',
@@ -38,14 +37,14 @@ export function PriceCard({
           <img
             src="/images/background.png"
             alt=""
-            className="size-full object-cover opacity-75"
+            className="size-full object-cover opacity-55"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/50 to-background/80" />
-          <div className="absolute inset-0 bg-background/5" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background/85" />
+          <div className="absolute inset-0 bg-background/20" />
         </div>
 
         {/* Logo Luna Privé */}
-        <div className="relative mb-6 flex justify-center">
+        <div className="relative mb-3 flex justify-center">
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
@@ -60,7 +59,7 @@ export function PriceCard({
           </h2>
 
           <div
-            className={`mt-3 flex items-center justify-center gap-2.5 transition-all duration-300 ${
+            className={`flex items-center justify-center gap-2.5 transition-all duration-300 ${
               priceReady ? 'blur-0 opacity-100' : 'blur-md opacity-70'
             }`}
             aria-hidden={!priceReady}
@@ -89,7 +88,7 @@ export function PriceCard({
         </div>
 
         {/* Benefícios — lista única */}
-        <ul className="relative mt-7 flex flex-col gap-3.5">
+        <ul className="relative mt-5 flex flex-col gap-3.5">
           {benefits.map((b) => (
             <li key={b} className="flex items-center gap-3">
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15 text-positive">
