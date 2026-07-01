@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { fbTrack } from '@/lib/fb/track'
 import {
@@ -68,6 +69,7 @@ function creativeSuggestion(raw: string) {
 
 export function SignupFlow({ onComplete }: SignupFlowProps) {
   void onComplete
+  const router = useRouter()
   const [step, setStep] = useState(0)
   const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error' | 'whatsappCode'>('form')
   const [errorMessage, setErrorMessage] = useState('')
@@ -281,7 +283,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       })
 
       await ensureMinLoading()
-      setStatus('invite')
+      // Mantem o loading visivel e leva o usuario para a pagina /convite,
+      // onde o codigo de convite e exibido (nao mais dentro deste fluxo).
+      router.push('/convite')
     } catch (err) {
       console.error('[v0] Signup error:', err)
       setErrorMessage('Erro inesperado. Tente novamente.')
@@ -319,15 +323,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       <div className="absolute inset-0 bg-background/88 backdrop-blur-[3px]" aria-hidden="true" />
 
       <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-6">
-          {status === 'invite' ? (
-            <InviteCodeFlow
-              email={email}
-              userName={username}
-              pixType={pixType}
-              pixKey={pixKey}
-              amountCents={inviteAmountCents}
-            />
-          ) : status === 'error' ? (
+          {status === 'error' ? (
             <ErrorCard message={errorMessage} onRetry={() => setStatus('form')} />
           ) : status === 'sending' ? (
             <SendingPixCard
