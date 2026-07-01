@@ -172,13 +172,15 @@
   }
 }
 
-/* Luna pink gradients — single unified family, always lateral */
+/* Luna pink gradients — single unified family, always lateral.
+   Alinhado ao rosa vibrante do CtaButton da tela inicial para que a
+   simulacao de vendas, os modais de cadastro e o /convite usem a mesma cor. */
 .luna-gradient {
   background-image: linear-gradient(
     90deg,
-    oklch(0.72 0.16 18) 0%,
-    oklch(0.66 0.17 15) 50%,
-    oklch(0.6 0.18 12) 100%
+    oklch(0.62 0.21 12) 0%,
+    oklch(0.56 0.23 9) 50%,
+    oklch(0.5 0.22 8) 100%
   );
 }
 
@@ -197,8 +199,8 @@
 .luna-gradient-soft {
   background-image: linear-gradient(
     90deg,
-    oklch(0.72 0.16 18 / 0.92) 0%,
-    oklch(0.6 0.18 12 / 0.92) 100%
+    oklch(0.62 0.21 12 / 0.92) 0%,
+    oklch(0.5 0.22 8 / 0.92) 100%
   );
 }
 
