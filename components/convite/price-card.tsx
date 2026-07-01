@@ -30,13 +30,13 @@ export function PriceCard({
   const originalCents = Math.round(amountCents / 0.6)
 
   return (
-    <section aria-labelledby="investimento" className="relative">
+    <section aria-labelledby="investimento" className="relative isolate">
       {/* Leve glow rosa atras do card */}
       <div
-        className="pointer-events-none absolute -inset-4 -z-10 rounded-[2rem] bg-primary/25 blur-3xl"
+        className="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-primary/30 blur-3xl"
         aria-hidden="true"
       />
-      <div className="luna-border-top relative overflow-hidden rounded-3xl border border-border/50 bg-card px-6 py-7 shadow-2xl shadow-black/40">
+      <div className="luna-border-top relative z-10 overflow-hidden rounded-3xl border border-border/50 bg-card px-6 py-7 shadow-2xl shadow-black/40">
         {/* Imagem de fundo (mesma do /convite) com degradê escuro por cima */}
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <img
