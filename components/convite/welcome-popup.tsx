@@ -62,7 +62,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
   // revela o conteudo do codigo de convite (evita a sensacao de "demora").
   useEffect(() => {
     if (step !== 'booting') return
-    const t = setTimeout(() => setStep('intro'), 900)
+    const t = setTimeout(() => setStep('intro'), 3000)
     return () => clearTimeout(t)
   }, [step])
 
@@ -144,7 +144,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
                   ? 'Aguarde um momento'
                   : step === 'closing'
                     ? 'Preparando sua surpresa'
-                    : 'Carregando convite'}
+                    : 'Buscando Convites'}
               </h2>
               <div className="mt-6">
                 <CircleLoader
@@ -153,7 +153,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
                       ? 'Buscando códigos de convites...'
                       : step === 'closing'
                         ? 'Só um instante...'
-                        : 'Carregando...'
+                        : 'Buscando Convites...'
                   }
                 />
               </div>
