@@ -31,13 +31,9 @@ export function PriceCard({
 
   return (
     <section aria-labelledby="investimento" className="relative isolate">
-      {/* Glow rosa atras do card (duas camadas para ficar visivel no mobile) */}
+      {/* Glow rosa suave atras do card */}
       <div
-        className="pointer-events-none absolute -inset-8 rounded-[3rem] bg-primary/55 blur-3xl"
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute -inset-2 rounded-[2.5rem] bg-primary/40 blur-2xl"
+        className="pointer-events-none absolute -inset-1 rounded-[2.5rem] bg-primary/35 blur-2xl"
         aria-hidden="true"
       />
       <div className="luna-border-top relative z-10 overflow-hidden rounded-3xl border border-border/50 bg-card px-6 py-7 shadow-2xl shadow-black/40">
