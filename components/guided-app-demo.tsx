@@ -485,38 +485,38 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           {currentSale && (phase === 'selling' || phase === 'selling2') && (
             <div
               key={`order-${activeSale}`}
-              className={`luna-border relative z-[45] mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3 ${ring('orders')} ${
+              className={`luna-border relative z-[45] mb-2 overflow-hidden rounded-2xl bg-card px-4 py-4 ${ring('orders')} ${
                 shake ? 'animate-shake' : 'animate-card-enter'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                  <Bell className="size-4 text-primary" aria-hidden="true" />
+              <div className="flex items-center gap-3">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                  <Bell className="size-5 text-primary" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1 leading-snug">
-                  <p className="truncate text-[0.8rem] font-semibold text-foreground">
+                  <p className="truncate text-[0.95rem] font-semibold text-foreground">
                     {currentSale.handle} quer {currentSale.pack}
                   </p>
-                  <p className="text-[0.65rem] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     agora · {currentSale.purchases}
                   </p>
                 </div>
-                <span className="text-sm font-bold text-positive">{brl(currentSale.amount)}</span>
+                <span className="text-base font-bold text-positive">{brl(currentSale.amount)}</span>
               </div>
 
               {refuseHint && (
-                <p className="mt-2 rounded-lg bg-primary/10 px-2.5 py-1.5 text-center text-[0.7rem] font-medium text-primary">
+                <p className="mt-3 rounded-lg bg-primary/10 px-2.5 py-1.5 text-center text-[0.7rem] font-medium text-primary">
                   Aceite a venda para continuar
                 </p>
               )}
 
-              <div className="mt-2.5 flex gap-2">
+              <div className="mt-4 flex gap-2.5">
                 <button
                   type="button"
                   onClick={tryRefuse}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98]"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary py-3.5 text-[0.9rem] font-semibold text-muted-foreground transition active:scale-[0.98]"
                 >
-                  <X className="size-3.5" aria-hidden="true" />
+                  <X className="size-4" aria-hidden="true" />
                   Recusar
                 </button>
                 <button
@@ -526,9 +526,9 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                     backgroundImage:
                       'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
                   }}
-                  className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98]"
+                  className="flex flex-[1.4] items-center justify-center gap-1.5 rounded-xl py-3.5 text-[0.9rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98]"
                 >
-                  <Check className="size-3.5" aria-hidden="true" />
+                  <Check className="size-4" aria-hidden="true" />
                   Aceitar venda
                 </button>
               </div>
@@ -900,33 +900,54 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           />
           <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/40 bg-card shadow-2xl shadow-primary/25 ring-1 ring-primary/10">
             {/* Topo com a logo da Luna */}
-            <div className="flex items-center justify-center border-b border-border/60 bg-secondary/40 px-6 py-5">
+            <div className="flex items-center justify-center border-b border-border/60 bg-secondary/40 px-6 py-4">
               <img
                 src="/images/luna-prive-logo.png"
                 alt="Luna Privé"
-                className="h-8 w-auto"
+                className="h-7 w-auto"
               />
             </div>
 
-            <div className="px-6 pb-6 pt-5">
-              {/* Mentora falando */}
-              <div className="flex items-start gap-3">
-                <img
-                  src="/images/mentor.png"
-                  alt="Camila"
-                  className="size-12 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
-                />
-                <div className="flex-1">
-                  <p className="text-pretty text-lg font-bold leading-tight text-foreground">
-                    Vamos agora vender de verdade?
-                  </p>
-                  <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-                    Você viu como é simples. Crie sua conta na{' '}
-                    <span className="font-semibold text-foreground">Luna Privé</span> e comece a
-                    faturar com seus packs de verdade — leva menos de 2 minutos.
-                  </p>
+            <div className="px-6 pb-7 pt-6">
+              {/* Mentora + título centralizados */}
+              <div className="flex flex-col items-center text-center">
+                <div className="relative">
+                  <img
+                    src="/images/mentor.png"
+                    alt="Camila"
+                    className="size-16 rounded-full object-cover ring-2 ring-primary/50"
+                  />
+                  <span className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border-2 border-card bg-primary">
+                    <BadgeCheck className="size-3.5 text-primary-foreground" aria-hidden="true" />
+                  </span>
                 </div>
+                <h2 className="mt-4 text-balance text-xl font-bold leading-tight text-foreground">
+                  Vamos agora vender de verdade?
+                </h2>
+                <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                  Você viu como é simples. Crie sua conta na{' '}
+                  <span className="font-semibold text-foreground">Luna Privé</span> e comece a
+                  faturar com seus packs — leva menos de 2 minutos.
+                </p>
               </div>
+
+              {/* Benefícios rápidos */}
+              <ul className="mt-5 flex flex-col gap-2.5">
+                {[
+                  'Cadastro gratuito e sem burocracia',
+                  'Receba direto no seu PIX, 100% anônimo',
+                  'Comece a vender ainda hoje',
+                ].map((b) => (
+                  <li key={b} className="flex items-center gap-2.5">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15">
+                      <Check className="size-3 text-positive" aria-hidden="true" />
+                    </span>
+                    <span className="text-[0.8rem] font-medium leading-snug text-foreground/90">
+                      {b}
+                    </span>
+                  </li>
+                ))}
+              </ul>
 
               <button
                 type="button"
@@ -934,11 +955,15 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                   setShowSellModal(false)
                   setPhase('signup')
                 }}
-                className="luna-gradient mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                className="luna-gradient animate-cta-pulse mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-extrabold text-primary-foreground shadow-xl shadow-primary/40 ring-2 ring-primary/50 transition active:scale-[0.98]"
               >
                 Criar minha conta
                 <ChevronRight className="size-5" aria-hidden="true" />
               </button>
+
+              <p className="mt-3 text-center text-[0.7rem] text-muted-foreground">
+                +120 mil compradores ativos esperando pelos seus packs
+              </p>
             </div>
           </div>
         </div>
@@ -1102,9 +1127,9 @@ function PacksScreen({
                 <button
                   type="button"
                   onClick={onCreate}
-                  className="luna-gradient mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-4 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                  className="luna-gradient animate-cta-pulse mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-5 text-base font-extrabold uppercase tracking-wide text-primary-foreground shadow-xl shadow-primary/40 ring-2 ring-primary/50 transition active:scale-[0.98]"
                 >
-                  <Plus className="size-4" aria-hidden="true" />
+                  <Plus className="size-5" aria-hidden="true" />
                   Criar Pack
                 </button>
               </div>

@@ -110,8 +110,8 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
           className="size-full object-cover object-center"
         />
         {/* Camadas de legibilidade */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/75 to-background/95" />
-        <div className="absolute inset-0 bg-background/65" aria-hidden="true" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/55 to-background/85" />
+        <div className="absolute inset-0 bg-background/35" aria-hidden="true" />
       </div>
 
       {/* Top bar */}
@@ -124,7 +124,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
 
       <div className="relative mx-auto flex w-full max-w-md flex-col gap-7 px-5 pb-12 pt-8">
         {/* Hero */}
-        <header className="relative overflow-hidden rounded-3xl border border-border/40 bg-card/80 px-5 py-5 backdrop-blur-sm">
+        <header className="convite-card relative overflow-hidden rounded-3xl border border-border/50 px-5 py-5 backdrop-blur-sm">
           <div
             className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-primary/20 blur-3xl"
             aria-hidden="true"
@@ -136,12 +136,8 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
               className="h-6 w-auto self-start"
             />
             <h1 className="mt-4 text-balance text-2xl font-extrabold leading-tight tracking-tight text-foreground">
-              Resgate seu Convite Oficial
+              Resgate seu Convite Luna
             </h1>
-            <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-              O Luna Privé é exclusivo para convidadas. Confirme seus dados abaixo e garanta seu código de convite para entrar na plataforma.
-            </p>
-
             <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-border/60 bg-background/50 px-3.5 py-2.5">
               <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
                 <Mail className="size-3.5" aria-hidden="true" />

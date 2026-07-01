@@ -12,9 +12,6 @@ import {
   TrendingUp,
   Footprints,
   Smartphone,
-  Headset,
-  ShieldCheck as ShieldCheckIcon,
-  EyeOff,
   Ticket,
   ImagePlus,
   Store,
@@ -26,7 +23,6 @@ import { AnimatedSalesFeed } from '@/components/animated-sales-feed'
 import { HowItWorksStep } from '@/components/how-it-works-step'
 import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
-import { TrustCard } from '@/components/trust-card'
 import { PrivacyStep } from '@/components/privacy-step'
 import { PlatformWalkthrough } from '@/components/platform-walkthrough'
 import { GuidedAppDemo } from '@/components/guided-app-demo'
@@ -126,35 +122,6 @@ const myths = [
   },
 ]
 
-const trustCards = [
-  {
-    icon: Headset,
-    title: 'Suporte de verdade, 24 horas',
-    description:
-      'Você nunca fica sozinha. Tem gente pronta pra te ajudar a qualquer hora do dia ou da noite.',
-    items: [
-      'Gerente de conta exclusiva',
-      'WhatsApp exclusivo para dúvidas',
-      'Suporte direto na plataforma',
-      'Atendimento também por e-mail',
-    ],
-  },
-  {
-    icon: ShieldCheckIcon,
-    title: 'Anônimo, seguro e direto no PIX',
-    description:
-      'Todas as transações são anônimas e protegidas. Você vende e recebe direto no seu PIX, sem intermediários.',
-  },
-  {
-    icon: EyeOff,
-    title: 'Ninguém precisa saber que é você',
-    description:
-      'Você não precisa divulgar nada e ninguém descobre sua identidade. A vitrine é nossa.',
-    highlight:
-      '+120 mil compradores ativos todos os dias. É só postar e vender!',
-  },
-]
-
 const journey = [
   {
     icon: Ticket,
@@ -216,7 +183,7 @@ const journey = [
   },
 ]
 
-const TOTAL_STEPS = 8
+const TOTAL_STEPS = 7
 
 export default function Page() {
   const [step, setStep] = useState(0)
@@ -434,55 +401,16 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 5 — Por que confiar */}
+        {/* STEP 5 — Privacidade total */}
         {step === 4 && (
           <div key="step-4" className="animate-screen flex flex-col">
-            <section
-              className="animate-item mt-7 text-center"
-              style={{ animationDelay: '60ms' }}
-            >
-              <h1 className="text-balance font-sans text-[1.6rem] font-bold leading-tight tracking-tight text-foreground">
-                Por que confiar no <span className="text-primary">Luna Privé</span>?
-              </h1>
-              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-                Estrutura profissional, segurança e total anonimato do começo ao
-                fim.
-              </p>
-            </section>
-
-            <section
-              className="animate-item mt-6 flex flex-col gap-3"
-              style={{ animationDelay: '160ms' }}
-              aria-label="Motivos para confiar no Luna Privé"
-            >
-              {trustCards.map((c) => (
-                <TrustCard
-                  key={c.title}
-                  icon={c.icon}
-                  title={c.title}
-                  description={c.description}
-                  items={c.items}
-                  highlight={c.highlight}
-                />
-              ))}
-            </section>
-
-            <div className="animate-item mt-7" style={{ animationDelay: '320ms' }}>
-              <CtaButton onClick={next}>Continuar</CtaButton>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 6 — Privacidade total */}
-        {step === 5 && (
-          <div key="step-5" className="animate-screen flex flex-col">
             <PrivacyStep onContinue={next} />
           </div>
         )}
 
-        {/* STEP 7 — Jornada gamificada dentro da plataforma */}
-        {step === 6 && (
-          <div key="step-6" className="animate-screen flex flex-col">
+        {/* STEP 6 — Jornada gamificada dentro da plataforma */}
+        {step === 5 && (
+          <div key="step-5" className="animate-screen flex flex-col">
             <PlatformWalkthrough
               steps={journey}
               finalLabel="Quero meu convite de acesso"
@@ -491,8 +419,8 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 8 — Demonstração guiada do app (tela cheia) */}
-        {step === 7 && <GuidedAppDemo key="step-7" onComplete={next} />}
+        {/* STEP 7 — Demonstração guiada do app (tela cheia) */}
+        {step === 6 && <GuidedAppDemo key="step-6" onComplete={next} />}
       </div>
     </main>
   )

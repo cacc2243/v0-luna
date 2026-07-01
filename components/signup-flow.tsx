@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { fbTrack } from '@/lib/fb/track'
 import {
@@ -18,7 +19,6 @@ import {
   Loader2,
   AlertCircle,
   CalendarDays,
-  Eye as EyeIcon,
   Clock,
   Gift,
   ChevronRight,
@@ -32,7 +32,7 @@ interface SignupFlowProps {
   onComplete: () => void
 }
 
-const TOTAL = 9
+  const TOTAL = 8
 
 const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 
@@ -42,12 +42,6 @@ const ageOptions = [
   '65+',
 ]
 
-const appearanceOptions = [
-  'Prefiro aparecer',
-  'Prefiro não aparecer',
-  'Tanto faz / decido depois',
-]
-
 const weeklyTimeOptions = [
   'Menos de 5 horas',
   '5 a 10 horas',
@@ -55,26 +49,27 @@ const weeklyTimeOptions = [
   'Mais de 20 horas',
 ]
 
-// Nomes muito comuns/genericos: sugerimos algo mais criativo quando o usuario
-// digita apenas um nome simples sem nenhum diferencial (numero, sufixo, etc).
-const GENERIC_USERNAMES = [
-  'luna', 'amanda', 'maria', 'ana', 'julia', 'joao', 'jose', 'pedro', 'lucas',
-  'gabriel', 'rafael', 'bruna', 'carla', 'paula', 'fernanda', 'camila', 'beatriz',
-  'larissa', 'leticia', 'vitoria', 'isabela', 'sophia', 'sofia', 'helena', 'laura',
-  'manuela', 'alice', 'valentina', 'rosa', 'bella', 'lia', 'mia', 'teste', 'admin',
-  'user', 'usuario', 'love', 'baby', 'anjo', 'gata', 'princesa',
-]
-
+// Sugerimos algo mais criativo (opcional) sempre que o usuario digita apenas
+// um nome simples: so letras, sem nenhum diferencial (numero, ponto, sufixo).
 function isGenericUsername(raw: string) {
   const value = raw.trim().toLowerCase()
   if (value.length < 3) return false
-  // Possui algum diferencial (numero, _, ., sufixo) -> nao e generico.
+  // Ja possui um diferencial (numero, _, .) -> considerado criativo o bastante.
   if (/[0-9._]/.test(value)) return false
-  return GENERIC_USERNAMES.includes(value)
+  // Apenas letras = nome simples, sugerimos algo mais unico.
+  return /^[a-zà-ú]+$/.test(value)
+}
+
+// Gera um exemplo de sugestao criativa com base no nome digitado.
+function creativeSuggestion(raw: string) {
+  const value = raw.trim().toLowerCase()
+  const year = 1990 + Math.floor((value.length * 7) % 20)
+  return `${value}${year}`
 }
 
 export function SignupFlow({ onComplete }: SignupFlowProps) {
   void onComplete
+  const router = useRouter()
   const [step, setStep] = useState(0)
   const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error' | 'whatsappCode'>('form')
   const [errorMessage, setErrorMessage] = useState('')
@@ -82,7 +77,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   // Campos
   const [username, setUsername] = useState('')
   const [age, setAge] = useState('')
-  const [appearance, setAppearance] = useState('')
   const [weeklyTime, setWeeklyTime] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -191,6 +185,15 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
     setStatus('loading')
     setErrorMessage('')
 
+    // Garante que o loading "Configurando sua conta..." apareca por >= 3s.
+    const loadingStart = Date.now()
+    const ensureMinLoading = async () => {
+      const elapsed = Date.now() - loadingStart
+      if (elapsed < 3000) {
+        await new Promise((r) => setTimeout(r, 3000 - elapsed))
+      }
+    }
+
     try {
       const supabase = createClient()
       
@@ -206,7 +209,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             pix_type: pixType,
             pix_key: pixKey.trim(),
             age: age,
-            appearance_preference: appearance,
             weekly_availability: weeklyTime,
             is_creator: true,
           },
@@ -280,7 +282,10 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         status: true,
       })
 
-      setStatus('invite')
+      await ensureMinLoading()
+      // Mantem o loading visivel e leva o usuario para a pagina /convite,
+      // onde o codigo de convite e exibido (nao mais dentro deste fluxo).
+      router.push('/convite')
     } catch (err) {
       console.error('[v0] Signup error:', err)
       setErrorMessage('Erro inesperado. Tente novamente.')
@@ -296,23 +301,21 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       case 1:
         return age.length > 0
       case 2:
-        return appearance.length > 0
-      case 3:
         return weeklyTime.length > 0
-      case 4:
+      case 3:
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-      case 5:
+      case 4:
         return password.length >= 6
-      case 6:
+      case 5:
         return confirm.length >= 6 && confirm === password
-      case 7:
+      case 6:
         return phone.replace(/\D/g, '').length >= 10
-      case 8:
+      case 7:
         return pixKey.trim().length >= 3
       default:
         return false
     }
-  }, [step, username, age, appearance, weeklyTime, email, password, confirm, phone, pixKey])
+  }, [step, username, age, weeklyTime, email, password, confirm, phone, pixKey])
 
   return (
     <div className="absolute inset-0 z-[60] flex flex-col">
@@ -320,15 +323,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       <div className="absolute inset-0 bg-background/88 backdrop-blur-[3px]" aria-hidden="true" />
 
       <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-6">
-          {status === 'invite' ? (
-            <InviteCodeFlow
-              email={email}
-              userName={username}
-              pixType={pixType}
-              pixKey={pixKey}
-              amountCents={inviteAmountCents}
-            />
-          ) : status === 'error' ? (
+          {status === 'error' ? (
             <ErrorCard message={errorMessage} onRetry={() => setStatus('form')} />
           ) : status === 'sending' ? (
             <SendingPixCard
@@ -409,9 +404,10 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   <div className="animate-pop mt-3 flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3">
                     <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                     <p className="text-pretty text-[0.72rem] leading-relaxed text-foreground">
-                      Esse nome é muito comum. Use algo mais criativo, como{' '}
-                      <span className="font-semibold text-primary">@{username}_oficial</span> ou{' '}
-                      <span className="font-semibold text-primary">@{username}_real</span>.
+                      Dica <span className="opacity-70">(opcional)</span>: nomes simples costumam
+                      estar em uso. Que tal algo mais único, como{' '}
+                      <span className="font-semibold text-primary">@{creativeSuggestion(username)}</span> ou{' '}
+                      <span className="font-semibold text-primary">@{username}_oficial</span>?
                     </p>
                   </div>
                 )}
@@ -429,7 +425,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                 title="Quantos anos você tem?"
                 description="Você precisa ter no mínimo 18 anos para criar uma conta."
               >
-                <SafetyNote>Informação confidencial e nunca exibida</SafetyNote>
                 <NativeSelect
                   value={age}
                   options={ageOptions}
@@ -440,26 +435,8 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               </StepShell>
             )}
 
-            {/* APARECER OU NÃO */}
-            {step === 2 && (
-              <StepShell
-                icon={EyeIcon}
-                eyebrow="Privacidade"
-                title="Você prefere aparecer ou não?"
-                description="Defina como quer trabalhar. Você pode mudar isso quando quiser."
-              >
-                <NativeSelect
-                  value={appearance}
-                  options={appearanceOptions}
-                  placeholder="Escolha uma opção"
-                  onChange={setAppearance}
-                />
-                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
-              </StepShell>
-            )}
-
             {/* TEMPO DISPONÍVEL */}
-            {step === 3 && (
+            {step === 2 && (
               <StepShell
                 icon={Clock}
                 eyebrow="Disponibilidade"
@@ -477,7 +454,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* SEU EMAIL */}
-            {step === 4 && (
+            {step === 3 && (
               <StepShell
                 icon={Mail}
                 eyebrow="Seu email"
@@ -498,7 +475,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CRIE UMA SENHA */}
-            {step === 5 && (
+            {step === 4 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Crie uma senha"
@@ -518,7 +495,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CONFIRME SUA SENHA */}
-            {step === 6 && (
+            {step === 5 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Confirme sua senha"
@@ -542,7 +519,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   type="button"
                   onClick={() => {
                     setConfirm('')
-                    setStep(5)
+                    setStep(4)
                   }}
                   className="mt-2.5 text-xs font-medium text-primary transition-opacity hover:opacity-80"
                 >
@@ -553,7 +530,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* SEU TELEFONE / VERIFICAÇÃO WHATSAPP */}
-            {step === 7 && (
+            {step === 6 && (
               <StepShell
                 icon={Phone}
                 eyebrow="Seu telefone"
@@ -593,7 +570,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CHAVE PIX */}
-            {step === 8 && (
+            {step === 7 && (
               <StepShell
                 icon={KeyRound}
                 eyebrow="Chave PIX"
@@ -1271,7 +1248,7 @@ function LoadingCard() {
   return (
     <div className="animate-pop luna-border flex w-full max-w-sm flex-col items-center rounded-3xl bg-card px-6 py-10 text-center shadow-2xl shadow-primary/15">
       <Loader2 className="size-10 animate-spin text-primary" aria-hidden="true" />
-      <p className="mt-5 text-lg font-bold text-foreground">Criando sua conta...</p>
+      <p className="mt-5 text-lg font-bold text-foreground">Configurando sua conta...</p>
       <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
         Estamos preparando tudo para voce comecar a vender.
       </p>

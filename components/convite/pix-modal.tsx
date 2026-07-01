@@ -522,7 +522,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Botão copiar */}
           <button
             onClick={copyPixCode}
-            className={`luna-gradient-cta ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground shadow-lg shadow-primary/40 ring-1 ring-inset ring-white/20 transition active:scale-[0.98]`}
+            className={`cta-gradient ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground ring-1 ring-inset ring-white/20 transition hover:brightness-110 active:scale-[0.98]`}
           >
             {copied ? (
               <>
@@ -601,7 +601,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
           <img src="/images/background.png" alt="" className="size-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/92 to-background/96" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/65 via-background/78 to-background/88" />
         </div>
 
         {/* Botão fechar */}
