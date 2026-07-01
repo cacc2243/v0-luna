@@ -183,6 +183,15 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
     setStatus('loading')
     setErrorMessage('')
 
+    // Garante que o loading "Configurando sua conta..." apareca por >= 3s.
+    const loadingStart = Date.now()
+    const ensureMinLoading = async () => {
+      const elapsed = Date.now() - loadingStart
+      if (elapsed < 3000) {
+        await new Promise((r) => setTimeout(r, 3000 - elapsed))
+      }
+    }
+
     try {
       const supabase = createClient()
       
@@ -271,6 +280,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         status: true,
       })
 
+      await ensureMinLoading()
       setStatus('invite')
     } catch (err) {
       console.error('[v0] Signup error:', err)
@@ -1242,7 +1252,7 @@ function LoadingCard() {
   return (
     <div className="animate-pop luna-border flex w-full max-w-sm flex-col items-center rounded-3xl bg-card px-6 py-10 text-center shadow-2xl shadow-primary/15">
       <Loader2 className="size-10 animate-spin text-primary" aria-hidden="true" />
-      <p className="mt-5 text-lg font-bold text-foreground">Criando sua conta...</p>
+      <p className="mt-5 text-lg font-bold text-foreground">Configurando sua conta...</p>
       <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
         Estamos preparando tudo para voce comecar a vender.
       </p>
