@@ -485,38 +485,38 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
           {currentSale && (phase === 'selling' || phase === 'selling2') && (
             <div
               key={`order-${activeSale}`}
-              className={`luna-border relative z-[45] mb-2 overflow-hidden rounded-2xl bg-card px-3 py-3 ${ring('orders')} ${
+              className={`luna-border relative z-[45] mb-2 overflow-hidden rounded-2xl bg-card px-4 py-4 ${ring('orders')} ${
                 shake ? 'animate-shake' : 'animate-card-enter'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                  <Bell className="size-4 text-primary" aria-hidden="true" />
+              <div className="flex items-center gap-3">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                  <Bell className="size-5 text-primary" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1 leading-snug">
-                  <p className="truncate text-[0.8rem] font-semibold text-foreground">
+                  <p className="truncate text-[0.95rem] font-semibold text-foreground">
                     {currentSale.handle} quer {currentSale.pack}
                   </p>
-                  <p className="text-[0.65rem] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     agora · {currentSale.purchases}
                   </p>
                 </div>
-                <span className="text-sm font-bold text-positive">{brl(currentSale.amount)}</span>
+                <span className="text-base font-bold text-positive">{brl(currentSale.amount)}</span>
               </div>
 
               {refuseHint && (
-                <p className="mt-2 rounded-lg bg-primary/10 px-2.5 py-1.5 text-center text-[0.7rem] font-medium text-primary">
+                <p className="mt-3 rounded-lg bg-primary/10 px-2.5 py-1.5 text-center text-[0.7rem] font-medium text-primary">
                   Aceite a venda para continuar
                 </p>
               )}
 
-              <div className="mt-2.5 flex gap-2">
+              <div className="mt-4 flex gap-2.5">
                 <button
                   type="button"
                   onClick={tryRefuse}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98]"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary py-3.5 text-[0.9rem] font-semibold text-muted-foreground transition active:scale-[0.98]"
                 >
-                  <X className="size-3.5" aria-hidden="true" />
+                  <X className="size-4" aria-hidden="true" />
                   Recusar
                 </button>
                 <button
@@ -526,9 +526,9 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                     backgroundImage:
                       'linear-gradient(90deg, oklch(0.62 0.17 158) 0%, oklch(0.55 0.16 158) 100%)',
                   }}
-                  className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg py-2 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98]"
+                  className="flex flex-[1.4] items-center justify-center gap-1.5 rounded-xl py-3.5 text-[0.9rem] font-bold text-white shadow-lg shadow-positive/20 transition hover:brightness-110 active:scale-[0.98]"
                 >
-                  <Check className="size-3.5" aria-hidden="true" />
+                  <Check className="size-4" aria-hidden="true" />
                   Aceitar venda
                 </button>
               </div>
