@@ -113,7 +113,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
           style={{
             padding: '1.25px',
             background:
-              'linear-gradient(to bottom, oklch(0.5 0.15 15 / 0.95), oklch(0.6 0.16 15 / 0.32) 45%, oklch(0.66 0.17 15 / 0.08) 100%)',
+              'linear-gradient(to bottom, oklch(0.56 0.23 9 / 0.95), oklch(0.6 0.21 10 / 0.32) 45%, oklch(0.62 0.21 12 / 0.08) 100%)',
             WebkitMask:
               'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
             WebkitMaskComposite: 'xor',
@@ -223,7 +223,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
               <button
                 type="button"
                 onClick={() => setStep(step === 'intro' ? 'loading' : 'closing')}
-                className="luna-gradient mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-[1.02] active:scale-[0.98]"
+                className="cta-gradient mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground transition hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Gift className="size-5" aria-hidden="true" />
                 {step === 'intro' ? 'Resgatar meu código' : 'Ver surpresa'}

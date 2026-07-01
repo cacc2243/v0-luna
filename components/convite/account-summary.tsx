@@ -112,7 +112,7 @@ export function AccountSummary({ username, email, pixType, pixKey, onUpdate }: A
         id="sua-conta"
         className="mb-2.5 flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground"
       >
-        <span className="size-1.5 rounded-full luna-gradient" aria-hidden="true" />
+        <span className="cta-gradient size-1.5 rounded-full" aria-hidden="true" />
         Sua conta
       </h2>
 

@@ -77,6 +77,12 @@ function normalizeBoost(raw: unknown): BoostAmounts {
  * Sempre executado no servidor.
  */
 async function readAppSettings(): Promise<AppSettings> {
+  // Se o Supabase nao estiver configurado (ex.: preview sem env vars),
+  // retorna os valores padrao em vez de quebrar o render.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { ...DEFAULTS }
+  }
+
   const supabase = createAdminClient()
   const { data, error } = await supabase.from('app_settings').select('key, value')
 
