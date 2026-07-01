@@ -28,19 +28,31 @@ const reviews = [
     handle: '@gabi.m_santos',
     avatar: '/images/avatar-1.png',
     time: 'há 6 dias',
-    text: 'em 3 meses fechei R$32 mil. larguei meu emprego clt e hoje vivo só disso, com muito mais paz.',
+    text: 'no primeiro mês fiz R$8.400 só com packs. hoje, 3 meses depois, já passei de R$32 mil e larguei meu clt de R$1.800.',
   },
   {
     handle: '@lara_priv',
     avatar: '/images/avatar-2.png',
     time: 'há 2 semanas',
-    text: 'achei que não ia dar certo, mas na primeira semana já tinha vendido mais de 40 packs. recomendo demais.',
+    text: 'na primeira semana vendi 43 packs e fechei R$3.900. o dinheiro cai na hora no meu pix, sem taxa escondida.',
   },
   {
     handle: '@drih.rs',
     avatar: '/images/avatar-4.png',
     time: 'há 1 mês',
-    text: 'o suporte é o que mais me surpreendeu. me ajudaram a montar tudo e já estou faturando.',
+    text: 'meu melhor dia foi R$1.250 em vendas. em 30 dias bati R$18 mil e continua subindo toda semana.',
+  },
+  {
+    handle: '@nay.oficial',
+    avatar: '/images/avatar-1.png',
+    time: 'há 3 dias',
+    text: 'comecei com medo, hoje faturo entre R$6 e R$9 mil por mês trabalhando do meu celular, no meu tempo.',
+  },
+  {
+    handle: '@bibi.rezende',
+    avatar: '/images/avatar-2.png',
+    time: 'há 5 dias',
+    text: 'já saquei mais de R$54 mil desde que entrei. o saque é imediato e nunca tive problema pra receber.',
   },
 ]
 
