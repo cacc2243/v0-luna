@@ -708,9 +708,26 @@
   animation: cta-breathe 2.8s ease-in-out infinite;
 }
 
+/* Pulso mais forte: escala + halo rosa para destacar o CTA da conversa */
+@keyframes cta-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 10px 30px -8px oklch(0.6 0.22 10 / 0.4), 0 0 0 0 oklch(0.6 0.22 10 / 0.5);
+  }
+  50% {
+    transform: scale(1.035);
+    box-shadow: 0 14px 38px -8px oklch(0.6 0.22 10 / 0.55), 0 0 0 8px oklch(0.6 0.22 10 / 0);
+  }
+}
+.animate-cta-pulse {
+  animation: cta-pulse 1.8s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-coach-glow,
-  .animate-cta-breathe {
+  .animate-cta-breathe,
+  .animate-cta-pulse {
     animation: none;
   }
 }

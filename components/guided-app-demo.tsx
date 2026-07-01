@@ -1102,9 +1102,9 @@ function PacksScreen({
                 <button
                   type="button"
                   onClick={onCreate}
-                  className="luna-gradient mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-4 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                  className="luna-gradient animate-cta-pulse mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-5 text-base font-extrabold uppercase tracking-wide text-primary-foreground shadow-xl shadow-primary/40 ring-2 ring-primary/50 transition active:scale-[0.98]"
                 >
-                  <Plus className="size-4" aria-hidden="true" />
+                  <Plus className="size-5" aria-hidden="true" />
                   Criar Pack
                 </button>
               </div>
