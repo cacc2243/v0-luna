@@ -430,7 +430,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                 title="Quantos anos você tem?"
                 description="Você precisa ter no mínimo 18 anos para criar uma conta."
               >
-                <SafetyNote>Informação confidencial e nunca exibida</SafetyNote>
                 <NativeSelect
                   value={age}
                   options={ageOptions}
