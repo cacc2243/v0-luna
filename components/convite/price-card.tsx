@@ -31,7 +31,7 @@ export function PriceCard({
 
   return (
     <section aria-labelledby="investimento">
-      <div className="luna-border-top relative overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-2xl shadow-black/40">
+      <div className="luna-border-top relative overflow-hidden rounded-3xl border border-border/50 bg-card px-6 py-7 shadow-2xl shadow-black/40">
         {/* Imagem de fundo (mesma do /convite) com degradê escuro por cima */}
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <img
