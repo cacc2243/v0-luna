@@ -1,55 +1,50 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Gift, ChevronRight, ShieldCheck } from 'lucide-react'
+import {
+  Lock,
+  Zap,
+  Crown,
+  Info,
+  ChevronRight,
+  Loader2,
+  VenusAndMars,
+} from 'lucide-react'
 
-type Step = 'booting' | 'intro' | 'loading' | 'surprise' | 'closing'
+type Step = 'verifying' | 'input' | 'paid'
 
 const CODES_LEFT = 11
+const CODES_TOTAL = 50
 
-function CircleLoader({ label }: { label: string }) {
+/* Cabeçalho compartilhado por todos os estados do modal */
+function AccessHeader() {
   return (
-    <div className="flex flex-col items-center gap-5 py-2">
-      <span className="relative flex size-20 items-center justify-center" aria-hidden="true">
-        {/* Anel de fundo + anel girando */}
-        <svg className="size-20 animate-spin [animation-duration:1.1s]" viewBox="0 0 50 50">
-          <circle
-            cx="25"
-            cy="25"
-            r="20"
-            fill="none"
-            className="stroke-border"
-            strokeWidth="4"
-          />
-          <circle
-            cx="25"
-            cy="25"
-            r="20"
-            fill="none"
-            className="stroke-primary"
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeDasharray="125.6"
-            strokeDashoffset="88"
-          />
-        </svg>
-        <Gift className="absolute size-7 text-primary" />
+    <div className="flex items-center gap-3.5">
+      <span className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+        <Lock className="size-5" aria-hidden="true" />
+        <span
+          className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-primary ring-2 ring-card"
+          aria-hidden="true"
+        />
       </span>
-      <p
-        className="text-pretty text-center text-sm font-medium leading-relaxed text-muted-foreground"
-        role="status"
-        aria-live="polite"
-      >
-        {label}
-      </p>
+      <div className="text-left leading-tight">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-primary">
+          Acesso privado
+        </p>
+        <h2
+          id="invite-modal-title"
+          className="mt-0.5 text-xl font-extrabold text-foreground"
+        >
+          Código de <span className="text-primary">Acesso</span>
+        </h2>
+      </div>
     </div>
   )
 }
 
 export function WelcomePopup({ onClose }: { onClose?: () => void }) {
   const [open, setOpen] = useState(true)
-  const [step, setStep] = useState<Step>('booting')
-  const [code, setCode] = useState('')
+  const [step, setStep] = useState<Step>('input')
 
   // Notifica o pai quando o modal fecha (para iniciar as notificações de prova social)
   const prevOpen = useRef(false)
@@ -57,14 +52,6 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
     if (prevOpen.current && !open) onClose?.()
     prevOpen.current = open
   }, [open, onClose])
-
-  // O modal ja entra aberto exibindo um carregamento; apos um instante curto,
-  // revela o conteudo do codigo de convite (evita a sensacao de "demora").
-  useEffect(() => {
-    if (step !== 'booting') return
-    const t = setTimeout(() => setStep('intro'), 3000)
-    return () => clearTimeout(t)
-  }, [step])
 
   // Trava o scroll do body enquanto o modal estiver aberto.
   useEffect(() => {
@@ -76,23 +63,15 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
     }
   }, [open])
 
-  // Loading "buscando convites" -> etapa surpresa.
+  // Ao tocar em "Desbloquear meu código" entramos no estado "verificando",
+  // que roda por 2s e então avança para a opção paga.
   useEffect(() => {
-    if (step !== 'loading') return
-    const t = setTimeout(() => setStep('surprise'), 2600)
-    return () => clearTimeout(t)
-  }, [step])
-
-  // Loading final (2s) antes de fechar o modal.
-  useEffect(() => {
-    if (step !== 'closing') return
-    const t = setTimeout(() => setOpen(false), 2000)
+    if (step !== 'verifying') return
+    const t = setTimeout(() => setStep('paid'), 2000)
     return () => clearTimeout(t)
   }, [step])
 
   if (!open) return null
-
-  const isInputDisabled = step !== 'intro'
 
   return (
     <div
@@ -114,8 +93,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
             padding: '1.25px',
             background:
               'linear-gradient(to bottom, oklch(0.56 0.23 9 / 0.95), oklch(0.6 0.21 10 / 0.32) 45%, oklch(0.62 0.21 12 / 0.08) 100%)',
-            WebkitMask:
-              'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+            WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
             WebkitMaskComposite: 'xor',
             maskComposite: 'exclude',
           }}
@@ -128,114 +106,142 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
             className="size-full object-cover object-center"
           />
           {/* Camadas para legibilidade do texto sobre a imagem */}
-          <div className="absolute inset-0 bg-card/65" />
-          <div className="absolute inset-0 bg-gradient-to-b from-card/30 via-card/60 to-card/90" />
+          <div className="absolute inset-0 bg-card/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-card/40 via-card/65 to-card/90" />
         </div>
 
         {/* Conteúdo */}
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-7 pt-8 text-center">
-          {step === 'booting' || step === 'loading' || step === 'closing' ? (
-            <div className="flex flex-1 flex-col items-center justify-center py-6">
-              <h2
-                id="invite-modal-title"
-                className="text-balance text-xl font-bold leading-tight text-foreground"
-              >
-                {step === 'loading'
-                  ? 'Aguarde um momento'
-                  : step === 'closing'
-                    ? 'Preparando sua surpresa'
-                    : 'Buscando Convites'}
-              </h2>
-              <div className="mt-6">
-                <CircleLoader
-                  label={
-                    step === 'loading'
-                      ? 'Buscando códigos de convites...'
-                      : step === 'closing'
-                        ? 'Só um instante...'
-                        : 'Buscando Convites...'
-                  }
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Logo completa */}
-              <img
-                src="/images/luna-prive-logo.png"
-                alt="Luna Privé"
-                className="mx-auto h-11 w-auto"
-              />
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pb-7 pt-7">
+          <AccessHeader />
 
-              <h2
-                id="invite-modal-title"
-                className="mt-5 text-balance text-2xl font-bold leading-tight text-foreground"
+          {/* Estado: Verificando disponibilidade */}
+          {step === 'verifying' && (
+            <>
+              <p
+                className="text-pretty text-sm leading-relaxed text-muted-foreground"
+                role="status"
+                aria-live="polite"
               >
-                Código de Convite
-              </h2>
-              <p className="mx-auto mt-2.5 max-w-[18rem] text-pretty text-sm leading-relaxed text-muted-foreground">
-                Apenas usuárias convidadas podem se inscrever na plataforma
-                {step === 'intro' ? '. Digite seu código abaixo para ativar sua conta.' : '.'}
+                Verificando disponibilidade de códigos na sua região...
               </p>
 
-              {/* Campo de código */}
-              <input
-                type="text"
-                inputMode="text"
-                autoComplete="off"
-                disabled={isInputDisabled}
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="DIGITE SEU CÓDIGO"
-                aria-label="Código de convite"
-                className="mt-6 w-full rounded-2xl border border-border/70 bg-background/60 px-5 py-3.5 text-center text-sm font-semibold uppercase tracking-[0.25em] text-foreground placeholder:tracking-[0.2em] placeholder:text-muted-foreground/60 focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60"
-              />
+              <div className="grid grid-cols-6 gap-2" aria-hidden="true">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex aspect-square items-center justify-center rounded-xl border border-border/60 bg-background/50"
+                  >
+                    <Loader2 className="size-4 animate-spin text-primary/70" />
+                  </div>
+                ))}
+              </div>
 
-              {step === 'intro' && (
-                <p className="mt-3.5 text-pretty text-[0.8rem] font-medium leading-relaxed text-primary">
-                  Os códigos grátis estão desativados no momento, desbloqueie seu código no botão
-                  abaixo:
-                </p>
-              )}
+              <div className="rounded-2xl border border-border/60 bg-background/50 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">Códigos restantes hoje</p>
+                  <p className="text-sm font-bold">
+                    <span className="text-primary">{CODES_LEFT}</span>{' '}
+                    <span className="text-muted-foreground">/ {CODES_TOTAL}</span>
+                  </p>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-border/60">
+                  <div
+                    className="luna-gradient h-full rounded-full transition-all"
+                    style={{ width: `${(CODES_LEFT / CODES_TOTAL) * 100}%` }}
+                  />
+                </div>
+              </div>
 
-              {/* Contador de códigos restantes */}
-              <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/50 px-5 py-3.5">
-                <span className="size-1.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
-                <p className="text-sm text-muted-foreground">
-                  Restam apenas <span className="font-bold text-primary">{CODES_LEFT}</span> códigos
-                  hoje
+              <button
+                type="button"
+                disabled
+                className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-border/70 bg-background/40 py-4 text-base font-bold text-muted-foreground"
+              >
+                <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                Verificando...
+              </button>
+            </>
+          )}
+
+          {/* Estado: Inserir código */}
+          {step === 'input' && (
+            <>
+              <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
+                Plataforma fechada. Insira seu código para garantir sua entrada anônima e segura no
+                Luna Privé.
+              </p>
+
+              <div className="grid grid-cols-6 gap-2" aria-hidden="true">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex aspect-square items-center justify-center rounded-xl border border-border/60 bg-background/50"
+                  >
+                    <span className="size-1.5 rounded-full bg-muted-foreground/40" />
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-primary/40 bg-secondary px-4 py-3">
+                <p className="text-pretty text-xs font-medium leading-relaxed text-primary">
+                  Códigos grátis esgotados. Desbloqueie abaixo:
                 </p>
               </div>
 
-              {/* Bloco surpresa */}
-              {step === 'surprise' && (
-                <div className="animate-pop mt-3 rounded-2xl border border-primary/50 bg-primary/[0.07] px-5 py-4">
-                  <p className="text-pretty text-[0.8rem] leading-relaxed text-muted-foreground">
-                    Não disponibilizamos mais convites gratuitos.
-                  </p>
-                  <p className="mt-1.5 text-balance text-base font-bold leading-snug text-primary">
-                    Mas, temos uma surpresa para você...
-                  </p>
-                </div>
-              )}
-
-              {/* Botão de ação */}
               <button
                 type="button"
-                onClick={() => setStep(step === 'intro' ? 'loading' : 'closing')}
-                className="cta-gradient mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground transition hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]"
+                onClick={() => setStep('verifying')}
+                className="cta-gradient flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground transition hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]"
               >
-                <Gift className="size-5" aria-hidden="true" />
-                {step === 'intro' ? 'Resgatar meu código' : 'Ver surpresa'}
+                <VenusAndMars className="size-5" aria-hidden="true" />
+                Desbloquear meu código
                 <ChevronRight className="size-5" aria-hidden="true" />
               </button>
+            </>
+          )}
 
-              {step === 'intro' && (
-                <p className="mt-4 flex items-center justify-center gap-1.5 text-[0.7rem] text-muted-foreground/80">
-                  <ShieldCheck className="size-3.5 text-positive" aria-hidden="true" />
-                  Ambiente seguro e verificado
+          {/* Estado: Acesso pago */}
+          {step === 'paid' && (
+            <>
+              <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
+                Códigos grátis esgotados. Garanta seu acesso pela opção paga abaixo.
+              </p>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                {[
+                  { icon: Lock, label: 'Anônimo' },
+                  { icon: Zap, label: 'Imediato' },
+                  { icon: Crown, label: 'Vitalício' },
+                ].map((b) => (
+                  <div
+                    key={b.label}
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-border/60 bg-background/50 py-3.5"
+                  >
+                    <b.icon className="size-5 text-primary" aria-hidden="true" />
+                    <span className="text-xs font-semibold text-foreground">{b.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
+                <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                  Quantidade de acessos é{' '}
+                  <strong className="font-bold text-foreground">limitada</strong> para{' '}
+                  <strong className="font-bold text-foreground">garantir</strong> qualidade da
+                  plataforma.
                 </p>
-              )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="cta-gradient flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground transition hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <VenusAndMars className="size-5" aria-hidden="true" />
+                Garantir meu acesso
+                <ChevronRight className="size-5" aria-hidden="true" />
+              </button>
             </>
           )}
         </div>

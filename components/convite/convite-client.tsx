@@ -8,6 +8,7 @@ import { PriceCard } from '@/components/convite/price-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
+import { PreCheckoutModal } from '@/components/convite/pre-checkout-modal'
 import { WelcomePopup } from '@/components/convite/welcome-popup'
 import { SocialProofToaster } from '@/components/convite/social-proof-toaster'
 
@@ -43,6 +44,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
     }
     return { username: '', email: '', pixType: '', pixKey: '' }
   })
+  const [showPreCheckout, setShowPreCheckout] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)
   // Ativa as notificações de prova social no topo após o modal de convite fechar
   const [socialProofActive, setSocialProofActive] = useState(false)
@@ -92,6 +94,12 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
       })
     }
 
+    setShowPreCheckout(true)
+  }
+
+  // Confirma a etapa de pré-checkout e avança para a geração do PIX.
+  function handlePreCheckoutConfirm() {
+    setShowPreCheckout(false)
     setShowPixModal(true)
   }
 
@@ -167,6 +175,15 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
         {/* Empresa */}
         <CompanyInfo />
       </div>
+
+      {/* Etapa de pré-confirmação (antes de gerar o PIX) */}
+      <PreCheckoutModal
+        isOpen={showPreCheckout}
+        onClose={() => setShowPreCheckout(false)}
+        onConfirm={handlePreCheckoutConfirm}
+        email={data.email}
+        amountCents={inviteCents}
+      />
 
       {/* Modal de PIX */}
       <PixModal
