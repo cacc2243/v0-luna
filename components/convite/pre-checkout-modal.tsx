@@ -97,20 +97,18 @@ export function PreCheckoutModal({
           <div className="flex flex-col items-center text-center">
             <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-10 w-auto" />
 
-            <div className="relative mt-5 flex size-12 items-center justify-center">
-              {/* Glow rosa suave atras do icone */}
-              <span
-                className="absolute inset-0 rounded-full bg-primary/30 blur-xl"
-                aria-hidden="true"
-              />
-              <span className="relative flex size-12 items-center justify-center rounded-xl bg-primary/12 ring-1 ring-primary/30">
-                {done ? (
-                  <Check className="size-5 text-primary" aria-hidden="true" />
-                ) : (
+            {!done && (
+              <div className="relative mt-5 flex size-12 items-center justify-center">
+                {/* Glow rosa suave atras do icone */}
+                <span
+                  className="absolute inset-0 rounded-full bg-primary/30 blur-xl"
+                  aria-hidden="true"
+                />
+                <span className="relative flex size-12 items-center justify-center rounded-xl bg-primary/12 ring-1 ring-primary/30">
                   <Loader2 className="size-5 animate-spin text-primary" aria-hidden="true" />
-                )}
-              </span>
-            </div>
+                </span>
+              </div>
+            )}
 
             <h2 className="mt-4 text-balance text-xl font-extrabold leading-tight tracking-tight text-foreground sm:text-2xl">
               {done ? 'Convite Especial pronto!' : 'Gerando seu Convite Especial'}
