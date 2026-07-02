@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Mail, CheckCircle2, Info } from 'lucide-react'
+import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import confetti from 'canvas-confetti'
@@ -441,9 +441,28 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-14">
-          <div className="size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="mt-4 text-sm text-muted-foreground">Gerando PIX...</p>
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="relative flex size-16 items-center justify-center">
+            {/* halo discreto */}
+            <span
+              className="absolute inset-0 rounded-full bg-primary/15 blur-md"
+              aria-hidden="true"
+            />
+            {/* anel base sutil */}
+            <span
+              className="absolute inset-0 rounded-full border-2 border-primary/15"
+              aria-hidden="true"
+            />
+            {/* anel girando */}
+            <span
+              className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-primary"
+              aria-hidden="true"
+            />
+            {/* icone QR pulsando no centro */}
+            <QrCode className="size-6 animate-pulse text-primary" aria-hidden="true" />
+          </div>
+          <p className="mt-5 text-sm font-medium text-foreground">Gerando seu PIX</p>
+          <p className="mt-1 text-xs text-muted-foreground">Isso leva só um instante...</p>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-14 text-center">
