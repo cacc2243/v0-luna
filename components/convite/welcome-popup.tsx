@@ -6,7 +6,6 @@ import {
   Zap,
   Crown,
   Info,
-  Sparkles,
   ChevronRight,
   Loader2,
   VenusAndMars,
@@ -182,8 +181,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
                 ))}
               </div>
 
-              <div className="flex items-center gap-2.5 rounded-2xl border border-primary/40 bg-primary/[0.07] px-4 py-3">
-                <Sparkles className="size-4 shrink-0 text-primary" aria-hidden="true" />
+              <div className="rounded-2xl border border-primary/40 bg-secondary px-4 py-3">
                 <p className="text-pretty text-xs font-medium leading-relaxed text-primary">
                   Códigos grátis esgotados. Desbloqueie abaixo:
                 </p>
