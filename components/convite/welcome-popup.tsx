@@ -44,7 +44,7 @@ function AccessHeader() {
 
 export function WelcomePopup({ onClose }: { onClose?: () => void }) {
   const [open, setOpen] = useState(true)
-  const [step, setStep] = useState<Step>('verifying')
+  const [step, setStep] = useState<Step>('input')
 
   // Notifica o pai quando o modal fecha (para iniciar as notificações de prova social)
   const prevOpen = useRef(false)
@@ -63,10 +63,11 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
     }
   }, [open])
 
-  // Estado inicial "verificando" avança automaticamente para a inserção do código.
+  // Ao tocar em "Desbloquear meu código" entramos no estado "verificando",
+  // que roda por 2s e então avança para a opção paga.
   useEffect(() => {
     if (step !== 'verifying') return
-    const t = setTimeout(() => setStep('input'), 3200)
+    const t = setTimeout(() => setStep('paid'), 2000)
     return () => clearTimeout(t)
   }, [step])
 
@@ -189,7 +190,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
 
               <button
                 type="button"
-                onClick={() => setStep('paid')}
+                onClick={() => setStep('verifying')}
                 className="cta-gradient flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground transition hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <VenusAndMars className="size-5" aria-hidden="true" />
