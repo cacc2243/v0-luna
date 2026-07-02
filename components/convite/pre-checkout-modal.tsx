@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   Gift,
   ChevronRight,
-  Sparkles,
+  Zap,
   Lock,
 } from 'lucide-react'
 
@@ -92,22 +92,22 @@ export function PreCheckoutModal({
           <X className="size-5" />
         </button>
 
-        <div className="relative z-10 overflow-y-auto px-5 pb-6 pt-7 sm:px-7">
+        <div className="relative z-10 overflow-y-auto px-5 pb-10 pt-7 sm:px-7">
           {/* Header */}
           <div className="flex flex-col items-center text-center">
-            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
+            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-10 w-auto" />
 
-            <div className="relative mt-5 flex size-16 items-center justify-center">
+            <div className="relative mt-5 flex size-12 items-center justify-center">
               {/* Glow rosa suave atras do icone */}
               <span
                 className="absolute inset-0 rounded-full bg-primary/30 blur-xl"
                 aria-hidden="true"
               />
-              <span className="relative flex size-16 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/30">
+              <span className="relative flex size-12 items-center justify-center rounded-xl bg-primary/12 ring-1 ring-primary/30">
                 {done ? (
-                  <Sparkles className="size-7 text-primary" aria-hidden="true" />
+                  <Check className="size-5 text-primary" aria-hidden="true" />
                 ) : (
-                  <Loader2 className="size-7 animate-spin text-primary" aria-hidden="true" />
+                  <Loader2 className="size-5 animate-spin text-primary" aria-hidden="true" />
                 )}
               </span>
             </div>
@@ -131,7 +131,7 @@ export function PreCheckoutModal({
           </div>
 
           {/* Checklist animado */}
-          <ul className="mt-5 flex flex-col gap-2.5">
+          <ul className="mt-5 flex flex-col gap-2">
             {STEPS.map((step, i) => {
               const isDone = completed > i
               const isActive = completed === i
@@ -139,7 +139,7 @@ export function PreCheckoutModal({
               return (
                 <li
                   key={step.label}
-                  className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all duration-300 ${
+                  className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 transition-all duration-300 ${
                     isDone
                       ? 'border-primary/40 bg-primary/[0.06]'
                       : isActive
@@ -148,22 +148,22 @@ export function PreCheckoutModal({
                   }`}
                 >
                   <span
-                    className={`flex size-8 shrink-0 items-center justify-center rounded-full transition-colors ${
+                    className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-colors ${
                       isDone
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-secondary text-muted-foreground'
                     }`}
                   >
                     {isDone ? (
-                      <Check className="size-4" aria-hidden="true" />
+                      <Check className="size-3.5" aria-hidden="true" />
                     ) : isActive ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                      <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
                     ) : (
-                      <StepIcon className="size-4" aria-hidden="true" />
+                      <StepIcon className="size-3.5" aria-hidden="true" />
                     )}
                   </span>
                   <span
-                    className={`text-sm font-medium ${
+                    className={`text-[13px] font-medium ${
                       isDone || isActive ? 'text-foreground' : 'text-muted-foreground'
                     }`}
                   >
@@ -175,30 +175,30 @@ export function PreCheckoutModal({
           </ul>
 
           {/* Confirmação dos dados */}
-          <div className="mt-5 rounded-2xl border border-border/60 bg-background/50 p-4">
+          <div className="mt-5 rounded-2xl border border-border/60 bg-background/50 p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Confirme seus dados
             </p>
-            <div className="mt-3 flex items-center gap-2.5">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
-                <Mail className="size-3.5" aria-hidden="true" />
+            <div className="mt-4 flex items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                <Mail className="size-4" aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground">Código enviado para</p>
-                <p className="truncate text-sm font-semibold text-foreground">
+                <p className="text-xs text-muted-foreground">Código enviado para</p>
+                <p className="truncate text-base font-semibold text-foreground">
                   {email || 'seu e-mail'}
                 </p>
               </div>
             </div>
-            <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-3">
+            <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-4">
               <span className="text-sm text-muted-foreground">Valor do convite</span>
-              <span className="text-sm font-bold text-foreground">R${formatCents(amountCents)}</span>
+              <span className="text-base font-bold text-foreground">R${formatCents(amountCents)}</span>
             </div>
           </div>
 
           {/* Aviso de imediaticidade */}
           <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/[0.06] px-4 py-3">
-            <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+            <Zap className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
             <p className="text-pretty text-xs font-medium leading-relaxed text-foreground">
               Assim que o pagamento for confirmado, seu{' '}
               <span className="font-bold text-primary">Código de Convite</span> chega no e-mail{' '}
