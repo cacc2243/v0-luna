@@ -543,7 +543,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Valor */}
           <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Valor com desconto
+              Valor único
             </p>
             <div className="mt-1 flex items-center justify-center gap-2.5">
               <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
