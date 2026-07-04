@@ -39,21 +39,21 @@ interface GuidedAppDemoProps {
 }
 
 const sales = [
-  { handle: '@fan_secreto', pack: 'Pack 03', amount: 89.9, purchases: '+12 compras realizadas' },
-  { handle: '@serg10.tp', pack: 'Pack 07', amount: 129.9, purchases: '+28 compras realizadas' },
-  { handle: '@lobo_solitario', pack: 'Pack 01', amount: 69.9, purchases: '+5 compras realizadas' },
-  { handle: '@colecionador_x', pack: 'Pack 12', amount: 199.9, purchases: '+41 compras realizadas' },
+  { handle: '@fan_secreto', pack: 'Pack 03', amount: 89.9 },
+ { handle: '@serg10.tp', pack: 'Pack 07', amount: 129.9 },
+ { handle: '@lobo_solitario', pack: 'Pack 01', amount: 69.9 },
+ { handle: '@colecionador_x', pack: 'Pack 12', amount: 199.9 },
 ]
 
 // Segunda rodada de pedidos — após criar o pack.
 // Os pedidos sempre se referem ao pack que a usuária acabou de criar,
 // então pack/valor são preenchidos dinamicamente dentro do componente.
 const sales2Buyers = [
-  { handle: '@admirador_vip', purchases: '+33 compras realizadas' },
-  { handle: '@cliente_fiel', purchases: '+17 compras realizadas' },
-  { handle: '@noturno.br', purchases: '+24 compras realizadas' },
-  { handle: '@secret_buyer', purchases: '+9 compras realizadas' },
-  { handle: '@premium_fan', purchases: '+52 compras realizadas' },
+  { handle: '@admirador_vip' },
+ { handle: '@cliente_fiel' },
+ { handle: '@noturno.br' },
+ { handle: '@secret_buyer' },
+ { handle: '@premium_fan' },
 ]
 
 // "29,90" -> 29.9 (com proteção contra valores inválidos)
@@ -494,12 +494,10 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                   <Bell className="size-5 text-primary" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1 leading-snug">
-                  <p className="truncate text-[0.95rem] font-semibold text-foreground">
-                    {currentSale.handle} quer {currentSale.pack}
+                  <p className="line-clamp-2 text-balance break-words text-[0.95rem] font-semibold text-foreground">
+                    {currentSale.handle} quer comprar o {currentSale.pack}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    agora · {currentSale.purchases}
-                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">agora</p>
                 </div>
                 <span className="text-base font-bold text-positive">{brl(currentSale.amount)}</span>
               </div>
