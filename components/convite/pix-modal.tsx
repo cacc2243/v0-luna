@@ -64,6 +64,8 @@ interface PixModalProps {
   amount: number
   userName?: string
   onPaymentConfirmed?: () => void
+  /** Disparado uma única vez quando o PIX está 100% gerado e pronto para exibir. */
+  onReady?: () => void
   /** Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo), 'gift_unlock' (presentes), 'boost' (impulsionamento) ou 'verification' (verificação de conta) */
   type?: 'invite' | 'chat' | 'gift_unlock' | 'boost' | 'verification'
   /** Dias de impulsionamento (apenas para type='boost') */
@@ -86,7 +88,7 @@ interface PixModalProps {
   embedded?: boolean
 }
 
-export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle, pixType, pixKey, compact = false, discountPercent, embedded = false }: PixModalProps) {
+export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, pixType, pixKey, compact = false, discountPercent, embedded = false }: PixModalProps) {
   const [loading, setLoading] = useState(true)
   // Portal: garante que o modal seja montado no body (evita que um ancestral
   // com `transform` — ex.: card com animate-pop — prenda/corte o position:fixed).
@@ -106,6 +108,19 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Garante que os confetes disparem apenas uma vez por geração de PIX.
   const confettiFiredRef = useRef(false)
+  // Garante que onReady dispare apenas uma vez por geração de PIX.
+  const readyFiredRef = useRef(false)
+
+  // Sinaliza ao componente pai que a geração do PIX finalizou e o modal já tem
+  // algo para exibir imediatamente: o PIX pronto (código + QR) ou o estado de
+  // erro (com "Tentar novamente"). Isso mantém a animação de "gerando PIX" no ar
+  // até este exato momento, sem lacunas na tela e sem travar em caso de erro.
+  useEffect(() => {
+    if (loading || readyFiredRef.current) return
+    if (!pixCode && !error) return
+    readyFiredRef.current = true
+    onReady?.()
+  }, [loading, error, pixCode, onReady])
 
   // Confetes sutis quando o PIX é gerado com sucesso.
   useEffect(() => {
@@ -129,6 +144,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   useEffect(() => {
     if (!isOpen) {
       confettiFiredRef.current = false
+      readyFiredRef.current = false
     }
   }, [isOpen])
 
@@ -587,10 +603,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // Modo modal: portal no body com overlay, fundo e botão fechar.
   if (!mounted) return null
 
-  // Enquanto o PIX está sendo gerado não exibimos este modal: o loader do
-  // pré-checkout ("Aguardando enquanto geramos seu pagamento...") já cobre
-  // essa etapa, evitando dois carregamentos em sequência.
-  if (loading) return null
+  // Observação: durante o carregamento o próprio modal exibe o estado
+  // "Gerando seu PIX" (ver `content`). Nos fluxos com animação externa
+  // (pré-checkout / GeneratingPixModal), essa animação fica por cima
+  // (z-110) até o PIX estar 100% pronto, evitando lacunas e duplo loading.
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">

@@ -634,6 +634,9 @@ function AppDashboard() {
   const [showUnlockChat, setShowUnlockChat] = useState(false)
   const [showGeneratingPix, setShowGeneratingPix] = useState(false)
   const [showChatPix, setShowChatPix] = useState(false)
+  // Sinaliza que o PIX do chat já foi 100% gerado e está pronto para exibir.
+  // Enquanto false, a animação "Gerando seu PIX..." permanece na tela.
+  const [chatPixReady, setChatPixReady] = useState(false)
   const [pendingSaleContext, setPendingSaleContext] = useState<{ buyerName?: string | null; packTitle?: string | null; amount?: number } | null>(null)
   const [userEmail, setUserEmail] = useState('')
 
@@ -1179,20 +1182,26 @@ function AppDashboard() {
         price={chatPrice}
         onConfirm={() => {
           setShowUnlockChat(false)
+          // Inicia a geração do PIX imediatamente (modal montado por baixo) e
+          // mostra a animação por cima até o PIX estar 100% pronto.
+          setChatPixReady(false)
+          setShowChatPix(true)
           setShowGeneratingPix(true)
         }}
       />
       <GeneratingPixModal
         isOpen={showGeneratingPix}
-        onDone={() => {
-          setShowGeneratingPix(false)
-          setShowChatPix(true)
-        }}
+        ready={chatPixReady}
+        onDone={() => setShowGeneratingPix(false)}
       />
       {showChatPix && (
         <PixModal
           isOpen={showChatPix}
-          onClose={() => setShowChatPix(false)}
+          onReady={() => setChatPixReady(true)}
+          onClose={() => {
+            setShowChatPix(false)
+            setChatPixReady(false)
+          }}
           email={userEmail}
           amount={chatPrice}
           userName={profile?.display_name || 'Criadora Luna'}
@@ -1206,6 +1215,7 @@ function AppDashboard() {
               { revalidate: true },
             )
             setShowChatPix(false)
+            setChatPixReady(false)
           }}
         />
       )}

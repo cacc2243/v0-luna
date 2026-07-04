@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Lock, MessageCircleHeart, ShieldCheck, X, MessagesSquare, Zap, Flame, Eye, DollarSign, Star, MessageSquare, AlertTriangle, Loader2 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -435,10 +435,21 @@ interface GeneratingPixModalProps {
   onDone: () => void
   /** Duração da animação em ms. Padrão 2200ms. */
   duration?: number
+  /**
+   * Quando o PIX já está 100% pronto para ser exibido. Enquanto false, a barra
+   * segura em ~92% e a animação permanece na tela (sem lacunas). Se não
+   * informado (undefined), mantém o comportamento legado (completa por tempo).
+   */
+  ready?: boolean
 }
 
-export function GeneratingPixModal({ isOpen, onDone, duration = 2200 }: GeneratingPixModalProps) {
+export function GeneratingPixModal({ isOpen, onDone, duration = 2200, ready }: GeneratingPixModalProps) {
   const [progress, setProgress] = useState(0)
+
+  // No modo legado (ready === undefined) trata como "sempre pronto".
+  const isReady = ready === undefined ? true : ready
+  const isReadyRef = useRef(isReady)
+  isReadyRef.current = isReady
 
   useEffect(() => {
     if (!isOpen) {
@@ -446,17 +457,20 @@ export function GeneratingPixModal({ isOpen, onDone, duration = 2200 }: Generati
       return
     }
 
-    // Anima a barra de 0 a 100% e dispara onDone ao concluir.
+    // Anima a barra até no máximo 92% enquanto o PIX não estiver pronto; quando
+    // pronto, completa até 100% e dispara onDone.
     const start = performance.now()
     let raf = 0
     const tick = (now: number) => {
-      const pct = Math.min(100, ((now - start) / duration) * 100)
+      const rawPct = ((now - start) / duration) * 100
+      const cap = isReadyRef.current ? 100 : 92
+      const pct = Math.min(cap, rawPct)
       setProgress(pct)
-      if (pct < 100) {
-        raf = requestAnimationFrame(tick)
-      } else {
+      if (isReadyRef.current && pct >= 100) {
         onDone()
+        return
       }
+      raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
@@ -465,7 +479,7 @@ export function GeneratingPixModal({ isOpen, onDone, duration = 2200 }: Generati
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6">
       <div className="flex w-full max-w-[260px] flex-col items-center text-center animate-in fade-in zoom-in-95 duration-300">
         <Loader2 className="size-10 animate-spin text-primary" aria-hidden="true" />
         <p className="mt-5 text-base font-semibold text-foreground">Gerando seu PIX...</p>

@@ -50,6 +50,9 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
   })
   const [showPreCheckout, setShowPreCheckout] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)
+  // Sinaliza que o PIX já foi 100% gerado e está pronto para exibir. Enquanto
+  // false, a animação de pré-checkout permanece na tela (sem lacunas).
+  const [pixReady, setPixReady] = useState(false)
   // Ativa as notificações de prova social no topo após o modal de convite fechar
   const [socialProofActive, setSocialProofActive] = useState(false)
   // Valor do convite ja chega resolvido do servidor (Server Component), entao
@@ -154,17 +157,22 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
       })
     }
 
+    // Inicia a geração do PIX imediatamente (modal montado por baixo) e mostra
+    // a animação de pré-checkout por cima. Assim o fetch acontece em paralelo à
+    // animação, que só sai de cena quando o PIX estiver 100% pronto.
+    setPixReady(false)
+    setShowPixModal(true)
     setShowPreCheckout(true)
   }
 
-  // Confirma a etapa de pré-checkout e avança para a geração do PIX.
+  // Encerra a animação de pré-checkout (o PIX já está pronto e montado por baixo).
   function handlePreCheckoutConfirm() {
     setShowPreCheckout(false)
-    setShowPixModal(true)
   }
 
   function handlePaymentConfirmed() {
     setShowPixModal(false)
+    setPixReady(false)
     // Redirecionar para a tela de confirmação após o pagamento aprovado
     router.push('/confirmation')
   }
@@ -228,17 +236,22 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
         onConfirm={handlePreCheckoutConfirm}
         email={data.email}
         amountCents={inviteCents}
+        ready={pixReady}
       />
 
       {/* Modal de PIX */}
       <PixModal
         isOpen={showPixModal}
-        onClose={() => setShowPixModal(false)}
+        onClose={() => {
+          setShowPixModal(false)
+          setPixReady(false)
+        }}
         email={data.email}
         amount={inviteCents / 100}
         userName={data.username}
         pixType={data.pixType}
         pixKey={data.pixKey}
+        onReady={() => setPixReady(true)}
         onPaymentConfirmed={handlePaymentConfirmed}
       />
 
