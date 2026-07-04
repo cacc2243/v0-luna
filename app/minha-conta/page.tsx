@@ -2022,7 +2022,7 @@ function ImpulsionarScreen({
 
 // ─────────────────────────────────────────────���─────────────────────��────────���
 // Tela Inicio
-// ────────────────────────────────────────────────────────────────────────��────
+// ─────────────────────────────────────────��──────────────────────────────��────
 
 function HomeScreen({
   balance,
@@ -2129,18 +2129,18 @@ function HomeScreen({
             </p>
           </div>
         ) : (
-          <div className="rounded-2xl border border-border bg-card/60 px-4 py-3">
+          <div className="rounded-2xl border border-border bg-card/60 px-3 py-1">
             {viewNotifs.map((n) => (
-              <div key={n.id} className="flex items-center gap-3 border-b border-border/50 py-2 last:border-0">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-positive/10">
+              <div key={n.id} className="flex items-center gap-2.5 border-b border-border/50 py-1.5 last:border-0">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-positive/10">
                   {n.type === 'follow' ? (
-                    <Heart className="size-4 text-positive" aria-hidden="true" />
+                    <Heart className="size-3 text-positive" aria-hidden="true" />
                   ) : (
-                    <Eye className="size-4 text-positive" aria-hidden="true" />
+                    <Eye className="size-3 text-positive" aria-hidden="true" />
                   )}
                 </span>
-                <p className="flex-1 text-pretty text-xs text-muted-foreground">{n.description}</p>
-                <span className="shrink-0 text-[0.65rem] text-muted-foreground/70">{relativeTime(n.created_at)}</span>
+                <p className="flex-1 truncate text-[0.7rem] text-muted-foreground">{n.description}</p>
+                <span className="shrink-0 text-[0.6rem] text-muted-foreground/70">{relativeTime(n.created_at)}</span>
               </div>
             ))}
           </div>
