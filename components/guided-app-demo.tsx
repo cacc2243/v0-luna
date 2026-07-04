@@ -1108,7 +1108,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
       {/* Coach — mentora explicando a carteira */}
       {showHint && !hideHint && (
         <>
-          {/* Scrim de tela cheia: escurece o app (menos destaque) e captura/trava os toques por trás */}
+          {/* Captura/trava os toques por trás, sem escurecer (fundo transparente) */}
           <button
             type="button"
             aria-label="Continuar"
@@ -1116,8 +1116,10 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
               setShowHint(false)
               onDone()
             }}
-            className="absolute inset-0 z-[50] cursor-default bg-background/70"
+            className="absolute inset-0 z-[50] cursor-default bg-transparent"
           />
+          {/* Escurecimento apenas na parte de baixo e mais fraco (degradê) */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[50] h-2/5 bg-gradient-to-t from-background/60 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
             <div className="luna-border animate-pop animate-coach-glow pointer-events-auto relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
               <img
