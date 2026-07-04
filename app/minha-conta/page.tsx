@@ -3445,7 +3445,7 @@ function WalletScreen({
 
       {/* Modal de Saque */}
       {showPixModal && (
-        <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+        <div className="absolute inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
             <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
 
@@ -3618,10 +3618,27 @@ function WalletScreen({
                     ))}
                   </div>
 
-                  <div className="mt-5 rounded-2xl bg-muted/30 p-4">
-                    <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">{pixKey}</p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={openPixModal}
+                    className="mt-5 flex w-full items-center justify-between gap-3 rounded-2xl bg-muted/30 p-4 text-left transition hover:bg-muted/50 active:scale-[0.99]"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
+                      <p
+                        className={cn(
+                          'mt-1 truncate text-sm font-semibold',
+                          profile?.pix_key ? 'text-foreground' : 'text-primary',
+                        )}
+                      >
+                        {profile?.pix_key ? pixKey : 'Cadastrar chave PIX'}
+                      </p>
+                    </div>
+                    <span className="flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-primary">
+                      {profile?.pix_key ? 'Alterar' : 'Adicionar'}
+                      <ChevronRight className="size-4" aria-hidden="true" />
+                    </span>
+                  </button>
 
                   <div className="mt-3 flex items-center justify-between rounded-2xl bg-muted/30 px-4 py-3">
                     <span className="text-xs text-muted-foreground">Taxa por saque</span>
@@ -3656,7 +3673,7 @@ function WalletScreen({
                   </button>
 
                   <p className="mt-3 text-center text-xs text-muted-foreground">
-                    O valor sera creditado em ate 24h uteis
+                    Transferência via PIX imediata.
                   </p>
                 </>
               )}
