@@ -178,7 +178,7 @@ function ToastCard({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       </div>
 
       {isSale && toast.amount != null && (
-        <span className="shrink-0 text-sm font-bold text-primary">+{brl(toast.amount)}</span>
+        <span className="shrink-0 text-sm font-bold text-positive">+{brl(toast.amount)}</span>
       )}
 
       <button
