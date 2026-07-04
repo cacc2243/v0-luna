@@ -17,6 +17,40 @@ const PIX_CONTENT_NAME: Record<string, string> = {
   verification: 'Verificação de Conta Luna Privé',
 }
 
+/**
+ * Extrai o nome do beneficiário (campo 59 "Merchant Name") de um payload PIX
+ * no formato BR Code (EMV TLV). Percorre os campos de nível raiz (ID de 2
+ * dígitos + tamanho de 2 dígitos + valor) e retorna o valor do campo 59.
+ * Retorna null se não encontrar ou o payload for inválido.
+ */
+function extractPixMerchantName(payload: string | null): string | null {
+  if (!payload) return null
+  let i = 0
+  try {
+    while (i + 4 <= payload.length) {
+      const id = payload.slice(i, i + 2)
+      const len = parseInt(payload.slice(i + 2, i + 4), 10)
+      if (Number.isNaN(len)) return null
+      const valueStart = i + 4
+      const value = payload.slice(valueStart, valueStart + len)
+      if (id === '59') {
+        const name = value.trim()
+        if (!name) return null
+        // Normaliza para "Title Case" (nomes vêm em maiúsculas no BR Code).
+        return name
+          .toLowerCase()
+          .split(/\s+/)
+          .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+          .join(' ')
+      }
+      i = valueStart + len
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 interface PixModalProps {
   isOpen: boolean
   onClose: () => void
@@ -575,6 +609,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 </>
               )}
             </button>
+          )}
+
+          {/* Aviso discreto: processador de pagamentos (nome nominal do PIX) */}
+          {!embedded && extractPixMerchantName(pixCode) && (
+            <p className="mt-2 text-center text-[11px] leading-none text-muted-foreground/70">
+              Processado por: {extractPixMerchantName(pixCode)}
+            </p>
           )}
 
           {/* Aviso de e-mail */}
