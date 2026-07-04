@@ -54,9 +54,6 @@ import {
   ShieldCheck,
   XCircle,
   CheckCircle2,
-  CreditCard,
-  Globe,
-  Moon,
   BellRing,
   UserX,
   Trash2,
@@ -4149,26 +4146,6 @@ function ProfileScreen({
         <SubHeader title="Configuracoes" onBack={() => setCurrentView('main')} />
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
-          {/* Aparencia */}
-          <div className="mb-6">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aparencia</h2>
-            <div className="flex flex-col gap-1 rounded-2xl border border-border bg-card">
-              <div className="flex items-center justify-between px-4 py-3.5">
-                <div className="flex items-center gap-3">
-                  <Moon className="size-5 text-muted-foreground" />
-                  <span className="text-sm text-foreground">Modo escuro</span>
-                </div>
-                <button type="button" onClick={() => toggleSetting('darkMode')}>
-                  {settings.darkMode ? (
-                    <ToggleRight className="size-8 text-primary" />
-                  ) : (
-                    <ToggleLeft className="size-8 text-muted-foreground" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* Notificacoes */}
           <div className="mb-6">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notificacoes</h2>
@@ -4219,7 +4196,7 @@ function ProfileScreen({
                   )}
                 </button>
               </div>
-              <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
+              <div className="flex items-center justify-between px-4 py-3.5">
                 <div className="flex items-center gap-3">
                   <Eye className="size-5 text-muted-foreground" />
                   <span className="text-sm text-foreground">Mostrar status online</span>
@@ -4232,42 +4209,6 @@ function ProfileScreen({
                   )}
                 </button>
               </div>
-              <div className="flex items-center justify-between px-4 py-3.5">
-                <div className="flex items-center gap-3">
-                  <MapPin className="size-5 text-muted-foreground" />
-                  <span className="text-sm text-foreground">Mostrar localizacao</span>
-                </div>
-                <button type="button" onClick={() => toggleSetting('showLocation')}>
-                  {settings.showLocation ? (
-                    <ToggleRight className="size-8 text-primary" />
-                  ) : (
-                    <ToggleLeft className="size-8 text-muted-foreground" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Conta */}
-          <div className="mb-6">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Conta</h2>
-            <div className="flex flex-col rounded-2xl border border-border bg-card">
-              <button type="button" className="flex items-center gap-3 border-b border-border px-4 py-3.5 text-left">
-                <CreditCard className="size-5 text-muted-foreground" />
-                <span className="flex-1 text-sm text-foreground">Metodos de pagamento</span>
-                <ChevronRight className="size-5 text-muted-foreground" />
-              </button>
-              <button type="button" className="flex items-center gap-3 border-b border-border px-4 py-3.5 text-left">
-                <Shield className="size-5 text-muted-foreground" />
-                <span className="flex-1 text-sm text-foreground">Seguranca</span>
-                <ChevronRight className="size-5 text-muted-foreground" />
-              </button>
-              <button type="button" className="flex items-center gap-3 px-4 py-3.5 text-left">
-                <Globe className="size-5 text-muted-foreground" />
-                <span className="flex-1 text-sm text-foreground">Idioma</span>
-                <span className="text-xs text-muted-foreground">Portugues</span>
-                <ChevronRight className="size-5 text-muted-foreground" />
-              </button>
             </div>
           </div>
 
