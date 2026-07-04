@@ -133,6 +133,9 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
           <h1 className="mt-4 text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
             Resgate seu <span className="text-primary">Convite Luna</span>
           </h1>
+          <p className="mx-auto mt-3 max-w-md text-pretty text-sm leading-relaxed text-muted-foreground">
+            Seu convite Luna garante um acesso seguro e confiável à plataforma Luna Privé. Todas as usuárias têm um convite ativo na plataforma.
+          </p>
           <div className="luna-border mx-auto mt-5 flex items-center gap-2.5 rounded-2xl bg-card px-4 py-3 text-left">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
               <Mail className="size-4" aria-hidden="true" />
