@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Lock, Mail } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
@@ -136,14 +136,6 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
           <p className="mx-auto mt-3 max-w-md text-pretty text-sm leading-relaxed text-foreground">
             Seu convite Luna garante um acesso seguro e confiável à plataforma Luna Privé. Todas as usuárias têm um convite ativo na plataforma.
           </p>
-          <div className="luna-border mx-auto mt-5 flex items-center gap-2.5 rounded-2xl bg-card px-4 py-3 text-left">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
-              <Mail className="size-4" aria-hidden="true" />
-            </span>
-            <p className="text-pretty text-xs font-medium leading-relaxed text-foreground">
-              Você receberá seu código de convite por e-mail após a confirmação.
-            </p>
-          </div>
         </section>
 
         <div className="mt-8 flex flex-col gap-7">
