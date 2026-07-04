@@ -738,9 +738,9 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               {/* Benefícios rápidos */}
               <ul className="mt-5 flex flex-col gap-2.5">
                 {[
-                  'Cadastro gratuito e sem burocracia',
+                  'Mais de 120 mil compradores ativos',
+                  'Sem nenhum contato com os compradores',
                   'Receba direto no seu PIX, 100% anônimo',
-                  'Comece a vender ainda hoje',
                 ].map((b) => (
                   <li key={b} className="flex items-center gap-2.5">
                     <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15">
