@@ -42,10 +42,10 @@ export function PriceCard({
           <img
             src="/images/background.png"
             alt=""
-            className="size-full object-cover opacity-20"
+            className="size-full object-cover opacity-45"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/90 to-background/95" />
-          <div className="absolute inset-0 bg-background/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/78 to-background/88" />
+          <div className="absolute inset-0 bg-background/45" />
         </div>
 
         {/* Logo Luna Privé */}
