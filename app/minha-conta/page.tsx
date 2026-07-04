@@ -2019,7 +2019,7 @@ function ImpulsionarScreen({
 
 // ─────────────────────────────────────────────���─────────────────────��────────���
 // Tela Inicio
-// ─────────────────────────────────────────��──────────────────────────────��────
+// ─────────────────────────────────────────��─────────��────────────────────��────
 
 function HomeScreen({
   balance,
@@ -2168,7 +2168,7 @@ function HomeScreen({
           >
             <div className="flex items-center gap-2.5">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                <DollarSign className="size-4 text-primary" aria-hidden="true" />
+                <User className="size-4 text-primary" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1 leading-snug">
                 <div className="flex items-center gap-1.5">
