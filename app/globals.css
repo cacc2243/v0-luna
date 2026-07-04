@@ -335,7 +335,10 @@
 
 .animate-marquee {
   animation: marquee-x 32s linear infinite;
-  will-change: transform;
+  /* Evita o "flash em branco": nao usamos will-change permanente
+     (anti-padrao que promove uma camada GPU que pode pintar 1 frame
+     depois, deixando os depoimentos invisiveis por um instante). */
+  transform: translateZ(0);
 }
 
 @media (prefers-reduced-motion: reduce) {
