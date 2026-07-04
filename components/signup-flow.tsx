@@ -544,7 +544,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               <StepShell
                 icon={KeyRound}
                 eyebrow="Chave PIX"
-                title="Onde você quer receber?"
+                title="Chave PIX de Recebimento"
                 description="Informe a chave PIX onde você irá receber as transferências do Luna Privé."
                 iconPositive
               >
@@ -565,7 +565,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                     />
                   </button>
                   {pixOpen && (
-                    <ul className="luna-border absolute left-0 right-0 top-full z-10 mt-2 overflow-hidden rounded-2xl bg-popover py-1 shadow-2xl">
+                    <ul className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-primary/40 bg-popover py-1 shadow-2xl shadow-black/40">
                       {pixOptions.map((opt) => (
                         <li key={opt}>
                           <button
