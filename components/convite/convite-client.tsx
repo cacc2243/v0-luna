@@ -6,6 +6,7 @@ import { Lock } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
+import { SupportCard } from '@/components/convite/support-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
@@ -150,6 +151,9 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
 
         {/* Preço + garantia */}
         <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady />
+
+        {/* Suporte exclusivo (canais de atendimento) */}
+        <SupportCard />
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
