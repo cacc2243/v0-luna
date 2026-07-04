@@ -764,21 +764,21 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                 className="animate-card-enter mt-3 grid grid-cols-2 gap-2.5"
                 style={{ animationDelay: '300ms' }}
               >
-                <div className="rounded-2xl border border-border/60 bg-background/50 p-3">
-                  <p className="flex items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-wider text-muted-foreground">
-                    <CalendarDays className="size-3 text-primary" aria-hidden="true" />
-                    Em 30 dias
+                <div className="min-w-0 rounded-2xl border border-border/60 bg-background/50 p-3">
+                  <p className="flex min-w-0 items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <CalendarDays className="size-3 shrink-0 text-primary" aria-hidden="true" />
+                    <span className="truncate">Em 30 dias</span>
                   </p>
-                  <p className="mt-1 text-lg font-extrabold tracking-tight text-foreground">
+                  <p className="mt-1 truncate text-[0.95rem] font-extrabold tracking-tight text-foreground tabular-nums">
                     {brl(balance * 30)}
                   </p>
                 </div>
-                <div className="luna-gradient rounded-2xl p-3 shadow-lg shadow-primary/30">
-                  <p className="flex items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-wider text-primary-foreground/85">
-                    <Sparkles className="size-3" aria-hidden="true" />
-                    Em 1 ano
+                <div className="luna-gradient min-w-0 rounded-2xl p-3 shadow-lg shadow-primary/30">
+                  <p className="flex min-w-0 items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-wider text-primary-foreground/85">
+                    <Sparkles className="size-3 shrink-0" aria-hidden="true" />
+                    <span className="truncate">Em 1 ano</span>
                   </p>
-                  <p className="mt-1 text-lg font-extrabold tracking-tight text-primary-foreground">
+                  <p className="mt-1 truncate text-[0.95rem] font-extrabold tracking-tight text-primary-foreground tabular-nums">
                     {brl(balance * 30 * 12)}
                   </p>
                 </div>
