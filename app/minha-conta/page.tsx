@@ -10,7 +10,6 @@ import {
   Rocket,
   Wallet,
   User,
-  CalendarDays,
   Eye,
   ShoppingBag,
   BadgeCheck,
@@ -455,7 +454,7 @@ function NoInviteScreen({ email }: { email: string }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela de Login (integrada)
-// ─────────��──────────────────────────────────────────────────────────────────��
+// ─────────��──────���───────────────────────────────────────────────────────────��
 
 function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInvite: (email: string) => void }) {
   const [email, setEmail] = useState('')
@@ -2085,7 +2084,7 @@ function HomeScreen({
 
       {/* Stats */}
       <div className="mt-4 grid grid-cols-3 gap-2.5">
-        <StatCard icon={CalendarDays} label="Hoje" value={brl(today)} />
+        <StatCard icon={Wallet} label="Hoje" value={brl(today)} />
         <StatCard icon={Eye} label="Views" value={String(views)} />
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
       </div>
@@ -2520,7 +2519,7 @@ function PackDetailScreen({
       return
     }
 
-    // Recria as imagens do pack para refletir adições/remoções/ordem
+    // Recria as imagens do pack para refletir adições/remoç��es/ordem
     await supabase.from('pack_images').delete().eq('pack_id', pack.id)
     if (photos.length > 0) {
       await supabase.from('pack_images').insert(
