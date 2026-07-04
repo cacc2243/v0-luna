@@ -26,6 +26,7 @@ import {
   ArrowDownRight,
   Receipt,
   Lock,
+  Unlock,
   Mail,
   ChevronRight,
   Zap,
@@ -3762,8 +3763,8 @@ function WalletScreen({
                     onClick={handleStartVerification}
                     className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
                   >
-                    <Zap className="size-5" aria-hidden="true" />
-                    Gerar PIX de verificação
+                    <Unlock className="size-5" aria-hidden="true" />
+                    Pagar e liberar agora!
                   </button>
                 </div>
               )}
