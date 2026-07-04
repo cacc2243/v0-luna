@@ -152,11 +152,11 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
         {/* Preço + garantia */}
         <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady />
 
-        {/* Suporte exclusivo (canais de atendimento) */}
-        <SupportCard />
-
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
+
+        {/* Suporte exclusivo (canais de atendimento) */}
+        <SupportCard />
 
         {/* Empresa */}
         <CompanyInfo />
