@@ -51,7 +51,7 @@ const reviews = [
   },
 ]
 
-export function BonusAndReviews() {
+export function BonusAndReviews({ middleSlot }: { middleSlot?: React.ReactNode }) {
   // Duplicamos a lista para o marquee criar um loop contínuo e infinito.
   const loopReviews = [...reviews, ...reviews]
 
@@ -98,6 +98,9 @@ export function BonusAndReviews() {
           </div>
         </div>
       </section>
+
+      {/* Conteúdo intermediário (ex.: card de suporte) */}
+      {middleSlot}
 
       {/* Bônus incluído */}
       <section aria-labelledby="bonus">
