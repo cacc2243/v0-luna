@@ -28,6 +28,10 @@ const FAQS = [
     q: 'E se eu tiver dúvidas depois de entrar?',
     a: 'Você conta com suporte exclusivo em todos os canais: WhatsApp, chat no site, e-mail e abertura de ticket, sempre com atendimento discreto e resposta rápida.',
   },
+  {
+    q: 'Existe garantia? Posso solicitar reembolso?',
+    a: 'Você poderá solicitar o reembolso em até 7 dias, conforme previsto na legislação, desde que não tenha realizado nenhum saque na plataforma. Caso não efetue nenhuma venda nesse período, será possível solicitar a devolução integral do seu investimento.',
+  },
 ] as const
 
 export function FaqSection() {
@@ -83,7 +87,7 @@ export function FaqSection() {
                   }`}
                 >
                   <div className="overflow-hidden">
-                    <p className="px-4 pb-3.5 text-pretty text-xs leading-relaxed text-muted-foreground">
+                    <p className="px-4 pb-3.5 text-pretty text-sm leading-relaxed text-muted-foreground">
                       {item.a}
                     </p>
                   </div>
