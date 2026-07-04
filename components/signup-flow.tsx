@@ -654,9 +654,9 @@ function NativeSelect({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          'h-[52px] w-full appearance-none rounded-2xl border border-border bg-secondary/60 px-4 pr-11 text-base outline-none transition-colors',
-          'focus:border-primary/60 focus:ring-2 focus:ring-primary/20',
-          value ? 'text-foreground' : 'text-muted-foreground/70',
+          'h-[58px] w-full appearance-none rounded-2xl border-2 border-border bg-background px-4 pr-11 text-[1.05rem] font-medium shadow-sm outline-none transition-all',
+          'focus:border-primary focus:ring-4 focus:ring-primary/15',
+          value ? 'text-foreground' : 'text-muted-foreground/60',
         )}
       >
         <option value="" disabled>
@@ -693,40 +693,32 @@ function StepShell({
 }) {
   return (
     <div>
-      <div className="flex items-center gap-2.5">
-        <span
-          className={cn(
-            'flex size-9 items-center justify-center rounded-xl',
-            iconPositive ? 'bg-positive/15' : 'bg-primary/15',
-          )}
-        >
-          <Icon
-            className={cn('size-[1.1rem]', iconPositive ? 'text-positive' : 'text-primary')}
-            aria-hidden="true"
-          />
-        </span>
-        <p
-          className={cn(
-            'text-[0.7rem] font-bold uppercase tracking-[0.16em]',
-            iconPositive ? 'text-positive' : 'text-primary',
-          )}
-        >
-          {eyebrow}
-        </p>
-      </div>
-      <h2 className="mt-3.5 text-balance text-[1.35rem] font-bold leading-tight text-foreground">
+      <span
+        className={cn(
+          'flex size-11 items-center justify-center rounded-2xl',
+          iconPositive ? 'bg-positive/15' : 'bg-primary/15',
+        )}
+        aria-hidden="true"
+      >
+        <Icon
+          className={cn('size-5', iconPositive ? 'text-positive' : 'text-primary')}
+          aria-hidden="true"
+        />
+      </span>
+      <span className="sr-only">{eyebrow}</span>
+      <h2 className="mt-4 text-balance text-[1.4rem] font-bold leading-tight text-foreground">
         {title}
       </h2>
-      <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+      <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
         {description}
       </p>
-      <div className="mt-5">{children}</div>
+      <div className="mt-6">{children}</div>
     </div>
   )
 }
 
 const inputBase =
-  'w-full rounded-2xl border border-border bg-secondary/60 px-4 py-3.5 text-base text-foreground placeholder:text-muted-foreground/70 outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20'
+  'w-full rounded-2xl border-2 border-border bg-background px-4 py-4 text-[1.05rem] font-medium text-foreground shadow-sm placeholder:font-normal placeholder:text-muted-foreground/60 outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/15'
 
 function BaseInput({
   value,
@@ -770,14 +762,14 @@ function PrefixInput({
   autoFocus?: boolean
 }) {
   return (
-    <div className="flex items-center rounded-2xl border border-border bg-secondary/60 px-4 transition-colors focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
-      <span className="mr-1 text-base font-semibold text-primary">{prefix}</span>
+    <div className="flex items-center rounded-2xl border-2 border-border bg-background px-4 shadow-sm transition-all focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15">
+      <span className="mr-1.5 text-[1.05rem] font-bold text-primary">{prefix}</span>
       <input
         value={value}
         autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-transparent py-3.5 text-base text-foreground placeholder:text-muted-foreground/70 outline-none"
+        className="w-full bg-transparent py-4 text-[1.05rem] font-medium text-foreground placeholder:font-normal placeholder:text-muted-foreground/60 outline-none"
       />
     </div>
   )
@@ -799,14 +791,14 @@ function PasswordInput({
   autoFocus?: boolean
 }) {
   return (
-    <div className="flex items-center rounded-2xl border border-border bg-secondary/60 px-4 transition-colors focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+    <div className="flex items-center rounded-2xl border-2 border-border bg-background px-4 shadow-sm transition-all focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15">
       <input
         type={show ? 'text' : 'password'}
         value={value}
         autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-transparent py-3.5 text-base text-foreground placeholder:text-muted-foreground/70 outline-none"
+        className="w-full bg-transparent py-4 text-[1.05rem] font-medium text-foreground placeholder:font-normal placeholder:text-muted-foreground/60 outline-none"
       />
       <button
         type="button"
