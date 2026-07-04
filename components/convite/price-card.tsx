@@ -69,7 +69,7 @@ export function PriceCard({
             }`}
             aria-hidden={!priceReady}
           >
-            <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
+            <span className="font-serif text-base font-semibold text-muted-foreground line-through decoration-primary/70">
               R${formatCents(originalCents)}
             </span>
             <span className="rounded-full bg-positive/15 px-2.5 py-0.5 text-xs font-bold text-positive">
@@ -83,8 +83,8 @@ export function PriceCard({
             }`}
             aria-hidden={!priceReady}
           >
-            <span className="text-xl font-bold text-foreground sm:text-2xl">R$</span>
-            <span className="text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">
+            <span className="font-serif text-xl font-bold text-foreground sm:text-2xl">R$</span>
+            <span className="font-serif text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">
               {formatCents(amountCents)}
             </span>
           </div>

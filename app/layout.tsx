@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Manrope, Playfair_Display } from 'next/font/google'
+import { Manrope, Space_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import Script from 'next/script'
 import { Suspense } from 'react'
@@ -13,10 +13,10 @@ const manrope = Manrope({
   variable: '--font-manrope',
 })
 
-const playfair = Playfair_Display({
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
-  weight: ['600', '700', '800', '900'],
-  variable: '--font-playfair',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-space-grotesk',
 })
 
 export const viewport: Viewport = {
@@ -87,7 +87,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={`dark bg-background ${manrope.variable} ${playfair.variable}`}>
+    <html lang="pt-BR" className={`dark bg-background ${manrope.variable} ${spaceGrotesk.variable}`}>
       <body className="font-sans antialiased">
         <Suspense fallback={null}>
           <FbPixel />
