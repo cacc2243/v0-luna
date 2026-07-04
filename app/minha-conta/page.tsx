@@ -1092,8 +1092,17 @@ function AppDashboard() {
           userName={profile?.display_name || 'Criadora Luna'}
           userEmail={userEmail}
           packsCount={packs.length}
+          salesCount={profile?.sales_count || 0}
+          chatPrice={chatPrice}
           giftPrice={pricing?.giftUnlockAmountCents ? pricing.giftUnlockAmountCents / 100 : undefined}
           onGoToPacks={() => setActiveTab('Packs')}
+          onUnlockChat={() => {
+            // Gera o PIX do chat direto: modal montado por baixo e animação por
+            // cima até o PIX estar 100% pronto.
+            setChatPixReady(false)
+            setShowChatPix(true)
+            setShowGeneratingPix(true)
+          }}
           onProfileRefresh={mutateProfile}
         />
       ) : (
@@ -1430,8 +1439,11 @@ function ChatsScreen({
   userName,
   userEmail,
   packsCount,
+  salesCount,
+  chatPrice,
   giftPrice,
   onGoToPacks,
+  onUnlockChat,
   onProfileRefresh,
 }: {
   balance: number
@@ -1440,8 +1452,11 @@ function ChatsScreen({
   userName: string
   userEmail: string
   packsCount: number
+  salesCount: number
+  chatPrice: number
   giftPrice?: number
   onGoToPacks: () => void
+  onUnlockChat: () => void
   onProfileRefresh: () => void
 }) {
   // Chat ativo: lista de conversas com fluxo de presentes
@@ -1459,6 +1474,102 @@ function ChatsScreen({
   }
 
   const hasPacks = packsCount > 0
+
+  // Depois da primeira venda e com pelo menos um pack publicado, o usuário já
+  // pode desbloquear o chat com seus fãs. Mostramos o informe de desbloqueio.
+  if (hasPacks && salesCount > 0) {
+    return (
+      <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
+        {/* Header */}
+        <header className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
+          </div>
+          <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card/80 px-4 py-2.5 backdrop-blur-sm">
+            <Wallet className="size-6 text-primary" aria-hidden="true" />
+            <div className="leading-tight">
+              <p className="text-xs text-muted-foreground">Saldo</p>
+              <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
+            </div>
+          </div>
+        </header>
+
+        {/* Card: Chat com Fans (bloqueado) */}
+        <div className="mt-6 luna-border overflow-hidden rounded-3xl bg-card">
+          {/* Cabeçalho do card */}
+          <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+            <div className="flex items-center gap-2.5">
+              <MessageCircle className="size-5 text-primary" aria-hidden="true" />
+              <h2 className="text-base font-bold text-foreground">Chat com Fans</h2>
+            </div>
+            <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
+              <Lock className="size-3.5" aria-hidden="true" />
+              Bloqueado
+            </span>
+          </div>
+
+          {/* Prévia de mensagens (desfocada) */}
+          <div className="relative px-5 pt-5">
+            <div
+              className="flex flex-col gap-3 opacity-40 blur-[1px]"
+              aria-hidden="true"
+            >
+              <div className="flex items-center gap-2">
+                <span className="size-9 shrink-0 rounded-full bg-muted" />
+                <span className="rounded-2xl rounded-tl-sm bg-muted px-3.5 py-2 text-sm text-muted-foreground">
+                  Oi, amei seu pack!
+                </span>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <span className="rounded-2xl rounded-tr-sm bg-primary/25 px-3.5 py-2 text-sm text-foreground">
+                  Obrigada amor!
+                </span>
+                <span className="size-9 shrink-0 rounded-full bg-primary/20" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="size-9 shrink-0 rounded-full bg-muted" />
+                <span className="rounded-2xl rounded-tl-sm bg-muted px-3.5 py-2 text-sm text-muted-foreground">
+                  Quero encomendar um pack exclusivo...
+                </span>
+              </div>
+            </div>
+
+            {/* Overlay de desbloqueio */}
+            <div className="mt-2 flex flex-col items-center px-1 pb-5 text-center">
+              <div className="flex size-14 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30">
+                <Lock className="size-7 text-primary" aria-hidden="true" />
+              </div>
+              <h3 className="mt-3 text-xl font-bold text-foreground">Desbloqueie o Chat</h3>
+              <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted-foreground">
+                Converse diretamente com seus fãs. Cada fã pagará{' '}
+                <span className="font-semibold text-positive">{brl(chatPrice)}</span> para conversar
+                com você e você recebe o valor{' '}
+                <span className="font-semibold text-positive">integralmente</span> no seu saldo.
+              </p>
+
+              {/* Destaque social */}
+              <div className="mt-4 flex w-full items-start gap-2.5 rounded-2xl border border-positive/25 bg-positive/5 p-3.5 text-left">
+                <TrendingUp className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  <span className="font-bold text-positive">68% das usuárias</span> desbloqueiam o
+                  chat pelo alto potencial de ganhos
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={onUnlockChat}
+                className="luna-gradient mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                <Lock className="size-5" aria-hidden="true" />
+                Desbloquear Chat
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
