@@ -1552,7 +1552,7 @@ function ChatsScreen({
               <div className="mt-4 flex w-full items-start gap-2.5 rounded-2xl border border-positive/25 bg-positive/5 p-3.5 text-left">
                 <TrendingUp className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  <span className="font-bold text-positive">68% das usuárias</span> desbloqueiam o
+                  <span className="font-bold text-positive">96% das usuárias</span> desbloqueiam o
                   chat pelo alto potencial de ganhos
                 </p>
               </div>
