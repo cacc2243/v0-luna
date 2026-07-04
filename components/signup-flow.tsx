@@ -428,8 +428,8 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               <StepShell
                 icon={Mail}
                 eyebrow="Seu email"
-                title="Apenas para cadastro interno"
-                description="Será necessário confirmar seu email posteriormente."
+                title="Digite seu E-mail"
+                description="Apenas para cadastro interno. Será necessário confirmar seu email posteriormente."
               >
                 <SafetyNote>Sigilo total do seu email garantido</SafetyNote>
                 <BaseInput
