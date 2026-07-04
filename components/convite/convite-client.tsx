@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock } from 'lucide-react'
+import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
+import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
@@ -53,6 +55,62 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
   // Valor do convite ja chega resolvido do servidor (Server Component), entao
   // o preco aparece imediatamente, sem blur nem fetch no cliente.
   const [inviteCents] = useState(initialInviteCents)
+
+  // InitiateCheckout: disparado ao ENTRAR na pagina /convite (uma unica vez),
+  // e nao mais quando o PIX e gerado. Pixel (browser) + Conversions API
+  // (servidor) com o MESMO event_id para deduplicacao. Nunca quebra a pagina.
+  const initiateCheckoutSentRef = useRef(false)
+  useEffect(() => {
+    if (initiateCheckoutSentRef.current) return
+    initiateCheckoutSentRef.current = true
+    try {
+      const value = inviteCents / 100
+      const icEventId = newEventId('ic')
+      fbTrackWhenReady(
+        'InitiateCheckout',
+        {
+          value,
+          currency: 'BRL',
+          content_name: 'Convite Luna Privé',
+          content_type: 'product',
+        },
+        icEventId,
+      )
+
+      const trimmedName = (data.username || '').trim()
+      const parts = trimmedName ? trimmedName.split(/\s+/) : []
+      const firstName = parts.length > 0 ? parts[0] : null
+      const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null
+      const normalizedPixType = (data.pixType || '').toLowerCase()
+      const phone =
+        normalizedPixType.includes('tele') || normalizedPixType.includes('phone')
+          ? data.pixKey || null
+          : null
+
+      const attribution = getAttributionForCheckout()
+      fetch('/api/fb/initiate-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: icEventId,
+          eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
+          fbp: readCookie('_fbp'),
+          fbc: readCookie('_fbc'),
+          email: data.email || null,
+          name: trimmedName || null,
+          firstName,
+          lastName,
+          phone,
+          value,
+          attribution,
+        }),
+      }).catch(() => {})
+    } catch {
+      // o tracking nunca bloqueia a pagina
+    }
+    // Dispara apenas no mount (entrada na pagina).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function updateField(field: keyof SignupData, value: string) {
     setData((prev) => {
@@ -181,7 +239,6 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
         userName={data.username}
         pixType={data.pixType}
         pixKey={data.pixKey}
-        trackInitiateCheckout
         onPaymentConfirmed={handlePaymentConfirmed}
       />
 

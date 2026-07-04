@@ -6,7 +6,7 @@ import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCod
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import confetti from 'canvas-confetti'
-import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
+import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 
 const PIX_CONTENT_NAME: Record<string, string> = {
@@ -75,12 +75,6 @@ interface PixModalProps {
   pixType?: string
   /** Valor da chave PIX informada pelo usuario */
   pixKey?: string
-  /**
-   * Quando true, dispara o InitiateCheckout (pixel + CAPI) no momento em que o
-   * PIX e gerado, com os dados da pessoa para melhor atribuicao. Usado apenas
-   * no fluxo de convite (/convite).
-   */
-  trackInitiateCheckout?: boolean
   /** Layout reduzido (QR menor, espacamentos compactos) para uso em fluxos curtos. */
   compact?: boolean
   /** Percentual de desconto usado para calcular o valor "de" (riscado). Padrao 40%. */
@@ -92,7 +86,7 @@ interface PixModalProps {
   embedded?: boolean
 }
 
-export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle, pixType, pixKey, trackInitiateCheckout = false, compact = false, discountPercent, embedded = false }: PixModalProps) {
+export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, type = 'invite', boostDays, title, subtitle, pixType, pixKey, compact = false, discountPercent, embedded = false }: PixModalProps) {
   const [loading, setLoading] = useState(true)
   // Portal: garante que o modal seja montado no body (evita que um ancestral
   // com `transform` — ex.: card com animate-pop — prenda/corte o position:fixed).
@@ -112,8 +106,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Garante que os confetes disparem apenas uma vez por geração de PIX.
   const confettiFiredRef = useRef(false)
-  // Garante que o InitiateCheckout seja disparado uma unica vez por abertura.
-  const initiateCheckoutSentRef = useRef(false)
 
   // Confetes sutis quando o PIX é gerado com sucesso.
   useEffect(() => {
@@ -137,7 +129,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   useEffect(() => {
     if (!isOpen) {
       confettiFiredRef.current = false
-      initiateCheckoutSentRef.current = false
     }
   }, [isOpen])
 
@@ -278,57 +269,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         },
         eventId,
       )
-
-      // InitiateCheckout: disparado SOMENTE no fluxo de convite, no momento em
-      // que o PIX e gerado, com os dados da pessoa para melhor atribuicao.
-      // Pixel (browser) + Conversions API (servidor) com o MESMO event_id para
-      // deduplicacao. Nunca quebra o fluxo de pagamento.
-      if (trackInitiateCheckout && type === 'invite' && !initiateCheckoutSentRef.current) {
-        initiateCheckoutSentRef.current = true
-        try {
-          const icEventId = newEventId('ic')
-          const icParams = {
-            value: Number(amount) || 0,
-            currency: 'BRL',
-            content_name: 'Convite Luna Privé',
-            content_type: 'product',
-          }
-          fbTrackWhenReady('InitiateCheckout', icParams, icEventId)
-
-          const trimmedName = (userName || '').trim()
-          const firstName = trimmedName ? trimmedName.split(/\s+/)[0] : null
-          const lastName =
-            trimmedName && trimmedName.split(/\s+/).length > 1
-              ? trimmedName.split(/\s+/).slice(1).join(' ')
-              : null
-          const normalizedPixType = (pixType || '').toLowerCase()
-          const phone =
-            normalizedPixType.includes('tele') || normalizedPixType.includes('phone')
-              ? pixKey || null
-              : null
-
-          const attribution = getAttributionForCheckout()
-          fetch('/api/fb/initiate-checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              eventId: icEventId,
-              eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
-              fbp: readCookie('_fbp'),
-              fbc: readCookie('_fbc'),
-              email,
-              name: trimmedName || null,
-              firstName,
-              lastName,
-              phone,
-              value: Number(amount) || 0,
-              attribution,
-            }),
-          }).catch(() => {})
-        } catch {
-          // o tracking nunca bloqueia o checkout
-        }
-      }
 
       // Gerar QR Code a partir do codigo PIX (a API retorna apenas o codigo EMV)
       if (data.pixCode) {
