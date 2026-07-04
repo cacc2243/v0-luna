@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, Users, Images, Gift, Star, BadgeCheck } from 'lucide-react'
+import { BookOpen, Users, Images, Gift, Star, BadgeCheck, UserRound } from 'lucide-react'
 
 const bonuses = [
   {
@@ -26,31 +26,26 @@ const bonuses = [
 const reviews = [
   {
     handle: '@gabi.m_santos',
-    avatar: '/images/avatar-1.png',
     time: 'há 6 dias',
     text: 'no primeiro mês fiz R$12.700 só com packs. hoje, 3 meses depois, já passei de R$48 mil e larguei meu clt de R$1.800.',
   },
   {
     handle: '@lara_priv',
-    avatar: '/images/avatar-2.png',
     time: 'há 2 semanas',
     text: 'na primeira semana vendi 71 packs e fechei R$6.400. o dinheiro cai na hora no meu pix, sem taxa escondida.',
   },
   {
     handle: '@drih.rs',
-    avatar: '/images/avatar-4.png',
     time: 'há 1 mês',
     text: 'meu melhor dia foi R$2.180 em vendas. em 30 dias bati R$27 mil e continua subindo toda semana.',
   },
   {
     handle: '@nay.oficial',
-    avatar: '/images/avatar-1.png',
     time: 'há 3 dias',
     text: 'comecei com medo, hoje faturo entre R$11 e R$15 mil por mês trabalhando do meu celular, no meu tempo.',
   },
   {
     handle: '@bibi.rezende',
-    avatar: '/images/avatar-2.png',
     time: 'há 5 dias',
     text: 'já saquei mais de R$82 mil desde que entrei. o saque é imediato e nunca tive problema pra receber.',
   },
@@ -82,11 +77,9 @@ export function BonusAndReviews() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <img
-                      src={r.avatar || '/placeholder.svg'}
-                      alt=""
-                      className="size-9 rounded-full object-cover blur-md"
-                    />
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                      <UserRound className="size-5" aria-hidden="true" />
+                    </span>
                     <div className="leading-tight">
                       <p className="flex items-center gap-1 text-sm font-semibold text-foreground">
                         {r.handle}
