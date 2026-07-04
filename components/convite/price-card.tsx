@@ -3,8 +3,10 @@
 import { Check, ChevronRight, Gift } from 'lucide-react'
 
 const benefits = [
-  'Código de convite exclusivo Luna Privé',
-  'Anonimato e privacidade total do seu perfil',
+  'Código de convite Luna Privé',
+  '100% Anonimato',
+  'Suporte Exclusivo',
+  'Clube de Benefícios',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -94,7 +96,7 @@ export function PriceCard({
         <ul className="relative mt-5 flex flex-col gap-3.5">
           {benefits.map((b) => (
             <li key={b} className="flex items-center gap-3">
-              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15 text-positive">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Check className="size-3.5" aria-hidden="true" />
               </span>
               <span className="text-sm font-medium text-foreground">{b}</span>
