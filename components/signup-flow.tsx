@@ -693,23 +693,25 @@ function StepShell({
 }) {
   return (
     <div>
-      <span
-        className={cn(
-          'flex size-11 items-center justify-center rounded-2xl',
-          iconPositive ? 'bg-positive/15' : 'bg-primary/15',
-        )}
-        aria-hidden="true"
-      >
-        <Icon
-          className={cn('size-5', iconPositive ? 'text-positive' : 'text-primary')}
+      <div className="flex items-center gap-3">
+        <span
+          className={cn(
+            'flex size-11 shrink-0 items-center justify-center rounded-2xl',
+            iconPositive ? 'bg-positive/15' : 'bg-primary/15',
+          )}
           aria-hidden="true"
-        />
-      </span>
-      <span className="sr-only">{eyebrow}</span>
-      <h2 className="mt-4 text-balance text-[1.4rem] font-bold leading-tight text-foreground">
-        {title}
-      </h2>
-      <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
+        >
+          <Icon
+            className={cn('size-5', iconPositive ? 'text-positive' : 'text-primary')}
+            aria-hidden="true"
+          />
+        </span>
+        <span className="sr-only">{eyebrow}</span>
+        <h2 className="text-balance text-[1.4rem] font-bold leading-tight text-foreground">
+          {title}
+        </h2>
+      </div>
+      <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
         {description}
       </p>
       <div className="mt-6">{children}</div>
