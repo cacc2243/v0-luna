@@ -34,14 +34,20 @@ function extractPixMerchantName(payload: string | null): string | null {
       const valueStart = i + 4
       const value = payload.slice(valueStart, valueStart + len)
       if (id === '59') {
-        const name = value.trim()
-        if (!name) return null
-        // Normaliza para "Title Case" (nomes vêm em maiúsculas no BR Code).
-        return name
-          .toLowerCase()
-          .split(/\s+/)
-          .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
-          .join(' ')
+      // Remove separadores (_ . -) e colapsa espaços: nunca exibimos esses
+      // caracteres no nome do processador.
+      const name = value
+        .trim()
+        .replace(/[_.\-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (!name) return null
+      // Normaliza para "Title Case" (nomes vêm em maiúsculas no BR Code).
+      return name
+        .toLowerCase()
+        .split(/\s+/)
+        .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+        .join(' ')
       }
       i = valueStart + len
     }
@@ -640,6 +646,11 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
   // Modo modal: portal no body com overlay, fundo e botão fechar.
   if (!mounted) return null
+
+  // Enquanto o PIX está sendo gerado não exibimos este modal: o loader do
+  // pré-checkout ("Aguardando enquanto geramos seu pagamento...") já cobre
+  // essa etapa, evitando dois carregamentos em sequência.
+  if (loading) return null
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">
