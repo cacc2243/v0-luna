@@ -22,6 +22,7 @@ import {
   Lock,
   Heart,
   TrendingUp,
+  Sparkles,
   Star,
   Settings,
   HelpCircle,
@@ -109,7 +110,7 @@ function useCountUp(target: number, duration = 700) {
 
 export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [phase, setPhase] = useState<
-    'tour' | 'selling' | 'done' | 'selling2' | 'celebrate' | 'wallet' | 'profile' | 'signup'
+    'tour' | 'selling' | 'done' | 'selling2' | 'celebrate' | 'projection' | 'wallet' | 'profile' | 'signup'
   >('tour')
   const [showSellModal, setShowSellModal] = useState(false)
   const [tourStep, setTourStep] = useState(0)
@@ -686,6 +687,78 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               </p>
 
               <div className="animate-card-enter mt-6" style={{ animationDelay: '300ms' }}>
+                <CtaButton onClick={() => setPhase('projection')}>Ver minha projeção</CtaButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay — Projeção de ganhos (30 dias e 1 ano) */}
+      {phase === 'projection' && (
+        <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
+          <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+          <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/40 bg-card shadow-2xl shadow-primary/25 ring-1 ring-primary/10">
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/25),transparent_70%)]"
+              aria-hidden="true"
+            />
+            <div className="relative px-6 pb-6 pt-7">
+              <div
+                className="animate-card-enter mx-auto flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary"
+                style={{ animationDelay: '100ms' }}
+              >
+                <TrendingUp className="size-6" aria-hidden="true" />
+              </div>
+
+              <p
+                className="animate-card-enter mt-4 text-center text-xl font-bold text-foreground"
+                style={{ animationDelay: '150ms' }}
+              >
+                Olha até onde você pode chegar
+              </p>
+              <p
+                className="animate-card-enter mt-1.5 text-center text-pretty text-sm leading-relaxed text-muted-foreground"
+                style={{ animationDelay: '200ms' }}
+              >
+                Mantendo o ritmo que você acabou de ver, esta é a sua projeção de ganhos:
+              </p>
+
+              <div
+                className="animate-card-enter mt-5 rounded-2xl border border-border/60 bg-background/50 p-4"
+                style={{ animationDelay: '250ms' }}
+              >
+                <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <CalendarDays className="size-3.5 text-primary" aria-hidden="true" />
+                  Em 30 dias
+                </p>
+                <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground">
+                  {brl(balance * 30)}
+                </p>
+              </div>
+
+              <div
+                className="animate-card-enter luna-gradient mt-3 rounded-2xl px-4 py-4 shadow-lg shadow-primary/30"
+                style={{ animationDelay: '300ms' }}
+              >
+                <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wider text-primary-foreground/85">
+                  <Sparkles className="size-3.5" aria-hidden="true" />
+                  Em 1 ano
+                </p>
+                <p className="mt-1 text-3xl font-extrabold tracking-tight text-primary-foreground">
+                  {brl(balance * 30 * 12)}
+                </p>
+              </div>
+
+              <p
+                className="animate-card-enter mt-4 text-center text-[0.72rem] leading-relaxed text-muted-foreground"
+                style={{ animationDelay: '350ms' }}
+              >
+                Projeção estimada com base no seu ritmo de vendas. Quanto mais você se dedica, mais
+                longe pode chegar no <span className="font-semibold text-foreground">Luna Privé</span>.
+              </p>
+
+              <div className="animate-card-enter mt-5" style={{ animationDelay: '400ms' }}>
                 <CtaButton onClick={() => setPhase('wallet')}>Ver minha carteira</CtaButton>
               </div>
             </div>
