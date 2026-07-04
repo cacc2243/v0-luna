@@ -648,29 +648,44 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
         <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
           <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
           <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/40 bg-card text-center shadow-2xl shadow-primary/25 ring-1 ring-primary/10">
-            <div className="px-6 pb-6 pt-7">
-              <img
-                src="/images/mentor.png"
-                alt="Camila"
-                className="animate-card-enter mx-auto size-16 rounded-full object-cover ring-2 ring-primary/50"
-                style={{ animationDelay: '100ms' }}
-              />
-              <p className="animate-card-enter mt-4 text-xl font-bold text-foreground" style={{ animationDelay: '150ms' }}>Meus parabéns!</p>
-
-              <div className="animate-card-enter luna-gradient mx-auto mt-4 w-fit rounded-2xl px-5 py-3 shadow-lg shadow-primary/30" style={{ animationDelay: '200ms' }}>
-                <p className="text-[0.7rem] font-medium uppercase tracking-wide text-primary-foreground/80">
-                  No app real você já teria ganho
-                </p>
-                <p className="text-2xl font-extrabold text-primary-foreground">{brl(balance)}</p>
+            {/* brilho sutil no topo */}
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/25),transparent_70%)]"
+              aria-hidden="true"
+            />
+            <div className="relative px-6 pb-6 pt-7">
+              <div className="animate-card-enter relative mx-auto w-fit" style={{ animationDelay: '100ms' }}>
+                <img
+                  src="/images/mentor.png"
+                  alt="Camila"
+                  className="size-16 rounded-full object-cover ring-2 ring-primary/50"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border-2 border-card bg-positive shadow">
+                  <Check className="size-3.5 text-white" aria-hidden="true" />
+                </span>
               </div>
 
-              <p className="mt-4 text-pretty text-sm leading-relaxed text-muted-foreground">
-                Neste ritmo, eu tenho certeza que a sua jornada aqui vai ser maravilhosa! Vamos
-                descobrir como você saca os seus ganhos aqui no{' '}
+              <p className="animate-card-enter mt-4 text-xl font-bold text-foreground" style={{ animationDelay: '150ms' }}>
+                Meus parabéns!
+              </p>
+
+              <div className="animate-card-enter luna-gradient mx-auto mt-5 w-full rounded-2xl px-5 py-4 shadow-lg shadow-primary/30" style={{ animationDelay: '200ms' }}>
+                <p className="flex items-center justify-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-wider text-primary-foreground/85">
+                  <TrendingUp className="size-3.5" aria-hidden="true" />
+                  No app real você já teria ganho
+                </p>
+                <p className="mt-1 text-3xl font-extrabold tracking-tight text-primary-foreground">
+                  {brl(balance)}
+                </p>
+              </div>
+
+              <p className="animate-card-enter mt-5 text-pretty text-sm leading-relaxed text-muted-foreground" style={{ animationDelay: '250ms' }}>
+                Neste ritmo, tenho certeza que a sua jornada aqui vai ser maravilhosa! Vamos
+                descobrir como você saca os seus ganhos no{' '}
                 <span className="font-semibold text-foreground">Luna Privé</span>?
               </p>
 
-              <div className="mt-6">
+              <div className="animate-card-enter mt-6" style={{ animationDelay: '300ms' }}>
                 <CtaButton onClick={() => setPhase('wallet')}>Ver minha carteira</CtaButton>
               </div>
             </div>
