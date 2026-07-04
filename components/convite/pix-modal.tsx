@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import confetti from 'canvas-confetti'
@@ -514,21 +514,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
-          {/* Timer de reserva */}
-          <div className={`${compact ? 'mt-4 py-2' : 'mt-6 py-2.5'} flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-4`}>
-            <Clock className="size-4 text-primary" aria-hidden="true" />
-            <span className="text-sm font-medium text-foreground">
-              {timeLeft === 'Expirado' ? (
-                <span className="font-bold text-primary">Resgate agora seu convite</span>
-              ) : (
-                <>
-                  Código reservado por{' '}
-                  <span className="font-bold text-primary">{timeLeft || '--:--'}</span>
-                </>
-              )}
-            </span>
-          </div>
-
           {/* QR Code */}
           {pixQrCode && (
             <div className={compact ? 'mt-3 flex justify-center' : 'mt-6 flex justify-center'}>
