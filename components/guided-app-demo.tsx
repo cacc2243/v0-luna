@@ -1080,7 +1080,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
               setShowHint(false)
               onDone()
             }}
-            className="absolute inset-0 z-[50] cursor-default bg-background/70 backdrop-blur-[2px]"
+            className="absolute inset-0 z-[50] cursor-default bg-background/70"
           />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
             <div className="luna-border animate-pop animate-coach-glow pointer-events-auto relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
