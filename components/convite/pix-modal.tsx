@@ -618,7 +618,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             ) : (
               <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
                 Após o pagamento, o seu{' '}
-                <span className="font-semibold text-foreground">Código de Convite</span> será
+                <span className="font-semibold text-foreground">acesso ao Luna Privé</span> será
                 enviado no e-mail cadastrado.
               </p>
             )}
