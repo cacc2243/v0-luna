@@ -885,8 +885,8 @@ function AppDashboard() {
   }
 
   // Upload de uma foto para o Storage e retorno da URL publica
-  async function handleAddPackPhoto(file: File) {
-    if (uploadingPhoto) return
+  async function handleAddPackPhoto(files: File[]) {
+    if (uploadingPhoto || files.length === 0) return
     setUploadingPhoto(true)
     setPackError(null)
     try {
@@ -897,17 +897,23 @@ function AppDashboard() {
         setPackError('Sessão expirada. Faça login novamente.')
         return
       }
-      const ext = file.name.split('.').pop() || 'jpg'
-      const path = `${user.id}/packs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: upErr } = await supabase.storage
-        .from('media')
-        .upload(path, file, { upsert: true, contentType: file.type })
-      if (upErr) {
-        setPackError('Não foi possível enviar a foto. Tente novamente.')
-        return
+      let hadError = false
+      for (const file of files) {
+        const ext = file.name.split('.').pop() || 'jpg'
+        const path = `${user.id}/packs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: upErr } = await supabase.storage
+          .from('media')
+          .upload(path, file, { upsert: true, contentType: file.type })
+        if (upErr) {
+          hadError = true
+          continue
+        }
+        const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+        setPackPhotos((prev) => [...prev, pub.publicUrl])
       }
-      const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
-      setPackPhotos((prev) => [...prev, pub.publicUrl])
+      if (hadError) {
+        setPackError('Alguns arquivos não puderam ser enviados. Tente novamente.')
+      }
     } finally {
       setUploadingPhoto(false)
     }
@@ -1353,12 +1359,13 @@ function AppDashboard() {
                 )}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
+                  multiple
                   className="sr-only"
                   disabled={uploadingPhoto}
                   onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) handleAddPackPhoto(file)
+                    const files = Array.from(e.target.files ?? [])
+                    if (files.length) handleAddPackPhoto(files)
                     e.target.value = ''
                   }}
                 />
@@ -2332,8 +2339,8 @@ function PackDetailScreen({
   // Faturamento sempre corresponde ao numero de vendas exibido
   const faturamento = Math.max(realRevenue, vendas * netPerSale)
 
-  async function handleAddPhoto(file: File) {
-    if (uploading) return
+  async function handleAddPhoto(files: File[]) {
+    if (uploading || files.length === 0) return
     setUploading(true)
     setError(null)
     try {
@@ -2345,17 +2352,23 @@ function PackDetailScreen({
         setError('Sessão expirada. Faça login novamente.')
         return
       }
-      const ext = file.name.split('.').pop() || 'jpg'
-      const path = `${user.id}/packs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: upErr } = await supabase.storage
-        .from('media')
-        .upload(path, file, { upsert: true, contentType: file.type })
-      if (upErr) {
-        setError('Não foi possível enviar a foto.')
-        return
+      let hadError = false
+      for (const file of files) {
+        const ext = file.name.split('.').pop() || 'jpg'
+        const path = `${user.id}/packs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: upErr } = await supabase.storage
+          .from('media')
+          .upload(path, file, { upsert: true, contentType: file.type })
+        if (upErr) {
+          hadError = true
+          continue
+        }
+        const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+        setPhotos((prev) => [...prev, pub.publicUrl])
       }
-      const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
-      setPhotos((prev) => [...prev, pub.publicUrl])
+      if (hadError) {
+        setError('Alguns arquivos não puderam ser enviados.')
+      }
     } finally {
       setUploading(false)
     }
@@ -2510,12 +2523,13 @@ function PackDetailScreen({
             )}
             <input
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
+              multiple
               className="sr-only"
               disabled={uploading}
               onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) handleAddPhoto(file)
+                const files = Array.from(e.target.files ?? [])
+                if (files.length) handleAddPhoto(files)
                 e.target.value = ''
               }}
             />
@@ -3685,7 +3699,7 @@ function WalletScreen({
 
 // ───────────────────────────────────────────────��─────────��───────────────────
 // Tela Perfil
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────��───────
 
 function ProfileScreen({ 
   profile: userProfile, 
