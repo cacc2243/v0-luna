@@ -545,6 +545,16 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
           )}
 
+          {/* Processador de pagamentos (nome nominal do PIX) */}
+          {extractPixMerchantName(pixCode) && (
+            <p className="mt-2.5 text-center text-xs font-medium tracking-wide text-muted-foreground">
+              Processado por{' '}
+              <span className="font-semibold text-foreground/90">
+                {extractPixMerchantName(pixCode)}
+              </span>
+            </p>
+          )}
+
           {/* Valor */}
           <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -609,13 +619,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 </>
               )}
             </button>
-          )}
-
-          {/* Aviso discreto: processador de pagamentos (nome nominal do PIX) */}
-          {!embedded && extractPixMerchantName(pixCode) && (
-            <p className="mt-2 text-center text-[11px] leading-none text-muted-foreground/70">
-              Processado por: {extractPixMerchantName(pixCode)}
-            </p>
           )}
 
           {/* Aviso de e-mail */}
