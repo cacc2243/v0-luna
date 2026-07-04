@@ -79,7 +79,7 @@
 
 @theme inline {
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
   --font-mono: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --color-positive: var(--positive);
   --color-background: var(--background);
