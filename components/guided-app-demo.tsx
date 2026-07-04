@@ -200,14 +200,19 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     // Som de sucesso suave sincronizado com o confete.
     playSuccess()
     const colors = ['#ff3d77', '#ff7aa2', '#ffd1dc', '#ffffff']
-    const end = Date.now() + 1600
-    confetti({ particleCount: 35, spread: 60, startVelocity: 30, origin: { y: 0.4 }, colors, zIndex: 100 })
-    const frame = () => {
-      confetti({ particleCount: 2, angle: 60, spread: 40, origin: { x: 0 }, colors, zIndex: 100 })
-      confetti({ particleCount: 2, angle: 120, spread: 40, origin: { x: 1 }, colors, zIndex: 100 })
+    const end = Date.now() + 700
+    confetti({ particleCount: 16, spread: 55, startVelocity: 28, origin: { y: 0.4 }, colors, zIndex: 100 })
+    let lastShot = 0
+    const frame = (now: number) => {
+      // Dispara poucos confetes e apenas a cada ~140ms para um efeito discreto.
+      if (now - lastShot > 140) {
+        lastShot = now
+        confetti({ particleCount: 1, angle: 60, spread: 35, origin: { x: 0 }, colors, zIndex: 100 })
+        confetti({ particleCount: 1, angle: 120, spread: 35, origin: { x: 1 }, colors, zIndex: 100 })
+      }
       if (Date.now() < end) requestAnimationFrame(frame)
     }
-    frame()
+    requestAnimationFrame(frame)
   }, [phase])
 
   function advanceTour() {
@@ -867,10 +872,10 @@ function StatCard({
   highlighted ? 'border-primary/50' : 'border-border'
   }`}
   >
-  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
   <Icon className="size-5 text-primary" aria-hidden="true" />
   </span>
-  <span className="text-xs text-muted-foreground">{label}</span>
+  <span className="text-xs font-medium text-foreground/70">{label}</span>
   <span className="w-full truncate px-0.5 text-base font-bold leading-tight text-foreground">{value}</span>
   </div>
   )
