@@ -4368,36 +4368,6 @@ function ProfileScreen({
                 className="w-full resize-none rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Localizacao <span className="text-muted-foreground/60">(opcional)</span>
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={editedProfile.location}
-                  onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
-                  placeholder="Ex: Sao Paulo, SP"
-                  className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Instagram <span className="text-muted-foreground/60">(opcional)</span>
-              </label>
-              <div className="relative">
-                <Instagram className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={editedProfile.instagram}
-                  onChange={(e) => setEditedProfile({ ...editedProfile, instagram: e.target.value })}
-                  placeholder="@seuusuario"
-                  className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Destaques */}
