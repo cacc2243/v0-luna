@@ -359,7 +359,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         ) : (
           <div
             key={step}
-            className="animate-pop luna-border max-h-[92dvh] w-full max-w-sm overflow-y-auto overflow-x-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
+            className="animate-pop luna-border w-full max-w-sm rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
           >
             {/* Progresso */}
             <div className="mb-7">
