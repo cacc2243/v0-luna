@@ -5,8 +5,6 @@ import { Check, ChevronRight, Gift } from 'lucide-react'
 const benefits = [
   'Código de convite exclusivo Luna Privé',
   'Anonimato e privacidade total do seu perfil',
-  'Suporte 24h por WhatsApp + Chat',
-  'Garantia de 30 dias',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
