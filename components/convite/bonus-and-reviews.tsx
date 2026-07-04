@@ -109,7 +109,7 @@ export function BonusAndReviews() {
             <h2 id="bonus" className="text-sm font-bold text-foreground">
               Bônus incluído
             </h2>
-            <p className="text-xs text-muted-foreground">Grátis com seu Código de Convite</p>
+            <p className="text-xs text-foreground/70">Grátis com seu Código de Convite</p>
           </div>
         </div>
 
