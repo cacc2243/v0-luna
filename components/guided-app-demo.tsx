@@ -727,30 +727,61 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                 Mantendo o ritmo que você acabou de ver, esta é a sua projeção de ganhos:
               </p>
 
+              {/* Mini gráfico de crescimento (12 meses) */}
               <div
                 className="animate-card-enter mt-5 rounded-2xl border border-border/60 bg-background/50 p-4"
                 style={{ animationDelay: '250ms' }}
               >
-                <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <CalendarDays className="size-3.5 text-primary" aria-hidden="true" />
-                  Em 30 dias
-                </p>
-                <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground">
-                  {brl(balance * 30)}
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <TrendingUp className="size-3.5 text-primary" aria-hidden="true" />
+                    Evolução em 12 meses
+                  </p>
+                  <span className="flex items-center gap-1 text-[0.7rem] font-bold text-positive">
+                    <TrendingUp className="size-3" aria-hidden="true" />
+                    +1200%
+                  </span>
+                </div>
+                <div className="mt-3 flex h-20 items-end gap-1" aria-hidden="true">
+                  {[10, 16, 22, 30, 39, 49, 60, 71, 82, 90, 96, 100].map((h, i, arr) => (
+                    <div
+                      key={i}
+                      className={`flex-1 rounded-t-sm ${
+                        i === arr.length - 1 ? 'luna-gradient' : 'bg-primary/35'
+                      }`}
+                      style={{ height: `${h}%` }}
+                    />
+                  ))}
+                </div>
+                <div className="mt-1.5 flex items-center justify-between text-[0.6rem] font-medium text-muted-foreground">
+                  <span>Mês 1</span>
+                  <span>Mês 12</span>
+                </div>
               </div>
 
+              {/* Valores projetados */}
               <div
-                className="animate-card-enter luna-gradient mt-3 rounded-2xl px-4 py-4 shadow-lg shadow-primary/30"
+                className="animate-card-enter mt-3 grid grid-cols-2 gap-2.5"
                 style={{ animationDelay: '300ms' }}
               >
-                <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wider text-primary-foreground/85">
-                  <Sparkles className="size-3.5" aria-hidden="true" />
-                  Em 1 ano
-                </p>
-                <p className="mt-1 text-3xl font-extrabold tracking-tight text-primary-foreground">
-                  {brl(balance * 30 * 12)}
-                </p>
+                <div className="rounded-2xl border border-border/60 bg-background/50 p-3">
+                  <p className="flex items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <CalendarDays className="size-3 text-primary" aria-hidden="true" />
+                    Em 30 dias
+                  </p>
+                  <p className="mt-1 text-lg font-extrabold tracking-tight text-foreground">
+                    {brl(balance * 30)}
+                  </p>
+                </div>
+                <div className="luna-gradient rounded-2xl p-3 shadow-lg shadow-primary/30">
+                  <p className="flex items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-wider text-primary-foreground/85">
+                    <Sparkles className="size-3" aria-hidden="true" />
+                    Em 1 ano
+                  </p>
+                  <p className="mt-1 text-lg font-extrabold tracking-tight text-primary-foreground">
+                    {brl(balance * 30 * 12)}
+                  </p>
+                </div>
               </div>
 
               <p
