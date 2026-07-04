@@ -468,8 +468,8 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             {step === 4 && (
               <StepShell
                 icon={Lock}
-                eyebrow="Confirme sua senha"
-                title="Quase lá"
+                eyebrow="Segurança"
+                title="Confirme sua senha"
                 description="Digite novamente para confirmar."
               >
                 <PasswordInput
