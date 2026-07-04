@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Mail } from 'lucide-react'
+import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
@@ -110,53 +111,39 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
   }
 
   return (
-    <main className="relative min-h-[100dvh] w-full bg-background">
-      <div className="fixed inset-0 z-0">
-        <img
-          src="/images/convite-fundo.jpg"
-          alt=""
-          className="size-full object-cover object-center"
-        />
-        {/* Camadas de legibilidade */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/55 to-background/85" />
-        <div className="absolute inset-0 bg-background/35" aria-hidden="true" />
-      </div>
+    <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">
+      <PageBackground />
 
-      {/* Top bar */}
-      <div className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-md items-center gap-2 px-5 py-3.5">
-          <Lock className="size-4 text-primary" aria-hidden="true" />
-          <span className="text-sm font-semibold text-foreground">Adquirir meu Convite</span>
-        </div>
-      </div>
-
-      <div className="relative mx-auto flex w-full max-w-md flex-col gap-7 px-5 pb-12 pt-8">
-        {/* Hero */}
-        <header className="convite-card relative overflow-hidden rounded-3xl border border-border/50 px-5 py-5 backdrop-blur-sm">
-          <div
-            className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-primary/20 blur-3xl"
-            aria-hidden="true"
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-8">
+        {/* Logo centralizada, igual às demais telas do fluxo */}
+        <header className="flex flex-col items-center gap-4">
+          <img
+            src="/images/luna-prive-logo.png"
+            alt="Luna Privé"
+            className="h-11 w-auto"
           />
-          <div className="relative flex flex-col">
-            <img
-              src="/images/luna-prive-logo.png"
-              alt="Luna Privé"
-              className="h-6 w-auto self-start"
-            />
-            <h1 className="mt-4 text-balance text-2xl font-extrabold leading-tight tracking-tight text-foreground">
-              Resgate seu Convite Luna
-            </h1>
-            <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-border/60 bg-background/50 px-3.5 py-2.5">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
-                <Mail className="size-3.5" aria-hidden="true" />
-              </span>
-              <p className="text-pretty text-xs font-medium leading-relaxed text-foreground">
-                Você receberá seu código de convite por e-mail após a confirmação.
-              </p>
-            </div>
-          </div>
         </header>
 
+        {/* Hero centralizado no mesmo padrão do fluxo */}
+        <section className="mt-7 text-center">
+          <span className="luna-border inline-flex items-center gap-1.5 rounded-full bg-card px-4 py-1.5 text-sm font-semibold text-primary">
+            <Lock className="size-4" aria-hidden="true" />
+            Adquirir meu Convite
+          </span>
+          <h1 className="mt-4 text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
+            Resgate seu <span className="text-primary">Convite Luna</span>
+          </h1>
+          <div className="luna-border mx-auto mt-5 flex items-center gap-2.5 rounded-2xl bg-card px-4 py-3 text-left">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+              <Mail className="size-4" aria-hidden="true" />
+            </span>
+            <p className="text-pretty text-xs font-medium leading-relaxed text-foreground">
+              Você receberá seu código de convite por e-mail após a confirmação.
+            </p>
+          </div>
+        </section>
+
+        <div className="mt-8 flex flex-col gap-7">
         {/* Dados da conta */}
         <AccountSummary
           username={data.username}
@@ -174,6 +161,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
 
         {/* Empresa */}
         <CompanyInfo />
+        </div>
       </div>
 
       {/* Etapa de pré-confirmação (antes de gerar o PIX) */}

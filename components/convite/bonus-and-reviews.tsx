@@ -78,7 +78,7 @@ export function BonusAndReviews() {
               <article
                 key={`${r.handle}-${i}`}
                 aria-hidden={i >= reviews.length}
-                className="luna-border-soft convite-card w-[80vw] max-w-[320px] shrink-0 rounded-2xl p-4"
+                className="luna-border w-[80vw] max-w-[320px] shrink-0 rounded-2xl bg-card p-4"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -120,7 +120,7 @@ export function BonusAndReviews() {
           </div>
         </div>
 
-        <div className="luna-border-soft convite-card divide-y divide-border/40 overflow-hidden rounded-2xl">
+        <div className="luna-border divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
           {bonuses.map((b) => (
             <div key={b.title} className="flex items-start gap-3 px-4 py-4">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
