@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { getAppSettings } from '@/lib/settings'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -549,7 +550,7 @@ export async function settleExpiredWithdrawals() {
 
 // ───────���─────────────────────────────────────────────────────────────────────
 // Conversation Actions
-// ───────────────────��������───────────────────────────────────────────────────────�����─
+// ───────────────────���������───────────────────────────────────────────────────────�����─
 
 // Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
 const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
@@ -1226,7 +1227,7 @@ export async function getHighlights(): Promise<Highlight[]> {
   return data || []
 }
 
-// ──────────────────────────────────────���──���───────────────────────────────────
+// ───────────────────────────────────���──���──���───────────────────────────────────
 // Settings Actions
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1353,6 +1354,11 @@ export async function generatePackActivity(opts?: { initial?: boolean; maxOrders
     .eq('seller_id', user.id)
   let orderIndex = existingOrders ?? 0
 
+  // Proporção de pedidos diretos vs com chat, definida no painel admin:
+  // 1 pedido direto a cada N pedidos (N = directOrderEveryN).
+  const { directOrderEveryN } = await getAppSettings()
+  const everyN = Math.min(100, Math.max(1, Math.round(directOrderEveryN) || 13))
+
   const initial = opts?.initial
   // Limite de pedidos por chamada (para os pedidos aparecerem um a um, e nao em lote).
   const maxOrders = opts?.maxOrders ?? Infinity
@@ -1414,13 +1420,13 @@ export async function generatePackActivity(opts?: { initial?: boolean; maxOrders
       const netAmount = amount
       const buyer = generateBuyerName(usedNames)
 
-      // Regra de pedido direto:
-      // - proporcao de 12 pedidos com chat para 1 pedido direto;
-      // - ou seja, a cada bloco de 13 pedidos apenas 1 e direto.
-      // - o PRIMEIRO pedido nunca e direto (sempre com chat); o primeiro
-      //   pedido direto so aparece no 13o pedido.
+      // Regra de pedido direto (proporcao configuravel no painel admin):
+      // - 1 pedido DIRETO a cada N pedidos (N = everyN);
+      // - ex.: N=13 => 12 pedidos com chat para cada 1 pedido direto.
+      // - o PRIMEIRO pedido nunca e direto (o primeiro direto so aparece no
+      //   N-esimo pedido). Quando N=1, todos os pedidos sao diretos.
       orderIndex++
-      const isDirect = orderIndex % 13 === 0
+      const isDirect = orderIndex % everyN === 0
 
       const { data: sale } = await supabase
         .from('sales')

@@ -40,6 +40,7 @@ interface SettingsPayload {
     chatAmountCents: number
     giftUnlockAmountCents: number
     boostAmountCents: Record<string, number>
+    directOrderEveryN: number
     utmifyApiToken: string
   }
   gateways: GatewayMeta[]
@@ -73,6 +74,7 @@ export function SettingsTab() {
   const [chatReais, setChatReais] = useState('99,00')
   const [giftReais, setGiftReais] = useState('38,60')
   const [boostReais, setBoostReais] = useState<Record<string, string>>({})
+  const [directEveryN, setDirectEveryN] = useState('13')
   const [utmifyToken, setUtmifyToken] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -109,6 +111,7 @@ export function SettingsTab() {
         boost[String(day)] = (cents / 100).toFixed(2).replace('.', ',')
       }
       setBoostReais(boost)
+      setDirectEveryN(String(data.settings.directOrderEveryN || 13))
       setUtmifyToken(data.settings.utmifyApiToken || '')
     }
   }, [data])
@@ -141,6 +144,7 @@ export function SettingsTab() {
       parseAmountCents(inviteReais) !== data.settings.inviteAmountCents ||
       parseAmountCents(chatReais) !== data.settings.chatAmountCents ||
       parseAmountCents(giftReais) !== data.settings.giftUnlockAmountCents ||
+      (Number(directEveryN) || 0) !== data.settings.directOrderEveryN ||
       utmifyToken.trim() !== (data.settings.utmifyApiToken || '') ||
       boostDirty)
 
@@ -180,6 +184,11 @@ export function SettingsTab() {
       }
       boostPayload[String(day)] = c
     }
+    const directN = Math.round(Number(directEveryN))
+    if (!Number.isFinite(directN) || directN < 1 || directN > 100) {
+      setSaveError('Proporção de pedidos inválida. Use um número inteiro entre 1 e 100.')
+      return
+    }
 
     setSaving(true)
     try {
@@ -196,6 +205,7 @@ export function SettingsTab() {
           chatAmountCents: chatCents,
           giftUnlockAmountCents: giftCents,
           boostAmountCents: boostPayload,
+          directOrderEveryN: directN,
           utmifyApiToken: utmifyToken.trim(),
         }),
       })
@@ -354,6 +364,87 @@ export function SettingsTab() {
               className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-sm font-semibold text-foreground outline-none focus:border-primary"
             />
           </div>
+        </div>
+      </section>
+
+      {/* Proporcao de pedidos: com chat vs diretos */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <MessageCircle className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">Proporção de pedidos</h2>
+            <p className="text-sm text-muted-foreground">
+              Controla quantos pedidos chegam com chat exclusivo x diretos em{' '}
+              <span className="font-medium">/minha-conta</span>.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label htmlFor="direct-every-n" className="text-sm font-semibold text-foreground">
+            1 pedido direto a cada
+          </label>
+          <p className="mb-3 mt-1 text-xs text-muted-foreground">
+            Define a frequência dos pedidos diretos. Ex.: <span className="font-medium">13</span>{' '}
+            significa 12 pedidos com chat para cada 1 pedido direto. Use{' '}
+            <span className="font-medium">1</span> para tornar todos os pedidos diretos.
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              id="direct-every-n"
+              type="number"
+              min={1}
+              max={100}
+              step={1}
+              inputMode="numeric"
+              value={directEveryN}
+              onChange={(e) => setDirectEveryN(e.target.value)}
+              className="w-24 rounded-xl border border-border bg-background py-2.5 px-4 text-sm font-semibold text-foreground outline-none focus:border-primary"
+            />
+            <span className="text-sm text-muted-foreground">pedidos</span>
+          </div>
+
+          {(() => {
+            const n = Math.round(Number(directEveryN))
+            if (!Number.isFinite(n) || n < 1 || n > 100) {
+              return (
+                <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-destructive">
+                  <AlertTriangle className="size-3.5" />
+                  Informe um número inteiro entre 1 e 100.
+                </p>
+              )
+            }
+            const directPct = Math.round((1 / n) * 100)
+            const chatPct = 100 - directPct
+            return (
+              <div className="mt-4 rounded-xl border border-border bg-secondary/30 p-3.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Prévia da proporção
+                </p>
+                <div className="mt-2.5 flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="h-full bg-primary" style={{ width: `${chatPct}%` }} />
+                  <div className="h-full bg-positive" style={{ width: `${directPct}%` }} />
+                </div>
+                <div className="mt-2.5 flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-foreground">
+                    <span className="size-2.5 rounded-full bg-primary" />
+                    Com chat: <span className="font-semibold">{chatPct}%</span>
+                  </span>
+                  <span className="flex items-center gap-1.5 text-foreground">
+                    <span className="size-2.5 rounded-full bg-positive" />
+                    Diretos: <span className="font-semibold">{directPct}%</span>
+                  </span>
+                </div>
+                <p className="mt-2.5 text-xs text-muted-foreground">
+                  {n === 1
+                    ? 'Todos os pedidos serão diretos (sem chat).'
+                    : `A cada ${n} pedidos: ${n - 1} com chat e 1 direto.`}
+                </p>
+              </div>
+            )
+          })()}
         </div>
       </section>
 

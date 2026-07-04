@@ -76,6 +76,7 @@ import { ChatsActive } from '@/components/minha-conta/chats-active'
 import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
  import { SupportModal } from '@/components/minha-conta/support-modal'
 import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
+import { cn } from '@/lib/utils'
 
 // Valor do Chat Exclusivo (pagamento unico)
 const CHAT_PRICE = 99.0
