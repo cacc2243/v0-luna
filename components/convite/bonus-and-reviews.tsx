@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, Users, Images, Gift, Star, BadgeCheck } from 'lucide-react'
+import { BookOpen, Users, Images, Gift, Star, BadgeCheck, UserRound } from 'lucide-react'
 
 const bonuses = [
   {
@@ -26,37 +26,32 @@ const bonuses = [
 const reviews = [
   {
     handle: '@gabi.m_santos',
-    avatar: '/images/avatar-1.png',
     time: 'há 6 dias',
-    text: 'no primeiro mês fiz R$8.400 só com packs. hoje, 3 meses depois, já passei de R$32 mil e larguei meu clt de R$1.800.',
+    text: 'no primeiro mês fiz R$12.700 só com packs. hoje, 3 meses depois, já passei de R$48 mil e larguei meu clt de R$1.800.',
   },
   {
     handle: '@lara_priv',
-    avatar: '/images/avatar-2.png',
     time: 'há 2 semanas',
-    text: 'na primeira semana vendi 43 packs e fechei R$3.900. o dinheiro cai na hora no meu pix, sem taxa escondida.',
+    text: 'na primeira semana vendi 71 packs e fechei R$6.400. o dinheiro cai na hora no meu pix, sem taxa escondida.',
   },
   {
     handle: '@drih.rs',
-    avatar: '/images/avatar-4.png',
     time: 'há 1 mês',
-    text: 'meu melhor dia foi R$1.250 em vendas. em 30 dias bati R$18 mil e continua subindo toda semana.',
+    text: 'meu melhor dia foi R$2.180 em vendas. em 30 dias bati R$27 mil e continua subindo toda semana.',
   },
   {
     handle: '@nay.oficial',
-    avatar: '/images/avatar-1.png',
     time: 'há 3 dias',
-    text: 'comecei com medo, hoje faturo entre R$6 e R$9 mil por mês trabalhando do meu celular, no meu tempo.',
+    text: 'comecei com medo, hoje faturo entre R$11 e R$15 mil por mês trabalhando do meu celular, no meu tempo.',
   },
   {
     handle: '@bibi.rezende',
-    avatar: '/images/avatar-2.png',
     time: 'há 5 dias',
-    text: 'já saquei mais de R$54 mil desde que entrei. o saque é imediato e nunca tive problema pra receber.',
+    text: 'já saquei mais de R$82 mil desde que entrei. o saque é imediato e nunca tive problema pra receber.',
   },
 ]
 
-export function BonusAndReviews() {
+export function BonusAndReviews({ middleSlot }: { middleSlot?: React.ReactNode }) {
   // Duplicamos a lista para o marquee criar um loop contínuo e infinito.
   const loopReviews = [...reviews, ...reviews]
 
@@ -78,15 +73,13 @@ export function BonusAndReviews() {
               <article
                 key={`${r.handle}-${i}`}
                 aria-hidden={i >= reviews.length}
-                className="luna-border-soft convite-card w-[80vw] max-w-[320px] shrink-0 rounded-2xl p-4"
+                className="luna-border w-[80vw] max-w-[320px] shrink-0 rounded-2xl bg-card p-4"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <img
-                      src={r.avatar || '/placeholder.svg'}
-                      alt=""
-                      className="size-9 rounded-full object-cover"
-                    />
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                      <UserRound className="size-5" aria-hidden="true" />
+                    </span>
                     <div className="leading-tight">
                       <p className="flex items-center gap-1 text-sm font-semibold text-foreground">
                         {r.handle}
@@ -106,6 +99,9 @@ export function BonusAndReviews() {
         </div>
       </section>
 
+      {/* Conteúdo intermediário (ex.: card de suporte) */}
+      {middleSlot}
+
       {/* Bônus incluído */}
       <section aria-labelledby="bonus">
         <div className="mb-3 flex items-center gap-3 px-1">
@@ -116,11 +112,11 @@ export function BonusAndReviews() {
             <h2 id="bonus" className="text-sm font-bold text-foreground">
               Bônus incluído
             </h2>
-            <p className="text-xs text-muted-foreground">Grátis com seu Código de Convite</p>
+            <p className="text-xs text-foreground/70">Grátis com seu Código de Convite</p>
           </div>
         </div>
 
-        <div className="luna-border-soft convite-card divide-y divide-border/40 overflow-hidden rounded-2xl">
+        <div className="luna-border divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
           {bonuses.map((b) => (
             <div key={b.title} className="flex items-start gap-3 px-4 py-4">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">

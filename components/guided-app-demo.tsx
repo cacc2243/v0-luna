@@ -15,15 +15,14 @@ import {
   Check,
   X,
   Plus,
-  ImagePlus,
   Info,
-  Loader2,
   ArrowUpRight,
   ArrowDownLeft,
   ChevronRight,
   Lock,
   Heart,
   TrendingUp,
+  Sparkles,
   Star,
   Settings,
   HelpCircle,
@@ -39,21 +38,19 @@ interface GuidedAppDemoProps {
 }
 
 const sales = [
-  { handle: '@fan_secreto', pack: 'Pack 03', amount: 89.9, purchases: '+12 compras realizadas' },
-  { handle: '@serg10.tp', pack: 'Pack 07', amount: 129.9, purchases: '+28 compras realizadas' },
-  { handle: '@lobo_solitario', pack: 'Pack 01', amount: 69.9, purchases: '+5 compras realizadas' },
-  { handle: '@colecionador_x', pack: 'Pack 12', amount: 199.9, purchases: '+41 compras realizadas' },
+  { handle: '@fan_secreto', pack: 'Pack 03', amount: 89.9 },
+ { handle: '@serg10.tp', pack: 'Pack 07', amount: 129.9 },
+ { handle: '@lobo_solitario', pack: 'Pack 01', amount: 69.9 },
+ { handle: '@colecionador_x', pack: 'Pack 12', amount: 199.9 },
 ]
 
 // Segunda rodada de pedidos — após criar o pack.
 // Os pedidos sempre se referem ao pack que a usuária acabou de criar,
 // então pack/valor são preenchidos dinamicamente dentro do componente.
 const sales2Buyers = [
-  { handle: '@admirador_vip', purchases: '+33 compras realizadas' },
-  { handle: '@cliente_fiel', purchases: '+17 compras realizadas' },
-  { handle: '@noturno.br', purchases: '+24 compras realizadas' },
-  { handle: '@secret_buyer', purchases: '+9 compras realizadas' },
-  { handle: '@premium_fan', purchases: '+52 compras realizadas' },
+  { handle: '@admirador_vip' },
+  { handle: '@cliente_fiel' },
+  { handle: '@noturno.br' },
 ]
 
 // "29,90" -> 29.9 (com proteção contra valores inválidos)
@@ -109,26 +106,18 @@ function useCountUp(target: number, duration = 700) {
   return value
 }
 
-const examplePhotos = [
-  '/images/pack-photo-1.png',
-  '/images/pack-photo-2.png',
-  '/images/pack-photo-3.png',
-]
-
 export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [phase, setPhase] = useState<
-    'tour' | 'selling' | 'done' | 'packs' | 'selling2' | 'celebrate' | 'wallet' | 'profile' | 'signup'
+    'tour' | 'selling' | 'done' | 'selling2' | 'celebrate' | 'projection' | 'wallet' | 'profile' | 'signup'
   >('tour')
   const [showSellModal, setShowSellModal] = useState(false)
   const [tourStep, setTourStep] = useState(0)
   const [tourDirection, setTourDirection] = useState<'forward' | 'backward'>('forward')
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [showCreate, setShowCreate] = useState(false)
-  const [packName, setPackName] = useState('Pés & Saltos')
-  const [packPrice, setPackPrice] = useState('29,90')
-  const [packDesc, setPackDesc] = useState('')
-  const [publishing, setPublishing] = useState(false)
-  const [createdPack, setCreatedPack] = useState<string | null>(null)
+  // Pack de referência usado nos pedidos da segunda rodada.
+  // A criação de pack foi removida do fluxo, então usamos um pack fixo.
+  const packName = 'Pés & Saltos'
+  const packPrice = '29,90'
   const [balance, setBalance] = useState(0)
   const [vendas, setVendas] = useState(0)
   const [today, setToday] = useState(0)
@@ -151,11 +140,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const animatedToday = useCountUp(today)
   const highlight = phase === 'tour' ? tour[tourStep].key : null
 
-  // Nome/preço do pack criado pela usuária (refletem o que ela digitou)
+  // Pack de referência usado nos pedidos da segunda rodada.
   const packLabel = packName.trim() || 'Pés & Saltos'
   const packAmount = parsePrice(packPrice)
 
-  // Segunda rodada: todos os pedidos são do pack recém-criado, com o preço dela
+  // Segunda rodada: todos os pedidos são do mesmo pack de referência.
   const sales2 = sales2Buyers.map((b) => ({
     ...b,
     pack: packLabel,
@@ -274,7 +263,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     } else if (phase === 'selling2') {
       setTimeout(() => setPhase('celebrate'), 900)
     } else {
-      setTimeout(() => setPhase('packs'), 900)
+      // Fim da primeira rodada — segue direto para mais pedidos (sem criar pack).
+      setTimeout(() => {
+        setSaleIndex(0)
+        setPhase('selling2')
+      }, 900)
     }
   }
 
@@ -293,24 +286,12 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
     setTimeout(() => setBlockedToast(null), 1200)
   }
 
-  function publishPack() {
-    if (publishing) return
-    setPublishing(true)
-    setTimeout(() => {
-      setPublishing(false)
-      setShowCreate(false)
-      setCreatedPack(packName.trim() || 'Pés & Saltos')
-    }, 1300)
-  }
-
   const activeTab =
-    phase === 'packs'
-      ? 'Packs'
-      : phase === 'wallet'
-        ? 'Carteira'
-        : phase === 'profile' || phase === 'signup'
-          ? 'Perfil'
-          : 'Início'
+    phase === 'wallet'
+      ? 'Carteira'
+      : phase === 'profile' || phase === 'signup'
+        ? 'Perfil'
+        : 'Início'
 
   const currentSale = activeSale !== null ? sellingList[activeSale] : null
   const saleActive = currentSale !== null && (phase === 'selling' || phase === 'selling2')
@@ -384,15 +365,6 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       ) : phase === 'profile' || phase === 'signup' ? (
         <div key="profile-screen" className="animate-slide-in-right flex min-h-0 flex-1 flex-col">
           <ProfileScreen onDone={() => setShowSellModal(true)} hideHint={phase === 'signup'} />
-        </div>
-      ) : phase === 'packs' ? (
-        <div key="packs-screen" className="animate-slide-in-right flex min-h-0 flex-1 flex-col">
-          <PacksScreen
-            balance={balance}
-            createdPack={createdPack}
-            packPrice={packPrice}
-            onCreate={() => setShowCreate(true)}
-          />
         </div>
       ) : (
       <div key="home-screen" ref={scrollRef} className="animate-screen flex-1 overflow-y-auto px-4 pb-6">
@@ -494,12 +466,10 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
                   <Bell className="size-5 text-primary" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1 leading-snug">
-                  <p className="truncate text-[0.95rem] font-semibold text-foreground">
-                    {currentSale.handle} quer {currentSale.pack}
+                  <p className="line-clamp-2 text-balance break-words text-[0.95rem] font-semibold text-foreground">
+                    {currentSale.handle} quer comprar o {currentSale.pack}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    agora · {currentSale.purchases}
-                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">agora</p>
                 </div>
                 <span className="text-base font-bold text-positive">{brl(currentSale.amount)}</span>
               </div>
@@ -672,216 +642,121 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
         </div>
       )}
 
-      {/* Modal — Criar Pack */}
-      {showCreate && !createdPack && (
-        <div className="absolute inset-0 z-[55] flex items-start justify-center px-4 pb-40 pt-6">
-          <div
-            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={() => !publishing && setShowCreate(false)}
-            aria-hidden="true"
-          />
-          <div className="animate-pop relative flex max-h-full w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
-            {/* Cabeçalho fixo */}
-            <div className="shrink-0 border-b border-border/60 px-5 pb-4 pt-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                    <Package className="size-4.5 text-primary" aria-hidden="true" />
-                  </span>
-                  <div className="leading-tight">
-                    <h2 className="text-base font-bold text-foreground">Criar Pack</h2>
-                    <p className="text-xs text-muted-foreground">Monte sua vitrine de conteúdo</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => !publishing && setShowCreate(false)}
-                  className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary active:scale-95"
-                  aria-label="Fechar"
-                >
-                  <X className="size-5" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-
-            {/* Conteúdo rolável */}
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3">
-                <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                <p className="text-pretty text-xs leading-relaxed text-foreground">
-                  O número ideal de fotos por pack é de 2 a 4 fotos.{' '}
-                  <span className="font-bold">Mínimo de 2 fotos por pack.</span>
-                </p>
-              </div>
-
-              <label htmlFor="pack-name" className="mb-1.5 block text-sm font-semibold text-foreground">
-                Nome do pack
-              </label>
-              <input
-                id="pack-name"
-                value={packName}
-                onChange={(e) => setPackName(e.target.value)}
-                placeholder="Ex: Ensaio Casual"
-                className="mb-5 w-full rounded-xl border border-border bg-secondary px-3.5 py-3.5 text-base text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
-              />
-
-              <label htmlFor="pack-price" className="mb-1.5 block text-sm font-semibold text-foreground">
-                Preço (R$)
-              </label>
-              <div className="mb-5 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
-                <span className="text-base font-medium text-muted-foreground">R$</span>
-                <input
-                  id="pack-price"
-                  value={packPrice}
-                  onChange={(e) => setPackPrice(e.target.value)}
-                  inputMode="decimal"
-                  className="w-full bg-transparent text-base text-foreground outline-none"
-                />
-              </div>
-
-              <label htmlFor="pack-desc" className="mb-1.5 block text-sm font-semibold text-foreground">
-                Descrição <span className="font-normal text-muted-foreground">(opcional)</span>
-              </label>
-              <textarea
-                id="pack-desc"
-                value={packDesc}
-                onChange={(e) => setPackDesc(e.target.value)}
-                rows={3}
-                placeholder="Descreva o conteúdo do pack..."
-                className="mb-5 w-full resize-none rounded-xl border border-border bg-secondary px-3.5 py-3.5 text-base text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
-              />
-
-              <div className="mb-2.5 flex items-center justify-between">
-                <span className="text-sm font-semibold text-foreground">Fotos</span>
-                <span className="rounded-full bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive">
-                  {examplePhotos.length} adicionadas
-                </span>
-              </div>
-              <div className="mb-3 grid grid-cols-3 gap-2.5">
-                {examplePhotos.map((src, i) => (
-                  <div
-                    key={src}
-                    className="relative aspect-square overflow-hidden rounded-xl border border-border"
-                  >
-                    <img
-                      src={src || '/placeholder.svg'}
-                      alt={`Foto de exemplo ${i + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                    <span className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-positive shadow">
-                      <Check className="size-3 text-white" aria-hidden="true" />
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 py-3.5 text-sm font-semibold text-primary transition active:scale-[0.99]"
-              >
-                <ImagePlus className="size-4" aria-hidden="true" />
-                Adicionar fotos ou vídeos
-              </button>
-            </div>
-
-            {/* Rodapé fixo */}
-            <div className="shrink-0 border-t border-border/60 bg-card px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3.5">
-              <button
-                type="button"
-                onClick={publishPack}
-                disabled={publishing}
-                className="luna-gradient flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
-              >
-                {publishing ? (
-                  <>
-                    <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-                    Publicando...
-                  </>
-                ) : (
-                  <>
-                    <Check className="size-5" aria-hidden="true" />
-                    Criar pack
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Fala da mentora — flutuante, na frente do card */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[56] px-4">
-            <div className="luna-border animate-sheet-up animate-coach-glow flex items-start gap-3 rounded-2xl bg-card px-3.5 py-3 ring-1 ring-primary/30">
-              <img
-                src="/images/mentor.png"
-                alt="Camila"
-                className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
-              />
-              <p className="flex-1 text-pretty text-sm leading-relaxed text-foreground">
-                Já deixei tudo prontinho pra você ver! Dá uma olhada no{' '}
-                <span className="font-bold">nome</span>, no{' '}
-                <span className="font-bold">preço</span> e nas fotos. Quando estiver pronta, é só
-                tocar em <span className="font-bold text-primary">Criar pack</span> aqui em cima.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Overlay — Pack publicado com sucesso */}
-      {createdPack && (
-        <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
-          <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
-          <div className="animate-pop relative w-full max-w-sm rounded-3xl border border-border bg-card p-7 text-center shadow-2xl">
-            <span className="luna-gradient animate-card-enter mx-auto flex size-16 items-center justify-center rounded-full shadow-lg shadow-primary/40" style={{ animationDelay: '100ms' }}>
-              <Check className="size-8 text-primary-foreground" aria-hidden="true" />
-            </span>
-            <p className="animate-card-enter mt-5 text-xl font-bold text-foreground" style={{ animationDelay: '150ms' }}>Pack publicado!</p>
-            <p className="animate-card-enter mt-2 text-pretty text-sm leading-relaxed text-muted-foreground" style={{ animationDelay: '200ms' }}>
-              <span className="font-semibold text-primary">{createdPack}</span> já está na sua
-              vitrine. Vamos aceitar mais alguns pedidos?
-            </p>
-            <div className="animate-card-enter mt-6" style={{ animationDelay: '250ms' }}>
-              <CtaButton
-                onClick={() => {
-                  setCreatedPack(null)
-                  setSaleIndex(0)
-                  setActiveSale(null)
-                  setPhase('selling2')
-                }}
-              >
-                Aceitar mais pedidos
-              </CtaButton>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Overlay — Parabéns (segunda rodada concluída) com confetes */}
       {phase === 'celebrate' && (
         <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
           <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
           <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/40 bg-card text-center shadow-2xl shadow-primary/25 ring-1 ring-primary/10">
-            <div className="px-6 pb-6 pt-7">
-              <img
-                src="/images/mentor.png"
-                alt="Camila"
-                className="animate-card-enter mx-auto size-16 rounded-full object-cover ring-2 ring-primary/50"
-                style={{ animationDelay: '100ms' }}
-              />
-              <p className="animate-card-enter mt-4 text-xl font-bold text-foreground" style={{ animationDelay: '150ms' }}>Meus parabéns!</p>
-
-              <div className="animate-card-enter luna-gradient mx-auto mt-4 w-fit rounded-2xl px-5 py-3 shadow-lg shadow-primary/30" style={{ animationDelay: '200ms' }}>
-                <p className="text-[0.7rem] font-medium uppercase tracking-wide text-primary-foreground/80">
-                  No app real você já teria ganho
-                </p>
-                <p className="text-2xl font-extrabold text-primary-foreground">{brl(balance)}</p>
+            {/* brilho sutil no topo */}
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/25),transparent_70%)]"
+              aria-hidden="true"
+            />
+            <div className="relative px-6 pb-6 pt-7">
+              <div className="animate-card-enter relative mx-auto w-fit" style={{ animationDelay: '100ms' }}>
+                <img
+                  src="/images/mentor.png"
+                  alt="Camila"
+                  className="size-16 rounded-full object-cover ring-2 ring-primary/50"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border-2 border-card bg-positive shadow">
+                  <Check className="size-3.5 text-white" aria-hidden="true" />
+                </span>
               </div>
 
-              <p className="mt-4 text-pretty text-sm leading-relaxed text-muted-foreground">
-                Neste ritmo, eu tenho certeza que a sua jornada aqui vai ser maravilhosa! Vamos
-                descobrir como você saca os seus ganhos aqui no{' '}
+              <p className="animate-card-enter mt-4 text-xl font-bold text-foreground" style={{ animationDelay: '150ms' }}>
+                Meus parabéns!
+              </p>
+
+              <div className="animate-card-enter luna-gradient mx-auto mt-5 w-full rounded-2xl px-5 py-4 shadow-lg shadow-primary/30" style={{ animationDelay: '200ms' }}>
+                <p className="flex items-center justify-center gap-1.5 text-[0.68rem] font-semibold uppercase tracking-wider text-primary-foreground/85">
+                  <TrendingUp className="size-3.5" aria-hidden="true" />
+                  No app real você já teria ganho
+                </p>
+                <p className="mt-1 text-3xl font-extrabold tracking-tight text-primary-foreground">
+                  {brl(balance)}
+                </p>
+              </div>
+
+              <p className="animate-card-enter mt-5 text-pretty text-sm leading-relaxed text-muted-foreground" style={{ animationDelay: '250ms' }}>
+                Neste ritmo, tenho certeza que a sua jornada aqui vai ser maravilhosa! Vamos
+                descobrir como você saca os seus ganhos no{' '}
                 <span className="font-semibold text-foreground">Luna Privé</span>?
               </p>
 
-              <div className="mt-6">
+              <div className="animate-card-enter mt-6" style={{ animationDelay: '300ms' }}>
+                <CtaButton onClick={() => setPhase('projection')}>Ver minha projeção</CtaButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay — Projeção de ganhos (30 dias e 1 ano) */}
+      {phase === 'projection' && (
+        <div className="absolute inset-0 z-[58] flex items-center justify-center px-5">
+          <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+          <div className="animate-pop relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary/40 bg-card shadow-2xl shadow-primary/25 ring-1 ring-primary/10">
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_at_top,theme(colors.primary/25),transparent_70%)]"
+              aria-hidden="true"
+            />
+            <div className="relative px-6 pb-6 pt-7">
+              <div
+                className="animate-card-enter mx-auto flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary"
+                style={{ animationDelay: '100ms' }}
+              >
+                <TrendingUp className="size-6" aria-hidden="true" />
+              </div>
+
+              <p
+                className="animate-card-enter mt-4 text-center text-xl font-bold text-foreground"
+                style={{ animationDelay: '150ms' }}
+              >
+                Olha até onde você pode chegar
+              </p>
+              <p
+                className="animate-card-enter mt-1.5 text-center text-pretty text-sm leading-relaxed text-muted-foreground"
+                style={{ animationDelay: '200ms' }}
+              >
+                Mantendo o ritmo que você acabou de ver, esta é a sua projeção de ganhos:
+              </p>
+
+              <div
+                className="animate-card-enter mt-5 rounded-2xl border border-border/60 bg-background/50 p-4"
+                style={{ animationDelay: '250ms' }}
+              >
+                <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <CalendarDays className="size-3.5 text-primary" aria-hidden="true" />
+                  Em 30 dias
+                </p>
+                <p className="mt-1 text-2xl font-extrabold tracking-tight text-foreground">
+                  {brl(balance * 30)}
+                </p>
+              </div>
+
+              <div
+                className="animate-card-enter luna-gradient mt-3 rounded-2xl px-4 py-4 shadow-lg shadow-primary/30"
+                style={{ animationDelay: '300ms' }}
+              >
+                <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wider text-primary-foreground/85">
+                  <Sparkles className="size-3.5" aria-hidden="true" />
+                  Em 1 ano
+                </p>
+                <p className="mt-1 text-3xl font-extrabold tracking-tight text-primary-foreground">
+                  {brl(balance * 30 * 12)}
+                </p>
+              </div>
+
+              <p
+                className="animate-card-enter mt-4 text-center text-[0.72rem] leading-relaxed text-muted-foreground"
+                style={{ animationDelay: '350ms' }}
+              >
+                Projeção estimada com base no seu ritmo de vendas. Quanto mais você se dedica, mais
+                longe pode chegar no <span className="font-semibold text-foreground">Luna Privé</span>.
+              </p>
+
+              <div className="animate-card-enter mt-5" style={{ animationDelay: '400ms' }}>
                 <CtaButton onClick={() => setPhase('wallet')}>Ver minha carteira</CtaButton>
               </div>
             </div>
@@ -934,9 +809,9 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               {/* Benefícios rápidos */}
               <ul className="mt-5 flex flex-col gap-2.5">
                 {[
-                  'Cadastro gratuito e sem burocracia',
+                  'Mais de 120 mil compradores ativos',
+                  'Sem nenhum contato com os compradores',
                   'Receba direto no seu PIX, 100% anônimo',
-                  'Comece a vender ainda hoje',
                 ].map((b) => (
                   <li key={b} className="flex items-center gap-2.5">
                     <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15">
@@ -1000,170 +875,6 @@ function StatCard({
   </div>
   )
 }
-
-function PacksScreen({
-  balance,
-  createdPack,
-  packPrice,
-  onCreate,
-}: {
-  balance: number
-  createdPack: string | null
-  packPrice: string
-  onCreate: () => void
-}) {
-  return (
-    <div className="relative flex-1 overflow-hidden">
-      <div className="h-full overflow-y-auto px-4 pb-6 pt-6">
-      {/* Header */}
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
-        </div>
-        <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5">
-          <Wallet className="size-6 text-primary" aria-hidden="true" />
-          <div className="leading-tight">
-            <p className="text-xs text-muted-foreground">Saldo</p>
-            <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
-          </div>
-        </div>
-      </header>
-
-      {/* Título */}
-      <div className="mt-5 flex items-center justify-between gap-3">
-        <div className="leading-tight">
-          <h1 className="text-xl font-bold text-foreground">Meus Packs</h1>
-          <p className="text-xs text-muted-foreground">Sua vitrine de conteúdo</p>
-        </div>
-        <button
-          type="button"
-          onClick={onCreate}
-          className={`luna-gradient flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] ${
-            createdPack ? '' : 'animate-highlight'
-          }`}
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          Criar Pack
-        </button>
-      </div>
-
-      {/* Vitrine */}
-      <div className="mt-5 flex flex-col gap-3">
-        {createdPack && (
-          <article className="luna-border animate-pop flex overflow-hidden rounded-2xl bg-card ring-1 ring-primary/30">
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden bg-secondary">
-              <img
-                src="/images/pack-photo-1.png"
-                alt={createdPack}
-                className="h-full w-full object-cover"
-              />
-              <span className="luna-gradient absolute left-1.5 top-1.5 rounded-full px-2 py-0.5 text-[0.55rem] font-bold text-primary-foreground">
-                Novo
-              </span>
-            </div>
-            <div className="flex flex-1 flex-col justify-center px-3 py-2">
-              <p className="truncate text-sm font-semibold text-foreground">{createdPack}</p>
-              <p className="text-base font-bold text-positive">R$ {packPrice}</p>
-              <p className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
-                <Eye className="size-3" aria-hidden="true" />
-                0 views · 0 vendas
-              </p>
-            </div>
-            <div className="flex items-center pr-3">
-              <ChevronRight className="size-5 text-muted-foreground/50" aria-hidden="true" />
-            </div>
-          </article>
-        )}
-        {examplePacks.map((pack, i) => (
-          <article
-            key={pack.name}
-            className="luna-border animate-card-enter flex overflow-hidden rounded-2xl bg-card"
-            style={{ animationDelay: `${(createdPack ? i + 1 : i) * 100}ms` }}
-          >
-            <div className="h-24 w-24 shrink-0 overflow-hidden bg-secondary">
-              <img
-                src={pack.photo || "/placeholder.svg"}
-                alt={pack.name}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div className="flex flex-1 flex-col justify-center px-3 py-2">
-              <p className="truncate text-sm font-semibold text-foreground">{pack.name}</p>
-              <p className="text-base font-bold text-positive">{pack.price}</p>
-              <p className="mt-0.5 flex items-center gap-1 text-[0.65rem] text-muted-foreground">
-                <Eye className="size-3" aria-hidden="true" />
-                {pack.views} · {pack.sales}
-              </p>
-            </div>
-            <div className="flex items-center pr-3">
-              <ChevronRight className="size-5 text-muted-foreground/50" aria-hidden="true" />
-            </div>
-          </article>
-        ))}
-      </div>
-      </div>
-
-      {/* Mentora conduzindo — popup na base */}
-      {!createdPack && (
-        <>
-          <div
-            className="absolute inset-x-0 bottom-0 z-[50] h-40 bg-gradient-to-t from-background via-background/80 to-transparent"
-            aria-hidden="true"
-          />
-          <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
-            <div className="luna-border animate-pop animate-coach-glow flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
-              <img
-                src="/images/mentor.png"
-                alt="Camila"
-                className="size-11 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
-              />
-              <div className="flex-1">
-                <p className="animate-speech-enter text-pretty text-base leading-relaxed text-foreground">
-                  Aqui é a sua vitrine! No app real, você monta seus packs{' '}
-                  <span className="font-bold">antes de começar a vender</span>. Toque em{' '}
-                  <span className="font-bold text-primary">Criar Pack</span> que eu te mostro como é
-                  rápido montar o seu primeiro.
-                </p>
-                <button
-                  type="button"
-                  onClick={onCreate}
-                  className="luna-gradient animate-cta-pulse mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-5 text-base font-extrabold uppercase tracking-wide text-primary-foreground shadow-xl shadow-primary/40 ring-2 ring-primary/50 transition active:scale-[0.98]"
-                >
-                  <Plus className="size-5" aria-hidden="true" />
-                  Criar Pack
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-const examplePacks = [
-  {
-    name: 'Pés & Saltos',
-    price: 'R$ 24,90',
-    photo: '/images/pack-photo-2.png',
-    views: '1.2k views',
-    sales: '84 vendas',
-  },
-  {
-    name: 'Ensaio Premium',
-    price: 'R$ 39,90',
-    photo: '/images/pack-photo-3.png',
-    views: '876 views',
-    sales: '52 vendas',
-  },
-  {
-    name: 'Coleção VIP',
-    price: 'R$ 59,90',
-    photo: '/images/pack-photo-1.png',
-    views: '2.4k views',
-    sales: '137 vendas',
-  },
-]
 
 const withdrawals = [
   { label: 'Saque PIX', date: 'Hoje, 14:32', amount: 4280.0 },
@@ -1361,13 +1072,18 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
       {/* Coach — mentora explicando a carteira */}
       {showHint && !hideHint && (
         <>
-          {/* Degradê suave atrás do card — sem blur, só um fade pra destacar a fala */}
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[50] h-72 bg-gradient-to-t from-background via-background/90 to-transparent"
-            aria-hidden="true"
+          {/* Scrim de tela cheia: escurece o app (menos destaque) e captura/trava os toques por trás */}
+          <button
+            type="button"
+            aria-label="Continuar"
+            onClick={() => {
+              setShowHint(false)
+              onDone()
+            }}
+            className="absolute inset-0 z-[50] cursor-default bg-background/70"
           />
-          <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
-            <div className="luna-border animate-pop animate-coach-glow relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
+            <div className="luna-border animate-pop animate-coach-glow pointer-events-auto relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
               <img
                 src="/images/mentor.png"
                 alt="Camila"
@@ -1393,7 +1109,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
                     setShowHint(false)
                     onDone()
                   }}
-                className="mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition active:scale-[0.98]"
+                className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Entendi
                 </button>

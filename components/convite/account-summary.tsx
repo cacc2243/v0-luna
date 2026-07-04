@@ -116,7 +116,7 @@ export function AccountSummary({ username, email, pixType, pixKey, onUpdate }: A
         Sua conta
       </h2>
 
-      <div className="luna-border-soft convite-card divide-y divide-border/40 overflow-hidden rounded-2xl">
+      <div className="luna-border divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
         {rows.map((row) => {
           const isEditing = editing === row.key
           return (

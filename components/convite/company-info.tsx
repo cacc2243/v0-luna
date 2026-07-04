@@ -2,7 +2,12 @@
 
 export function CompanyInfo() {
   return (
-    <section aria-label="Links legais">
+    <section aria-label="Links legais" className="flex flex-col items-center gap-3">
+      <p className="max-w-sm text-balance text-center text-xs leading-relaxed text-foreground/75">
+        Em cada solicitação de saque, é descontada uma taxa de{' '}
+        <span className="font-semibold text-foreground/90">R$ 2,99</span>. Em cada venda realizada,
+        é descontada uma taxa de <span className="font-semibold text-foreground/90">R$ 0,90</span>.
+      </p>
       <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
         <button type="button" className="transition-colors hover:text-foreground">
           Termos de Uso

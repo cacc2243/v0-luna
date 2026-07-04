@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, Clock, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import confetti from 'canvas-confetti'
@@ -15,6 +15,40 @@ const PIX_CONTENT_NAME: Record<string, string> = {
   gift_unlock: 'Habilitação de Presentes Luna Privé',
   boost: 'Impulsionamento Luna Privé',
   verification: 'Verificação de Conta Luna Privé',
+}
+
+/**
+ * Extrai o nome do beneficiário (campo 59 "Merchant Name") de um payload PIX
+ * no formato BR Code (EMV TLV). Percorre os campos de nível raiz (ID de 2
+ * dígitos + tamanho de 2 dígitos + valor) e retorna o valor do campo 59.
+ * Retorna null se não encontrar ou o payload for inválido.
+ */
+function extractPixMerchantName(payload: string | null): string | null {
+  if (!payload) return null
+  let i = 0
+  try {
+    while (i + 4 <= payload.length) {
+      const id = payload.slice(i, i + 2)
+      const len = parseInt(payload.slice(i + 2, i + 4), 10)
+      if (Number.isNaN(len)) return null
+      const valueStart = i + 4
+      const value = payload.slice(valueStart, valueStart + len)
+      if (id === '59') {
+        const name = value.trim()
+        if (!name) return null
+        // Normaliza para "Title Case" (nomes vêm em maiúsculas no BR Code).
+        return name
+          .toLowerCase()
+          .split(/\s+/)
+          .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+          .join(' ')
+      }
+      i = valueStart + len
+    }
+  } catch {
+    return null
+  }
+  return null
 }
 
 interface PixModalProps {
@@ -480,21 +514,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
-          {/* Timer de reserva */}
-          <div className={`${compact ? 'mt-4 py-2' : 'mt-6 py-2.5'} flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 px-4`}>
-            <Clock className="size-4 text-primary" aria-hidden="true" />
-            <span className="text-sm font-medium text-foreground">
-              {timeLeft === 'Expirado' ? (
-                <span className="font-bold text-primary">Resgate agora seu convite</span>
-              ) : (
-                <>
-                  Código reservado por{' '}
-                  <span className="font-bold text-primary">{timeLeft || '--:--'}</span>
-                </>
-              )}
-            </span>
-          </div>
-
           {/* QR Code */}
           {pixQrCode && (
             <div className={compact ? 'mt-3 flex justify-center' : 'mt-6 flex justify-center'}>
@@ -511,16 +530,26 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
           )}
 
+          {/* Processador de pagamentos (nome nominal do PIX) */}
+          {extractPixMerchantName(pixCode) && (
+            <p className="mt-2.5 text-center text-xs font-medium tracking-wide text-muted-foreground">
+              Processado por{' '}
+              <span className="font-semibold text-foreground/90">
+                {extractPixMerchantName(pixCode)}
+              </span>
+            </p>
+          )}
+
           {/* Valor */}
           <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Valor com desconto
+              Valor único
             </p>
             <div className="mt-1 flex items-center justify-center gap-2.5">
-              <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
+              <span className="font-serif text-base font-semibold text-muted-foreground line-through decoration-primary/70">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
-              <span className={`${compact ? 'text-2xl' : 'text-3xl'} font-extrabold tracking-tight text-foreground`}>
+              <span className={`${compact ? 'text-2xl' : 'text-3xl'} font-serif font-extrabold tracking-tight text-foreground`}>
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
             </div>
@@ -532,7 +561,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               Código PIX (copia e cola)
             </p>
             <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-2.5">
-              <p className="break-all font-mono text-xs leading-relaxed text-muted-foreground line-clamp-2">
+              <p className="truncate font-mono text-xs leading-relaxed text-muted-foreground">
                 {pixCode || ''}
               </p>
             </div>
@@ -541,16 +570,16 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Botão copiar */}
           <button
             onClick={copyPixCode}
-            className={`cta-gradient ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground ring-1 ring-inset ring-white/20 transition hover:brightness-110 active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'cta-gradient animate-cta-breathe ring-white/20 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
               <>
-                <Check className="size-5" />
+                <Check className="size-5 animate-in zoom-in-50 duration-300" />
                 Código copiado!
               </>
             ) : (
               <>
-                <Copy className="size-5" />
+                <Copy className="size-5 transition-transform duration-300 group-hover:rotate-6" />
                 Copiar código PIX
               </>
             )}
@@ -589,7 +618,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             ) : (
               <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
                 Após o pagamento, o seu{' '}
-                <span className="font-semibold text-foreground">Código de Convite</span> será
+                <span className="font-semibold text-foreground">acesso ao Luna Privé</span> será
                 enviado no e-mail cadastrado.
               </p>
             )}
@@ -620,7 +649,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
           <img src="/images/background.png" alt="" className="size-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/65 via-background/78 to-background/88" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/82 via-background/90 to-background/95" />
         </div>
 
         {/* Botão fechar */}

@@ -19,7 +19,6 @@ import {
   Loader2,
   AlertCircle,
   CalendarDays,
-  Clock,
   Gift,
   ChevronRight,
   MessageCircle,
@@ -32,7 +31,7 @@ interface SignupFlowProps {
   onComplete: () => void
 }
 
-  const TOTAL = 8
+  const TOTAL = 7
 
 const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 
@@ -40,13 +39,6 @@ const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 const ageOptions = [
   ...Array.from({ length: 47 }, (_, i) => String(i + 18)),
   '65+',
-]
-
-const weeklyTimeOptions = [
-  'Menos de 5 horas',
-  '5 a 10 horas',
-  '10 a 20 horas',
-  'Mais de 20 horas',
 ]
 
 // Sugerimos algo mais criativo (opcional) sempre que o usuario digita apenas
@@ -72,12 +64,12 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error' | 'whatsappCode'>('form')
+  const [loadingPhase, setLoadingPhase] = useState<'configuring' | 'welcome'>('configuring')
   const [errorMessage, setErrorMessage] = useState('')
 
   // Campos
   const [username, setUsername] = useState('')
   const [age, setAge] = useState('')
-  const [weeklyTime, setWeeklyTime] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -183,14 +175,15 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
   const finish = async () => {
     setStatus('loading')
+    setLoadingPhase('configuring')
     setErrorMessage('')
 
-    // Garante que o loading "Configurando sua conta..." apareca por >= 3s.
+    // Garante que o "Configurando sua conta..." apareca por >= 2.5s.
     const loadingStart = Date.now()
     const ensureMinLoading = async () => {
       const elapsed = Date.now() - loadingStart
-      if (elapsed < 3000) {
-        await new Promise((r) => setTimeout(r, 3000 - elapsed))
+      if (elapsed < 2500) {
+        await new Promise((r) => setTimeout(r, 2500 - elapsed))
       }
     }
 
@@ -209,7 +202,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             pix_type: pixType,
             pix_key: pixKey.trim(),
             age: age,
-            weekly_availability: weeklyTime,
             is_creator: true,
           },
         },
@@ -282,8 +274,12 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         status: true,
       })
 
+      // Fase 1: "Configurando sua conta..." por >= 2.5s.
       await ensureMinLoading()
-      // Mantem o loading visivel e leva o usuario para a pagina /convite,
+      // Fase 2: troca o conteudo do mesmo modal para as boas-vindas por 1.5s.
+      setLoadingPhase('welcome')
+      await new Promise((r) => setTimeout(r, 1500))
+      // Depois leva o usuario para a pagina /convite,
       // onde o codigo de convite e exibido (nao mais dentro deste fluxo).
       router.push('/convite')
     } catch (err) {
@@ -301,21 +297,19 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       case 1:
         return age.length > 0
       case 2:
-        return weeklyTime.length > 0
-      case 3:
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-      case 4:
+      case 3:
         return password.length >= 6
-      case 5:
+      case 4:
         return confirm.length >= 6 && confirm === password
-      case 6:
+      case 5:
         return phone.replace(/\D/g, '').length >= 10
-      case 7:
+      case 6:
         return pixKey.trim().length >= 3
       default:
         return false
     }
-  }, [step, username, age, weeklyTime, email, password, confirm, phone, pixKey])
+  }, [step, username, age, email, password, confirm, phone, pixKey])
 
   return (
     <div className="absolute inset-0 z-[60] flex flex-col">
@@ -361,11 +355,11 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               }}
             />
           ) : status === 'loading' ? (
-          <LoadingCard />
+          <LoadingCard phase={loadingPhase} />
         ) : (
           <div
             key={step}
-            className="animate-pop luna-border max-h-[92dvh] w-full max-w-sm overflow-y-auto overflow-x-hidden rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
+            className="animate-pop luna-border w-full max-w-sm rounded-3xl bg-card p-7 shadow-2xl shadow-primary/15"
           >
             {/* Progresso */}
             <div className="mb-7">
@@ -435,31 +429,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               </StepShell>
             )}
 
-            {/* TEMPO DISPONÍVEL */}
-            {step === 2 && (
-              <StepShell
-                icon={Clock}
-                eyebrow="Disponibilidade"
-                title="Quanto tempo por semana você tem disponível?"
-                description="Isso nos ajuda a recomendar o melhor ritmo para você começar."
-              >
-                <NativeSelect
-                  value={weeklyTime}
-                  options={weeklyTimeOptions}
-                  placeholder="Selecione sua disponibilidade"
-                  onChange={setWeeklyTime}
-                />
-                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
-              </StepShell>
-            )}
-
             {/* SEU EMAIL */}
-            {step === 3 && (
+            {step === 2 && (
               <StepShell
                 icon={Mail}
                 eyebrow="Seu email"
-                title="Apenas para cadastro interno"
-                description="Será necessário confirmar seu email posteriormente."
+                title="Digite seu E-mail"
+                description="Apenas para cadastro interno. Será necessário confirmar seu email posteriormente."
               >
                 <SafetyNote>Sigilo total do seu email garantido</SafetyNote>
                 <BaseInput
@@ -475,11 +451,11 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CRIE UMA SENHA */}
-            {step === 4 && (
+            {step === 3 && (
               <StepShell
                 icon={Lock}
-                eyebrow="Crie uma senha"
-                title="Proteja sua conta"
+                eyebrow="Segurança"
+                title="Crie uma senha"
                 description="Mínimo de 6 dígitos para sua segurança."
               >
                 <PasswordInput
@@ -495,11 +471,11 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CONFIRME SUA SENHA */}
-            {step === 5 && (
+            {step === 4 && (
               <StepShell
                 icon={Lock}
-                eyebrow="Confirme sua senha"
-                title="Quase lá"
+                eyebrow="Segurança"
+                title="Confirme sua senha"
                 description="Digite novamente para confirmar."
               >
                 <PasswordInput
@@ -519,7 +495,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   type="button"
                   onClick={() => {
                     setConfirm('')
-                    setStep(4)
+                    setStep(3)
                   }}
                   className="mt-2.5 text-xs font-medium text-primary transition-opacity hover:opacity-80"
                 >
@@ -530,7 +506,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* SEU TELEFONE / VERIFICAÇÃO WHATSAPP */}
-            {step === 6 && (
+            {step === 5 && (
               <StepShell
                 icon={Phone}
                 eyebrow="Seu telefone"
@@ -570,11 +546,11 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CHAVE PIX */}
-            {step === 7 && (
+            {step === 6 && (
               <StepShell
                 icon={KeyRound}
                 eyebrow="Chave PIX"
-                title="Onde você quer receber?"
+                title="Chave PIX de Recebimento"
                 description="Informe a chave PIX onde você irá receber as transferências do Luna Privé."
                 iconPositive
               >
@@ -595,7 +571,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                     />
                   </button>
                   {pixOpen && (
-                    <ul className="luna-border absolute left-0 right-0 top-full z-10 mt-2 overflow-hidden rounded-2xl bg-popover py-1 shadow-2xl">
+                    <ul className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-primary/40 bg-popover py-1 shadow-2xl shadow-black/40">
                       {pixOptions.map((opt) => (
                         <li key={opt}>
                           <button
@@ -1244,7 +1220,21 @@ function SendingPixCard({
   )
 }
 
-function LoadingCard() {
+function LoadingCard({ phase }: { phase: 'configuring' | 'welcome' }) {
+  if (phase === 'welcome') {
+    return (
+      <div className="animate-pop luna-border flex w-full max-w-sm flex-col items-center rounded-3xl bg-card px-6 py-10 text-center shadow-2xl shadow-primary/15">
+        <div className="flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary">
+          <Check className="size-8" aria-hidden="true" />
+        </div>
+        <p className="mt-5 text-lg font-bold text-foreground">Seja bem-vinda ao Luna Privé!</p>
+        <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
+          Sua conta esta pronta. Vamos comecar.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="animate-pop luna-border flex w-full max-w-sm flex-col items-center rounded-3xl bg-card px-6 py-10 text-center shadow-2xl shadow-primary/15">
       <Loader2 className="size-10 animate-spin text-primary" aria-hidden="true" />

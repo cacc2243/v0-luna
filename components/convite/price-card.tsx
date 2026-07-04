@@ -3,10 +3,10 @@
 import { Check, ChevronRight, Gift } from 'lucide-react'
 
 const benefits = [
-  'Código de convite exclusivo Luna Privé',
-  'Anonimato e privacidade total do seu perfil',
-  'Suporte 24h por WhatsApp + Chat',
-  'Garantia de 30 dias',
+  'Código de convite Luna Privé',
+  '100% Anonimato',
+  'Suporte Exclusivo',
+  'Clube de Benefícios',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -42,10 +42,10 @@ export function PriceCard({
           <img
             src="/images/background.png"
             alt=""
-            className="size-full object-cover opacity-55"
+            className="size-full object-cover opacity-60"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background/85" />
-          <div className="absolute inset-0 bg-background/20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/70 to-background/82" />
+          <div className="absolute inset-0 bg-background/35" />
         </div>
 
         {/* Logo Luna Privé */}
@@ -69,7 +69,7 @@ export function PriceCard({
             }`}
             aria-hidden={!priceReady}
           >
-            <span className="text-base font-semibold text-muted-foreground line-through decoration-primary/70">
+            <span className="font-serif text-base font-semibold text-muted-foreground line-through decoration-primary/70">
               R${formatCents(originalCents)}
             </span>
             <span className="rounded-full bg-positive/15 px-2.5 py-0.5 text-xs font-bold text-positive">
@@ -83,8 +83,8 @@ export function PriceCard({
             }`}
             aria-hidden={!priceReady}
           >
-            <span className="text-xl font-bold text-foreground sm:text-2xl">R$</span>
-            <span className="text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">
+            <span className="font-serif text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">R$</span>
+            <span className="font-serif text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">
               {formatCents(amountCents)}
             </span>
           </div>
@@ -96,7 +96,7 @@ export function PriceCard({
         <ul className="relative mt-5 flex flex-col gap-3.5">
           {benefits.map((b) => (
             <li key={b} className="flex items-center gap-3">
-              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-positive/15 text-positive">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Check className="size-3.5" aria-hidden="true" />
               </span>
               <span className="text-sm font-medium text-foreground">{b}</span>
@@ -109,7 +109,7 @@ export function PriceCard({
           type="button"
           onClick={onAcquire}
           disabled={!priceReady}
-          className="cta-gradient relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
+          className="cta-gradient animate-cta-breathe relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:animate-none disabled:opacity-60 disabled:active:scale-100"
         >
           {priceReady && <Gift className="size-5" aria-hidden="true" />}
           {priceReady ? 'Adquirir meu Convite' : 'Carregando valor...'}

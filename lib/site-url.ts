@@ -39,15 +39,19 @@ export function siteUrl(path = ''): string {
 /**
  * URL de webhook que e ENVIADA aos gateways de pagamento (SigiloPay, Bynet).
  *
- * Importante: usamos a Edge Function do Supabase como ponto de recebimento,
- * NAO o dominio do site. Assim o dominio real (lunaprive.live) nao fica
- * exposto no painel dos gateways. A Edge Function apenas repassa (proxy) o
- * evento para a rota interna do site, onde toda a logica e executada.
+ * Aponta DIRETO para a rota interna do site (/api/pix/webhook), onde vive toda
+ * a logica de confirmacao de pagamento. Esse endpoint e robusto: aceita os
+ * formatos de todos os gateways, casa a transacao por qualquer identificador e
+ * responde 2XX para pings/testes.
  *
- * Deriva automaticamente de NEXT_PUBLIC_SUPABASE_URL:
- *   "https://kbiaaf....supabase.co" -> "https://kbiaaf....supabase.co/functions/v1/pix-webhook"
+ * Historico: antes derivavamos a URL da Edge Function do Supabase
+ * (".../functions/v1/pix-webhook") como um proxy para "esconder" o dominio.
+ * Essa funcao publicada estava quebrada (respondia 400 "Invalid payload"),
+ * fazendo os webhooks de pagamento nunca chegarem ao site e vendas pagas
+ * ficarem presas em "pending". Por isso deixamos de depender dela.
  *
- * Pode ser sobrescrita por PIX_WEBHOOK_URL caso necessario.
+ * Pode ser sobrescrita por PIX_WEBHOOK_URL caso necessario (ex.: apontar de
+ * volta para um proxy caso ele seja corrigido no futuro).
  */
 export function getWebhookUrl(): string {
   const override = (process.env.PIX_WEBHOOK_URL || '').trim()
@@ -55,12 +59,6 @@ export function getWebhookUrl(): string {
     return override.replace(/\/+$/, '')
   }
 
-  const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim()
-  if (supabaseUrl) {
-    const base = supabaseUrl.replace(/\/+$/, '')
-    return `${base}/functions/v1/pix-webhook`
-  }
-
-  // Fallback: se nao houver Supabase configurado, cai na rota interna do site.
+  // Rota interna do site — comprovadamente funcional e com toda a logica.
   return `${getSiteUrl()}/api/pix/webhook`
 }

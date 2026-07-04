@@ -549,7 +549,7 @@ export async function settleExpiredWithdrawals() {
 
 // ───────���─────────────────────────────────────────────────────────────────────
 // Conversation Actions
-// ───────────────────������───────────────────────────────────────────────────────�����─
+// ───────────────────�������───────────────────────────────────────────────────────�����─
 
 // Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
 const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
@@ -1415,10 +1415,10 @@ export async function generatePackActivity(opts?: { initial?: boolean; maxOrders
       const buyer = generateBuyerName(usedNames)
 
       // Regra de pedido direto:
-      // - os 4 primeiros pedidos (orderIndex 1..4) sao sempre diretos;
-      // - a partir do 5o, a cada bloco de 10 pedidos apenas 1 e direto.
+      // - proporcao de 12 pedidos com chat para 1 pedido direto;
+      // - ou seja, a cada bloco de 13 pedidos apenas 1 e direto.
       orderIndex++
-      const isDirect = orderIndex <= 4 || (orderIndex - 4) % 10 === 1
+      const isDirect = orderIndex % 13 === 1
 
       const { data: sale } = await supabase
         .from('sales')

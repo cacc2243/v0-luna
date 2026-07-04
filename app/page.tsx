@@ -12,19 +12,13 @@ import {
   TrendingUp,
   Footprints,
   Smartphone,
-  Ticket,
-  ImagePlus,
-  Store,
-  ShoppingBag,
-  Banknote,
-  ArrowDownToLine,
 } from 'lucide-react'
 import { AnimatedSalesFeed } from '@/components/animated-sales-feed'
 import { HowItWorksStep } from '@/components/how-it-works-step'
 import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
 import { PrivacyStep } from '@/components/privacy-step'
-import { PlatformWalkthrough } from '@/components/platform-walkthrough'
+import { MentorQuiz } from '@/components/mentor-quiz'
 import { GuidedAppDemo } from '@/components/guided-app-demo'
 import { CtaButton } from '@/components/cta-button'
 import { PageBackground } from '@/components/page-background'
@@ -119,67 +113,6 @@ const myths = [
     title: 'Qualquer celular serve',
     description:
       'Não precisa do último iPhone. Celulares simples já tiram fotos com qualidade suficiente para vender.',
-  },
-]
-
-const journey = [
-  {
-    icon: Ticket,
-    tag: 'Acesso',
-    title: 'Receba seu Convite de Acesso',
-    description:
-      'Toda usuária entra por convite — é o que mantém o Luna Privé exclusivo e seguro.',
-    speech:
-      'Oi! Eu sou a Camila e vou te mostrar como tudo funciona por aqui. Primeiro: aqui é só por convite. Isso protege você e mantém a plataforma exclusiva. O seu convite está a caminho.',
-    reward: 'Seu convite chega em breve',
-    highlight: true,
-  },
-  {
-    icon: ImagePlus,
-    tag: 'Criação',
-    title: 'Monte seus packs',
-    description:
-      'Você posta suas fotos e organiza seus packs dentro da plataforma. Você define o que vende e por quanto.',
-    speech:
-      'Com o acesso liberado, você vai montar seus packs. É você quem escolhe as fotos, monta os conjuntos e define o preço de cada um. Tudo no seu ritmo.',
-  },
-  {
-    icon: Store,
-    tag: 'Vitrine',
-    title: 'Apareça na vitrine',
-    description:
-      'Seus packs entram na vitrine e ficam visíveis para os amantes de pés — de forma 100% anônima.',
-    speech:
-      'Assim que você publica, seus packs entram na nossa vitrine. Milhares de compradores passam por ali todos os dias — e ninguém descobre quem você é.',
-  },
-  {
-    icon: ShoppingBag,
-    tag: 'Venda',
-    title: 'Eles compram seu conteúdo',
-    description:
-      'Para ver seu conteúdo, o comprador precisa adquirir o pack. Cada venda é uma entrada no seu caixa.',
-    speech:
-      'Para ver o que você postou, o comprador precisa pagar pelo pack. Cada clique de compra é dinheiro entrando pra você, sem precisar conversar com ninguém.',
-  },
-  {
-    icon: Banknote,
-    tag: 'Ganho',
-    title: 'Receba na hora',
-    description:
-      'O valor cai na sua conta Luna Privé no momento exato da compra. Sem espera, sem burocracia.',
-    speech:
-      'O melhor: assim que vende, o valor cai na sua conta Luna Privé na mesma hora. Você vê seu saldo crescendo em tempo real.',
-    reward: 'Saldo atualizado em tempo real',
-  },
-  {
-    icon: ArrowDownToLine,
-    tag: 'Saque',
-    title: 'Saque quando quiser no PIX',
-    description:
-      'Transfira seu saldo para sua chave PIX a qualquer momento. O dinheiro é seu, no seu tempo.',
-    speech:
-      'E quando quiser, é só sacar. O valor vai direto pra sua chave PIX, a qualquer momento. É só postar e vender — o resto a gente cuida pra você.',
-    reward: 'Direto na sua chave PIX',
   },
 ]
 
@@ -411,8 +344,7 @@ export default function Page() {
         {/* STEP 6 — Jornada gamificada dentro da plataforma */}
         {step === 5 && (
           <div key="step-5" className="animate-screen flex flex-col">
-            <PlatformWalkthrough
-              steps={journey}
+            <MentorQuiz
               finalLabel="Quero meu convite de acesso"
               onComplete={next}
             />
