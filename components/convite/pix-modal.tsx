@@ -34,14 +34,20 @@ function extractPixMerchantName(payload: string | null): string | null {
       const valueStart = i + 4
       const value = payload.slice(valueStart, valueStart + len)
       if (id === '59') {
-        const name = value.trim()
-        if (!name) return null
-        // Normaliza para "Title Case" (nomes vêm em maiúsculas no BR Code).
-        return name
-          .toLowerCase()
-          .split(/\s+/)
-          .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
-          .join(' ')
+      // Remove separadores (_ . -) e colapsa espaços: nunca exibimos esses
+      // caracteres no nome do processador.
+      const name = value
+        .trim()
+        .replace(/[_.\-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (!name) return null
+      // Normaliza para "Title Case" (nomes vêm em maiúsculas no BR Code).
+      return name
+        .toLowerCase()
+        .split(/\s+/)
+        .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+        .join(' ')
       }
       i = valueStart + len
     }
