@@ -135,7 +135,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
             Resgate seu <span className="text-primary">Convite Luna</span>
           </h1>
           <p className="mx-auto mt-3 max-w-md text-pretty text-sm leading-relaxed text-foreground">
-            Seu convite Luna garante um acesso seguro e confiável à plataforma Luna Privé. Todas as usuárias têm um convite ativo na plataforma.
+            Seu convite Luna garante acesso seguro e confiável à plataforma Luna Privé. Todas as usuárias possuem um convite ativo.
           </p>
         </section>
 
