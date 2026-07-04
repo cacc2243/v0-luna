@@ -448,8 +448,8 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             {step === 3 && (
               <StepShell
                 icon={Lock}
-                eyebrow="Crie uma senha"
-                title="Proteja sua conta"
+                eyebrow="Segurança"
+                title="Crie uma senha"
                 description="Mínimo de 6 dígitos para sua segurança."
               >
                 <PasswordInput
