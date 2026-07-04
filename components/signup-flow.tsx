@@ -19,7 +19,6 @@ import {
   Loader2,
   AlertCircle,
   CalendarDays,
-  Clock,
   Gift,
   ChevronRight,
   MessageCircle,
@@ -32,7 +31,7 @@ interface SignupFlowProps {
   onComplete: () => void
 }
 
-  const TOTAL = 8
+  const TOTAL = 7
 
 const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 
@@ -40,13 +39,6 @@ const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
 const ageOptions = [
   ...Array.from({ length: 47 }, (_, i) => String(i + 18)),
   '65+',
-]
-
-const weeklyTimeOptions = [
-  'Menos de 5 horas',
-  '5 a 10 horas',
-  '10 a 20 horas',
-  'Mais de 20 horas',
 ]
 
 // Sugerimos algo mais criativo (opcional) sempre que o usuario digita apenas
@@ -77,7 +69,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   // Campos
   const [username, setUsername] = useState('')
   const [age, setAge] = useState('')
-  const [weeklyTime, setWeeklyTime] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -209,7 +200,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             pix_type: pixType,
             pix_key: pixKey.trim(),
             age: age,
-            weekly_availability: weeklyTime,
             is_creator: true,
           },
         },
@@ -301,21 +291,19 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       case 1:
         return age.length > 0
       case 2:
-        return weeklyTime.length > 0
-      case 3:
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-      case 4:
+      case 3:
         return password.length >= 6
-      case 5:
+      case 4:
         return confirm.length >= 6 && confirm === password
-      case 6:
+      case 5:
         return phone.replace(/\D/g, '').length >= 10
-      case 7:
+      case 6:
         return pixKey.trim().length >= 3
       default:
         return false
     }
-  }, [step, username, age, weeklyTime, email, password, confirm, phone, pixKey])
+  }, [step, username, age, email, password, confirm, phone, pixKey])
 
   return (
     <div className="absolute inset-0 z-[60] flex flex-col">
@@ -435,26 +423,8 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               </StepShell>
             )}
 
-            {/* TEMPO DISPONÍVEL */}
-            {step === 2 && (
-              <StepShell
-                icon={Clock}
-                eyebrow="Disponibilidade"
-                title="Quanto tempo por semana você tem disponível?"
-                description="Isso nos ajuda a recomendar o melhor ritmo para você começar."
-              >
-                <NativeSelect
-                  value={weeklyTime}
-                  options={weeklyTimeOptions}
-                  placeholder="Selecione sua disponibilidade"
-                  onChange={setWeeklyTime}
-                />
-                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
-              </StepShell>
-            )}
-
             {/* SEU EMAIL */}
-            {step === 3 && (
+            {step === 2 && (
               <StepShell
                 icon={Mail}
                 eyebrow="Seu email"
@@ -475,7 +445,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CRIE UMA SENHA */}
-            {step === 4 && (
+            {step === 3 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Crie uma senha"
@@ -495,7 +465,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CONFIRME SUA SENHA */}
-            {step === 5 && (
+            {step === 4 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Confirme sua senha"
@@ -519,7 +489,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   type="button"
                   onClick={() => {
                     setConfirm('')
-                    setStep(4)
+                    setStep(3)
                   }}
                   className="mt-2.5 text-xs font-medium text-primary transition-opacity hover:opacity-80"
                 >
@@ -530,7 +500,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* SEU TELEFONE / VERIFICAÇÃO WHATSAPP */}
-            {step === 6 && (
+            {step === 5 && (
               <StepShell
                 icon={Phone}
                 eyebrow="Seu telefone"
@@ -570,7 +540,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CHAVE PIX */}
-            {step === 7 && (
+            {step === 6 && (
               <StepShell
                 icon={KeyRound}
                 eyebrow="Chave PIX"
