@@ -647,6 +647,11 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // Modo modal: portal no body com overlay, fundo e botão fechar.
   if (!mounted) return null
 
+  // Enquanto o PIX está sendo gerado não exibimos este modal: o loader do
+  // pré-checkout ("Aguardando enquanto geramos seu pagamento...") já cobre
+  // essa etapa, evitando dois carregamentos em sequência.
+  if (loading) return null
+
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">
       <div className="relative flex max-h-[96dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:rounded-3xl sm:zoom-in-95">
