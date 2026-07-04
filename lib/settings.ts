@@ -20,6 +20,12 @@ export interface AppSettings {
   chatAmountCents: number
   giftUnlockAmountCents: number
   boostAmountCents: BoostAmounts
+  /**
+   * Proporção de pedidos: 1 pedido DIRETO a cada N pedidos.
+   * Ex.: 13 = 12 pedidos com chat para cada 1 pedido direto.
+   * Mínimo 1 (todos diretos), máximo 100.
+   */
+  directOrderEveryN: number
   /** Token de API da Utmify (x-api-token). Vazio = integração desligada. */
   utmifyApiToken: string
 }
@@ -42,6 +48,7 @@ const DEFAULTS: AppSettings = {
   chatAmountCents: 9900,
   giftUnlockAmountCents: 3860,
   boostAmountCents: { ...DEFAULT_BOOST },
+  directOrderEveryN: 13,
   utmifyApiToken: '',
 }
 
@@ -55,6 +62,7 @@ const KEY_MAP = {
   chatAmountCents: 'chat_amount_cents',
   giftUnlockAmountCents: 'gift_unlock_amount_cents',
   boostAmountCents: 'boost_amount_cents',
+  directOrderEveryN: 'direct_order_every_n',
   utmifyApiToken: 'utmify_api_token',
 } as const
 
@@ -139,6 +147,12 @@ async function readAppSettings(): Promise<AppSettings> {
 
   const boostAmountCents = normalizeBoost(map.get(KEY_MAP.boostAmountCents))
 
+  const rawDirectEveryN = map.get(KEY_MAP.directOrderEveryN)
+  const directOrderEveryN =
+    typeof rawDirectEveryN === 'number' && Number.isFinite(rawDirectEveryN)
+      ? Math.min(100, Math.max(1, Math.round(rawDirectEveryN)))
+      : DEFAULTS.directOrderEveryN
+
   const utmifyApiToken =
     typeof map.get(KEY_MAP.utmifyApiToken) === 'string'
       ? (map.get(KEY_MAP.utmifyApiToken) as string)
@@ -154,6 +168,7 @@ async function readAppSettings(): Promise<AppSettings> {
     chatAmountCents,
     giftUnlockAmountCents,
     boostAmountCents,
+    directOrderEveryN,
     utmifyApiToken,
   }
 }
@@ -248,6 +263,14 @@ export async function updateAppSettings(
     rows.push({
       key: KEY_MAP.boostAmountCents,
       value: normalizeBoost(patch.boostAmountCents),
+      updated_at: now,
+      updated_by: updatedBy,
+    })
+  }
+  if (typeof patch.directOrderEveryN === 'number') {
+    rows.push({
+      key: KEY_MAP.directOrderEveryN,
+      value: Math.min(100, Math.max(1, Math.round(patch.directOrderEveryN))),
       updated_at: now,
       updated_by: updatedBy,
     })

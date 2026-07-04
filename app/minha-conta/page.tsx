@@ -10,7 +10,6 @@ import {
   Rocket,
   Wallet,
   User,
-  CalendarDays,
   Eye,
   ShoppingBag,
   BadgeCheck,
@@ -26,6 +25,7 @@ import {
   ArrowDownRight,
   Receipt,
   Lock,
+  Unlock,
   Mail,
   ChevronRight,
   Zap,
@@ -53,9 +53,6 @@ import {
   ShieldCheck,
   XCircle,
   CheckCircle2,
-  CreditCard,
-  Globe,
-  Moon,
   BellRing,
   UserX,
   Trash2,
@@ -79,6 +76,7 @@ import { ChatsActive } from '@/components/minha-conta/chats-active'
 import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
  import { SupportModal } from '@/components/minha-conta/support-modal'
 import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
+import { cn } from '@/lib/utils'
 
 // Valor do Chat Exclusivo (pagamento unico)
 const CHAT_PRICE = 99.0
@@ -457,7 +455,7 @@ function NoInviteScreen({ email }: { email: string }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela de Login (integrada)
-// ─────────��──────────────────────────────────────────────────────────────────��
+// ─────────��──────���───────────────────────────────────────────────────────────��
 
 function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInvite: (email: string) => void }) {
   const [email, setEmail] = useState('')
@@ -634,6 +632,9 @@ function AppDashboard() {
   const [showUnlockChat, setShowUnlockChat] = useState(false)
   const [showGeneratingPix, setShowGeneratingPix] = useState(false)
   const [showChatPix, setShowChatPix] = useState(false)
+  // Sinaliza que o PIX do chat já foi 100% gerado e está pronto para exibir.
+  // Enquanto false, a animação "Gerando seu PIX..." permanece na tela.
+  const [chatPixReady, setChatPixReady] = useState(false)
   const [pendingSaleContext, setPendingSaleContext] = useState<{ buyerName?: string | null; packTitle?: string | null; amount?: number } | null>(null)
   const [userEmail, setUserEmail] = useState('')
 
@@ -885,8 +886,8 @@ function AppDashboard() {
   }
 
   // Upload de uma foto para o Storage e retorno da URL publica
-  async function handleAddPackPhoto(file: File) {
-    if (uploadingPhoto) return
+  async function handleAddPackPhoto(files: File[]) {
+    if (uploadingPhoto || files.length === 0) return
     setUploadingPhoto(true)
     setPackError(null)
     try {
@@ -897,17 +898,23 @@ function AppDashboard() {
         setPackError('Sessão expirada. Faça login novamente.')
         return
       }
-      const ext = file.name.split('.').pop() || 'jpg'
-      const path = `${user.id}/packs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: upErr } = await supabase.storage
-        .from('media')
-        .upload(path, file, { upsert: true, contentType: file.type })
-      if (upErr) {
-        setPackError('Não foi possível enviar a foto. Tente novamente.')
-        return
+      let hadError = false
+      for (const file of files) {
+        const ext = file.name.split('.').pop() || 'jpg'
+        const path = `${user.id}/packs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: upErr } = await supabase.storage
+          .from('media')
+          .upload(path, file, { upsert: true, contentType: file.type })
+        if (upErr) {
+          hadError = true
+          continue
+        }
+        const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+        setPackPhotos((prev) => [...prev, pub.publicUrl])
       }
-      const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
-      setPackPhotos((prev) => [...prev, pub.publicUrl])
+      if (hadError) {
+        setPackError('Alguns arquivos não puderam ser enviados. Tente novamente.')
+      }
     } finally {
       setUploadingPhoto(false)
     }
@@ -1083,8 +1090,17 @@ function AppDashboard() {
           userName={profile?.display_name || 'Criadora Luna'}
           userEmail={userEmail}
           packsCount={packs.length}
+          salesCount={profile?.sales_count || 0}
+          chatPrice={chatPrice}
           giftPrice={pricing?.giftUnlockAmountCents ? pricing.giftUnlockAmountCents / 100 : undefined}
           onGoToPacks={() => setActiveTab('Packs')}
+          onUnlockChat={() => {
+            // Gera o PIX do chat direto: modal montado por baixo e animação por
+            // cima até o PIX estar 100% pronto.
+            setChatPixReady(false)
+            setShowChatPix(true)
+            setShowGeneratingPix(true)
+          }}
           onProfileRefresh={mutateProfile}
         />
       ) : (
@@ -1173,20 +1189,26 @@ function AppDashboard() {
         price={chatPrice}
         onConfirm={() => {
           setShowUnlockChat(false)
+          // Inicia a geração do PIX imediatamente (modal montado por baixo) e
+          // mostra a animação por cima até o PIX estar 100% pronto.
+          setChatPixReady(false)
+          setShowChatPix(true)
           setShowGeneratingPix(true)
         }}
       />
       <GeneratingPixModal
         isOpen={showGeneratingPix}
-        onDone={() => {
-          setShowGeneratingPix(false)
-          setShowChatPix(true)
-        }}
+        ready={chatPixReady}
+        onDone={() => setShowGeneratingPix(false)}
       />
       {showChatPix && (
         <PixModal
           isOpen={showChatPix}
-          onClose={() => setShowChatPix(false)}
+          onReady={() => setChatPixReady(true)}
+          onClose={() => {
+            setShowChatPix(false)
+            setChatPixReady(false)
+          }}
           email={userEmail}
           amount={chatPrice}
           userName={profile?.display_name || 'Criadora Luna'}
@@ -1200,6 +1222,7 @@ function AppDashboard() {
               { revalidate: true },
             )
             setShowChatPix(false)
+            setChatPixReady(false)
           }}
         />
       )}
@@ -1353,12 +1376,13 @@ function AppDashboard() {
                 )}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
+                  multiple
                   className="sr-only"
                   disabled={uploadingPhoto}
                   onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) handleAddPackPhoto(file)
+                    const files = Array.from(e.target.files ?? [])
+                    if (files.length) handleAddPackPhoto(files)
                     e.target.value = ''
                   }}
                 />
@@ -1413,8 +1437,11 @@ function ChatsScreen({
   userName,
   userEmail,
   packsCount,
+  salesCount,
+  chatPrice,
   giftPrice,
   onGoToPacks,
+  onUnlockChat,
   onProfileRefresh,
 }: {
   balance: number
@@ -1423,8 +1450,11 @@ function ChatsScreen({
   userName: string
   userEmail: string
   packsCount: number
+  salesCount: number
+  chatPrice: number
   giftPrice?: number
   onGoToPacks: () => void
+  onUnlockChat: () => void
   onProfileRefresh: () => void
 }) {
   // Chat ativo: lista de conversas com fluxo de presentes
@@ -1442,6 +1472,102 @@ function ChatsScreen({
   }
 
   const hasPacks = packsCount > 0
+
+  // Depois da primeira venda e com pelo menos um pack publicado, o usuário já
+  // pode desbloquear o chat com seus fãs. Mostramos o informe de desbloqueio.
+  if (hasPacks && salesCount > 0) {
+    return (
+      <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
+        {/* Header */}
+        <header className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
+          </div>
+          <div className="luna-border relative flex items-center gap-2.5 rounded-2xl bg-card/80 px-4 py-2.5 backdrop-blur-sm">
+            <Wallet className="size-6 text-primary" aria-hidden="true" />
+            <div className="leading-tight">
+              <p className="text-xs text-muted-foreground">Saldo</p>
+              <p className="text-xl font-bold text-foreground">{brl(balance)}</p>
+            </div>
+          </div>
+        </header>
+
+        {/* Card: Chat com Fans (bloqueado) */}
+        <div className="mt-6 luna-border overflow-hidden rounded-3xl bg-card">
+          {/* Cabeçalho do card */}
+          <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+            <div className="flex items-center gap-2.5">
+              <MessageCircle className="size-5 text-primary" aria-hidden="true" />
+              <h2 className="text-base font-bold text-foreground">Chat com Fans</h2>
+            </div>
+            <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
+              <Lock className="size-3.5" aria-hidden="true" />
+              Bloqueado
+            </span>
+          </div>
+
+          {/* Prévia de mensagens (desfocada) */}
+          <div className="relative px-5 pt-5">
+            <div
+              className="flex flex-col gap-3 opacity-40 blur-[1px]"
+              aria-hidden="true"
+            >
+              <div className="flex items-center gap-2">
+                <span className="size-9 shrink-0 rounded-full bg-muted" />
+                <span className="rounded-2xl rounded-tl-sm bg-muted px-3.5 py-2 text-sm text-muted-foreground">
+                  Oi, amei seu pack!
+                </span>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <span className="rounded-2xl rounded-tr-sm bg-primary/25 px-3.5 py-2 text-sm text-foreground">
+                  Obrigada amor!
+                </span>
+                <span className="size-9 shrink-0 rounded-full bg-primary/20" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="size-9 shrink-0 rounded-full bg-muted" />
+                <span className="rounded-2xl rounded-tl-sm bg-muted px-3.5 py-2 text-sm text-muted-foreground">
+                  Quero encomendar um pack exclusivo...
+                </span>
+              </div>
+            </div>
+
+            {/* Overlay de desbloqueio */}
+            <div className="mt-2 flex flex-col items-center px-1 pb-5 text-center">
+              <div className="flex size-14 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30">
+                <Lock className="size-7 text-primary" aria-hidden="true" />
+              </div>
+              <h3 className="mt-3 text-xl font-bold text-foreground">Desbloqueie o Chat</h3>
+              <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted-foreground">
+                Converse diretamente com seus fãs. Cada fã pagará{' '}
+                <span className="font-semibold text-positive">{brl(chatPrice)}</span> para conversar
+                com você e você recebe o valor{' '}
+                <span className="font-semibold text-positive">integralmente</span> no seu saldo.
+              </p>
+
+              {/* Destaque social */}
+              <div className="mt-4 flex w-full items-start gap-2.5 rounded-2xl border border-positive/25 bg-positive/5 p-3.5 text-left">
+                <TrendingUp className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  <span className="font-bold text-positive">96% das usuárias</span> desbloqueiam o
+                  chat pelo alto potencial de ganhos
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={onUnlockChat}
+                className="luna-gradient mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                <Lock className="size-5" aria-hidden="true" />
+                Desbloquear Chat
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
@@ -1893,7 +2019,7 @@ function ImpulsionarScreen({
 
 // ─────────────────────────────────────────────���─────────────────────��────────���
 // Tela Inicio
-// ────────────────────────────────────────────────────────────────────────��────
+// ─────────────────────────────────────────��─────────��────────────────────��────
 
 function HomeScreen({
   balance,
@@ -1959,7 +2085,7 @@ function HomeScreen({
 
       {/* Stats */}
       <div className="mt-4 grid grid-cols-3 gap-2.5">
-        <StatCard icon={CalendarDays} label="Hoje" value={brl(today)} />
+        <StatCard icon={Wallet} label="Hoje" value={brl(today)} />
         <StatCard icon={Eye} label="Views" value={String(views)} />
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
       </div>
@@ -2000,18 +2126,18 @@ function HomeScreen({
             </p>
           </div>
         ) : (
-          <div className="rounded-2xl border border-border bg-card/60 px-4 py-3">
+          <div className="rounded-2xl border border-border bg-card/60 px-3 py-1">
             {viewNotifs.map((n) => (
-              <div key={n.id} className="flex items-center gap-3 border-b border-border/50 py-2 last:border-0">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-positive/10">
+              <div key={n.id} className="flex items-center gap-2.5 border-b border-border/50 py-1.5 last:border-0">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-positive/10">
                   {n.type === 'follow' ? (
-                    <Heart className="size-4 text-positive" aria-hidden="true" />
+                    <Heart className="size-3 text-positive" aria-hidden="true" />
                   ) : (
-                    <Eye className="size-4 text-positive" aria-hidden="true" />
+                    <Eye className="size-3 text-positive" aria-hidden="true" />
                   )}
                 </span>
-                <p className="flex-1 text-pretty text-xs text-muted-foreground">{n.description}</p>
-                <span className="shrink-0 text-[0.65rem] text-muted-foreground/70">{relativeTime(n.created_at)}</span>
+                <p className="flex-1 truncate text-[0.7rem] text-muted-foreground">{n.description}</p>
+                <span className="shrink-0 text-[0.6rem] text-muted-foreground/70">{relativeTime(n.created_at)}</span>
               </div>
             ))}
           </div>
@@ -2042,7 +2168,7 @@ function HomeScreen({
           >
             <div className="flex items-center gap-2.5">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                <DollarSign className="size-4 text-primary" aria-hidden="true" />
+                <User className="size-4 text-primary" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1 leading-snug">
                 <div className="flex items-center gap-1.5">
@@ -2072,7 +2198,7 @@ function HomeScreen({
                 type="button"
                 disabled={accepting !== null}
                 onClick={() => onReject(sale.id)}
-                className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98] disabled:opacity-60"
+                className="flex flex-[0.7] items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2.5 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98] disabled:opacity-60"
               >
                 Recusar
               </button>
@@ -2080,7 +2206,7 @@ function HomeScreen({
                 type="button"
                 disabled={accepting !== null}
                 onClick={() => handleAccept(sale.id)}
-                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg bg-primary py-2 text-[0.8rem] font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
+                className="flex flex-[2] items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-[0.8rem] font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
               >
                 {accepting === sale.id ? (
                   <>
@@ -2332,8 +2458,8 @@ function PackDetailScreen({
   // Faturamento sempre corresponde ao numero de vendas exibido
   const faturamento = Math.max(realRevenue, vendas * netPerSale)
 
-  async function handleAddPhoto(file: File) {
-    if (uploading) return
+  async function handleAddPhoto(files: File[]) {
+    if (uploading || files.length === 0) return
     setUploading(true)
     setError(null)
     try {
@@ -2345,17 +2471,23 @@ function PackDetailScreen({
         setError('Sessão expirada. Faça login novamente.')
         return
       }
-      const ext = file.name.split('.').pop() || 'jpg'
-      const path = `${user.id}/packs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: upErr } = await supabase.storage
-        .from('media')
-        .upload(path, file, { upsert: true, contentType: file.type })
-      if (upErr) {
-        setError('Não foi possível enviar a foto.')
-        return
+      let hadError = false
+      for (const file of files) {
+        const ext = file.name.split('.').pop() || 'jpg'
+        const path = `${user.id}/packs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: upErr } = await supabase.storage
+          .from('media')
+          .upload(path, file, { upsert: true, contentType: file.type })
+        if (upErr) {
+          hadError = true
+          continue
+        }
+        const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+        setPhotos((prev) => [...prev, pub.publicUrl])
       }
-      const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
-      setPhotos((prev) => [...prev, pub.publicUrl])
+      if (hadError) {
+        setError('Alguns arquivos não puderam ser enviados.')
+      }
     } finally {
       setUploading(false)
     }
@@ -2388,7 +2520,7 @@ function PackDetailScreen({
       return
     }
 
-    // Recria as imagens do pack para refletir adições/remoções/ordem
+    // Recria as imagens do pack para refletir adições/remoç��es/ordem
     await supabase.from('pack_images').delete().eq('pack_id', pack.id)
     if (photos.length > 0) {
       await supabase.from('pack_images').insert(
@@ -2510,12 +2642,13 @@ function PackDetailScreen({
             )}
             <input
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
+              multiple
               className="sr-only"
               disabled={uploading}
               onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) handleAddPhoto(file)
+                const files = Array.from(e.target.files ?? [])
+                if (files.length) handleAddPhoto(files)
                 e.target.value = ''
               }}
             />
@@ -3310,7 +3443,7 @@ function WalletScreen({
 
       {/* Modal de Saque */}
       {showPixModal && (
-        <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+        <div className="absolute inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full animate-in slide-in-from-bottom rounded-t-[2rem] bg-card pb-8">
             <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-muted" />
 
@@ -3483,10 +3616,27 @@ function WalletScreen({
                     ))}
                   </div>
 
-                  <div className="mt-5 rounded-2xl bg-muted/30 p-4">
-                    <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">{pixKey}</p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={openPixModal}
+                    className="mt-5 flex w-full items-center justify-between gap-3 rounded-2xl bg-muted/30 p-4 text-left transition hover:bg-muted/50 active:scale-[0.99]"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">Chave PIX de destino</p>
+                      <p
+                        className={cn(
+                          'mt-1 truncate text-sm font-semibold',
+                          profile?.pix_key ? 'text-foreground' : 'text-primary',
+                        )}
+                      >
+                        {profile?.pix_key ? pixKey : 'Cadastrar chave PIX'}
+                      </p>
+                    </div>
+                    <span className="flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-primary">
+                      {profile?.pix_key ? 'Alterar' : 'Adicionar'}
+                      <ChevronRight className="size-4" aria-hidden="true" />
+                    </span>
+                  </button>
 
                   <div className="mt-3 flex items-center justify-between rounded-2xl bg-muted/30 px-4 py-3">
                     <span className="text-xs text-muted-foreground">Taxa por saque</span>
@@ -3521,7 +3671,7 @@ function WalletScreen({
                   </button>
 
                   <p className="mt-3 text-center text-xs text-muted-foreground">
-                    O valor sera creditado em ate 24h uteis
+                    Transferência via PIX imediata.
                   </p>
                 </>
               )}
@@ -3610,8 +3760,8 @@ function WalletScreen({
                     onClick={handleStartVerification}
                     className="luna-gradient mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
                   >
-                    <Zap className="size-5" aria-hidden="true" />
-                    Gerar PIX de verificação
+                    <Unlock className="size-5" aria-hidden="true" />
+                    Pagar e liberar agora!
                   </button>
                 </div>
               )}
@@ -3685,7 +3835,7 @@ function WalletScreen({
 
 // ───────────────────────────────────────────────��─────────��───────────────────
 // Tela Perfil
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────��───────
 
 function ProfileScreen({ 
   profile: userProfile, 
@@ -3996,26 +4146,6 @@ function ProfileScreen({
         <SubHeader title="Configuracoes" onBack={() => setCurrentView('main')} />
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
-          {/* Aparencia */}
-          <div className="mb-6">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aparencia</h2>
-            <div className="flex flex-col gap-1 rounded-2xl border border-border bg-card">
-              <div className="flex items-center justify-between px-4 py-3.5">
-                <div className="flex items-center gap-3">
-                  <Moon className="size-5 text-muted-foreground" />
-                  <span className="text-sm text-foreground">Modo escuro</span>
-                </div>
-                <button type="button" onClick={() => toggleSetting('darkMode')}>
-                  {settings.darkMode ? (
-                    <ToggleRight className="size-8 text-primary" />
-                  ) : (
-                    <ToggleLeft className="size-8 text-muted-foreground" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* Notificacoes */}
           <div className="mb-6">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notificacoes</h2>
@@ -4066,7 +4196,7 @@ function ProfileScreen({
                   )}
                 </button>
               </div>
-              <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
+              <div className="flex items-center justify-between px-4 py-3.5">
                 <div className="flex items-center gap-3">
                   <Eye className="size-5 text-muted-foreground" />
                   <span className="text-sm text-foreground">Mostrar status online</span>
@@ -4079,42 +4209,6 @@ function ProfileScreen({
                   )}
                 </button>
               </div>
-              <div className="flex items-center justify-between px-4 py-3.5">
-                <div className="flex items-center gap-3">
-                  <MapPin className="size-5 text-muted-foreground" />
-                  <span className="text-sm text-foreground">Mostrar localizacao</span>
-                </div>
-                <button type="button" onClick={() => toggleSetting('showLocation')}>
-                  {settings.showLocation ? (
-                    <ToggleRight className="size-8 text-primary" />
-                  ) : (
-                    <ToggleLeft className="size-8 text-muted-foreground" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Conta */}
-          <div className="mb-6">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Conta</h2>
-            <div className="flex flex-col rounded-2xl border border-border bg-card">
-              <button type="button" className="flex items-center gap-3 border-b border-border px-4 py-3.5 text-left">
-                <CreditCard className="size-5 text-muted-foreground" />
-                <span className="flex-1 text-sm text-foreground">Metodos de pagamento</span>
-                <ChevronRight className="size-5 text-muted-foreground" />
-              </button>
-              <button type="button" className="flex items-center gap-3 border-b border-border px-4 py-3.5 text-left">
-                <Shield className="size-5 text-muted-foreground" />
-                <span className="flex-1 text-sm text-foreground">Seguranca</span>
-                <ChevronRight className="size-5 text-muted-foreground" />
-              </button>
-              <button type="button" className="flex items-center gap-3 px-4 py-3.5 text-left">
-                <Globe className="size-5 text-muted-foreground" />
-                <span className="flex-1 text-sm text-foreground">Idioma</span>
-                <span className="text-xs text-muted-foreground">Portugues</span>
-                <ChevronRight className="size-5 text-muted-foreground" />
-              </button>
             </div>
           </div>
 
@@ -4343,36 +4437,6 @@ function ProfileScreen({
                 rows={3}
                 className="w-full resize-none rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Localizacao <span className="text-muted-foreground/60">(opcional)</span>
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={editedProfile.location}
-                  onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
-                  placeholder="Ex: Sao Paulo, SP"
-                  className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Instagram <span className="text-muted-foreground/60">(opcional)</span>
-              </label>
-              <div className="relative">
-                <Instagram className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={editedProfile.instagram}
-                  onChange={(e) => setEditedProfile({ ...editedProfile, instagram: e.target.value })}
-                  placeholder="@seuusuario"
-                  className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
             </div>
           </div>
 

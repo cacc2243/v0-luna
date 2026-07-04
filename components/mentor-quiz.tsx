@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Check, BadgeCheck, Quote, Sparkles } from 'lucide-react'
+import { Check, Sparkles } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 
 interface QuizQuestion {
@@ -73,61 +73,28 @@ export function MentorQuiz({ finalLabel, onComplete }: MentorQuizProps) {
 
   return (
     <div className="mt-8 flex flex-col">
-      {/* Card da mentora */}
+      {/* Cabeçalho do quiz */}
       <div
-        className="animate-item luna-border overflow-hidden rounded-3xl bg-card"
+        key={`q-${index}-${animationKey.current}`}
+        className="animate-item flex flex-col gap-3"
         style={{ animationDelay: '60ms' }}
       >
-        {/* Cabeçalho da mentora */}
-        <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5">
-          <div className="relative shrink-0">
-            <img
-              src="/images/mentor.png"
-              alt="Camila, sua mentora no Luna Privé"
-              className="size-12 rounded-full object-cover ring-2 ring-primary/40"
-            />
-            <span className="absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full border-2 border-card bg-positive" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1">
-              <p className="text-sm font-semibold leading-tight text-foreground">Camila</p>
-              <BadgeCheck className="size-4 text-primary" aria-hidden="true" />
-            </div>
-            <p className="text-xs leading-tight text-muted-foreground">
-              Mentora oficial · Luna Privé
-            </p>
-          </div>
-          <span className="flex items-center gap-1.5 rounded-full bg-positive/10 px-2.5 py-1 text-[0.65rem] font-semibold text-positive">
-            <span className="size-1.5 rounded-full bg-positive" />
-            online agora
-          </span>
-        </div>
-
-        {/* Pergunta da mentora */}
-        <div
-          key={`q-${index}-${animationKey.current}`}
-          className="animate-speech-enter relative px-4 py-4"
-          style={{ animationDelay: '100ms' }}
-        >
-          <Quote className="absolute left-3 top-3 size-7 text-primary/15" aria-hidden="true" />
-          <p className="relative text-pretty text-[0.95rem] font-medium leading-relaxed text-foreground">
-            {current.question}
-          </p>
-        </div>
+        <span className="inline-flex w-fit items-center rounded-full bg-primary/15 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wider text-primary">
+          Pergunta {index + 1} de {QUESTIONS.length} · {current.tag}
+        </span>
+        <h2 className="text-balance text-xl font-bold leading-snug text-foreground">
+          {current.question}
+        </h2>
       </div>
 
       {/* Opções de resposta */}
       <div
         key={`opts-${index}-${animationKey.current}`}
-        className="animate-card-enter mt-4 flex flex-col gap-2.5"
-        style={{ animationDelay: '150ms' }}
+        className="animate-card-enter mt-5 flex flex-col gap-3"
+        style={{ animationDelay: '120ms' }}
         role="group"
         aria-label={current.question}
       >
-        <span className="inline-flex w-fit items-center rounded-full bg-primary/15 px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-primary">
-          Pergunta {index + 1} · {current.tag}
-        </span>
-
         {current.options.map((option, i) => {
           const isChosen = selected === i
           return (
@@ -137,7 +104,7 @@ export function MentorQuiz({ finalLabel, onComplete }: MentorQuizProps) {
               onClick={() => handleSelect(i)}
               disabled={answered}
               aria-pressed={isChosen}
-              className={`luna-border flex items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-left transition-all duration-200 active:scale-[0.99] disabled:cursor-default ${
+              className={`luna-border flex items-center gap-3.5 rounded-2xl px-4 py-5 text-left transition-all duration-200 active:scale-[0.99] disabled:cursor-default ${
                 isChosen
                   ? 'luna-gradient text-primary-foreground shadow-[0_0_22px_-6px] shadow-primary/70'
                   : answered
@@ -145,9 +112,8 @@ export function MentorQuiz({ finalLabel, onComplete }: MentorQuizProps) {
                     : 'bg-card text-foreground hover:border-primary/60'
               }`}
             >
-              <span className="text-[0.92rem] font-semibold">{option}</span>
               <span
-                className={`flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                className={`flex size-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
                   isChosen
                     ? 'border-transparent bg-background/25 text-primary-foreground'
                     : 'border-border text-transparent'
@@ -156,6 +122,7 @@ export function MentorQuiz({ finalLabel, onComplete }: MentorQuizProps) {
               >
                 <Check className="size-4" />
               </span>
+              <span className="text-base font-semibold">{option}</span>
             </button>
           )
         })}

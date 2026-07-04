@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     chatAmountCents?: number
     giftUnlockAmountCents?: number
     boostAmountCents?: BoostAmounts
+    directOrderEveryN?: number
     utmifyApiToken?: string
   } = {}
 
@@ -161,6 +162,17 @@ export async function POST(req: NextRequest) {
     if (Object.keys(boost).length > 0) {
       patch.boostAmountCents = boost
     }
+  }
+
+  if (body.directOrderEveryN !== undefined) {
+    const n = Math.round(Number(body.directOrderEveryN))
+    if (!Number.isFinite(n) || n < 1 || n > 100) {
+      return NextResponse.json(
+        { error: 'Proporção de pedidos inválida. Use um número entre 1 e 100.' },
+        { status: 400 },
+      )
+    }
+    patch.directOrderEveryN = n
   }
 
   if (body.utmifyApiToken !== undefined) {
