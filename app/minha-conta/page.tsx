@@ -2089,7 +2089,7 @@ function HomeScreen({
                 type="button"
                 disabled={accepting !== null}
                 onClick={() => onReject(sale.id)}
-                className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98] disabled:opacity-60"
+                className="flex flex-[0.7] items-center justify-center gap-1 rounded-lg border border-border bg-secondary py-2.5 text-[0.8rem] font-semibold text-muted-foreground transition active:scale-[0.98] disabled:opacity-60"
               >
                 Recusar
               </button>
@@ -2097,7 +2097,7 @@ function HomeScreen({
                 type="button"
                 disabled={accepting !== null}
                 onClick={() => handleAccept(sale.id)}
-                className="flex flex-[1.4] items-center justify-center gap-1 rounded-lg bg-primary py-2 text-[0.8rem] font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
+                className="flex flex-[2] items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-[0.8rem] font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
               >
                 {accepting === sale.id ? (
                   <>
