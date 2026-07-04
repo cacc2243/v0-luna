@@ -457,7 +457,7 @@ function NoInviteScreen({ email }: { email: string }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela de Login (integrada)
-// ────────────────────────────────────────────────────────────────────────────��
+// ─────────��──────────────────────────────────────────────────────────────────��
 
 function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInvite: (email: string) => void }) {
   const [email, setEmail] = useState('')
@@ -2053,13 +2053,6 @@ function HomeScreen({
                 </div>
                 <p className="flex items-center gap-1 text-[0.65rem] text-muted-foreground">
                   <span className="truncate">Comprou “{sale.pack?.title || 'seu pack'}”</span>
-                  {!sale.is_direct && (
-                    <span className="inline-flex shrink-0 items-center gap-0.5 text-primary">
-                      ·
-                      <MessageSquare className="size-2.5" aria-hidden="true" />
-                      Chat
-                    </span>
-                  )}
                 </p>
               </div>
               <div className="shrink-0 text-right leading-snug">
@@ -3690,7 +3683,7 @@ function WalletScreen({
   )
 }
 
-// ─────────────────────────────────────────────────────────��───────────────────
+// ───────────────────────────────────────────────��─────────��───────────────────
 // Tela Perfil
 // ─────────────────────────────────────────────────────────────────────────────
 
