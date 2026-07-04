@@ -57,14 +57,14 @@ function buildToast(): ToastData {
       key: `${Date.now()}-${Math.random()}`,
       username,
       kind: 'withdraw',
-      amount: randomInRange(2880, 3880),
+      amount: randomInRange(280, 680),
     }
   }
   return {
     key: `${Date.now()}-${Math.random()}`,
     username,
     kind: 'gift',
-    amount: randomInRange(380, 690),
+    amount: randomInRange(280, 680),
   }
 }
 
