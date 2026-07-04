@@ -64,6 +64,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error' | 'whatsappCode'>('form')
+  const [loadingPhase, setLoadingPhase] = useState<'configuring' | 'welcome'>('configuring')
   const [errorMessage, setErrorMessage] = useState('')
 
   // Campos
@@ -174,14 +175,15 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
   const finish = async () => {
     setStatus('loading')
+    setLoadingPhase('configuring')
     setErrorMessage('')
 
-    // Garante que o loading "Configurando sua conta..." apareca por >= 3s.
+    // Garante que o "Configurando sua conta..." apareca por >= 2.5s.
     const loadingStart = Date.now()
     const ensureMinLoading = async () => {
       const elapsed = Date.now() - loadingStart
-      if (elapsed < 3000) {
-        await new Promise((r) => setTimeout(r, 3000 - elapsed))
+      if (elapsed < 2500) {
+        await new Promise((r) => setTimeout(r, 2500 - elapsed))
       }
     }
 
@@ -272,8 +274,12 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         status: true,
       })
 
+      // Fase 1: "Configurando sua conta..." por >= 2.5s.
       await ensureMinLoading()
-      // Mantem o loading visivel e leva o usuario para a pagina /convite,
+      // Fase 2: troca o conteudo do mesmo modal para as boas-vindas por 1.5s.
+      setLoadingPhase('welcome')
+      await new Promise((r) => setTimeout(r, 1500))
+      // Depois leva o usuario para a pagina /convite,
       // onde o codigo de convite e exibido (nao mais dentro deste fluxo).
       router.push('/convite')
     } catch (err) {
@@ -349,7 +355,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               }}
             />
           ) : status === 'loading' ? (
-          <LoadingCard />
+          <LoadingCard phase={loadingPhase} />
         ) : (
           <div
             key={step}
@@ -1214,7 +1220,21 @@ function SendingPixCard({
   )
 }
 
-function LoadingCard() {
+function LoadingCard({ phase }: { phase: 'configuring' | 'welcome' }) {
+  if (phase === 'welcome') {
+    return (
+      <div className="animate-pop luna-border flex w-full max-w-sm flex-col items-center rounded-3xl bg-card px-6 py-10 text-center shadow-2xl shadow-primary/15">
+        <div className="flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary">
+          <Check className="size-8" aria-hidden="true" />
+        </div>
+        <p className="mt-5 text-lg font-bold text-foreground">Seja bem-vinda ao Luna Privé!</p>
+        <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
+          Sua conta esta pronta. Vamos comecar.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="animate-pop luna-border flex w-full max-w-sm flex-col items-center rounded-3xl bg-card px-6 py-10 text-center shadow-2xl shadow-primary/15">
       <Loader2 className="size-10 animate-spin text-primary" aria-hidden="true" />
