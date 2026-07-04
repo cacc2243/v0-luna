@@ -49,10 +49,8 @@ const sales = [
 // então pack/valor são preenchidos dinamicamente dentro do componente.
 const sales2Buyers = [
   { handle: '@admirador_vip' },
- { handle: '@cliente_fiel' },
- { handle: '@noturno.br' },
- { handle: '@secret_buyer' },
- { handle: '@premium_fan' },
+  { handle: '@cliente_fiel' },
+  { handle: '@noturno.br' },
 ]
 
 // "29,90" -> 29.9 (com proteção contra valores inválidos)
