@@ -15,11 +15,11 @@ export function SaleNotification({ title, time, amount }: SaleNotificationProps)
       />
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{time}</p>
+        <p className="truncate text-xs font-semibold text-foreground">{title}</p>
+        <p className="text-[0.7rem] text-muted-foreground">{time}</p>
       </div>
 
-      <p className="shrink-0 text-sm font-bold text-primary">{amount}</p>
+      <p className="shrink-0 text-xs font-bold text-primary">{amount}</p>
     </div>
   )
 }
