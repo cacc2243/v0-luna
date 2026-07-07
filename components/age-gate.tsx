@@ -47,7 +47,7 @@ export function AgeGate({ onConfirm }: { onConfirm: () => void }) {
           id="age-gate-title"
           className="relative mt-5 text-balance text-xl font-bold leading-tight text-foreground"
         >
-          Conteúdo para maiores de idade
+          Confirme que você é de maior
         </h2>
         <p className="relative mt-2.5 text-pretty text-sm leading-relaxed text-muted-foreground">
           Para acessar a plataforma, confirme que você tem{' '}
