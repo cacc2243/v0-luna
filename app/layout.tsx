@@ -29,20 +29,13 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://lunaprive.com'),
   title: {
-    default: 'Luna Privé — Gestão financeira para profissionais digitais',
+    default: 'Luna Privé — Crie seu conteúdo',
     template: '%s | Luna Privé',
   },
-  description:
-    'Luna Privé é a plataforma de gestão financeira e pagamentos para empreendedores digitais. Organize suas vendas, acompanhe seu saldo e receba com rapidez e segurança.',
+  description: 'Luna Privé é a plataforma onde você cria o seu conteúdo.',
   applicationName: 'Luna Privé',
-  keywords: [
-    'gestão financeira',
-    'pagamentos online',
-    'ferramentas para empreendedores',
-    'controle de vendas',
-    'recebimentos digitais',
-  ],
-  category: 'finance',
+  keywords: ['criar conteúdo', 'conteúdo digital'],
+  category: 'business',
   generator: 'v0.app',
   robots: {
     index: true,
@@ -52,15 +45,13 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'pt_BR',
     siteName: 'Luna Privé',
-    title: 'Luna Privé — Gestão financeira para profissionais digitais',
-    description:
-      'Organize suas vendas, acompanhe seu saldo e receba pagamentos com rapidez e segurança na Luna Privé.',
+    title: 'Luna Privé — Crie seu conteúdo',
+    description: 'A plataforma onde você cria o seu conteúdo.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Luna Privé — Gestão financeira para profissionais digitais',
-    description:
-      'Organize suas vendas, acompanhe seu saldo e receba pagamentos com rapidez e segurança.',
+    title: 'Luna Privé — Crie seu conteúdo',
+    description: 'A plataforma onde você cria o seu conteúdo.',
   },
   icons: {
     icon: [
