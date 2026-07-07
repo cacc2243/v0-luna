@@ -29,20 +29,20 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://lunaprive.com'),
   title: {
-    default: 'Luna Privé — Plataforma para criadores de conteúdo',
+    default: 'Luna Privé — Gestão financeira para profissionais digitais',
     template: '%s | Luna Privé',
   },
   description:
-    'Luna Privé é a plataforma onde criadores publicam seu conteúdo, definem seus preços e recebem pagamentos de forma simples, rápida e segura.',
+    'Luna Privé é a plataforma de gestão financeira e pagamentos para empreendedores digitais. Organize suas vendas, acompanhe seu saldo e receba com rapidez e segurança.',
   applicationName: 'Luna Privé',
   keywords: [
-    'plataforma para criadores',
-    'monetização de conteúdo',
-    'criadores de conteúdo',
-    'renda digital',
+    'gestão financeira',
     'pagamentos online',
+    'ferramentas para empreendedores',
+    'controle de vendas',
+    'recebimentos digitais',
   ],
-  category: 'business',
+  category: 'finance',
   generator: 'v0.app',
   robots: {
     index: true,
@@ -52,15 +52,15 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'pt_BR',
     siteName: 'Luna Privé',
-    title: 'Luna Privé — Plataforma para criadores de conteúdo',
+    title: 'Luna Privé — Gestão financeira para profissionais digitais',
     description:
-      'Publique seu conteúdo, defina seus preços e receba pagamentos de forma simples, rápida e segura com a Luna Privé.',
+      'Organize suas vendas, acompanhe seu saldo e receba pagamentos com rapidez e segurança na Luna Privé.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Luna Privé — Plataforma para criadores de conteúdo',
+    title: 'Luna Privé — Gestão financeira para profissionais digitais',
     description:
-      'Publique seu conteúdo, defina seus preços e receba pagamentos de forma simples, rápida e segura.',
+      'Organize suas vendas, acompanhe seu saldo e receba pagamentos com rapidez e segurança.',
   },
   icons: {
     icon: [
