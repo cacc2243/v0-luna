@@ -29,19 +29,12 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://lunaprive.com'),
   title: {
-    default: 'Luna Privé — Plataforma para criadores de conteúdo',
+    default: 'Luna Privé — Crie seu conteúdo',
     template: '%s | Luna Privé',
   },
-  description:
-    'Luna Privé é a plataforma onde criadores publicam seu conteúdo, definem seus preços e recebem pagamentos de forma simples, rápida e segura.',
+  description: 'Luna Privé é a plataforma onde você cria o seu conteúdo.',
   applicationName: 'Luna Privé',
-  keywords: [
-    'plataforma para criadores',
-    'monetização de conteúdo',
-    'criadores de conteúdo',
-    'renda digital',
-    'pagamentos online',
-  ],
+  keywords: ['criar conteúdo', 'conteúdo digital'],
   category: 'business',
   generator: 'v0.app',
   robots: {
@@ -52,15 +45,13 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'pt_BR',
     siteName: 'Luna Privé',
-    title: 'Luna Privé — Plataforma para criadores de conteúdo',
-    description:
-      'Publique seu conteúdo, defina seus preços e receba pagamentos de forma simples, rápida e segura com a Luna Privé.',
+    title: 'Luna Privé — Crie seu conteúdo',
+    description: 'A plataforma onde você cria o seu conteúdo.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Luna Privé — Plataforma para criadores de conteúdo',
-    description:
-      'Publique seu conteúdo, defina seus preços e receba pagamentos de forma simples, rápida e segura.',
+    title: 'Luna Privé — Crie seu conteúdo',
+    description: 'A plataforma onde você cria o seu conteúdo.',
   },
   icons: {
     icon: [
