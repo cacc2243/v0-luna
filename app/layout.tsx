@@ -5,6 +5,7 @@ import Script from 'next/script'
 import { Suspense } from 'react'
 import { FbPixel } from '@/components/fb-pixel'
 import { AttributionTracker } from '@/components/attribution-tracker'
+import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
 import './globals.css'
 
 const manrope = Manrope({
@@ -34,6 +35,12 @@ export const metadata: Metadata = {
   },
   description: 'Luna Privé é a plataforma onde você cria o seu conteúdo.',
   applicationName: 'Luna Privé',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Luna Privé',
+  },
   keywords: ['criar conteúdo', 'conteúdo digital'],
   category: 'business',
   generator: 'v0.app',
@@ -68,7 +75,7 @@ export const metadata: Metadata = {
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: '/icons/apple-touch-icon.png',
   },
 }
 
@@ -84,6 +91,7 @@ export default function RootLayout({
           <FbPixel />
           <AttributionTracker />
         </Suspense>
+        <ServiceWorkerRegister />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
         <Script
