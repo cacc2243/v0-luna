@@ -246,6 +246,19 @@ export function PushNotificationsCard() {
         )}
 
         {message && <p className="mt-3 text-sm text-muted-foreground">{message}</p>}
+
+        {/* Teste global: dispara para todos os aparelhos ja inscritos (ex.: o
+            iPhone), mesmo que o dispositivo atual nao esteja ativado. */}
+        {state !== 'loading' && state !== 'granted' && (
+          <button
+            onClick={sendTest}
+            disabled={busy}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-sm font-semibold text-foreground transition hover:bg-secondary disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <BellRing className="size-4 text-primary" />}
+            Enviar notificação de teste ao iPhone
+          </button>
+        )}
       </div>
     </section>
   )

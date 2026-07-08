@@ -17,12 +17,19 @@ export async function POST(request: NextRequest) {
     //   com o tipo de evento em `event` (TRANSACTION_PAID, TRANSACTION_CANCELED...).
     // - HorsePay: campos planos com external_id (number), status (boolean),
     //   client_reference_id (nosso identifier) e end_to_end.
+    // - PixUp: "Envelope V2" — os dados ficam em `body.data` (com o
+    //   transaction_id tambem espelhado na raiz) e o nosso identifier chega em
+    //   `body.data.external_id`. O evento vem em dot notation (cashin.confirmed,
+    //   cashin.refunded, cashin.expired) e o status em `body.data.status`
+    //   ("confirmed", "refunded", "expired").
     const tx = body.transaction || {}
+    const data = body.data || {}
     const event = String(body.event || '').toUpperCase()
 
     // Detecta callbacks de infracao da HorsePay (contem infraction_status).
     // Nao alteram o status de pagamento — apenas registramos e respondemos 200.
-    const infractionStatus = body.infraction_status || tx.infraction_status || null
+    const infractionStatus =
+      body.infraction_status || tx.infraction_status || data.infraction_status || null
 
     // Possiveis identificadores da transacao (tentamos casar por qualquer um).
     // Normalizamos para string pois a HorsePay envia external_id como number.
@@ -36,15 +43,25 @@ export async function POST(request: NextRequest) {
       body.externalId,
       body.client_reference_id,
       tx.client_reference_id,
+      // PixUp (Envelope V2)
+      data.transaction_id,
+      data.external_id,
+      data.id,
     ]
       .filter((v) => v !== undefined && v !== null && String(v).length > 0)
       .map((v) => String(v))
 
     const rawStatus = String(
-      tx.status || body.status || body.payment_status || ''
+      tx.status || body.status || data.status || body.payment_status || ''
     ).toUpperCase()
     const paidAt =
-      tx.payedAt || body.paid_at || body.paidAt || body.payment_date || null
+      tx.payedAt ||
+      body.paid_at ||
+      body.paidAt ||
+      data.confirmed_at ||
+      data.paid_at ||
+      body.payment_date ||
+      null
 
     // HorsePay envia `status` como boolean: true = pago, false = falhou/estornado.
     const horsepayBoolStatus =
@@ -114,8 +131,10 @@ export async function POST(request: NextRequest) {
     if (
       paidEvent ||
       horsepayBoolStatus === true ||
-      ['PAID', 'APPROVED', 'COMPLETED', 'PAID', 'OK'].includes(rawStatus) ||
-      ['paid', 'approved', 'completed'].includes(String(tx.status || body.status || ''))
+      ['PAID', 'APPROVED', 'COMPLETED', 'CONFIRMED', 'OK'].includes(rawStatus) ||
+      ['paid', 'approved', 'completed', 'confirmed'].includes(
+        String(tx.status || body.status || data.status || ''),
+      )
     ) {
       newStatus = 'paid'
     } else if (refundedEvent || rawStatus === 'REFUNDED') {
