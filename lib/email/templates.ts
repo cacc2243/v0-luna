@@ -120,6 +120,10 @@ function button(label: string, href: string): string {
   </table>`
 }
 
+function link(href: string, label?: string): string {
+  return `<a href="${href}" target="_blank" style="color:${BRAND.primary};font-weight:700;text-decoration:underline;word-break:break-all;">${label || href}</a>`
+}
+
 function pixBox(code: string): string {
   return `<div style="margin:8px 0 16px;padding:14px 16px;background-color:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:12px;">
     <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND.muted};">PIX copia e cola</p>
@@ -158,7 +162,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     description:
       'Enviado quando o PIX do Convite de Acesso é gerado, com o código copia e cola.',
     trigger: 'Disparado quando o PIX do convite é gerado na página /convite.',
-    subject: () => 'Seu PIX do Convite Luna Privé está pronto',
+    subject: () => 'Convite Pendente',
     html: (v) =>
       layout({
         previewText: 'Pague o PIX para liberar seu acesso ao Luna Privé.',
@@ -167,6 +171,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${paragraph(`Geramos o PIX do seu Convite de Acesso${v.amount ? ` no valor de <strong style="color:${BRAND.text};">${v.amount}</strong>` : ''}. Use o código abaixo no app do seu banco para concluir.`)}
           ${v.pixCode ? pixBox(v.pixCode) : ''}
           ${paragraph('Assim que o pagamento for confirmado, enviamos um e-mail com o link de acesso à sua conta. O código expira em alguns minutos, então finalize o quanto antes.')}
+          ${paragraph(`O seu código expirou? Toque em ${link('https://lunaprive.live', 'lunaprive.live')} para gerar um novo convite.`)}
         `,
       }),
     sampleVars: {
@@ -183,7 +188,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     description:
       'Confirmação de pagamento com o link de acesso à conta. Enviado após o convite ser pago.',
     trigger: 'Disparado quando o pagamento do convite é confirmado (webhook PIX).',
-    subject: () => 'Acesso liberado! Bem-vinda ao Luna Privé 💖',
+    subject: () => 'Bem-vinda ao Luna',
     html: (v) =>
       layout({
         previewText: 'Pagamento confirmado. Seu acesso ao Luna Privé está liberado!',
@@ -192,7 +197,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${paragraph(`Tudo certo${v.name ? `, <strong style="color:${BRAND.text};">${v.name}</strong>` : ''}! Recebemos o pagamento do seu Convite de Acesso e sua conta no Luna Privé está <strong style="color:${BRAND.positive};">liberada</strong>.`)}
           ${paragraph('Clique no botão abaixo para entrar e começar a usar a plataforma:')}
           ${button('Acessar minha conta', v.accessUrl || '#')}
-          ${paragraph(`Se o botão não funcionar, copie e cole este endereço no navegador:<br /><span style="color:${BRAND.text};word-break:break-all;">${v.accessUrl || ''}</span>`)}
+          ${paragraph(`Se o botão não funcionar, toque no link abaixo para acessar:<br />${link(v.accessUrl || 'https://lunaprive.live/minha-conta')}`)}
         `,
       }),
     sampleVars: {
