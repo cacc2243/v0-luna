@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import useSWR from 'swr'
+import { PushNotificationsCard } from './push-notifications-card'
 import {
   Settings,
   ShieldCheck,
@@ -250,6 +251,9 @@ export function SettingsTab() {
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Notificacoes push (PWA) de vendas aprovadas */}
+      <PushNotificationsCard />
+
       {/* Verificacao de chave PIX */}
       <section className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-start gap-3">
