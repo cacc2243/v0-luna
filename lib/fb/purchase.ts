@@ -62,23 +62,6 @@ export async function maybeSendPurchase(invite: InviteLike): Promise<void> {
 
     const supabase = createAdminClient()
 
-    // Guarda atomica: so prossegue quem conseguir virar a flag de false -> true.
-    const { data: claimed, error: claimError } = await supabase
-      .from('invites')
-      .update({ fb_purchase_sent: true })
-      .eq('id', invite.id)
-      .eq('fb_purchase_sent', false)
-      .select('id')
-
-    if (claimError) {
-      console.log('[v0] Purchase: erro ao reservar flag', claimError.message)
-      return
-    }
-    if (!claimed || claimed.length === 0) {
-      // Outro processo ja enviou.
-      return
-    }
-
     const value = Number(invite.amount) || 0
     const type = invite.type || 'invite'
     const eventId = invite.fb_event_id || `purchase_${invite.id}`
