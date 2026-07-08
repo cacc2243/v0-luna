@@ -18,9 +18,61 @@ const PIX_CONTENT_NAME: Record<string, string> = {
 }
 
 /**
+ * Mapa de nomes de beneficiários conhecidos. Alguns provedores enviam o campo
+ * 59 (Merchant Name) do BR Code sem espaços (ex.: "MORENDIGITALLTDA"), então
+ * não é possível reconstruir os espaços apenas pelo parsing. A chave é o nome
+ * em maiúsculas e sem espaços; o valor é o nome exibido corretamente.
+ */
+const KNOWN_MERCHANT_NAMES: Record<string, string> = {
+  MORENDIGITALLTDA: 'Moren Digital Ltda',
+}
+
+/** Sufixos societários que devem aparecer separados do restante do nome. */
+const COMPANY_SUFFIXES = ['LTDA', 'EIRELI', 'MEI', 'ME', 'SA', 'EPP']
+
+/**
+ * Formata o nome do beneficiário para exibição. Prioriza o mapa de nomes
+ * conhecidos (comparando pela versão sem espaços). Caso contrário, separa
+ * sufixos societários grudados (ex.: "...LTDA") e aplica Title Case.
+ */
+function formatMerchantName(raw: string): string | null {
+  const cleaned = raw
+    .trim()
+    .replace(/[_.\-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!cleaned) return null
+
+  // 1) Nome conhecido (chave = maiúsculas sem espaços).
+  const key = cleaned.replace(/\s+/g, '').toUpperCase()
+  if (KNOWN_MERCHANT_NAMES[key]) return KNOWN_MERCHANT_NAMES[key]
+
+  // 2) Separa sufixo societário grudado no final (ex.: "EMPRESALTDA" -> "EMPRESA LTDA").
+  let normalized = cleaned
+  for (const suffix of COMPANY_SUFFIXES) {
+    const re = new RegExp(`(\\S)(${suffix})$`, 'i')
+    if (re.test(normalized.replace(/\s+/g, ''))) {
+      const upper = normalized.replace(/\s+/g, '').toUpperCase()
+      if (upper.endsWith(suffix) && upper.length > suffix.length) {
+        const base = normalized.replace(/\s+/g, '').slice(0, upper.length - suffix.length)
+        normalized = `${base} ${suffix}`
+        break
+      }
+    }
+  }
+
+  // 3) Title Case (nomes vêm em maiúsculas no BR Code).
+  return normalized
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+    .join(' ')
+}
+
+/**
  * Extrai o nome do beneficiário (campo 59 "Merchant Name") de um payload PIX
  * no formato BR Code (EMV TLV). Percorre os campos de nível raiz (ID de 2
- * dígitos + tamanho de 2 dígitos + valor) e retorna o valor do campo 59.
+ * dígitos + tamanho de 2 dígitos + valor) e retorna o valor formatado do campo 59.
  * Retorna null se não encontrar ou o payload for inválido.
  */
 function extractPixMerchantName(payload: string | null): string | null {
@@ -34,20 +86,7 @@ function extractPixMerchantName(payload: string | null): string | null {
       const valueStart = i + 4
       const value = payload.slice(valueStart, valueStart + len)
       if (id === '59') {
-      // Remove separadores (_ . -) e colapsa espaços: nunca exibimos esses
-      // caracteres no nome do processador.
-      const name = value
-        .trim()
-        .replace(/[_.\-]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-      if (!name) return null
-      // Normaliza para "Title Case" (nomes vêm em maiúsculas no BR Code).
-      return name
-        .toLowerCase()
-        .split(/\s+/)
-        .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
-        .join(' ')
+        return formatMerchantName(value)
       }
       i = valueStart + len
     }

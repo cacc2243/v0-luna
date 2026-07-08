@@ -84,9 +84,14 @@ function buildUserData(user: ServerEventUser): Record<string, unknown> {
  * por pixel para que um pixel com problema nao afete os demais nem bloqueie o
  * fluxo de pagamento.
  */
-export async function sendServerEvent(args: SendServerEventArgs): Promise<void> {
+export async function sendServerEvent(
+  args: SendServerEventArgs,
+): Promise<{ attempted: number; succeeded: number }> {
   const pixels = await getEnabledPixels()
-  if (pixels.length === 0) return
+  if (pixels.length === 0) {
+    console.log('[v0] CAPI: nenhum pixel habilitado, evento nao enviado:', args.eventName)
+    return { attempted: 0, succeeded: 0 }
+  }
 
   const userData = buildUserData(args.user)
 
@@ -106,7 +111,7 @@ export async function sendServerEvent(args: SendServerEventArgs): Promise<void> 
   }
   if (args.eventSourceUrl) baseEvent.event_source_url = args.eventSourceUrl
 
-  await Promise.all(
+  const results = await Promise.all(
     pixels.map(async (pixel) => {
       try {
         const body: Record<string, unknown> = { data: [baseEvent] }
@@ -128,15 +133,19 @@ export async function sendServerEvent(args: SendServerEventArgs): Promise<void> 
           console.log(
             `[v0] CAPI erro pixel ${pixel.pixel_id} (${args.eventName}): ${res.status} ${text.slice(0, 300)}`,
           )
-        } else {
-          console.log(`[v0] CAPI ${args.eventName} enviado para pixel ${pixel.pixel_id}`)
+          return false
         }
+        console.log(`[v0] CAPI ${args.eventName} enviado para pixel ${pixel.pixel_id}`)
+        return true
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'erro desconhecido'
         console.log(`[v0] CAPI exception pixel ${pixel.pixel_id}: ${msg}`)
+        return false
       }
     }),
   )
+
+  return { attempted: pixels.length, succeeded: results.filter(Boolean).length }
 }
 
 /**

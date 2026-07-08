@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { maybeSendPurchase } from '@/lib/fb/purchase'
 import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
 import { sendUtmifyOrder } from '@/lib/utmify/orders'
+import { notifyAdminSale } from '@/lib/push/notify-sale'
 
 export async function POST(request: NextRequest) {
   try {
@@ -155,6 +156,12 @@ export async function POST(request: NextRequest) {
     // nao envia Purchase (tratado dentro do helper).
     if (newStatus === 'paid') {
       await maybeSendPurchase({ ...invite, status: 'paid' })
+    }
+
+    // Notificacao push para o admin (PWA) quando uma venda e aprovada.
+    // Idempotente via flag admin_push_sent (nao dispara em duplicidade com o polling).
+    if (newStatus === 'paid') {
+      void notifyAdminSale({ ...invite, status: 'paid' }).catch(() => {})
     }
 
     // Utmify: envia o pedido como "pago" (paid) quando confirmado, com a data
