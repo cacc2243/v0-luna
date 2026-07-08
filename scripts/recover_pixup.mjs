@@ -3,17 +3,21 @@
 // MODO LISTAR (padrão): mostra invites PixUp pendentes recentes com e-mail.
 //   node --env-file-if-exists=/vercel/share/.env.project scripts/recover_pixup.mjs
 //
-// MODO RECUPERAR: marca um invite específico como "paid" (após confirmação
-// manual de que a PixUp aprovou). Dispara a conciliação chamando o endpoint
-// /api/pix/status em produção (roda os safety nets: e-mail, FB, Utmify, push,
-// e desbloqueios de chat/boost/presentes/verificação).
+// MODO RECUPERAR: reprocessa um invite pelo MESMO caminho de produção,
+// enviando um POST no /api/pix/webhook com o payload no formato da PixUp
+// (Envelope V2 + campos na raiz). O processamento é idempotente e dispara todos
+// os efeitos colaterais reais: FB Purchase, push, e-mail, Utmify e os
+// desbloqueios de chat/boost/presentes/verificação.
 //   node ... scripts/recover_pixup.mjs --pay <INVITE_ID>
+//
+// Por padrão envia para o webhook LOCAL (localhost:3000), que já roda o código
+// corrigido. Para mirar produção use RECOVER_BASE_URL=https://lunaprive.live
 
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://lunaprive.live').replace(/\/+$/, '')
+const BASE_URL = (process.env.RECOVER_BASE_URL || 'http://localhost:3000').replace(/\/+$/, '')
 
 if (!SUPABASE_URL || !SERVICE_ROLE) {
   console.error('Faltam SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY')
@@ -23,8 +27,6 @@ if (!SUPABASE_URL || !SERVICE_ROLE) {
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
   auth: { persistSession: false },
 })
-
-const siteBase = /^https?:\/\//i.test(SITE_URL) ? SITE_URL : `https://${SITE_URL}`
 
 async function listPending() {
   const since = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
@@ -49,27 +51,60 @@ async function listPending() {
 async function pay(inviteId) {
   const { data: inv, error } = await supabase
     .from('invites')
-    .select('*')
+    .select('id, email, type, amount, status, transaction_id')
     .eq('id', inviteId)
     .single()
   if (error || !inv) throw new Error(`Invite não encontrado: ${inviteId}`)
 
-  const { error: upErr } = await supabase
-    .from('invites')
-    .update({ status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-    .eq('id', inviteId)
-  if (upErr) throw new Error(`Falha ao marcar paid: ${upErr.message}`)
-  console.log(`Invite ${inviteId} marcado como PAID.`)
+  console.log('Convite alvo:')
+  console.log('  id:', inv.id)
+  console.log('  email:', inv.email)
+  console.log('  tipo:', inv.type)
+  console.log('  R$:', inv.amount)
+  console.log('  status atual:', inv.status)
+  console.log('  transaction_id:', inv.transaction_id)
 
-  // Dispara os safety nets em produção (idempotentes).
-  const url = `${siteBase}/api/pix/status?id=${encodeURIComponent(inviteId)}&email=${encodeURIComponent(inv.email)}`
-  try {
-    const res = await fetch(url)
-    console.log(`Conciliação /api/pix/status: HTTP ${res.status}`)
-  } catch (e) {
-    console.log(`Não foi possível chamar /api/pix/status automaticamente: ${e.message}`)
-    console.log('Abra a página de status do comprador ou aguarde o próximo polling.')
+  if (inv.status === 'paid') {
+    console.log('\nConvite já está pago. Nada a fazer.')
+    return
   }
+  if (!inv.transaction_id) {
+    throw new Error('Convite sem transaction_id — não é possível reprocessar via webhook.')
+  }
+
+  // Payload no formato PixUp, cobrindo as duas variações documentadas:
+  // (1) campos na raiz e (2) Envelope V2 aninhado em `data`.
+  const payload = {
+    event: 'cashin.confirmed',
+    transaction_id: inv.transaction_id,
+    external_id: inv.transaction_id,
+    amount: Number(inv.amount),
+    status: 'paid',
+    data: {
+      transaction_id: inv.transaction_id,
+      external_id: inv.transaction_id,
+      status: 'confirmed',
+      amount: Number(inv.amount),
+      confirmed_at: new Date().toISOString(),
+    },
+  }
+
+  const webhookUrl = `${BASE_URL}/api/pix/webhook`
+  console.log('\nEnviando payload PixUp para', webhookUrl, '...')
+  const res = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const text = await res.text()
+  console.log('Resposta do webhook:', res.status, text)
+
+  const { data: after } = await supabase
+    .from('invites')
+    .select('status, paid_at')
+    .eq('id', inviteId)
+    .maybeSingle()
+  console.log('\nStatus após reprocessamento:', after?.status, '| paid_at:', after?.paid_at)
 }
 
 async function main() {
