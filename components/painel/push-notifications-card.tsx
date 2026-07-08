@@ -81,10 +81,16 @@ export function PushNotificationsCard() {
 
       const reg = await navigator.serviceWorker.ready
 
-      const keyRes = await fetch('/api/admin/push/vapid')
-      const keyJson = await keyRes.json()
+      const keyRes = await fetch('/api/admin/push/vapid', { cache: 'no-store' })
+      if (!keyRes.ok) {
+        setMessage(`Falha ao obter a chave (erro ${keyRes.status}). Tente novamente.`)
+        return
+      }
+      const keyJson = await keyRes.json().catch(() => null)
       if (!keyJson?.publicKey) {
-        setMessage('Chave de notificação indisponível. Contate o suporte.')
+        setMessage(
+          'Servidor sem chave de notificação configurada. É preciso publicar o app após adicionar as chaves VAPID.',
+        )
         return
       }
 
