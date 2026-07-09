@@ -287,7 +287,9 @@ export function AdminDashboard() {
               )}
               {tab === 'clientes' && <ClientsTab profiles={profiles} invites={invites} />}
               {tab === 'usuarios' && <UsersTab />}
-              {tab === 'saldos' && <BalancesTab profiles={profiles} invites={invites} />}
+              {tab === 'saldos' && (
+                <BalancesTab profiles={profiles} invites={invites} onUpdated={() => mutate()} />
+              )}
               {tab === 'utms' && <UtmsTab invites={invites} period={period} />}
               {tab === 'verificacoes' && <VerificationsTab verifications={verifications} />}
               {tab === 'imagens' && <ImagesTab />}

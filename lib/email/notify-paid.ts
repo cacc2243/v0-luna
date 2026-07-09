@@ -9,35 +9,41 @@ interface PaidInviteLike {
 }
 
 /**
- * Envia o e-mail "Acesso liberado" (invite_paid) uma unica vez.
+ * Envia o e-mail "Bem-vinda ao Luna" (invite_paid) uma unica vez.
  *
- * Idempotencia: antes de enviar, verifica em email_logs se ja existe um envio
- * bem-sucedido (status='sent') do template invite_paid para este destinatario.
- * Como o webhook e o polling de /api/pix/status podem disparar este caminho
- * varias vezes, essa checagem evita e-mails duplicados sem precisar de uma nova
- * coluna no banco. O Convite de Acesso e unico por pessoa, entao casar por
- * (template + destinatario) e suficiente.
+ * Idempotencia via CLAIM ATOMICO na coluna invite_paid_email_sent da tabela
+ * invites. O webhook e o polling de /api/pix/status (alem de retries do
+ * gateway) podem confirmar o pagamento quase ao mesmo tempo; a antiga
+ * verificacao "checa depois envia" no email_logs nao era atomica e permitia
+ * dois envios concorrentes. Aqui, apenas quem consegue virar a flag de
+ * false -> true prossegue com o envio. Se o envio falhar, revertemos a flag
+ * para que uma nova tentativa (polling) possa reenviar.
  *
  * So envia para o Convite de Acesso (type='invite'), unico fluxo com template.
  * Nunca lanca: qualquer falha e apenas logada.
  */
 export async function sendInvitePaidEmailOnce(invite: PaidInviteLike): Promise<void> {
   try {
-    if (!invite?.email || invite.type !== 'invite') return
+    if (!invite?.email || invite.type !== 'invite' || !invite.id) return
 
     const supabase = createAdminClient()
 
-    // Ja foi enviado com sucesso para este destinatario?
-    const { data: existing } = await supabase
-      .from('email_logs')
+    // Claim atomico: so prossegue quem conseguir virar a flag de false -> true.
+    const { data: claimed, error: claimError } = await supabase
+      .from('invites')
+      .update({ invite_paid_email_sent: true })
+      .eq('id', invite.id)
+      .eq('invite_paid_email_sent', false)
       .select('id')
-      .eq('template_id', 'invite_paid')
-      .eq('recipient', invite.email)
-      .eq('status', 'sent')
-      .limit(1)
-      .maybeSingle()
 
-    if (existing) return
+    if (claimError) {
+      console.error('[v0] Erro ao reservar envio de invite_paid:', claimError.message)
+      return
+    }
+    if (!claimed || claimed.length === 0) {
+      // Outro processo (webhook/polling) ja reservou o envio.
+      return
+    }
 
     const siteUrl = getSiteUrl()
 
@@ -55,10 +61,19 @@ export async function sendInvitePaidEmailOnce(invite: PaidInviteLike): Promise<v
       // segue sem nome
     }
 
-    await sendTemplateEmail('invite_paid', invite.email, {
+    const result = await sendTemplateEmail('invite_paid', invite.email, {
       name,
       accessUrl: `${siteUrl}/minha-conta`,
     })
+
+    // Se o envio nao foi bem-sucedido, libera a flag para uma nova tentativa
+    // (ex.: o polling reprocessa). Evita perder o e-mail por falha transitoria.
+    if (result.status !== 'sent') {
+      await supabase
+        .from('invites')
+        .update({ invite_paid_email_sent: false })
+        .eq('id', invite.id)
+    }
   } catch (e) {
     console.error('[v0] Falha ao enviar e-mail invite_paid:', (e as Error)?.message)
   }
