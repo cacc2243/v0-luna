@@ -75,11 +75,11 @@ export function ConfirmAcquireModal({
           </p>
 
           {/* Destaque do valor */}
-          <div className="flex items-center justify-between rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="flex flex-col items-center gap-1 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3.5">
+            <span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
               Valor do convite
             </span>
-            <span className="text-2xl font-extrabold tracking-tight text-primary tabular-nums">
+            <span className="whitespace-nowrap text-3xl font-extrabold leading-none tracking-tight text-primary tabular-nums">
               R$ {formatCents(amountCents)}
             </span>
           </div>
