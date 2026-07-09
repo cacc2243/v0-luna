@@ -146,7 +146,7 @@ async function sendSupportMessage(ticketId: string, message: string) {
   return { success: true as const, message: inserted as SupportMessage }
 }
 
-const WHATSAPP_NUMBER = '27623543137'
+const WHATSAPP_NUMBER = '5561981107346'
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
   'Olá! Preciso de ajuda com a minha conta na Luna Prive.',
 )}`
