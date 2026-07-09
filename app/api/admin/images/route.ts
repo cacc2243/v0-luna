@@ -26,6 +26,7 @@ interface ProfileRow {
   id: string
   username: string | null
   display_name: string | null
+  chat_unlocked: boolean | null
 }
 
 export interface AdminImage {
@@ -42,6 +43,9 @@ export interface AdminImage {
   ownerName: string | null
   ownerUsername: string | null
   ownerEmail: string | null
+  ownerChatUnlocked: boolean
+  ownerBanned: boolean
+  ownerBanReason: string | null
 }
 
 export async function GET() {
@@ -60,7 +64,7 @@ export async function GET() {
       .from('pack_images')
       .select('id, pack_id, image_url, is_preview, order_index, created_at')
       .order('created_at', { ascending: false }),
-    supabase.from('profiles').select('id, username, display_name'),
+    supabase.from('profiles').select('id, username, display_name, chat_unlocked'),
   ])
 
   if (packsRes.error) console.error('[v0] Erro ao buscar packs:', packsRes.error)
@@ -75,8 +79,14 @@ export async function GET() {
   const profileMap = new Map<string, ProfileRow>()
   for (const p of profiles) profileMap.set(p.id, p)
 
-  // Mapa de emails (auth.users) — paginado
+  // Mapa de auth (email + status de banimento) — paginado
   const emailMap = new Map<string, string>()
+  const banMap = new Map<string, { banned: boolean; reason: string | null }>()
+  const isBanned = (bannedUntil: string | null | undefined) => {
+    if (!bannedUntil) return false
+    const t = new Date(bannedUntil).getTime()
+    return Number.isFinite(t) && t > Date.now()
+  }
   try {
     let page = 1
     // até 50 páginas de 1000 = 50k usuários
@@ -87,7 +97,16 @@ export async function GET() {
         break
       }
       const users = data?.users || []
-      for (const u of users) if (u.email) emailMap.set(u.id, u.email)
+      for (const u of users) {
+        if (u.email) emailMap.set(u.id, u.email)
+        const banned = isBanned((u as { banned_until?: string | null }).banned_until)
+        banMap.set(u.id, {
+          banned,
+          reason: banned
+            ? (u.app_metadata as { ban_reason?: string | null } | undefined)?.ban_reason ?? null
+            : null,
+        })
+      }
       if (users.length < 1000) break
     }
   } catch (e) {
@@ -117,6 +136,9 @@ export async function GET() {
       ownerName: prof?.display_name || null,
       ownerUsername: prof?.username || null,
       ownerEmail: pk.user_id ? emailMap.get(pk.user_id) || null : null,
+      ownerChatUnlocked: !!prof?.chat_unlocked,
+      ownerBanned: pk.user_id ? banMap.get(pk.user_id)?.banned ?? false : false,
+      ownerBanReason: pk.user_id ? banMap.get(pk.user_id)?.reason ?? null : null,
     })
   }
 
@@ -139,6 +161,9 @@ export async function GET() {
       ownerName: prof?.display_name || null,
       ownerUsername: prof?.username || null,
       ownerEmail: ownerId ? emailMap.get(ownerId) || null : null,
+      ownerChatUnlocked: !!prof?.chat_unlocked,
+      ownerBanned: ownerId ? banMap.get(ownerId)?.banned ?? false : false,
+      ownerBanReason: ownerId ? banMap.get(ownerId)?.reason ?? null : null,
     })
   }
 

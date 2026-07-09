@@ -14,10 +14,14 @@ import {
   ImageIcon,
   ShieldAlert,
   Package,
+  MessageCircleHeart,
+  Ban,
+  ShieldCheck,
 } from 'lucide-react'
 import type { AdminImage } from '@/app/api/admin/images/route'
 import { formatDateTime } from '@/lib/painel/metrics'
 import { cn } from '@/lib/utils'
+import { BanUserModal } from '@/components/painel/ban-user-modal'
 
 const fetcher = async (url: string) => {
   const r = await fetch(url)
@@ -36,9 +40,13 @@ type ImageFilter = 'all' | 'cover' | 'pack_image'
 interface PackGroup {
   packId: string
   packTitle: string | null
+  ownerId: string | null
   ownerName: string | null
   ownerUsername: string | null
   ownerEmail: string | null
+  ownerChatUnlocked: boolean
+  ownerBanned: boolean
+  ownerBanReason: string | null
   images: AdminImage[]
   latestAt: string
   postedAt: string
@@ -50,6 +58,7 @@ export function ImagesTab() {
   const [preview, setPreview] = useState<AdminImage | null>(null)
   const [toDelete, setToDelete] = useState<AdminImage | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [banTarget, setBanTarget] = useState<PackGroup | null>(null)
 
   const { data, error, isLoading, mutate } = useSWR<{
     images: AdminImage[]
@@ -85,9 +94,13 @@ export function ImagesTab() {
         g = {
           packId: groupKey,
           packTitle: img.packTitle,
+          ownerId: img.ownerId,
           ownerName: img.ownerName,
           ownerUsername: img.ownerUsername,
           ownerEmail: img.ownerEmail,
+          ownerChatUnlocked: img.ownerChatUnlocked,
+          ownerBanned: img.ownerBanned,
+          ownerBanReason: img.ownerBanReason,
           images: [],
           latestAt: img.createdAt,
           postedAt: img.createdAt,
@@ -242,6 +255,7 @@ export function ImagesTab() {
                 group={group}
                 onView={(img) => setPreview(img)}
                 onDelete={(img) => setToDelete(img)}
+                onBan={() => setBanTarget(group)}
               />
             ))}
           </div>
@@ -331,6 +345,20 @@ export function ImagesTab() {
           </div>
         </div>
       )}
+
+      {/* Modal de banimento */}
+      {banTarget && banTarget.ownerId && (
+        <BanUserModal
+          userId={banTarget.ownerId}
+          label={
+            banTarget.ownerName || banTarget.ownerUsername || banTarget.ownerEmail || banTarget.ownerId
+          }
+          banned={banTarget.ownerBanned}
+          currentReason={banTarget.ownerBanReason}
+          onClose={() => setBanTarget(null)}
+          onDone={() => mutate()}
+        />
+      )}
     </div>
   )
 }
@@ -339,10 +367,12 @@ function PackRow({
   group,
   onView,
   onDelete,
+  onBan,
 }: {
   group: PackGroup
   onView: (img: AdminImage) => void
   onDelete: (img: AdminImage) => void
+  onBan: () => void
 }) {
   const name = group.ownerName || group.ownerUsername || 'Sem nome'
   return (
@@ -366,11 +396,53 @@ function PackRow({
               <Clock className="size-3 shrink-0" />
               Postado em {formatDateTime(group.postedAt)}
             </p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {group.ownerChatUnlocked ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[0.65rem] font-semibold text-primary">
+                  <MessageCircleHeart className="size-3" />
+                  Chat desbloqueado
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-background px-2 py-0.5 text-[0.65rem] font-medium text-muted-foreground">
+                  Chat bloqueado
+                </span>
+              )}
+              {group.ownerBanned && (
+                <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[0.65rem] font-semibold uppercase text-destructive">
+                  Banida
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <span className="shrink-0 rounded-full bg-background px-2.5 py-1 text-xs font-medium tabular-nums text-muted-foreground">
-          {group.images.length} imagem{group.images.length === 1 ? '' : 's'}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="rounded-full bg-background px-2.5 py-1 text-xs font-medium tabular-nums text-muted-foreground">
+            {group.images.length} imagem{group.images.length === 1 ? '' : 's'}
+          </span>
+          {group.ownerId && (
+            <button
+              onClick={onBan}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition',
+                group.ownerBanned
+                  ? 'border-border bg-card text-foreground hover:bg-secondary'
+                  : 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20',
+              )}
+            >
+              {group.ownerBanned ? (
+                <>
+                  <ShieldCheck className="size-3.5" />
+                  Desbanir
+                </>
+              ) : (
+                <>
+                  <Ban className="size-3.5" />
+                  Banir
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Email do dono, se houver */}

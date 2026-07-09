@@ -17,6 +17,7 @@ export interface AdminUser {
   totalEarned: number | null
   banned: boolean
   bannedUntil: string | null
+  banReason: string | null
 }
 
 interface ProfileRow {
@@ -34,6 +35,7 @@ async function listAllAuthUsers(supabase: ReturnType<typeof createAdminClient>) 
     id: string
     email: string | null
     banned_until?: string | null
+    ban_reason?: string | null
     created_at?: string
   }[] = []
   let page = 1
@@ -52,6 +54,7 @@ async function listAllAuthUsers(supabase: ReturnType<typeof createAdminClient>) 
         email: u.email ?? null,
         // banned_until existe no objeto retornado pela Admin API
         banned_until: (u as { banned_until?: string | null }).banned_until ?? null,
+        ban_reason: (u.app_metadata as { ban_reason?: string | null } | undefined)?.ban_reason ?? null,
         created_at: u.created_at,
       })
     }
@@ -111,6 +114,7 @@ export async function GET(req: Request) {
       totalEarned: p?.total_earned ?? null,
       banned: isBanned(a?.banned_until),
       bannedUntil: a?.banned_until ?? null,
+      banReason: isBanned(a?.banned_until) ? a?.ban_reason ?? null : null,
     })
   }
 
@@ -144,7 +148,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
-  let body: { userId?: string; action?: string }
+  let body: { userId?: string; action?: string; reason?: string }
   try {
     body = await req.json()
   } catch {
@@ -156,9 +160,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Parâmetros inválidos' }, { status: 400 })
   }
 
+  const reason = (body.reason || '').toString().trim().slice(0, 300)
+
   const supabase = createAdminClient()
+
+  // Ao banir, guardamos o motivo em app_metadata para exibi-lo no login.
+  // Ao desbanir, limpamos o motivo.
   const { error } = await supabase.auth.admin.updateUserById(userId, {
     ban_duration: action === 'ban' ? BAN_FOREVER : 'none',
+    app_metadata: {
+      ban_reason: action === 'ban' ? reason || null : null,
+      banned_at: action === 'ban' ? new Date().toISOString() : null,
+    },
   })
 
   if (error) {
