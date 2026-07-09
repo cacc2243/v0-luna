@@ -25,6 +25,7 @@ const PIX_CONTENT_NAME: Record<string, string> = {
  */
 const KNOWN_MERCHANT_NAMES: Record<string, string> = {
   MORENDIGITALLTDA: 'Moren Digital Ltda',
+  CONTADESERVICOSLTDA: 'Conta de Serviços Ltda',
 }
 
 /** Sufixos societários que devem aparecer separados do restante do nome. */
@@ -366,11 +367,44 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     }
   }
 
+  // Dispara um confete discreto por cima do modal (canvas dedicado com
+  // z-index acima do container z-[100]). Poucas partículas, apenas um toque
+  // de comemoração ao copiar o código.
+  function fireCopyConfetti() {
+    if (typeof window === 'undefined') return
+    const canvas = document.createElement('canvas')
+    canvas.style.position = 'fixed'
+    canvas.style.inset = '0'
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
+    canvas.style.pointerEvents = 'none'
+    canvas.style.zIndex = '2147483647'
+    document.body.appendChild(canvas)
+
+    const myConfetti = confetti.create(canvas, { resize: true, useWorker: true })
+    const base = {
+      spread: 55,
+      startVelocity: 30,
+      gravity: 0.9,
+      scalar: 0.85,
+      ticks: 110,
+      colors: ['#10b981', '#ffffff', '#f43f5e'],
+    }
+    myConfetti({ ...base, particleCount: 18, angle: 70, origin: { x: 0.3, y: 0.75 } })
+    myConfetti({ ...base, particleCount: 18, angle: 110, origin: { x: 0.7, y: 0.75 } })
+
+    setTimeout(() => {
+      myConfetti.reset()
+      canvas.remove()
+    }, 2200)
+  }
+
   async function copyPixCode() {
     if (!pixCode) return
 
     const markCopied = () => {
       setCopied(true)
+      fireCopyConfetti()
       setTimeout(() => setCopied(false), 2000)
       showToast('success', 'Código PIX copiado com sucesso!')
       // Registra no servidor que o cliente de fato copiou o código PIX.
@@ -571,7 +605,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Botão copiar */}
           <button
             onClick={copyPixCode}
-            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'cta-gradient animate-cta-breathe ring-white/20 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'bg-emerald-600 animate-cta-breathe ring-emerald-300/40 hover:bg-emerald-500'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-white ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
               <>
@@ -655,7 +689,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
           <img src="/images/background.png" alt="" className="size-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/82 via-background/90 to-background/95" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/72 via-background/82 to-background/90" />
         </div>
 
         {/* Botão fechar */}
