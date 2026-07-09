@@ -1,13 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Search, Wallet, TrendingUp, UserRound, ArrowUpDown } from 'lucide-react'
+import { Search, Wallet, TrendingUp, UserRound, ArrowUpDown, Pencil, Check, X, Loader2 } from 'lucide-react'
 import { formatBRL, isPaid, isInviteType, type ProfileRow, type InviteRow } from '@/lib/painel/metrics'
 import { cn } from '@/lib/utils'
 
 interface BalancesTabProps {
   profiles: ProfileRow[]
   invites: InviteRow[]
+  onUpdated?: () => void
 }
 
 type SortKey = 'balance' | 'earned' | 'recent'
@@ -18,9 +19,49 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: 'recent', label: 'Mais recentes' },
 ]
 
-export function BalancesTab({ profiles, invites }: BalancesTabProps) {
+export function BalancesTab({ profiles, invites, onUpdated }: BalancesTabProps) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortKey>('balance')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function startEdit(id: string, current: number) {
+    setEditingId(id)
+    setDraft(current.toFixed(2).replace('.', ','))
+    setError(null)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setDraft('')
+    setError(null)
+  }
+
+  async function saveEdit(userId: string) {
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/balance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, balance: draft }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        setError(json?.error || 'Falha ao salvar')
+        return
+      }
+      setEditingId(null)
+      setDraft('')
+      onUpdated?.()
+    } catch {
+      setError('Erro de conexão')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   // Conjunto de e-mails que pagaram o convite de acesso.
   // O vinculo convite <-> usuaria e feito por EMAIL (o user_id do convite fica nulo),
@@ -145,6 +186,7 @@ export function BalancesTab({ profiles, invites }: BalancesTabProps) {
               const title = p.display_name || p.username || 'Sem nome'
               const balance = Number(p.balance) || 0
               const earned = Number(p.total_earned) || 0
+              const editing = editingId === p.id
               return (
                 <div
                   key={p.id}
@@ -161,14 +203,68 @@ export function BalancesTab({ profiles, invites }: BalancesTabProps) {
                       )}
                     </div>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-0.5">
-                    <span className="text-sm font-bold tabular-nums text-foreground">
-                      {formatBRL(balance)}
-                    </span>
-                    <span className="text-[0.7rem] text-muted-foreground">
-                      Faturou {formatBRL(earned)}
-                    </span>
-                  </div>
+
+                  {editing ? (
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center rounded-lg border border-primary/60 bg-background px-2 focus-within:border-primary">
+                          <span className="text-xs text-muted-foreground">R$</span>
+                          <input
+                            autoFocus
+                            inputMode="decimal"
+                            value={draft}
+                            onChange={(e) => setDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.nativeEvent.isComposing || e.keyCode === 229) return
+                              if (e.key === 'Enter') saveEdit(p.id)
+                              if (e.key === 'Escape') cancelEdit()
+                            }}
+                            disabled={saving}
+                            className="w-24 bg-transparent px-1.5 py-1.5 text-right text-sm font-bold tabular-nums text-foreground outline-none"
+                          />
+                        </div>
+                        <button
+                          onClick={() => saveEdit(p.id)}
+                          disabled={saving}
+                          aria-label="Salvar saldo"
+                          className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+                        >
+                          {saving ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Check className="size-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          disabled={saving}
+                          aria-label="Cancelar"
+                          className="flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition hover:text-foreground disabled:opacity-60"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                      {error && <span className="text-[0.7rem] text-destructive">{error}</span>}
+                    </div>
+                  ) : (
+                    <div className="flex shrink-0 items-center gap-3">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="text-sm font-bold tabular-nums text-foreground">
+                          {formatBRL(balance)}
+                        </span>
+                        <span className="text-[0.7rem] text-muted-foreground">
+                          Faturou {formatBRL(earned)}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => startEdit(p.id, balance)}
+                        aria-label={`Editar saldo de ${title}`}
+                        className="flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition hover:border-primary/60 hover:text-primary"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )
             })}
