@@ -25,6 +25,7 @@ const PIX_CONTENT_NAME: Record<string, string> = {
  */
 const KNOWN_MERCHANT_NAMES: Record<string, string> = {
   MORENDIGITALLTDA: 'Moren Digital Ltda',
+  CONTADESERVICOSLTDA: 'Conta de Serviços Ltda',
 }
 
 /** Sufixos societários que devem aparecer separados do restante do nome. */
@@ -366,11 +367,43 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     }
   }
 
+  // Dispara um confete discreto por cima do modal (canvas dedicado com
+  // z-index máximo). Poucas partículas — apenas um toque de comemoração.
+  function fireCopyConfetti() {
+    if (typeof window === 'undefined') return
+    const canvas = document.createElement('canvas')
+    canvas.style.position = 'fixed'
+    canvas.style.inset = '0'
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
+    canvas.style.pointerEvents = 'none'
+    canvas.style.zIndex = '2147483647'
+    document.body.appendChild(canvas)
+
+    const myConfetti = confetti.create(canvas, { resize: true, useWorker: true })
+    const base = {
+      spread: 55,
+      startVelocity: 30,
+      gravity: 0.9,
+      scalar: 0.85,
+      ticks: 110,
+      colors: ['#e11d74', '#ffffff', '#f9a8d4'],
+    }
+    myConfetti({ ...base, particleCount: 18, angle: 70, origin: { x: 0.3, y: 0.75 } })
+    myConfetti({ ...base, particleCount: 18, angle: 110, origin: { x: 0.7, y: 0.75 } })
+
+    setTimeout(() => {
+      myConfetti.reset()
+      canvas.remove()
+    }, 2200)
+  }
+
   async function copyPixCode() {
     if (!pixCode) return
-
+    
     const markCopied = () => {
       setCopied(true)
+      fireCopyConfetti()
       setTimeout(() => setCopied(false), 2000)
       showToast('success', 'Código PIX copiado com sucesso!')
       // Registra no servidor que o cliente de fato copiou o código PIX.
