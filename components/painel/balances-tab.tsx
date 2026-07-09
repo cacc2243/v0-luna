@@ -1,9 +1,23 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Search, Wallet, TrendingUp, UserRound, ArrowUpDown, Pencil, Check, X, Loader2 } from 'lucide-react'
+import {
+  Search,
+  Wallet,
+  TrendingUp,
+  UserRound,
+  ArrowUpDown,
+  Pencil,
+  Check,
+  X,
+  Loader2,
+  MessageCircleHeart,
+  Ban,
+  ShieldCheck,
+} from 'lucide-react'
 import { formatBRL, isPaid, isInviteType, type ProfileRow, type InviteRow } from '@/lib/painel/metrics'
 import { cn } from '@/lib/utils'
+import { BanUserModal } from '@/components/painel/ban-user-modal'
 
 interface BalancesTabProps {
   profiles: ProfileRow[]
@@ -26,6 +40,7 @@ export function BalancesTab({ profiles, invites, onUpdated }: BalancesTabProps) 
   const [draft, setDraft] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [banTarget, setBanTarget] = useState<ProfileRow | null>(null)
 
   function startEdit(id: string, current: number) {
     setEditingId(id)
@@ -193,13 +208,37 @@ export function BalancesTab({ profiles, invites, onUpdated }: BalancesTabProps) 
                   className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/40 px-4 py-3"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                      <UserRound className="size-4 text-primary" />
+                    <div
+                      className={cn(
+                        'flex size-9 shrink-0 items-center justify-center rounded-full',
+                        p.banned ? 'bg-destructive/15' : 'bg-primary/15',
+                      )}
+                    >
+                      <UserRound
+                        className={cn('size-4', p.banned ? 'text-destructive' : 'text-primary')}
+                      />
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">{title}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="truncate text-sm font-medium text-foreground">{title}</p>
+                        {p.banned && (
+                          <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase text-destructive">
+                            Banida
+                          </span>
+                        )}
+                      </div>
                       {p.username && (
                         <p className="truncate text-xs text-muted-foreground">@{p.username}</p>
+                      )}
+                      {p.chat_unlocked ? (
+                        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[0.65rem] font-semibold text-primary">
+                          <MessageCircleHeart className="size-3" />
+                          Chat desbloqueado
+                        </span>
+                      ) : (
+                        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[0.65rem] font-medium text-muted-foreground">
+                          Chat bloqueado
+                        </span>
                       )}
                     </div>
                   </div>
@@ -263,6 +302,22 @@ export function BalancesTab({ profiles, invites, onUpdated }: BalancesTabProps) 
                       >
                         <Pencil className="size-3.5" />
                       </button>
+                      <button
+                        onClick={() => setBanTarget(p)}
+                        aria-label={p.banned ? `Desbanir ${title}` : `Banir ${title}`}
+                        className={cn(
+                          'flex size-8 items-center justify-center rounded-lg border transition',
+                          p.banned
+                            ? 'border-border bg-card text-muted-foreground hover:border-primary/60 hover:text-primary'
+                            : 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20',
+                        )}
+                      >
+                        {p.banned ? (
+                          <ShieldCheck className="size-3.5" />
+                        ) : (
+                          <Ban className="size-3.5" />
+                        )}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -271,6 +326,17 @@ export function BalancesTab({ profiles, invites, onUpdated }: BalancesTabProps) 
           </div>
         )}
       </section>
+
+      {banTarget && (
+        <BanUserModal
+          userId={banTarget.id}
+          label={banTarget.display_name || banTarget.username || banTarget.email || banTarget.id}
+          banned={!!banTarget.banned}
+          currentReason={banTarget.ban_reason}
+          onClose={() => setBanTarget(null)}
+          onDone={() => onUpdated?.()}
+        />
+      )}
     </div>
   )
 }

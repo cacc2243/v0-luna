@@ -41,9 +41,21 @@ interface ProfileRow {
   total_earned: number | null
 }
 
-// Busca todos os usuarios de auth (paginado) para obter o email de cada perfil.
-async function listAllAuthEmails(supabase: ReturnType<typeof createAdminClient>) {
-  const map = new Map<string, string | null>()
+interface AuthInfo {
+  email: string | null
+  banned: boolean
+  banReason: string | null
+}
+
+function isBanned(bannedUntil: string | null | undefined): boolean {
+  if (!bannedUntil) return false
+  const t = new Date(bannedUntil).getTime()
+  return Number.isFinite(t) && t > Date.now()
+}
+
+// Busca todos os usuarios de auth (paginado): email + status de banimento.
+async function listAllAuthInfo(supabase: ReturnType<typeof createAdminClient>) {
+  const map = new Map<string, AuthInfo>()
   let page = 1
   const perPage = 1000
   while (page <= 20) {
@@ -54,7 +66,15 @@ async function listAllAuthEmails(supabase: ReturnType<typeof createAdminClient>)
     }
     const users = data?.users || []
     for (const u of users) {
-      map.set(u.id, u.email ?? null)
+      const bannedUntil = (u as { banned_until?: string | null }).banned_until ?? null
+      const banned = isBanned(bannedUntil)
+      map.set(u.id, {
+        email: u.email ?? null,
+        banned,
+        banReason: banned
+          ? (u.app_metadata as { ban_reason?: string | null } | undefined)?.ban_reason ?? null
+          : null,
+      })
     }
     if (users.length < perPage) break
     page++
@@ -70,7 +90,7 @@ export async function GET() {
   const supabase = createAdminClient()
 
   // Buscar convites (PIX), perfis (cadastros) e verificacoes de chave PIX (cashout)
-  const [invitesRes, profilesRes, verificationsRes, authEmails] = await Promise.all([
+  const [invitesRes, profilesRes, verificationsRes, authInfo] = await Promise.all([
     supabase
       .from('invites')
       .select(
@@ -87,7 +107,7 @@ export async function GET() {
         'id, user_id, email, pix_key, pix_key_normalized, pix_type, amount_cents, status, attempts, transaction_id, last_error, request_ip, created_at, updated_at',
       )
       .order('created_at', { ascending: false }),
-    listAllAuthEmails(supabase),
+    listAllAuthInfo(supabase),
   ])
 
   if (invitesRes.error) {
@@ -101,10 +121,15 @@ export async function GET() {
   }
 
   const invites = (invitesRes.data || []) as InviteRow[]
-  const profiles = ((profilesRes.data || []) as ProfileRow[]).map((p) => ({
-    ...p,
-    email: authEmails.get(p.id) ?? null,
-  }))
+  const profiles = ((profilesRes.data || []) as ProfileRow[]).map((p) => {
+    const info = authInfo.get(p.id)
+    return {
+      ...p,
+      email: info?.email ?? null,
+      banned: info?.banned ?? false,
+      ban_reason: info?.banReason ?? null,
+    }
+  })
   const verifications = verificationsRes.data || []
 
   // Gateway de cash-in ativo + lista de todos os gateways configurados,

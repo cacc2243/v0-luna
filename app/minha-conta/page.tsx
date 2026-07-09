@@ -273,7 +273,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ──────────����─────────────────────────────────��──────────────────────��─────────
+// ──────────����──��──────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -478,6 +478,29 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
     })
     
     if (signInError) {
+      // Conta banida: o Supabase retorna um erro de banimento no login.
+      // Buscamos o motivo registrado para explicá-lo à usuária.
+      const looksBanned =
+        (signInError as { code?: string }).code === 'user_banned' ||
+        /ban/i.test(signInError.message)
+      if (looksBanned) {
+        let reason = 'Violação dos termos de uso da plataforma'
+        try {
+          const res = await fetch('/api/account/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim() }),
+          })
+          const json = await res.json().catch(() => null)
+          if (json?.reason) reason = json.reason
+        } catch {
+          // mantém o motivo padrão
+        }
+        setIsLoading(false)
+        setError(`Sua conta foi desabilitada. Motivo: ${reason}`)
+        return
+      }
+
       setIsLoading(false)
       if (signInError.message === 'Invalid login credentials') {
         setError('Email ou senha incorretos.')
@@ -2019,7 +2042,7 @@ function ImpulsionarScreen({
 
 // ─────────────────────────────────────────────���─────────────────────��────────���
 // Tela Inicio
-// ─────────────────────────────────────────��─────────��────────────────────��────
+// ─────────────────────────────────────────��─���───────��────────────────────��────
 
 function HomeScreen({
   balance,
