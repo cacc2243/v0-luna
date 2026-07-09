@@ -171,7 +171,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${paragraph(`Geramos o PIX do seu Convite de Acesso${v.amount ? ` no valor de <strong style="color:${BRAND.text};">${v.amount}</strong>` : ''}. Use o código abaixo no app do seu banco para concluir.`)}
           ${v.pixCode ? pixBox(v.pixCode) : ''}
           ${paragraph('Assim que o pagamento for confirmado, enviamos um e-mail com o link de acesso à sua conta. O código expira em alguns minutos, então finalize o quanto antes.')}
-          ${paragraph(`O seu código expirou? Toque em ${link('https://lunaprive.live', 'lunaprive.live')} para gerar um novo convite.`)}
+          ${paragraph(`O seu código expirou? Toque em ${link('https://lunaprive.live/convite', 'lunaprive.live/convite')} para gerar um novo convite.`)}
         `,
       }),
     sampleVars: {
