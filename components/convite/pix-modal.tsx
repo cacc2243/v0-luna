@@ -368,8 +368,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   }
 
   // Dispara um confete discreto por cima do modal (canvas dedicado com
-  // z-index acima do container z-[100]). Poucas partículas, apenas um toque
-  // de comemoração ao copiar o código.
+  // z-index máximo). Poucas partículas — apenas um toque de comemoração.
   function fireCopyConfetti() {
     if (typeof window === 'undefined') return
     const canvas = document.createElement('canvas')
@@ -388,7 +387,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       gravity: 0.9,
       scalar: 0.85,
       ticks: 110,
-      colors: ['#10b981', '#ffffff', '#f43f5e'],
+      colors: ['#e11d74', '#ffffff', '#f9a8d4'],
     }
     myConfetti({ ...base, particleCount: 18, angle: 70, origin: { x: 0.3, y: 0.75 } })
     myConfetti({ ...base, particleCount: 18, angle: 110, origin: { x: 0.7, y: 0.75 } })
@@ -401,7 +400,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
   async function copyPixCode() {
     if (!pixCode) return
-
+    
     const markCopied = () => {
       setCopied(true)
       fireCopyConfetti()
@@ -565,6 +564,15 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
           )}
 
+          {/* Processador de pagamentos (nome nominal do PIX) */}
+          {extractPixMerchantName(pixCode) && (
+            <p className="mt-2.5 text-center text-xs font-medium tracking-wide text-muted-foreground">
+              Processado por{' '}
+              <span className="font-semibold text-foreground/90">
+                {extractPixMerchantName(pixCode)}
+              </span>
+            </p>
+          )}
 
           {/* Valor */}
           <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
@@ -649,6 +657,28 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               </p>
             )}
           </div>
+
+          {/* Instruções de pagamento */}
+          <div className={`${compact ? 'mt-3 p-3.5' : 'mt-4 p-4'} rounded-2xl border border-border/60 bg-background/40`}>
+            <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
+              <Info className="size-4 shrink-0 text-primary" aria-hidden="true" />
+              Como pagar
+            </p>
+            <ol className="ml-1 space-y-1.5 text-xs leading-relaxed text-muted-foreground">
+              <li className="flex gap-2">
+                <span className="font-semibold text-primary">1.</span>
+                Abra o app do seu banco e acesse a área PIX.
+              </li>
+              <li className="flex gap-2">
+                <span className="font-semibold text-primary">2.</span>
+                Escolha pagar com QR Code ou com o código PIX copia e cola.
+              </li>
+              <li className="flex gap-2">
+                <span className="font-semibold text-primary">3.</span>
+                Confira o valor e confirme o pagamento.
+              </li>
+            </ol>
+          </div>
         </>
       )}
     </>
@@ -680,7 +710,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
           <img src="/images/background.png" alt="" className="size-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/72 via-background/82 to-background/90" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/82 via-background/90 to-background/95" />
         </div>
 
         {/* Botão fechar */}
