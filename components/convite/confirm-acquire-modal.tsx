@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Ticket } from 'lucide-react'
+import { X } from 'lucide-react'
 
 interface ConfirmAcquireModalProps {
   isOpen: boolean
@@ -45,39 +45,44 @@ export function ConfirmAcquireModal({
       onClick={onClose}
     >
       <div
-        className="relative flex w-full max-w-xs flex-col items-center gap-4 rounded-3xl border border-border bg-card px-6 py-8 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className="relative flex w-full max-w-xs flex-col overflow-hidden rounded-3xl border border-border bg-card text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+          className="absolute right-3 top-3 z-10 flex size-8 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur-sm transition hover:bg-black/60 hover:text-white"
         >
           <X className="size-4" aria-hidden="true" />
         </button>
 
-        <span className="flex size-12 items-center justify-center rounded-full bg-primary/12 ring-1 ring-primary/30">
-          <Ticket className="size-6 text-primary" aria-hidden="true" />
-        </span>
+        {/* Banner do topo */}
+        <img
+          src="/images/convite-banner.png"
+          alt="Seu Convite Luna Privé está a um passo: seguro e privado, sem exposição do seu nome e pagamento via PIX"
+          className="aspect-[2/1] w-full object-cover"
+        />
 
-        <p
-          id="confirm-acquire-title"
-          className="text-pretty text-sm font-medium leading-relaxed text-foreground"
-        >
-          Iremos gerar um convite para a usuária{' '}
-          <span className="font-bold text-primary">{displayName}</span>, podemos gerar o PIX de
-          pagamento no valor de{' '}
-          <span className="font-bold text-foreground">R${formatCents(amountCents)}</span>?
-        </p>
+        <div className="flex flex-col items-center gap-4 px-6 pb-8 pt-6">
+          <p
+            id="confirm-acquire-title"
+            className="text-pretty text-sm font-medium leading-relaxed text-foreground"
+          >
+            Iremos gerar um convite para a usuária{' '}
+            <span className="font-bold text-primary">{displayName}</span>, podemos gerar o PIX de
+            pagamento no valor de{' '}
+            <span className="font-bold text-foreground">R${formatCents(amountCents)}</span>?
+          </p>
 
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="cta-gradient animate-cta-breathe mt-1 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground ring-1 ring-inset ring-white/20 transition-all duration-300 ease-out hover:brightness-110 active:scale-[0.98]"
-        >
-          Sim, gerar agora!
-        </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="cta-gradient animate-cta-breathe mt-1 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground ring-1 ring-inset ring-white/20 transition-all duration-300 ease-out hover:brightness-110 active:scale-[0.98]"
+          >
+            Sim, gerar agora!
+          </button>
+        </div>
       </div>
     </div>,
     document.body,
