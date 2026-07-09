@@ -162,7 +162,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     description:
       'Enviado quando o PIX do Convite de Acesso é gerado, com o código copia e cola.',
     trigger: 'Disparado quando o PIX do convite é gerado na página /convite.',
-    subject: () => 'Convite Pendente',
+    subject: () => 'Seu PIX do Convite Luna está pronto!',
     html: (v) =>
       layout({
         previewText: 'Pague o PIX para liberar seu acesso ao Luna Privé.',
@@ -188,7 +188,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     description:
       'Confirmação de pagamento com o link de acesso à conta. Enviado após o convite ser pago.',
     trigger: 'Disparado quando o pagamento do convite é confirmado (webhook PIX).',
-    subject: () => 'Bem-vinda ao Luna',
+    subject: () => 'Acesso liberado! Bem-vinda ao Luna! 💖',
     html: (v) =>
       layout({
         previewText: 'Pagamento confirmado. Seu acesso ao Luna Privé está liberado!',
