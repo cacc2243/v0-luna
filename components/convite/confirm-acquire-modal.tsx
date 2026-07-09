@@ -64,21 +64,30 @@ export function ConfirmAcquireModal({
           className="aspect-[2/1] w-full object-cover"
         />
 
-        <div className="flex flex-col items-center gap-4 px-6 pb-8 pt-6">
+        <div className="flex flex-col gap-4 px-6 pb-7 pt-6">
           <p
             id="confirm-acquire-title"
-            className="text-pretty text-sm font-medium leading-relaxed text-foreground"
+            className="text-pretty text-center text-sm leading-relaxed text-muted-foreground"
           >
-            Iremos gerar um convite para a usuária{' '}
-            <span className="font-bold text-primary">{displayName}</span>, podemos gerar o PIX de
-            pagamento no valor de{' '}
-            <span className="font-bold text-foreground">R${formatCents(amountCents)}</span>?
+            Vamos gerar um convite para a usuária{' '}
+            <span className="font-semibold text-foreground">{displayName}</span>. Confirma a geração
+            do PIX de pagamento?
           </p>
+
+          {/* Destaque do valor */}
+          <div className="flex items-center justify-between rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Valor do convite
+            </span>
+            <span className="text-2xl font-extrabold tracking-tight text-primary tabular-nums">
+              R$ {formatCents(amountCents)}
+            </span>
+          </div>
 
           <button
             type="button"
             onClick={onConfirm}
-            className="cta-gradient animate-cta-breathe mt-1 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground ring-1 ring-inset ring-white/20 transition-all duration-300 ease-out hover:brightness-110 active:scale-[0.98]"
+            className="cta-gradient animate-cta-breathe flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground ring-1 ring-inset ring-white/20 transition-all duration-300 ease-out hover:brightness-110 active:scale-[0.98]"
           >
             Sim, gerar agora!
           </button>
