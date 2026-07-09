@@ -66,9 +66,9 @@ export function ConfirmAcquireModal({
           className="text-pretty text-sm font-medium leading-relaxed text-foreground"
         >
           Iremos gerar um convite para a usuária{' '}
-          <span className="font-semibold text-primary">{displayName}</span>, podemos gerar o PIX de
+          <span className="font-bold text-primary">{displayName}</span>, podemos gerar o PIX de
           pagamento no valor de{' '}
-          <span className="font-semibold text-foreground">R${formatCents(amountCents)}</span>?
+          <span className="font-bold text-foreground">R${formatCents(amountCents)}</span>?
         </p>
 
         <button
