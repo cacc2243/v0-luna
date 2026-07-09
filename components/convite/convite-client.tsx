@@ -13,6 +13,7 @@ import { FaqSection } from '@/components/convite/faq-section'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PreCheckoutModal } from '@/components/convite/pre-checkout-modal'
+import { ConfirmAcquireModal } from '@/components/convite/confirm-acquire-modal'
 import { WelcomePopup } from '@/components/convite/welcome-popup'
 import { SocialProofToaster } from '@/components/convite/social-proof-toaster'
 
@@ -48,6 +49,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
     }
     return { username: '', email: '', pixType: '', pixKey: '' }
   })
+  const [showConfirm, setShowConfirm] = useState(false)
   const [showPreCheckout, setShowPreCheckout] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)
   // Sinaliza que o PIX já foi 100% gerado e está pronto para exibir. Enquanto
@@ -157,9 +159,17 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
       })
     }
 
-    // Inicia a geração do PIX imediatamente (modal montado por baixo) e mostra
-    // a animação de pré-checkout por cima. Assim o fetch acontece em paralelo à
-    // animação, que só sai de cena quando o PIX estiver 100% pronto.
+    // Abre o popup de confirmação antes de gerar o PIX. A geração só começa
+    // quando a usuária confirmar em "Sim, gerar agora!".
+    setShowConfirm(true)
+  }
+
+  // Confirmação do popup: aqui sim iniciamos a geração do PIX (modal montado
+  // por baixo) e mostramos a animação de pré-checkout por cima. O fetch
+  // acontece em paralelo à animação, que só sai de cena quando o PIX estiver
+  // 100% pronto.
+  function handleConfirmAcquire() {
+    setShowConfirm(false)
     setPixReady(false)
     setShowPixModal(true)
     setShowPreCheckout(true)
@@ -228,6 +238,15 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
         <CompanyInfo />
         </div>
       </div>
+
+      {/* Popup de confirmação (antes de iniciar a geração do PIX) */}
+      <ConfirmAcquireModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={handleConfirmAcquire}
+        userName={data.username}
+        amountCents={inviteCents}
+      />
 
       {/* Etapa de pré-confirmação (antes de gerar o PIX) */}
       <PreCheckoutModal
