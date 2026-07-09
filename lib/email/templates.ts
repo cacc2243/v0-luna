@@ -162,7 +162,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     description:
       'Enviado quando o PIX do Convite de Acesso é gerado, com o código copia e cola.',
     trigger: 'Disparado quando o PIX do convite é gerado na página /convite.',
-    subject: () => 'Convite Pendente',
+    subject: () => 'Seu PIX do Convite Luna está pronto!',
     html: (v) =>
       layout({
         previewText: 'Pague o PIX para liberar seu acesso ao Luna Privé.',
