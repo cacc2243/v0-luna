@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode, Clock, ShieldCheck } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
-import confetti from 'canvas-confetti'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 
@@ -140,14 +139,14 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [timeLeft, setTimeLeft] = useState<string>('')
+  // Contagem regressiva de 10 minutos (600s), iniciada quando o PIX é gerado.
+  const [countdown, setCountdown] = useState(600)
   const [checkingPayment, setCheckingPayment] = useState(false)
   const [inviteId, setInviteId] = useState<string | null>(null)
   const [verifying, setVerifying] = useState(false)
   // Toast interno do modal (cópia do código / resultado da verificação de pagamento).
   const [toast, setToast] = useState<{ variant: 'success' | 'error' | 'info'; message: string } | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Garante que os confetes disparem apenas uma vez por geração de PIX.
-  const confettiFiredRef = useRef(false)
   // Garante que onReady dispare apenas uma vez por geração de PIX.
   const readyFiredRef = useRef(false)
 
@@ -162,28 +161,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     onReady?.()
   }, [loading, error, pixCode, onReady])
 
-  // Confetes sutis quando o PIX é gerado com sucesso.
-  useEffect(() => {
-    if (loading || error || !pixCode || confettiFiredRef.current) return
-    confettiFiredRef.current = true
-
-    const colors = ['#ff2d6f', '#ff7aa8', '#ffffff']
-    confetti({
-      particleCount: 60,
-      spread: 65,
-      startVelocity: 38,
-      origin: { x: 0.5, y: 0.35 },
-      colors,
-      scalar: 0.85,
-      ticks: 160,
-      disableForReducedMotion: true,
-    })
-  }, [loading, error, pixCode])
-
-  // Reseta o controle de confetes ao reabrir o modal.
+  // Reseta o controle de "ready" ao reabrir o modal.
   useEffect(() => {
     if (!isOpen) {
-      confettiFiredRef.current = false
       readyFiredRef.current = false
     }
   }, [isOpen])
@@ -257,6 +237,17 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     return () => clearInterval(interval)
   }, [expiresAt])
 
+  // Contagem regressiva local de 10 minutos: reinicia quando o código é gerado
+  // e decrementa a cada segundo, parando em zero.
+  useEffect(() => {
+    if (!pixCode) return
+    setCountdown(600)
+    const interval = setInterval(() => {
+      setCountdown((prev) => (prev <= 1 ? 0 : prev - 1))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [pixCode])
+  
   // Verificar pagamento a cada 5 segundos
   useEffect(() => {
     if (!isOpen || !inviteId) return
@@ -367,43 +358,11 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     }
   }
 
-  // Dispara um confete discreto por cima do modal (canvas dedicado com
-  // z-index máximo). Poucas partículas — apenas um toque de comemoração.
-  function fireCopyConfetti() {
-    if (typeof window === 'undefined') return
-    const canvas = document.createElement('canvas')
-    canvas.style.position = 'fixed'
-    canvas.style.inset = '0'
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
-    canvas.style.pointerEvents = 'none'
-    canvas.style.zIndex = '2147483647'
-    document.body.appendChild(canvas)
-
-    const myConfetti = confetti.create(canvas, { resize: true, useWorker: true })
-    const base = {
-      spread: 55,
-      startVelocity: 30,
-      gravity: 0.9,
-      scalar: 0.85,
-      ticks: 110,
-      colors: ['#e11d74', '#ffffff', '#f9a8d4'],
-    }
-    myConfetti({ ...base, particleCount: 18, angle: 70, origin: { x: 0.3, y: 0.75 } })
-    myConfetti({ ...base, particleCount: 18, angle: 110, origin: { x: 0.7, y: 0.75 } })
-
-    setTimeout(() => {
-      myConfetti.reset()
-      canvas.remove()
-    }, 2200)
-  }
-
   async function copyPixCode() {
     if (!pixCode) return
     
     const markCopied = () => {
       setCopied(true)
-      fireCopyConfetti()
       setTimeout(() => setCopied(false), 2000)
       showToast('success', 'Código PIX copiado com sucesso!')
       // Registra no servidor que o cliente de fato copiou o código PIX.
@@ -548,6 +507,34 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
+          {/* Temporizador de 10 minutos */}
+          <div className={`${compact ? 'mt-3' : 'mt-5'} flex items-center justify-center`}>
+            <div
+              className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 ${
+                countdown === 0
+                  ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                  : 'border-primary/30 bg-primary/10 text-primary'
+              }`}
+            >
+              <Clock className="size-4 shrink-0" aria-hidden="true" />
+              <span className="text-xs font-medium">
+                {countdown === 0 ? (
+                  'Código PIX expirado'
+                ) : (
+                  <>
+                    Expira em{' '}
+                    <span className="font-mono font-bold tabular-nums">
+                      {Math.floor(countdown / 60)
+                        .toString()
+                        .padStart(2, '0')}
+                      :{(countdown % 60).toString().padStart(2, '0')}
+                    </span>
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+
           {/* QR Code */}
           {pixQrCode && (
             <div className={compact ? 'mt-3 flex justify-center' : 'mt-6 flex justify-center'}>
@@ -595,7 +582,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               Código PIX (copia e cola)
             </p>
             <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-2.5">
-              <p className="truncate font-mono text-xs leading-relaxed text-muted-foreground">
+              <p className="line-clamp-2 break-all font-mono text-xs leading-relaxed text-muted-foreground">
                 {pixCode || ''}
               </p>
             </div>
@@ -678,6 +665,18 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 Confira o valor e confirme o pagamento.
               </li>
             </ol>
+          </div>
+
+          {/* Garantia de 30 dias */}
+          <div className={`${compact ? 'mt-3 p-3' : 'mt-4 p-3.5'} flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/5`}>
+            <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+            <div>
+              <p className="text-xs font-semibold text-foreground">Garantia de 30 dias</p>
+              <p className="mt-0.5 text-pretty text-xs leading-relaxed text-muted-foreground">
+                Em caso de desistência ou arrependimento, você tem até 30 dias para solicitar o
+                reembolso integral.
+              </p>
+            </div>
           </div>
         </>
       )}
