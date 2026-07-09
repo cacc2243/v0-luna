@@ -657,6 +657,28 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               </p>
             )}
           </div>
+
+          {/* Instruções de pagamento */}
+          <div className={`${compact ? 'mt-3 p-3.5' : 'mt-4 p-4'} rounded-2xl border border-border/60 bg-background/40`}>
+            <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
+              <Info className="size-4 shrink-0 text-primary" aria-hidden="true" />
+              Como pagar
+            </p>
+            <ol className="ml-1 space-y-1.5 text-xs leading-relaxed text-muted-foreground">
+              <li className="flex gap-2">
+                <span className="font-semibold text-primary">1.</span>
+                Abra o app do seu banco e acesse a área PIX.
+              </li>
+              <li className="flex gap-2">
+                <span className="font-semibold text-primary">2.</span>
+                Escolha pagar com QR Code ou com o código PIX copia e cola.
+              </li>
+              <li className="flex gap-2">
+                <span className="font-semibold text-primary">3.</span>
+                Confira o valor e confirme o pagamento.
+              </li>
+            </ol>
+          </div>
         </>
       )}
     </>
