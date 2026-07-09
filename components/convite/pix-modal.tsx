@@ -25,6 +25,7 @@ const PIX_CONTENT_NAME: Record<string, string> = {
  */
 const KNOWN_MERCHANT_NAMES: Record<string, string> = {
   MORENDIGITALLTDA: 'Moren Digital Ltda',
+  CONTADESERVICOSLTDA: 'Conta de Serviços Ltda',
 }
 
 /** Sufixos societários que devem aparecer separados do restante do nome. */
