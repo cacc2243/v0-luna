@@ -273,7 +273,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ──────────����──��──────────────────────────────��──────────────────────��─────────
+// ──────────����──���──────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -1399,7 +1399,7 @@ function AppDashboard() {
                 )}
                 <input
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*,video/*,image/heic,image/heif,.heic,.heif,.mov,.mkv,.avi,.webm,.3gp"
                   multiple
                   className="sr-only"
                   disabled={uploadingPhoto}
@@ -2665,7 +2665,7 @@ function PackDetailScreen({
             )}
             <input
               type="file"
-              accept="image/*,video/*"
+              accept="image/*,video/*,image/heic,image/heif,.heic,.heif,.mov,.mkv,.avi,.webm,.3gp"
               multiple
               className="sr-only"
               disabled={uploading}
@@ -3856,7 +3856,7 @@ function WalletScreen({
   )
 }
 
-// ───────────────────────────────────────────────��─────────��───────────────────
+// ───────────────────────────────────────────────��──────���──��───────────────────
 // Tela Perfil
 // ─────────────────────────────────────────────────────────────────────��───────
 
