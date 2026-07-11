@@ -1878,10 +1878,10 @@ function ChatsScreen({
               </div>
               <h3 className="mt-3 text-xl font-bold text-foreground">Desbloqueie o Chat</h3>
               <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted-foreground">
-                Converse diretamente com seus fãs. Cada fã pagará{' '}
-                <span className="font-semibold text-positive">{brl(chatPrice)}</span> para conversar
-                com você e você recebe o valor{' '}
-                <span className="font-semibold text-positive">integralmente</span> no seu saldo.
+                Converse diretamente com seus fãs. Cada fã paga{' '}
+                <span className="font-semibold text-positive">R$ 299,00</span> para conversar com
+                você. Você recebe o saldo{' '}
+                <span className="font-semibold text-positive">imediatamente aqui</span>.
               </p>
 
               {/* Destaque social */}
@@ -3174,7 +3174,7 @@ function PackMetric({
   )
 }
 
-// ──────────────────────────────────────────────────────��──────────────────────
+// ──────────────────────���───────────────────────────────��──────────────────────
 // Tela Carteira
 // ─────────────────────��──────────────────────────────���────────────────────────
 
