@@ -345,7 +345,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           const qrDataUrl = await QRCode.toDataURL(data.pixCode, {
             width: 240,
             margin: 1,
-            errorCorrectionLevel: 'M',
+            // 'H' (recuperacao de ate 30%) garante a leitura mesmo com a logo no centro.
+            errorCorrectionLevel: 'H',
           })
           setPixQrCode(qrDataUrl)
         } catch (qrErr) {
@@ -532,7 +533,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* QR Code */}
           {pixQrCode && (
             <div className={compact ? 'mt-4 flex justify-center' : 'mt-6 flex justify-center'}>
-              <div className="rounded-2xl bg-white p-2.5 shadow-lg shadow-black/30">
+              <div className="relative rounded-2xl bg-white p-2.5 shadow-lg shadow-black/30">
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
@@ -541,6 +542,17 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   className={compact ? 'size-[120px]' : 'size-[160px] sm:size-[180px]'}
                   unoptimized
                 />
+                {/* Logo Luna Prive no centro do QR */}
+                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white p-1 shadow-sm">
+                  <Image
+                    src="/images/luna-icon.png"
+                    alt=""
+                    width={44}
+                    height={44}
+                    className={compact ? 'size-6' : 'size-8'}
+                    unoptimized
+                  />
+                </span>
               </div>
             </div>
           )}
