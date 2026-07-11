@@ -1381,7 +1381,6 @@ function InviteCodeFlow({
                 discountPercent={DISCOUNT}
                 title="Seu Código de Convite"
                 subtitle="Pague via PIX para liberar seu acesso"
-                trackInitiateCheckout
                 onPaymentConfirmed={handlePaymentConfirmed}
               />
             </div>
