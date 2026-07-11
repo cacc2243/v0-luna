@@ -179,6 +179,11 @@ export function ConfirmAcquireModal({
         ) : (
           /* ----- Modo de confirmação ----- */
           <div className="relative">
+            {/* Informe de desconto por tempo limitado — logo abaixo do banner */}
+            <div className="relative mt-4 flex justify-center">
+              <DiscountDeadline />
+            </div>
+
             <p
               id="confirm-acquire-title"
               className="relative mt-4 text-pretty text-sm leading-relaxed text-muted-foreground"
@@ -208,11 +213,6 @@ export function ConfirmAcquireModal({
               <span className="whitespace-nowrap text-2xl font-extrabold leading-none tracking-tight text-primary tabular-nums">
                 R$ {formatCents(amountCents)}
               </span>
-            </div>
-
-            {/* Informe de desconto por tempo limitado */}
-            <div className="relative mt-4 flex justify-center">
-              <DiscountDeadline />
             </div>
 
             <div className="relative mt-6 flex flex-col gap-2">
