@@ -1162,7 +1162,7 @@ function AppDashboard() {
   const ACTIVITY_DELAY = 20000 // 20s após publicar o primeiro pack
 
   // Motor de atividade: enquanto houver packs publicados, gera views/pedidos periodicamente.
-  // Os pedidos aparecem UM DE CADA VEZ, com intervalo aleatorio de 15 a 40s entre eles,
+  // Os pedidos aparecem UM DE CADA VEZ, com intervalo aleatorio de 20 a 50s entre eles,
   // para nao chegarem rapido demais nem em lote.
   useEffect(() => {
     if (packs.length === 0) return
@@ -1170,8 +1170,8 @@ function AppDashboard() {
     let timer: ReturnType<typeof setTimeout> | null = null
     let cancelled = false
 
-    // Delay aleatorio entre 15s e 40s.
-    const nextDelay = () => 15000 + Math.floor(Math.random() * 25001)
+    // Delay aleatorio entre 20s e 50s.
+    const nextDelay = () => 20000 + Math.floor(Math.random() * 30001)
 
     const runCycle = async (isFirst: boolean) => {
       if (cancelled) return
