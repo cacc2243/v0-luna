@@ -2018,6 +2018,16 @@ function ChatsScreen({
                 </p>
               </div>
 
+              {/* Você não precisa falar com ninguém */}
+              <div className="mt-3 flex w-full items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 p-3.5 text-left">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Você <span className="font-semibold text-foreground">não é obrigada a falar com
+                  ninguém</span> se não quiser. Mas para aceitar packs com chat, o chat precisa estar
+                  ativo. A decisão de conversar é sempre sua.
+                </p>
+              </div>
+
               <button
                 type="button"
                 onClick={onUnlockChat}
