@@ -85,6 +85,12 @@ export function ConviteClient({
   // useEffect abaixo.
   const [data, setData] = useState<SignupData>(EMPTY_SIGNUP)
 
+  // Flag que indica que ja montamos no cliente. Usado para so renderizar o
+  // resumo da conta DEPOIS da montagem — ver comentario no JSX do
+  // AccountSummary. Comeca false no SSR e no primeiro render do cliente
+  // (hidratacao), garantindo HTML identico e zero divergencia.
+  const [mounted, setMounted] = useState(false)
+
   // Apos a montagem (client-only), resolve e aplica os dados reais.
   useEffect(() => {
     const resolved = resolveSignupData(initialFromUrl)
@@ -95,6 +101,7 @@ export function ConviteClient({
       // ignore
     }
     setData(resolved)
+    setMounted(true)
     // Executa uma unica vez na montagem.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -319,14 +326,38 @@ export function ConviteClient({
         </section>
 
         <div className="mt-8 flex flex-col gap-7">
-        {/* Dados da conta */}
-        <AccountSummary
-          username={data.username}
-          email={data.email}
-          pixType={data.pixType}
-          pixKey={data.pixKey}
-          onUpdate={updateField}
-        />
+        {/* Dados da conta.
+            IMPORTANTE: renderizado SOMENTE apos a montagem no cliente.
+            Motivo: o texto de placeholder do e-mail ("seu@email.com") e o
+            e-mail real parecem enderecos de e-mail. Em producao, atras do
+            Cloudflare com "Email Address Obfuscation" ligado, qualquer texto
+            de e-mail no HTML do SSR e reescrito para
+            <a class="__cf_email__">[email protected]</a> + um script injetado.
+            Isso muda a estrutura do DOM e QUEBRA a hidratacao do React,
+            deixando os botoes/modais sem responder ao toque (o bug relatado:
+            "modal inicial travado", so em producao e variando por navegador).
+            Ao renderizar o resumo apenas no cliente, o HTML do SSR nao contem
+            nenhum e-mail, o Cloudflare nao reescreve nada e a hidratacao nunca
+            quebra. O e-mail real so aparece via atualizacao client-side, que o
+            Cloudflare nao intercepta. */}
+        {mounted ? (
+          <AccountSummary
+            username={data.username}
+            email={data.email}
+            pixType={data.pixType}
+            pixKey={data.pixKey}
+            onUpdate={updateField}
+          />
+        ) : (
+          <section aria-hidden="true">
+            <div className="mb-2.5 h-4 w-24 px-1" />
+            <div className="luna-border overflow-hidden rounded-2xl bg-card">
+              <div className="h-[3.25rem] border-b border-border/40" />
+              <div className="h-[3.25rem] border-b border-border/40" />
+              <div className="h-[3.25rem]" />
+            </div>
+          </section>
+        )}
 
         {/* Preço + garantia */}
         <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady />
