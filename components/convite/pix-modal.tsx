@@ -7,6 +7,7 @@ import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
+import { DiscountDeadline } from '@/components/convite/discount-deadline'
 
 const PIX_CONTENT_NAME: Record<string, string> = {
   invite: 'Convite Luna Privé',
@@ -565,6 +566,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
             </div>
+
+            {/* Informe de desconto por tempo limitado */}
+            <DiscountDeadline className={compact ? 'mt-3' : 'mt-3.5'} />
           </div>
 
           {/* Código copia e cola */}

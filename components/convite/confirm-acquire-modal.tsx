@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
+import { DiscountDeadline } from '@/components/convite/discount-deadline'
 
 interface ConfirmAcquireModalProps {
   isOpen: boolean
@@ -83,6 +84,9 @@ export function ConfirmAcquireModal({
               R$ {formatCents(amountCents)}
             </span>
           </div>
+
+          {/* Informe de desconto por tempo limitado */}
+          <DiscountDeadline className="self-center" />
 
           <button
             type="button"
