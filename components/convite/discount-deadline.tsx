@@ -43,17 +43,21 @@ export function DiscountDeadline({ className = '' }: { className?: string }) {
 
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 ${className}`}
+      className={`inline-flex max-w-full items-center gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-2 ${className}`}
     >
       <Clock className="size-4 shrink-0 text-primary" aria-hidden="true" />
-      <span className="text-xs font-medium leading-none text-foreground">
-        Desconto válido até{' '}
-        <span className="font-bold tabular-nums text-primary">
-          {deadline ? `${deadline.time}h` : '--:--'}
-        </span>{' '}
-        do dia{' '}
-        <span className="font-bold tabular-nums text-primary">{deadline ? deadline.day : '--/--'}</span>
-      </span>
+      <div className="flex flex-col text-left leading-tight">
+        <span className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
+          Oferta por tempo limitado
+        </span>
+        <span className="text-xs font-semibold text-foreground">
+          Válido até{' '}
+          <span className="font-bold tabular-nums text-primary">
+            {deadline ? `${deadline.time}h` : '--:--'}
+          </span>{' '}
+          · {deadline ? deadline.day : '--/--'}
+        </span>
+      </div>
     </div>
   )
 }
