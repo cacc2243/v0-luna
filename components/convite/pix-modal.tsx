@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode, Clock, ShieldCheck } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
-import { DiscountDeadline } from '@/components/convite/discount-deadline'
 
 const PIX_CONTENT_NAME: Record<string, string> = {
   invite: 'Convite Luna Privé',
@@ -140,8 +139,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [timeLeft, setTimeLeft] = useState<string>('')
-  // Contagem regressiva de 10 minutos (600s), iniciada quando o PIX é gerado.
-  const [countdown, setCountdown] = useState(600)
   const [checkingPayment, setCheckingPayment] = useState(false)
   const [inviteId, setInviteId] = useState<string | null>(null)
   const [verifying, setVerifying] = useState(false)
@@ -270,17 +267,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     return () => clearInterval(interval)
   }, [expiresAt])
 
-  // Contagem regressiva local de 10 minutos: reinicia quando o código é gerado
-  // e decrementa a cada segundo, parando em zero.
-  useEffect(() => {
-    if (!pixCode) return
-    setCountdown(600)
-    const interval = setInterval(() => {
-      setCountdown((prev) => (prev <= 1 ? 0 : prev - 1))
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [pixCode])
-  
   // Verificar pagamento a cada 5 segundos
   useEffect(() => {
     if (!isOpen || !inviteId) return
@@ -543,37 +529,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
-          {/* Temporizador de 10 minutos */}
-          <div className={`${compact ? 'mt-3' : 'mt-5'} flex items-center justify-center`}>
-            <div
-              className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 ${
-                countdown === 0
-                  ? 'border-destructive/40 bg-destructive/10 text-destructive'
-                  : 'border-primary/30 bg-primary/10 text-primary'
-              }`}
-            >
-              <Clock className="size-4 shrink-0" aria-hidden="true" />
-              <span className="text-xs font-medium">
-                {countdown === 0 ? (
-                  'Código PIX expirado'
-                ) : (
-                  <>
-                    Expira em{' '}
-                    <span className="font-mono font-bold tabular-nums">
-                      {Math.floor(countdown / 60)
-                        .toString()
-                        .padStart(2, '0')}
-                      :{(countdown % 60).toString().padStart(2, '0')}
-                    </span>
-                  </>
-                )}
-              </span>
-            </div>
-          </div>
-
           {/* QR Code */}
           {pixQrCode && (
-            <div className={compact ? 'mt-3 flex justify-center' : 'mt-6 flex justify-center'}>
+            <div className={compact ? 'mt-4 flex justify-center' : 'mt-6 flex justify-center'}>
               <div className="rounded-2xl bg-white p-2.5 shadow-lg shadow-black/30">
                 <Image
                   src={pixQrCode}
@@ -587,6 +545,15 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
           )}
 
+          {/* Nome do adquirente que processa o PIX (extraído do BR Code) */}
+          {extractPixMerchantName(pixCode) && (
+            <p className="mt-2.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground">
+              Processado por{' '}
+              <span className="font-semibold text-foreground/90">
+                {extractPixMerchantName(pixCode)}
+              </span>
+            </p>
+          )}
 
           {/* Valor */}
           <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
@@ -601,9 +568,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
             </div>
-
-            {/* Informe de desconto por tempo limitado */}
-            <DiscountDeadline className={compact ? 'mt-3' : 'mt-3.5'} />
           </div>
 
           {/* Código copia e cola */}
@@ -675,39 +639,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             )}
           </div>
 
-          {/* Instruções de pagamento */}
-          <div className={`${compact ? 'mt-3 p-3.5' : 'mt-4 p-4'} rounded-2xl border border-border/60 bg-background/40`}>
-            <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
-              <Info className="size-4 shrink-0 text-primary" aria-hidden="true" />
-              Como pagar
-            </p>
-            <ol className="ml-1 space-y-1.5 text-xs leading-relaxed text-muted-foreground">
-              <li className="flex gap-2">
-                <span className="font-semibold text-primary">1.</span>
-                Abra o app do seu banco e acesse a área PIX.
-              </li>
-              <li className="flex gap-2">
-                <span className="font-semibold text-primary">2.</span>
-                Escolha pagar com QR Code ou com o código PIX copia e cola.
-              </li>
-              <li className="flex gap-2">
-                <span className="font-semibold text-primary">3.</span>
-                Confira o valor e confirme o pagamento.
-              </li>
-            </ol>
-          </div>
-
-          {/* Garantia de 30 dias */}
-          <div className={`${compact ? 'mt-3 p-3' : 'mt-4 p-3.5'} flex items-start gap-2.5 rounded-2xl border border-primary/25 bg-primary/5`}>
-            <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
-            <div>
-              <p className="text-xs font-semibold text-foreground">Garantia de 30 dias</p>
-              <p className="mt-0.5 text-pretty text-xs leading-relaxed text-muted-foreground">
-                Em caso de desistência ou arrependimento, você tem até 30 dias para solicitar o
-                reembolso integral.
-              </p>
-            </div>
-          </div>
         </>
       )}
     </>
