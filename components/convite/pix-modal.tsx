@@ -169,9 +169,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     }
   }, [isOpen])
 
-  // Preço "de" (âncora) com desconto configuravel (padrao ~40%), igual ao PriceCard.
-  const discountFraction = Math.min(Math.max((discountPercent ?? 40) / 100, 0), 0.95)
-  const originalAmount = amount / (1 - discountFraction)
+  // Preço "de" (âncora) fixo em R$ 169,90, igual ao PriceCard.
+  const originalAmount = 169.9
 
   // Exibe um toast temporário dentro do modal.
   function showToast(variant: 'success' | 'error' | 'info', message: string) {

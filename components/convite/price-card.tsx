@@ -27,8 +27,10 @@ export function PriceCard({
   amountCents?: number
   priceReady?: boolean
 }) {
-  // Preco "de" (ancora) calculado a partir do preco atual com ~40% de desconto.
-  const originalCents = Math.round(amountCents / 0.6)
+  // Preco "de" (ancora) fixo em R$ 169,90. O desconto e calculado a partir do
+  // preco atual em relacao a esse valor ancora.
+  const originalCents = 16990
+  const discountPercent = Math.max(0, Math.round((1 - amountCents / originalCents) * 100))
 
   return (
     <section aria-labelledby="investimento" className="relative isolate">
@@ -74,7 +76,7 @@ export function PriceCard({
               R${formatCents(originalCents)}
             </span>
             <span className="rounded-full bg-positive/15 px-2.5 py-0.5 text-xs font-bold text-positive">
-              -40%
+              -{discountPercent}%
             </span>
           </div>
 
