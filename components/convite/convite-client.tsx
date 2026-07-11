@@ -24,64 +24,57 @@ interface SignupData {
   pixKey: string
 }
 
-export function ConviteClient({ initialInviteCents }: { initialInviteCents: number }) {
+export function ConviteClient({
+  initialInviteCents,
+  initialFromUrl,
+}: {
+  initialInviteCents: number
+  initialFromUrl?: SignupData
+}) {
   const router = useRouter()
-  // Le os dados do cadastro de forma sincrona no primeiro render do cliente
-  // (lazy initializer), evitando o "flash" de placeholders que acontecia
-  // quando a leitura era feita dentro de um useEffect (depois do paint).
-  const [data, setData] = useState<SignupData>(() => {
-    if (typeof window === 'undefined') {
-      return { username: '', email: '', pixType: '', pixKey: '' }
-    }
+  // Estado inicial DETERMINISTICO: usa apenas os dados vindos do servidor (via
+  // searchParams do link do e-mail). Assim o HTML do servidor e do cliente sao
+  // identicos e nao ha erro de hidratacao — que antes quebrava a interatividade
+  // dos modais quando a usuaria chegava pelo link. A leitura do sessionStorage
+  // (fluxo normal de cadastro) acontece depois, no useEffect abaixo.
+  const [data, setData] = useState<SignupData>(() => ({
+    username: initialFromUrl?.username ?? '',
+    email: initialFromUrl?.email ?? '',
+    pixType: initialFromUrl?.pixType ?? '',
+    pixKey: initialFromUrl?.pixKey ?? '',
+  }))
 
-    // Base: o que ja estiver salvo no sessionStorage (fluxo normal de cadastro).
-    let base: SignupData = { username: '', email: '', pixType: '', pixKey: '' }
+  // Apos a montagem, mescla os dados: parametros da URL (servidor) tem
+  // precedencia; o que faltar e preenchido pelo sessionStorage (cadastro).
+  useEffect(() => {
     try {
       const raw = sessionStorage.getItem('luna_signup')
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        base = {
-          username: parsed.username ?? '',
-          email: parsed.email ?? '',
-          pixType: parsed.pixType ?? '',
-          pixKey: parsed.pixKey ?? '',
-        }
+      const stored = raw ? JSON.parse(raw) : {}
+
+      const merged: SignupData = {
+        username: initialFromUrl?.username || stored.username || '',
+        email: initialFromUrl?.email || stored.email || '',
+        pixType: initialFromUrl?.pixType || stored.pixType || '',
+        pixKey: initialFromUrl?.pixKey || stored.pixKey || '',
       }
+
+      // Persiste para o restante do fluxo (gerar PIX, etc.) enxergar os dados.
+      sessionStorage.setItem('luna_signup', JSON.stringify(merged))
+
+      setData((prev) =>
+        prev.username === merged.username &&
+        prev.email === merged.email &&
+        prev.pixType === merged.pixType &&
+        prev.pixKey === merged.pixKey
+          ? prev
+          : merged,
+      )
     } catch {
       // ignore
     }
-
-    // Precedencia: parametros da URL (quando a usuaria chega pelo link do
-    // e-mail, ex: /convite?email=...&username=...&pixType=...&pixKey=...).
-    // Assim os dados ja vem preenchidos mesmo sem sessionStorage.
-    try {
-      const params = new URLSearchParams(window.location.search)
-      const fromUrl: Partial<SignupData> = {}
-      const email = params.get('email')
-      const username = params.get('username')
-      const pixType = params.get('pixType')
-      const pixKey = params.get('pixKey')
-      if (email) fromUrl.email = email
-      if (username) fromUrl.username = username
-      if (pixType) fromUrl.pixType = pixType
-      if (pixKey) fromUrl.pixKey = pixKey
-
-      if (Object.keys(fromUrl).length > 0) {
-        const merged = { ...base, ...fromUrl }
-        // Persiste para o restante do fluxo (gerar PIX, etc.) enxergar os dados.
-        try {
-          sessionStorage.setItem('luna_signup', JSON.stringify(merged))
-        } catch {
-          // ignore
-        }
-        return merged
-      }
-    } catch {
-      // ignore
-    }
-
-    return base
-  })
+    // Executa uma unica vez na montagem.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // Controla a exibição da barra fixa de topo: só aparece após rolar um pouco.
   const [showTopBar, setShowTopBar] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
