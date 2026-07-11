@@ -24,31 +24,80 @@ interface SignupData {
   pixKey: string
 }
 
-export function ConviteClient({ initialInviteCents }: { initialInviteCents: number }) {
+const EMPTY_SIGNUP: SignupData = { username: '', email: '', pixType: '', pixKey: '' }
+
+/**
+ * Resolve os dados da conta APENAS no cliente (nunca durante o SSR).
+ * Precedencia: parametros da URL (link do e-mail) > dados do servidor
+ * (searchParams) > sessionStorage (fluxo normal de cadastro).
+ *
+ * Ler a URL aqui (window.location.search) garante que funcione mesmo se a
+ * pagina for servida estatica/cacheada — quando o servidor nao enxerga os
+ * parametros. Como isso roda so depois da montagem, nao afeta o primeiro
+ * render e por isso NAO causa divergencia de hidratacao.
+ */
+function resolveSignupData(initialFromUrl?: SignupData): SignupData {
+  if (typeof window === 'undefined') return EMPTY_SIGNUP
+
+  let stored: Partial<SignupData> = {}
+  try {
+    const raw = sessionStorage.getItem('luna_signup')
+    if (raw) stored = JSON.parse(raw)
+  } catch {
+    // ignore
+  }
+
+  const url: Partial<SignupData> = {}
+  try {
+    const p = new URLSearchParams(window.location.search)
+    const email = p.get('email')
+    const username = p.get('username')
+    const pixType = p.get('pixType')
+    const pixKey = p.get('pixKey')
+    if (email) url.email = email
+    if (username) url.username = username
+    if (pixType) url.pixType = pixType
+    if (pixKey) url.pixKey = pixKey
+  } catch {
+    // ignore
+  }
+
+  return {
+    username: url.username || initialFromUrl?.username || stored.username || '',
+    email: url.email || initialFromUrl?.email || stored.email || '',
+    pixType: url.pixType || initialFromUrl?.pixType || stored.pixType || '',
+    pixKey: url.pixKey || initialFromUrl?.pixKey || stored.pixKey || '',
+  }
+}
+
+export function ConviteClient({
+  initialInviteCents,
+  initialFromUrl,
+}: {
+  initialInviteCents: number
+  initialFromUrl?: SignupData
+}) {
   const router = useRouter()
-  // Le os dados do cadastro de forma sincrona no primeiro render do cliente
-  // (lazy initializer), evitando o "flash" de placeholders que acontecia
-  // quando a leitura era feita dentro de um useEffect (depois do paint).
-  const [data, setData] = useState<SignupData>(() => {
-    if (typeof window === 'undefined') {
-      return { username: '', email: '', pixType: '', pixKey: '' }
-    }
+  // Estado inicial SEMPRE VAZIO — deterministico. O servidor e o primeiro
+  // render do cliente produzem HTML IDENTICO, entao NUNCA ha erro de
+  // hidratacao (que era o que quebrava os cliques dos modais em alguns
+  // navegadores/webviews). Os dados reais entram logo apos a montagem, no
+  // useEffect abaixo.
+  const [data, setData] = useState<SignupData>(EMPTY_SIGNUP)
+
+  // Apos a montagem (client-only), resolve e aplica os dados reais.
+  useEffect(() => {
+    const resolved = resolveSignupData(initialFromUrl)
     try {
-      const raw = sessionStorage.getItem('luna_signup')
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        return {
-          username: parsed.username ?? '',
-          email: parsed.email ?? '',
-          pixType: parsed.pixType ?? '',
-          pixKey: parsed.pixKey ?? '',
-        }
-      }
+      // Persiste para o restante do fluxo (gerar PIX, etc.) enxergar os dados.
+      sessionStorage.setItem('luna_signup', JSON.stringify(resolved))
     } catch {
       // ignore
     }
-    return { username: '', email: '', pixType: '', pixKey: '' }
-  })
+    setData(resolved)
+    // Executa uma unica vez na montagem.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // Controla a exibição da barra fixa de topo: só aparece após rolar um pouco.
   const [showTopBar, setShowTopBar] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -68,6 +117,25 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
   // Valor do convite ja chega resolvido do servidor (Server Component), entao
   // o preco aparece imediatamente, sem blur nem fetch no cliente.
   const [inviteCents] = useState(initialInviteCents)
+
+  // ── Guard de bfcache (back/forward cache) ──────────────────────────────────
+  // No celular, ao sair para o app de e-mail e voltar (ou abrir o link do
+  // e-mail que reaproveita o mesmo webview), navegadores como Chrome/Safari e
+  // webviews de apps (Gmail, Instagram) RESTAURAM a pagina congelada do
+  // bfcache em vez de recarregar. Nesse caso o React nao re-monta, os efeitos
+  // nao rodam e os toques nos botoes ficam "mortos" — exatamente o modal que
+  // travava depois de gerar um PIX e voltar pelo link. Ao detectar a
+  // restauracao (event.persisted === true), forcamos um reload para garantir
+  // uma pagina 100% fresca e interativa.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        window.location.reload()
+      }
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
 
   // A barra fixa de topo só aparece depois que o usuário rola um pouco a página.
   useEffect(() => {
@@ -98,14 +166,17 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
         icEventId,
       )
 
-      const trimmedName = (data.username || '').trim()
+      // Resolve os dados do cliente (URL/sessionStorage) para enriquecer o
+      // evento — o state `data` ainda esta vazio neste ponto da montagem.
+      const resolved = resolveSignupData(initialFromUrl)
+      const trimmedName = (resolved.username || '').trim()
       const parts = trimmedName ? trimmedName.split(/\s+/) : []
       const firstName = parts.length > 0 ? parts[0] : null
       const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null
-      const normalizedPixType = (data.pixType || '').toLowerCase()
+      const normalizedPixType = (resolved.pixType || '').toLowerCase()
       const phone =
         normalizedPixType.includes('tele') || normalizedPixType.includes('phone')
-          ? data.pixKey || null
+          ? resolved.pixKey || null
           : null
 
       const attribution = getAttributionForCheckout()
@@ -117,7 +188,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
           eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
           fbp: readCookie('_fbp'),
           fbc: readCookie('_fbc'),
-          email: data.email || null,
+          email: resolved.email || null,
           name: trimmedName || null,
           firstName,
           lastName,
