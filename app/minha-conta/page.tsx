@@ -42,6 +42,7 @@ import {
   Video,
   Camera,
   Settings,
+  Smartphone,
   HelpCircle,
   LogOut,
   Star,
@@ -63,6 +64,7 @@ import {
   ToggleLeft,
   ToggleRight,
   AlertCircle,
+  Ban,
   Gift,
   Clock,
   DollarSign,
@@ -77,6 +79,9 @@ import { ChatsActive } from '@/components/minha-conta/chats-active'
  import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
 import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
  import { SupportModal } from '@/components/minha-conta/support-modal'
+ import { EnablePushBanner } from '@/components/minha-conta/enable-push-banner'
+import { InstallAppGuide } from '@/components/confirmation/install-app-guide'
+import { saveCreds, readCreds, clearCreds } from '@/lib/auth/creds'
 import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
 import { cn } from '@/lib/utils'
 
@@ -275,7 +280,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ────────����─����──����──────────────────────────────��──────────────────────��─────────
+// ────────�����─����──����──────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -284,16 +289,44 @@ async function fetchNotifications() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function MinhaContaPage() {
-  const [authState, setAuthState] = useState<'checking' | 'logged_in' | 'logged_out' | 'no_invite'>('checking')
+  const [authState, setAuthState] = useState<'checking' | 'logged_in' | 'logged_out' | 'no_invite' | 'banned'>('checking')
   const [noInviteEmail, setNoInviteEmail] = useState('')
+  const [bannedReason, setBannedReason] = useState<string | null>(null)
+  // Email da sessao atual (para o monitor de banimento consultar o status).
+  const sessionEmailRef = useRef('')
+  // Marca que o logout foi disparado por banimento, para o handler de
+  // SIGNED_OUT nao sobrescrever a tela de aviso com a de login.
+  const bannedRef = useRef(false)
 
   // Verificar autenticacao
   useEffect(() => {
     const supabase = createClient()
 
     async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession()
-      const user = session?.user
+      let { data: { session } } = await supabase.auth.getSession()
+      let user = session?.user
+
+      // Sem sessao ativa: tenta o LOGIN AUTOMATICO com as credenciais salvas no
+      // dispositivo (cadastro/entrada anteriores). Isso faz a usuaria com
+      // convite pago voltar a entrar sem digitar nada.
+      if (!user) {
+        const creds = readCreds()
+        if (creds) {
+          const { error } = await supabase.auth.signInWithPassword({
+            email: creds.email,
+            password: creds.password,
+          })
+          if (!error) {
+            const res = await supabase.auth.getSession()
+            session = res.data.session
+            user = session?.user
+          } else {
+            // Credenciais invalidas (senha alterada, conta removida): limpa.
+            clearCreds()
+          }
+        }
+      }
+
       if (!user) {
         setAuthState('logged_out')
         return
@@ -303,6 +336,7 @@ export default function MinhaContaPage() {
       const email = user.email || ''
       const allowed = await hasPaidInvite(email)
       if (allowed) {
+        sessionEmailRef.current = email
         setAuthState('logged_in')
       } else {
         setNoInviteEmail(email)
@@ -315,12 +349,52 @@ export default function MinhaContaPage() {
     // Escutar mudancas de autenticacao
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
+        // Se o logout veio de um banimento, mantemos a tela de aviso.
+        if (bannedRef.current) return
         setAuthState('logged_out')
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Monitor de banimento: enquanto a conta esta logada, verifica periodicamente
+  // se ela foi banida. Assim que for, desloga imediatamente, limpa as credenciais
+  // salvas (para nao reentrar via login automatico) e mostra o aviso.
+  useEffect(() => {
+    if (authState !== 'logged_in') return
+    const supabase = createClient()
+    let cancelled = false
+
+    async function checkBan() {
+      const email = sessionEmailRef.current
+      if (!email) return
+      try {
+        const res = await fetch('/api/account/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        })
+        const json = await res.json().catch(() => null)
+        if (!cancelled && json?.banned) {
+          bannedRef.current = true
+          clearCreds()
+          setBannedReason(json.reason || 'Violação dos termos de uso da plataforma')
+          setAuthState('banned')
+          await supabase.auth.signOut()
+        }
+      } catch {
+        // Falha de rede: tenta novamente no proximo ciclo.
+      }
+    }
+
+    checkBan()
+    const interval = setInterval(checkBan, 30000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [authState])
 
   if (authState === 'checking') {
     return (
@@ -331,6 +405,18 @@ export default function MinhaContaPage() {
           className="luna-logo-breathe size-20 object-contain"
         />
       </div>
+    )
+  }
+
+  if (authState === 'banned') {
+    return (
+      <BannedScreen
+        reason={bannedReason}
+        onBackToLogin={() => {
+          bannedRef.current = false
+          setAuthState('logged_out')
+        }}
+      />
     )
   }
 
@@ -374,6 +460,65 @@ async function hasPaidInvite(email: string): Promise<boolean> {
 // Tela "Sem convite ativo"
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Tela exibida quando a conta e banida enquanto estava logada. A sessao ja foi
+// encerrada; aqui apenas explicamos o motivo e oferecemos voltar ao login.
+function BannedScreen({
+  reason,
+  onBackToLogin,
+}: {
+  reason: string | null
+  onBackToLogin: () => void
+}) {
+  return (
+    <div className="relative flex min-h-screen flex-col bg-background">
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-20"
+        style={{ backgroundImage: 'url(/images/hero-bg.png)' }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(to bottom, oklch(0.11 0.02 360 / 0.3) 0%, oklch(0.11 0.02 360) 60%)',
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-12">
+        <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="mb-8 h-10 w-auto" />
+
+        <div className="w-full max-w-sm">
+          <div className="luna-border rounded-3xl bg-card p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-destructive/10">
+              <Ban className="size-8 text-destructive" />
+            </div>
+
+            <h1 className="text-xl font-bold text-foreground">Conta desabilitada</h1>
+            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+              Sua conta foi desabilitada e você foi desconectada. Não é possível acessá-la
+              novamente.
+            </p>
+
+            <p className="mt-4 rounded-xl bg-destructive/10 px-4 py-3 text-left text-sm text-destructive">
+              <span className="font-semibold">Motivo:</span>{' '}
+              {reason || 'Violação dos termos de uso da plataforma'}
+            </p>
+
+            <button
+              type="button"
+              onClick={onBackToLogin}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-secondary py-3.5 text-sm font-semibold text-foreground transition active:scale-[0.98]"
+            >
+              Voltar para o login
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function NoInviteScreen({ email }: { email: string }) {
   const router = useRouter()
   const [signingOut, setSigningOut] = useState(false)
@@ -382,6 +527,8 @@ function NoInviteScreen({ email }: { email: string }) {
     setSigningOut(true)
     const supabase = createClient()
     await supabase.auth.signOut()
+    // Evita reentrar automaticamente numa conta sem convite pago.
+    clearCreds()
     router.push('/')
   }
 
@@ -574,6 +721,8 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
     // Verificar se o convite está pago — somente contas com convite pago acessam.
     const allowed = await hasPaidInvite(email.trim())
     if (allowed) {
+      // Guarda as credenciais para o login automatico nos proximos acessos.
+      saveCreds({ email: email.trim(), password })
       setIsLoading(false)
       onSuccess()
     } else {
@@ -877,6 +1026,8 @@ function AppDashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [balanceFlash, setBalanceFlash] = useState(false)
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null)
+  // Convite ao impulsionamento: abre logo apos publicar um pack
+  const [showBoostPromo, setShowBoostPromo] = useState(false)
 
   // Fluxo do Chat Exclusivo (condicao para aceitar vendas)
   const [showPersonalizedSale, setShowPersonalizedSale] = useState(false)
@@ -920,7 +1071,12 @@ function AppDashboard() {
 
   // Calcular estatisticas
   const balance = profile?.balance || 0
-  const pendingSales = sales.filter(s => s.status === 'pending')
+  // Pedidos pendentes expiram apos 5 horas: nao aparecem mais na lista nem
+  // contam no saldo pendente depois desse prazo.
+  const PENDING_TTL_MS = 5 * 60 * 60 * 1000
+  const pendingSales = sales.filter(
+    s => s.status === 'pending' && Date.now() - new Date(s.created_at).getTime() < PENDING_TTL_MS,
+  )
   const pendingBalance = pendingSales.reduce((sum, s) => sum + Number(s.net_amount), 0)
   const completedSales = sales.filter(s => s.status === 'completed')
   // "Hoje" = total liquido das vendas confirmadas hoje.
@@ -1006,7 +1162,7 @@ function AppDashboard() {
   const ACTIVITY_DELAY = 20000 // 20s após publicar o primeiro pack
 
   // Motor de atividade: enquanto houver packs publicados, gera views/pedidos periodicamente.
-  // Os pedidos aparecem UM DE CADA VEZ, com intervalo aleatorio de 7 a 25s entre eles,
+  // Os pedidos aparecem UM DE CADA VEZ, com intervalo aleatorio de 20 a 50s entre eles,
   // para nao chegarem rapido demais nem em lote.
   useEffect(() => {
     if (packs.length === 0) return
@@ -1014,8 +1170,8 @@ function AppDashboard() {
     let timer: ReturnType<typeof setTimeout> | null = null
     let cancelled = false
 
-    // Delay aleatorio entre 7s e 25s.
-    const nextDelay = () => 7000 + Math.floor(Math.random() * 18001)
+    // Delay aleatorio entre 20s e 50s.
+    const nextDelay = () => 20000 + Math.floor(Math.random() * 30001)
 
     const runCycle = async (isFirst: boolean) => {
       if (cancelled) return
@@ -1250,6 +1406,9 @@ function AppDashboard() {
     resetPackForm()
     mutatePacks()
 
+    // Convida a impulsionar o perfil logo apos publicar, para ganhar visibilidade.
+    setShowBoostPromo(true)
+
     // A atividade inicial (views, pedidos, notificacoes) NAO dispara na hora:
     // o motor de atividade abaixo agenda a primeira leva ~20s apos a publicacao.
   }
@@ -1278,6 +1437,8 @@ function AppDashboard() {
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
+    // Remove as credenciais salvas para nao reentrar automaticamente.
+    clearCreds()
     // Após deslogar, permanece em /minha-conta (que exibe a tela de login).
     router.push('/minha-conta')
   }
@@ -1298,8 +1459,48 @@ function AppDashboard() {
       {/* Onboarding em 3 passos (primeira visita) */}
       {showOnboarding && <OnboardingFlow onClose={closeOnboarding} />}
 
+      {/* Convite ao impulsionamento — abre logo apos publicar um pack */}
+      {showBoostPromo && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
+          <div className="w-full max-w-sm overflow-hidden rounded-3xl border border-primary/30 bg-card shadow-2xl shadow-primary/25">
+            <div className="flex flex-col items-center px-6 pb-6 pt-7 text-center">
+              <span className="flex size-16 items-center justify-center rounded-full bg-primary/15">
+                <Rocket className="size-8 text-primary" aria-hidden="true" />
+              </span>
+              <h2 className="mt-4 text-pretty text-xl font-bold text-foreground">
+                Pack publicado! Bora vender mais?
+              </h2>
+              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                Impulsione o seu perfil para aumentar a sua visibilidade e ter{' '}
+                <strong className="font-semibold text-foreground">muito mais pedidos</strong>{' '}
+                acontecendo. Seu perfil aparece em destaque para novos compradores.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBoostPromo(false)
+                  setActiveTab('Impulsionar')
+                }}
+                className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                <Rocket className="size-5" aria-hidden="true" />
+                Impulsionar meu perfil
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBoostPromo(false)}
+                className="mt-2 w-full rounded-2xl py-3 text-sm font-semibold text-muted-foreground transition active:scale-[0.98]"
+              >
+                Agora não
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Conteudo rolavel do app */}
-      <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
       {activeTab === 'Carteira' ? (
                 <WalletScreen
           balance={animatedBalance}
@@ -1487,6 +1688,7 @@ function AppDashboard() {
         chatCount={conversations.length}
         totalViews={totalViews}
         pendingAmount={pendingBalance}
+        chatUnlocked={!!profile?.chat_unlocked}
         onRespond={() => {
           setShowFansWaiting(false)
           setActiveTab('Chats')
@@ -1558,7 +1760,7 @@ function AppDashboard() {
               <label htmlFor="pack-price" className="mb-1.5 block text-sm font-semibold text-foreground">
                 Preço (R$)
               </label>
-              <div className="mb-5 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+              <div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
                 <span className="text-base font-medium text-muted-foreground">R$</span>
                 <input
                   id="pack-price"
@@ -1567,6 +1769,15 @@ function AppDashboard() {
                   inputMode="decimal"
                   className="w-full bg-transparent text-base text-foreground outline-none"
                 />
+              </div>
+              <div className="mb-5 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2.5">
+                <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                  Usuárias novas costumam vender mais rápido com valores entre{' '}
+                  <strong className="font-semibold text-foreground">R$ 20,00</strong> e{' '}
+                  <strong className="font-semibold text-foreground">R$ 70,00</strong>. Mas você é
+                  livre para cobrar o valor que desejar!
+                </p>
               </div>
 
               <label htmlFor="pack-desc" className="mb-1.5 block text-sm font-semibold text-foreground">
@@ -1792,10 +2003,10 @@ function ChatsScreen({
               </div>
               <h3 className="mt-3 text-xl font-bold text-foreground">Desbloqueie o Chat</h3>
               <p className="mt-2 max-w-sm text-pretty text-sm leading-relaxed text-muted-foreground">
-                Converse diretamente com seus fãs. Cada fã pagará{' '}
-                <span className="font-semibold text-positive">{brl(chatPrice)}</span> para conversar
-                com você e você recebe o valor{' '}
-                <span className="font-semibold text-positive">integralmente</span> no seu saldo.
+                Converse diretamente com seus fãs. Cada fã paga{' '}
+                <span className="font-semibold text-positive">R$ 299,00</span> para conversar com
+                você. Você recebe o saldo{' '}
+                <span className="font-semibold text-positive">imediatamente aqui</span>.
               </p>
 
               {/* Destaque social */}
@@ -2303,6 +2514,12 @@ function HomeScreen({
 }) {
   const [accepting, setAccepting] = useState<string | null>(null)
   const viewNotifs = notifications.filter(n => n.type === 'like' || n.type === 'follow').slice(0, 3)
+  // Vendas aceitas so aparecem na lista por 5h; depois somem para nao acumular.
+  // (nao afeta os ganhos totais, que usam a lista completa de completedSales)
+  const RECENT_SALE_TTL_MS = 5 * 60 * 60 * 1000
+  const recentCompletedSales = completedSales.filter(
+    s => Date.now() - new Date(s.created_at).getTime() < RECENT_SALE_TTL_MS,
+  )
 
   function handleAccept(id: string) {
     // Trava: enquanto um pedido esta sendo aceito, nenhum outro pode ser aceito.
@@ -2341,6 +2558,11 @@ function HomeScreen({
         <StatCard icon={Wallet} label="Hoje" value={brl(today)} />
         <StatCard icon={Eye} label="Views" value={String(views)} />
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
+      </div>
+
+      {/* Ativar notificacoes de venda no celular (some quando ja ativo) */}
+      <div className="mt-3">
+        <EnablePushBanner />
       </div>
 
       {/* Saldo pendente — soma dos pedidos ainda nao aceitos */}
@@ -2478,7 +2700,7 @@ function HomeScreen({
         ))}
 
         {/* Histórico de aceitas / vazio */}
-        {pendingSales.length === 0 && completedSales.length === 0 ? (
+        {pendingSales.length === 0 && recentCompletedSales.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card/60 px-4 py-6 text-center">
             <p className="text-xs text-muted-foreground">
               {packs.length === 0
@@ -2487,7 +2709,7 @@ function HomeScreen({
             </p>
           </div>
         ) : (
-          completedSales.slice(0, 10).map((s) => (
+          recentCompletedSales.slice(0, 10).map((s) => (
             <div
               key={`done-${s.id}`}
               className="luna-border mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5"
@@ -2524,9 +2746,9 @@ function relativeTime(dateStr: string) {
   return `${Math.floor(h / 24)}d`
 }
 
-// ───────────────────────────��──────────��─────────────���───���────────���───────────
+// ─────────────────────���─────��──────────��─────────────���───���────────���───────────
 // StatCard
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────��───────────────────────────────────────────────
 
 function StatCard({
   icon: Icon,
@@ -3083,7 +3305,7 @@ function PackMetric({
   )
 }
 
-// ──────────────────────────────────────────────────────��──────────────────────
+// ───────────�����─────────���───��───────────────────────────��──────────────────────
 // Tela Carteira
 // ─────────────────────��──────────────────────────────���────────────────────────
 
@@ -3346,16 +3568,16 @@ function WalletScreen({
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Header fixo */}
-      <header className="shrink-0 px-4 pt-6">
+    <div className="flex-1 overflow-y-auto pb-6">
+      {/* Header */}
+      <header className="px-4 pt-6">
         <div className="flex items-center justify-between gap-3">
           <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
         </div>
       </header>
 
       {/* Card de saldo principal */}
-      <div className="shrink-0 px-4 pt-5">
+      <div className="px-4 pt-5">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-5 ring-1 ring-primary/20">
           <div className="absolute -right-8 -top-8 size-32 rounded-full bg-primary/10 blur-2xl" />
           <div className="absolute -bottom-8 -left-8 size-32 rounded-full bg-primary/5 blur-2xl" />
@@ -3390,7 +3612,7 @@ function WalletScreen({
       </div>
 
       {/* Botao de saque principal */}
-      <div className="shrink-0 px-4 pt-4">
+      <div className="px-4 pt-4">
         <button
           type="button"
           onClick={openWithdraw}
@@ -3409,7 +3631,7 @@ function WalletScreen({
       </div>
 
       {/* Tabs */}
-      <div className="mt-5 shrink-0 px-4">
+      <div className="mt-5 px-4">
         <div className="flex rounded-2xl bg-card/60 p-1 ring-1 ring-border">
           {(['resumo', 'extrato', 'saques'] as const).map((tab) => (
             <button
@@ -3428,8 +3650,8 @@ function WalletScreen({
         </div>
       </div>
 
-      {/* Conteudo scrollavel */}
-      <div className="flex-1 overflow-y-auto px-4 pb-6 pt-5">
+      {/* Conteudo */}
+      <div className="px-4 pt-5">
         {activeTab === 'resumo' && (
           <>
             {/* Stats rapidos */}
@@ -4107,7 +4329,7 @@ function ProfileScreen({
   onHighlightsUpdated?: () => void
   onNotificationsChange?: () => void
 }) {
-  const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help'>('main')
+  const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help' | 'install'>('main')
   const [supportOpen, setSupportOpen] = useState(false)
   const [localProfile, setLocalProfile] = useState({
     username: userProfile?.username || '@usuario',
@@ -4485,6 +4707,22 @@ function ProfileScreen({
   }
 
   // Tela de Ajuda e Suporte
+  if (currentView === 'install') {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col bg-background">
+        <SubHeader title="Instalar o app" onBack={() => setCurrentView('main')} />
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
+            Instale a Luna Privé como um app no seu celular para uma experiência mais rápida e para
+            receber uma <strong className="text-foreground">notificação a cada venda</strong>, mesmo
+            com o app fechado.
+          </p>
+          <InstallAppGuide className="mt-4" />
+        </div>
+      </div>
+    )
+  }
+
   if (currentView === 'help') {
     const faqItems = [
       { q: 'Como recebo meus pagamentos?', a: 'Os pagamentos sao processados automaticamente e enviados para sua conta cadastrada em ate 7 dias uteis apos a venda.' },
@@ -4911,6 +5149,18 @@ function ProfileScreen({
           <ChevronRight className="size-5 text-muted-foreground" />
         </button>
         
+        <button
+          type="button"
+          onClick={() => setCurrentView('install')}
+          className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+            <Smartphone className="size-5 text-primary" aria-hidden="true" />
+          </span>
+          <span className="flex-1 text-sm font-semibold text-foreground">Instalar o app</span>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </button>
+
         <button
           type="button"
           onClick={() => setCurrentView('settings')}

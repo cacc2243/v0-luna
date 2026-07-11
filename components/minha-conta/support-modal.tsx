@@ -7,7 +7,6 @@ import {
   Send,
   ArrowLeft,
   Loader2,
-  MessageCircle,
   Plus,
   Headphones,
   CheckCircle2,
@@ -145,11 +144,6 @@ async function sendSupportMessage(ticketId: string, message: string) {
 
   return { success: true as const, message: inserted as SupportMessage }
 }
-
-const WHATSAPP_NUMBER = '27623543137'
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-  'Olá! Preciso de ajuda com a minha conta na Luna Prive.',
-)}`
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -313,27 +307,8 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         {/* HOME */}
         {view === 'home' && (
           <div className="flex-1 overflow-y-auto px-4 py-5">
-            {/* WhatsApp */}
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 transition active:scale-[0.99]"
-            >
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <MessageCircle className="size-6 text-primary" />
-              </span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">Conversar no WhatsApp</p>
-                <p className="text-xs text-muted-foreground">Atendimento direto e rápido</p>
-              </div>
-              <span className="rounded-full bg-primary px-3 py-1 text-[0.7rem] font-semibold text-primary-foreground">
-                Abrir
-              </span>
-            </a>
-
             {/* Chat via ticket */}
-            <div className="mt-4 rounded-2xl border border-border bg-background/40 p-4">
+            <div className="rounded-2xl border border-border bg-background/40 p-4">
               <div className="flex items-center gap-3">
                 <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-secondary">
                   <Headphones className="size-6 text-foreground" />

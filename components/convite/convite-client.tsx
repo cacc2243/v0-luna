@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Lock, Gift } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { PageBackground } from '@/components/page-background'
@@ -13,7 +13,7 @@ import { FaqSection } from '@/components/convite/faq-section'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PreCheckoutModal } from '@/components/convite/pre-checkout-modal'
-import { ConfirmAcquireModal } from '@/components/convite/confirm-acquire-modal'
+
 import { WelcomePopup } from '@/components/convite/welcome-popup'
 import { SocialProofToaster } from '@/components/convite/social-proof-toaster'
 
@@ -106,8 +106,6 @@ export function ConviteClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   // Controla a exibição da barra fixa de topo: só aparece após rolar um pouco.
-  const [showTopBar, setShowTopBar] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
   const [showPreCheckout, setShowPreCheckout] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)
   // Sinaliza que o PIX já foi 100% gerado e está pronto para exibir. Enquanto
@@ -142,14 +140,6 @@ export function ConviteClient({
     }
     window.addEventListener('pageshow', onPageShow)
     return () => window.removeEventListener('pageshow', onPageShow)
-  }, [])
-
-  // A barra fixa de topo só aparece depois que o usuário rola um pouco a página.
-  useEffect(() => {
-    const onScroll = () => setShowTopBar(window.scrollY > 120)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   // InitiateCheckout: disparado ao ENTRAR na pagina /convite (uma unica vez),
@@ -253,9 +243,8 @@ export function ConviteClient({
       })
     }
 
-    // Abre o popup de confirmação antes de gerar o PIX. A geração só começa
-    // quando a usuária confirmar em "Sim, gerar agora!".
-    setShowConfirm(true)
+    // Gera o PIX direto, sem popup de confirmação intermediário.
+    handleConfirmAcquire()
   }
 
   // Confirmação do popup: aqui sim iniciamos a geração do PIX (modal montado
@@ -263,7 +252,6 @@ export function ConviteClient({
   // acontece em paralelo à animação, que só sai de cena quando o PIX estiver
   // 100% pronto.
   function handleConfirmAcquire() {
-    setShowConfirm(false)
     setPixReady(false)
     // Nova sessão => o PixModal remonta limpo e gera um PIX novo do zero.
     setPixSession((n) => n + 1)
@@ -288,19 +276,6 @@ export function ConviteClient({
       <PageBackground />
 
       {/* Barra fixa de destaque no topo (aparece após rolar um pouco) */}
-      <div
-        className={`fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-black/70 backdrop-blur-md transition-all duration-300 ${
-          showTopBar ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
-        }`}
-      >
-        <div className="mx-auto flex max-w-md items-center justify-center gap-2 px-4 py-2">
-          <Gift className="size-3.5 shrink-0 text-white" aria-hidden="true" />
-          <span className="truncate text-[0.7rem] font-bold uppercase tracking-wider text-white">
-            Convites com vagas limitadas
-          </span>
-        </div>
-      </div>
-
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-8">
         {/* Logo centralizada, igual às demais telas do fluxo */}
         <header className="flex flex-col items-center gap-4">
@@ -372,16 +347,6 @@ export function ConviteClient({
         <CompanyInfo />
         </div>
       </div>
-
-      {/* Popup de confirmação (antes de iniciar a geração do PIX) */}
-      <ConfirmAcquireModal
-        isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={handleConfirmAcquire}
-        email={data.email}
-        onEmailChange={(email) => updateField('email', email)}
-        amountCents={inviteCents}
-      />
 
       {/* Etapa de pré-confirmação (antes de gerar o PIX) */}
       <PreCheckoutModal

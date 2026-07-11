@@ -40,6 +40,7 @@ type ImageFilter = 'all' | 'cover' | 'pack_image'
 interface PackGroup {
   packId: string
   packTitle: string | null
+  packPrice: number | null
   ownerId: string | null
   ownerName: string | null
   ownerUsername: string | null
@@ -94,6 +95,7 @@ export function ImagesTab() {
         g = {
           packId: groupKey,
           packTitle: img.packTitle,
+          packPrice: img.packPrice,
           ownerId: img.ownerId,
           ownerName: img.ownerName,
           ownerUsername: img.ownerUsername,
@@ -416,6 +418,14 @@ function PackRow({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {group.packPrice != null && (
+            <span className="rounded-full bg-positive/15 px-2.5 py-1 text-xs font-bold tabular-nums text-positive">
+              {group.packPrice.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              })}
+            </span>
+          )}
           <span className="rounded-full bg-background px-2.5 py-1 text-xs font-medium tabular-nums text-muted-foreground">
             {group.images.length} imagem{group.images.length === 1 ? '' : 's'}
           </span>

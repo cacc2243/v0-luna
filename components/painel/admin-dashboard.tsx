@@ -22,6 +22,7 @@ import {
   Megaphone,
   UserCog,
   MessageCircle,
+  Headphones,
   Menu,
   X,
 } from 'lucide-react'
@@ -40,6 +41,7 @@ import { PixelTab } from './pixel-tab'
 import { EmailsTab } from './emails-tab'
 import { UsersTab } from './users-tab'
 import { WhatsappTab } from './whatsapp-tab'
+import { SupportTab } from './support-tab'
 import {
   PERIOD_LABELS,
   type InviteRow,
@@ -62,7 +64,7 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'usuarios' | 'saldos' | 'pix' | 'adquirentes' | 'utms' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails' | 'whatsapp'
+type TabKey = 'resumo' | 'clientes' | 'usuarios' | 'saldos' | 'pix' | 'adquirentes' | 'utms' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails' | 'whatsapp' | 'suporte'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
@@ -78,6 +80,7 @@ const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'pixel', label: 'Pixel', icon: Facebook },
   { key: 'emails', label: 'E-mails', icon: Mail },
   { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
+  { key: 'suporte', label: 'Suporte', icon: Headphones },
   { key: 'config', label: 'Configurações', icon: Settings },
 ]
 
@@ -251,7 +254,7 @@ export function AdminDashboard() {
             </div>
           ) : (
             <>
-              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && tab !== 'whatsapp' && tab !== 'saldos' && tab !== 'usuarios' && (
+              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && tab !== 'whatsapp' && tab !== 'saldos' && tab !== 'usuarios' && tab !== 'suporte' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
                   {tab !== 'clientes' && tab !== 'utms' && tab !== 'adquirentes' && (
@@ -303,6 +306,7 @@ export function AdminDashboard() {
               {tab === 'pixel' && <PixelTab />}
               {tab === 'emails' && <EmailsTab />}
               {tab === 'whatsapp' && <WhatsappTab />}
+              {tab === 'suporte' && <SupportTab />}
               {tab === 'config' && <SettingsTab />}
             </>
           )}

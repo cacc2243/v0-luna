@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode, Lock, ShieldCheck } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -227,7 +227,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         showToast('success', 'Pagamento confirmado! Liberando seu acesso...')
         onPaymentConfirmed?.()
       } else {
-        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por lá assim que for confirmado.')
+        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por l�� assim que for confirmado.')
       }
     } catch (err) {
       console.error('[v0] Erro ao verificar pagamento:', err)
@@ -345,7 +345,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           const qrDataUrl = await QRCode.toDataURL(data.pixCode, {
             width: 240,
             margin: 1,
-            errorCorrectionLevel: 'M',
+            // 'H' (recuperacao de ate 30%) garante a leitura mesmo com a logo no centro.
+            errorCorrectionLevel: 'H',
           })
           setPixQrCode(qrDataUrl)
         } catch (qrErr) {
@@ -532,7 +533,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* QR Code */}
           {pixQrCode && (
             <div className={compact ? 'mt-4 flex justify-center' : 'mt-6 flex justify-center'}>
-              <div className="rounded-2xl bg-white p-2.5 shadow-lg shadow-black/30">
+              <div className="relative rounded-2xl bg-white p-2.5 shadow-lg shadow-black/30">
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
@@ -541,6 +542,17 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   className={compact ? 'size-[120px]' : 'size-[160px] sm:size-[180px]'}
                   unoptimized
                 />
+                {/* Logo Luna Prive no centro do QR */}
+                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white p-1 shadow-sm">
+                  <Image
+                    src="/images/luna-icon.png"
+                    alt=""
+                    width={44}
+                    height={44}
+                    className={compact ? 'size-6' : 'size-8'}
+                    unoptimized
+                  />
+                </span>
               </div>
             </div>
           )}
@@ -639,6 +651,29 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             )}
           </div>
 
+          {/* Rodapé de segurança */}
+          <div className={`${compact ? 'mt-3' : 'mt-4'} border-t border-border/50 pt-3`}>
+            <div className="flex items-center justify-center gap-2 text-[0.7rem] font-medium text-foreground">
+              <span className="flex items-center gap-1.5">
+                <Lock className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
+                Pagamento seguro
+              </span>
+              <span className="h-3 w-px bg-border" aria-hidden="true" />
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
+                Dados protegidos
+              </span>
+            </div>
+            <div className="mt-3 flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
+              <p className="whitespace-nowrap">
+                <span className="font-medium text-foreground/80">Luna Privé</span> · CNPJ 57.066.280/0001-97
+              </p>
+              <p className="mt-0.5 text-pretty">
+                Transação processada por gateway autorizado pelo Banco Central
+              </p>
+            </div>
+          </div>
+
         </>
       )}
     </>
@@ -670,7 +705,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
           <img src="/images/background.png" alt="" className="size-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/82 via-background/90 to-background/95" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/68 via-background/78 to-background/88" />
         </div>
 
         {/* Botão fechar */}

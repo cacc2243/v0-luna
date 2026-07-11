@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { getAppSettings } from '@/lib/settings'
+import { sendUserPush } from '@/lib/push/web-push'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -548,9 +549,9 @@ export async function settleExpiredWithdrawals() {
   return { settled: expired.length }
 }
 
-// ───────���─────────────────────────────────────────────────────────────────────
+// ───────���─���───────────────────────────────────────────────────────────────────
 // Conversation Actions
-// ───────────────────���������───────────────────────────────────────────────────────�����─
+// ─���─────────────────���������───────────────────────────────────────────────────────�����─
 
 // Compradores simulados que iniciam a conversa (semeados uma única vez por conta)
 const BUYER_SEEDS: { name: string; greeting: string; online: boolean }[] = [
@@ -1445,13 +1446,29 @@ export async function generatePackActivity(opts?: { initial?: boolean; maxOrders
 
       if (sale) {
         newOrders++
+        const saleTitle = isDirect ? 'Novo pedido direto' : 'Novo pedido de venda'
+        const saleBody = `${buyer} quer comprar "${pack.title}" por ${formatBRL(amount)}`
         await supabase.from('notifications').insert({
           user_id: user.id,
           type: 'sale',
-          title: isDirect ? 'Novo pedido direto' : 'Novo pedido de venda',
-          description: `${buyer} quer comprar "${pack.title}" por ${formatBRL(amount)}`,
+          title: saleTitle,
+          description: saleBody,
           reference_id: sale.id,
         })
+
+        // Notificacao push no celular da criadora (funciona com o app fechado
+        // e a tela bloqueada, desde que ela tenha ativado as notificacoes).
+        // Nao bloqueia nem quebra a geracao caso o envio falhe.
+        try {
+          await sendUserPush(user.id, {
+            title: saleTitle,
+            body: saleBody,
+            url: '/minha-conta',
+            tag: `sale-${sale.id}`,
+          })
+        } catch (e) {
+          console.log('[v0] Falha ao enviar push de venda:', e instanceof Error ? e.message : e)
+        }
       }
     }
   }

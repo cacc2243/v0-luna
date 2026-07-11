@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Pencil, Check } from 'lucide-react'
-import { DiscountDeadline } from '@/components/convite/discount-deadline'
 import { CtaButton } from '@/components/cta-button'
 
 interface ConfirmAcquireModalProps {
@@ -179,11 +178,6 @@ export function ConfirmAcquireModal({
         ) : (
           /* ----- Modo de confirmação ----- */
           <div className="relative">
-            {/* Informe de desconto por tempo limitado — logo abaixo do banner */}
-            <div className="relative mt-4 flex justify-center">
-              <DiscountDeadline />
-            </div>
-
             <p
               id="confirm-acquire-title"
               className="relative mt-4 text-pretty text-sm leading-relaxed text-muted-foreground"
