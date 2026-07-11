@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Users,
   Receipt,
+  Landmark,
   FlaskConical,
   RefreshCw,
   LogOut,
@@ -30,6 +31,7 @@ import { ClientsTab } from './clients-tab'
 import { BalancesTab } from './balances-tab'
 import { UtmsTab } from './utms-tab'
 import { TransactionsTab } from './transactions-tab'
+import { AcquirersTab } from './acquirers-tab'
 import { GatewayTestTab } from './gateway-test-tab'
 import { ImagesTab } from './images-tab'
 import { VerificationsTab } from './verifications-tab'
@@ -60,7 +62,7 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'usuarios' | 'saldos' | 'pix' | 'utms' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails' | 'whatsapp'
+type TabKey = 'resumo' | 'clientes' | 'usuarios' | 'saldos' | 'pix' | 'adquirentes' | 'utms' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails' | 'whatsapp'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
@@ -68,6 +70,7 @@ const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'usuarios', label: 'Usuários', icon: UserCog },
   { key: 'saldos', label: 'Saldos', icon: Wallet },
   { key: 'pix', label: 'Transações', icon: Receipt },
+  { key: 'adquirentes', label: 'Adquirentes', icon: Landmark },
   { key: 'utms', label: 'UTMs', icon: Megaphone },
   { key: 'verificacoes', label: 'Verificações', icon: ShieldCheck },
   { key: 'imagens', label: 'Imagens', icon: ImageIcon },
@@ -251,7 +254,7 @@ export function AdminDashboard() {
               {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && tab !== 'whatsapp' && tab !== 'saldos' && tab !== 'usuarios' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
-                  {tab !== 'clientes' && tab !== 'utms' && (
+                  {tab !== 'clientes' && tab !== 'utms' && tab !== 'adquirentes' && (
                     <div className="flex flex-wrap gap-2">
                       {STATUSES.map((s) => (
                         <FilterChip
@@ -284,6 +287,9 @@ export function AdminDashboard() {
                   period={period}
                   statusFilter={statusFilter}
                 />
+              )}
+              {tab === 'adquirentes' && (
+                <AcquirersTab invites={invites} period={period} />
               )}
               {tab === 'clientes' && <ClientsTab profiles={profiles} invites={invites} />}
               {tab === 'usuarios' && <UsersTab />}
