@@ -1376,7 +1376,7 @@ function AppDashboard() {
       )}
 
       {/* Conteudo rolavel do app */}
-      <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
       {activeTab === 'Carteira' ? (
                 <WalletScreen
           balance={animatedBalance}
@@ -3437,7 +3437,7 @@ function WalletScreen({
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Header fixo */}
       <header className="shrink-0 px-4 pt-6">
         <div className="flex items-center justify-between gap-3">
