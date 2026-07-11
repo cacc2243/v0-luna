@@ -182,8 +182,6 @@ function accountInfoBox(vars: EmailTemplateVars): string {
   const rows = [
     vars.username ? infoRow('Usuária', vars.username) : '',
     vars.email ? infoRow('E-mail', vars.email) : '',
-    vars.pixType ? infoRow('Tipo de chave PIX', vars.pixType) : '',
-    vars.pixKey ? infoRow('Chave PIX', vars.pixKey) : '',
   ]
     .filter(Boolean)
     .join('')
@@ -201,8 +199,6 @@ function accountInfoText(vars: EmailTemplateVars): string[] {
   const lines: string[] = []
   if (vars.username) lines.push(`Usuária: ${vars.username}`)
   if (vars.email) lines.push(`E-mail: ${vars.email}`)
-  if (vars.pixType) lines.push(`Tipo de chave PIX: ${vars.pixType}`)
-  if (vars.pixKey) lines.push(`Chave PIX: ${vars.pixKey}`)
   if (lines.length === 0) return []
   return ['Dados da sua conta:', ...lines]
 }
