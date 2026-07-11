@@ -227,7 +227,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         showToast('success', 'Pagamento confirmado! Liberando seu acesso...')
         onPaymentConfirmed?.()
       } else {
-        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por lá assim que for confirmado.')
+        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por l�� assim que for confirmado.')
       }
     } catch (err) {
       console.error('[v0] Erro ao verificar pagamento:', err)
@@ -653,15 +653,15 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
           {/* Rodapé de segurança */}
           <div className={`${compact ? 'mt-3' : 'mt-4'} border-t border-border/50 pt-3`}>
-            <div className="flex items-center justify-center gap-2 text-[0.7rem] font-medium text-positive">
-              <span className="flex items-center gap-1.5">
+            <div className="flex items-center justify-center gap-2 text-[0.7rem] font-medium">
+              <span className="flex items-center gap-1.5 text-positive">
                 <Lock className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
-                Pagamento seguro
+                <span className="text-positive">Pagamento seguro</span>
               </span>
               <span className="h-3 w-px bg-border" aria-hidden="true" />
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5 text-positive">
                 <ShieldCheck className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
-                Dados protegidos
+                <span className="text-positive">Dados protegidos</span>
               </span>
             </div>
             <div className="mt-3 flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
