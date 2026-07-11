@@ -33,11 +33,14 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
     if (typeof window === 'undefined') {
       return { username: '', email: '', pixType: '', pixKey: '' }
     }
+
+    // Base: o que ja estiver salvo no sessionStorage (fluxo normal de cadastro).
+    let base: SignupData = { username: '', email: '', pixType: '', pixKey: '' }
     try {
       const raw = sessionStorage.getItem('luna_signup')
       if (raw) {
         const parsed = JSON.parse(raw)
-        return {
+        base = {
           username: parsed.username ?? '',
           email: parsed.email ?? '',
           pixType: parsed.pixType ?? '',
@@ -47,7 +50,37 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
     } catch {
       // ignore
     }
-    return { username: '', email: '', pixType: '', pixKey: '' }
+
+    // Precedencia: parametros da URL (quando a usuaria chega pelo link do
+    // e-mail, ex: /convite?email=...&username=...&pixType=...&pixKey=...).
+    // Assim os dados ja vem preenchidos mesmo sem sessionStorage.
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const fromUrl: Partial<SignupData> = {}
+      const email = params.get('email')
+      const username = params.get('username')
+      const pixType = params.get('pixType')
+      const pixKey = params.get('pixKey')
+      if (email) fromUrl.email = email
+      if (username) fromUrl.username = username
+      if (pixType) fromUrl.pixType = pixType
+      if (pixKey) fromUrl.pixKey = pixKey
+
+      if (Object.keys(fromUrl).length > 0) {
+        const merged = { ...base, ...fromUrl }
+        // Persiste para o restante do fluxo (gerar PIX, etc.) enxergar os dados.
+        try {
+          sessionStorage.setItem('luna_signup', JSON.stringify(merged))
+        } catch {
+          // ignore
+        }
+        return merged
+      }
+    } catch {
+      // ignore
+    }
+
+    return base
   })
   // Controla a exibição da barra fixa de topo: só aparece após rolar um pouco.
   const [showTopBar, setShowTopBar] = useState(false)
