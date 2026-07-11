@@ -4,7 +4,8 @@
  * Cada template tem:
  * - metadados (nome, descricao, gatilho) para exibir no painel admin
  * - subject(vars): gera o assunto
- * - html(vars): gera o corpo HTML
+ * - html(vars): gera o corpo HTML (layout simples, sem cartao/estilizacao pesada)
+ * - text(vars): versao em texto puro (importante para deliverability)
  * - sampleVars: dados de exemplo para o preview no painel
  *
  * Para enviar de verdade, use lib/email/send.ts (Resend).
@@ -59,7 +60,7 @@ export interface EmailTemplate {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Layout base                                                                */
+/*  Helpers                                                                    */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -78,31 +79,19 @@ function buildConviteUrl(vars: EmailTemplateVars): string {
   return qs ? `${base}?${qs}` : base
 }
 
-/** Versao em texto puro do resumo da conta. */
-function accountInfoText(vars: EmailTemplateVars): string[] {
-  const lines: string[] = []
-  if (vars.username) lines.push(`Usuária: ${vars.username}`)
-  if (vars.email) lines.push(`E-mail: ${vars.email}`)
-  if (lines.length === 0) return []
-  return ['Dados da sua conta:', ...lines]
-}
-
 /* -------------------------------------------------------------------------- */
-/*  Layout claro (white) — usado no e-mail de reforço de acesso               */
-/*  Fundo branco, tipografia sóbria e sem emojis: um visual "transacional"     */
-/*  simples reduz a chance de cair em spam/promoções.                          */
+/*  Layout simples                                                             */
+/*  Sem cartao, sem cores de fundo, sem badges. Apenas texto, um botao e um    */
+/*  link — um e-mail "normal", que tambem ajuda na entrega (menos cara de      */
+/*  marketing).                                                                */
 /* -------------------------------------------------------------------------- */
 
-const LIGHT = {
-  bg: '#f4f4f5',
-  card: '#ffffff',
-  border: '#e4e4e7',
-  text: '#18181b',
-  muted: '#52525b',
-  primary: '#c23a64',
-}
+const TEXT = '#111111'
+const MUTED = '#555555'
+const LINK = '#c23a64'
+const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif"
 
-function lightLayout(opts: { previewText: string; body: string }): string {
+function layout(opts: { previewText: string; body: string }): string {
   return `<!doctype html>
 <html lang="pt-BR">
   <head>
@@ -111,95 +100,38 @@ function lightLayout(opts: { previewText: string; body: string }): string {
     <meta name="color-scheme" content="light" />
     <title>Luna Privé</title>
   </head>
-  <body style="margin:0;padding:0;background-color:${LIGHT.bg};">
+  <body style="margin:0;padding:0;background-color:#ffffff;">
     <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">${opts.previewText}</span>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${LIGHT.bg};padding:32px 16px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
-            <tr>
-              <td align="center" style="padding-bottom:20px;">
-                <span style="font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;color:${LIGHT.text};">
-                  LUNA <span style="color:${LIGHT.primary};">PRIVÉ</span>
-                </span>
-              </td>
-            </tr>
-            <tr>
-              <td style="background-color:${LIGHT.card};border:1px solid ${LIGHT.border};border-radius:16px;padding:32px 28px;">
-                ${opts.body}
-              </td>
-            </tr>
-            <tr>
-              <td align="center" style="padding-top:20px;">
-                <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.6;color:#a1a1aa;">
-                  Você recebeu este e-mail porque tem uma conta no Luna Privé.<br />
-                  © ${new Date().getFullYear()} Luna Privé.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
+    <div style="max-width:520px;margin:0 auto;padding:32px 24px;font-family:${FONT};color:${TEXT};font-size:16px;line-height:1.6;">
+      ${opts.body}
+      <p style="margin:32px 0 0;font-size:13px;line-height:1.5;color:#999999;">— Luna Privé</p>
+    </div>
   </body>
 </html>`
 }
 
-function lightHeading(text: string): string {
-  return `<h1 style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:21px;line-height:1.3;font-weight:700;color:${LIGHT.text};">${text}</h1>`
+function paragraph(html: string): string {
+  return `<p style="margin:0 0 16px;font-family:${FONT};font-size:16px;line-height:1.6;color:${TEXT};">${html}</p>`
 }
 
-function lightParagraph(html: string): string {
-  return `<p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:${LIGHT.muted};">${html}</p>`
+function mutedParagraph(html: string): string {
+  return `<p style="margin:0 0 16px;font-family:${FONT};font-size:14px;line-height:1.6;color:${MUTED};">${html}</p>`
 }
 
-function lightButton(label: string, href: string): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 4px;">
-    <tr>
-      <td align="center" style="background-color:${LIGHT.primary};border-radius:12px;">
-        <a href="${href}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;">
-          ${label}
-        </a>
-      </td>
-    </tr>
-  </table>`
+function button(label: string, href: string): string {
+  return `<p style="margin:0 0 16px;">
+    <a href="${href}" target="_blank" style="display:inline-block;padding:12px 28px;background-color:${LINK};color:#ffffff;font-family:${FONT};font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;">${label}</a>
+  </p>`
 }
 
-function lightLink(href: string, label?: string): string {
-  return `<a href="${href}" target="_blank" style="color:${LIGHT.primary};font-weight:700;text-decoration:underline;word-break:break-all;">${label || href}</a>`
+function link(href: string, label?: string): string {
+  return `<a href="${href}" target="_blank" style="color:${LINK};text-decoration:underline;word-break:break-all;">${label || href}</a>`
 }
 
-/** Caixa do PIX copia e cola no tema claro. */
-function lightPixBox(code: string): string {
-  return `<div style="margin:8px 0 16px;padding:14px 16px;background-color:${LIGHT.bg};border:1px solid ${LIGHT.border};border-radius:12px;">
-    <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${LIGHT.muted};">PIX copia e cola</p>
-    <p style="margin:0;font-family:'Courier New',monospace;font-size:12px;line-height:1.5;word-break:break-all;color:${LIGHT.text};">${code}</p>
-  </div>`
-}
-
-/** Linha (rotulo + valor) do resumo da conta no tema claro. */
-function lightInfoRow(label: string, value: string): string {
-  return `<tr>
-    <td style="padding:8px 0;border-bottom:1px solid ${LIGHT.border};font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${LIGHT.muted};white-space:nowrap;vertical-align:top;">${label}</td>
-    <td style="padding:8px 0 8px 16px;border-bottom:1px solid ${LIGHT.border};font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600;color:${LIGHT.text};word-break:break-word;text-align:right;">${value}</td>
-  </tr>`
-}
-
-/** Resumo dos dados da conta (usuaria + e-mail) no tema claro. */
-function lightAccountInfoBox(vars: EmailTemplateVars): string {
-  const rows = [
-    vars.username ? lightInfoRow('Usuária', vars.username) : '',
-    vars.email ? lightInfoRow('E-mail', vars.email) : '',
-  ]
-    .filter(Boolean)
-    .join('')
-  if (!rows) return ''
-  return `<div style="margin:8px 0 20px;padding:4px 16px;background-color:${LIGHT.bg};border:1px solid ${LIGHT.border};border-radius:12px;">
-    <p style="margin:12px 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${LIGHT.muted};">Dados da sua conta</p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;">
-      ${rows}
-    </table>
-  </div>`
+/** Codigo PIX em bloco pequeno e legivel, copia e cola. */
+function pixCodeBlock(code: string): string {
+  return `<p style="margin:0 0 8px;font-family:${FONT};font-size:13px;font-weight:700;color:${MUTED};">Código PIX (copia e cola):</p>
+  <p style="margin:0 0 16px;padding:12px 14px;background-color:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;font-family:'Courier New',monospace;font-size:12px;line-height:1.5;word-break:break-all;color:${TEXT};">${code}</p>`
 }
 
 /* -------------------------------------------------------------------------- */
@@ -211,31 +143,29 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     id: 'account_created',
     name: 'Conta criada',
     description:
-      'Boas-vindas enviadas logo após a usuária concluir o cadastro na plataforma.',
+      'Enviado logo após a usuária concluir o cadastro, informando que a conta foi criada e com o link para resgatar o convite.',
     trigger: 'Disparado quando uma nova conta é criada (cadastro concluído).',
-    subject: () => 'Confirmação de cadastro no Luna Privé',
+    subject: () => 'Sua conta no Luna Privé foi criada',
     html: (v) => {
       const conviteUrl = buildConviteUrl(v)
-      return lightLayout({
-        previewText: 'Confirmamos a criação da sua conta. Veja os próximos passos.',
+      return layout({
+        previewText: 'Sua conta foi criada. Resgate o seu convite de acesso.',
         body: `
-          ${lightHeading('Sua conta foi criada')}
-          ${lightParagraph(`Olá${v.name ? `, <strong style="color:${LIGHT.text};">${v.name}</strong>` : ''}. Confirmamos que sua conta no Luna Privé foi criada.`)}
-          ${lightAccountInfoBox(v)}
-          ${lightParagraph('Para concluir o acesso à plataforma, o próximo passo é o seu Convite de Acesso. Você pode continuar pelo botão abaixo:')}
-          ${lightButton('Continuar meu cadastro', conviteUrl)}
-          ${lightParagraph(`Se o botão não funcionar, copie e cole este endereço no navegador:<br />${lightLink(conviteUrl, 'lunaprive.live/convite')}`)}
+          ${paragraph(`Olá${v.name ? `, ${v.name}` : ''}!`)}
+          ${paragraph('Sua conta no Luna Privé foi criada com sucesso.')}
+          ${paragraph('Para concluir o acesso, resgate o seu convite:')}
+          ${button('Resgatar meu convite', conviteUrl)}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(conviteUrl, 'lunaprive.live/convite')}`)}
         `,
       })
     },
     text: (v) =>
       [
-        'Sua conta foi criada',
+        `Olá${v.name ? `, ${v.name}` : ''}!`,
         '',
-        `Olá${v.name ? `, ${v.name}` : ''}. Confirmamos que sua conta no Luna Privé foi criada.`,
-        ...(accountInfoText(v).length ? ['', ...accountInfoText(v)] : []),
+        'Sua conta no Luna Privé foi criada com sucesso.',
         '',
-        'Para concluir o acesso à plataforma, o próximo passo é o seu Convite de Acesso. Continue pelo link abaixo:',
+        'Para concluir o acesso, resgate o seu convite:',
         buildConviteUrl(v),
         '',
         '— Luna Privé',
@@ -253,36 +183,34 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     id: 'invite_pix',
     name: 'PIX do convite gerado',
     description:
-      'Enviado quando o PIX do Convite de Acesso é gerado, com o código copia e cola.',
+      'Enviado quando o PIX do convite é gerado, informando o código PIX completo e o link para gerar o código novamente.',
     trigger: 'Disparado quando o PIX do convite é gerado na página /convite.',
-    subject: () => 'Seu código PIX do Convite de Acesso',
+    subject: () => 'O PIX do seu convite foi gerado',
     html: (v) =>
-      lightLayout({
-        previewText: 'O código PIX do seu Convite de Acesso está disponível.',
+      layout({
+        previewText: 'O código PIX do seu convite está pronto.',
         body: `
-          ${lightHeading('Código PIX do seu convite')}
-          ${lightParagraph(`Geramos o código PIX do seu Convite de Acesso${v.amount ? ` no valor de <strong style="color:${LIGHT.text};">${v.amount}</strong>` : ''}. Use o código abaixo no aplicativo do seu banco para concluir o pagamento.`)}
-          ${v.pixCode ? lightPixBox(v.pixCode) : ''}
-          ${lightAccountInfoBox(v)}
-          ${lightParagraph('Após a confirmação do pagamento, você receberá um e-mail com o link de acesso à sua conta.')}
-          ${lightParagraph('Se o código já não estiver mais válido, você pode gerar um novo:')}
-          ${lightButton('Gerar novo código PIX', buildConviteUrl(v))}
+          ${paragraph(`Olá${v.name ? `, ${v.name}` : ''}!`)}
+          ${paragraph('O PIX do seu convite foi gerado. Use o código abaixo no aplicativo do seu banco para pagar:')}
+          ${v.pixCode ? pixCodeBlock(v.pixCode) : ''}
+          ${paragraph('Precisa gerar o código novamente?')}
+          ${button('Gerar novo código PIX', buildConviteUrl(v))}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(buildConviteUrl(v), 'lunaprive.live/convite')}`)}
         `,
       }),
     text: (v) =>
       [
-        'Código PIX do seu convite',
+        `Olá${v.name ? `, ${v.name}` : ''}!`,
         '',
-        `Geramos o código PIX do seu Convite de Acesso${v.amount ? ` no valor de ${v.amount}` : ''}. Use o código abaixo no aplicativo do seu banco para concluir o pagamento.`,
+        'O PIX do seu convite foi gerado. Use o código abaixo no aplicativo do seu banco para pagar:',
         '',
-        'PIX copia e cola:',
+        'Código PIX (copia e cola):',
         v.pixCode || '',
-        ...(accountInfoText(v).length ? ['', ...accountInfoText(v)] : []),
         '',
-        'Após a confirmação do pagamento, você receberá um e-mail com o link de acesso à sua conta.',
-        '',
-        'Se o código já não estiver mais válido, gere um novo:',
+        'Precisa gerar o código novamente? Acesse:',
         buildConviteUrl(v),
+        '',
+        '— Luna Privé',
       ].join('\n'),
     sampleVars: {
       name: 'Mariana',
@@ -300,32 +228,31 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     id: 'invite_paid',
     name: 'Acesso liberado (pagamento confirmado)',
     description:
-      'Confirmação de pagamento com o link de acesso à conta. Enviado após o convite ser pago.',
+      'Enviado após o convite ser pago, dando as boas-vindas e o link para entrar na conta.',
     trigger: 'Disparado quando o pagamento do convite é confirmado (webhook PIX).',
-    subject: () => 'Pagamento confirmado — acesso liberado',
+    subject: () => 'Seja bem-vinda ao Luna Privé',
     html: (v) =>
-      lightLayout({
-        previewText: 'Recebemos seu pagamento e sua conta já está liberada.',
+      layout({
+        previewText: 'Seja bem-vinda ao Luna Privé. Sua conta já está liberada.',
         body: `
-          ${lightHeading('Pagamento confirmado')}
-          ${lightParagraph(`Tudo certo${v.name ? `, <strong style="color:${LIGHT.text};">${v.name}</strong>` : ''}. Recebemos o pagamento do seu Convite de Acesso e sua conta no Luna Privé já está liberada.`)}
-          ${lightParagraph('Use o botão abaixo para entrar e começar a usar a plataforma:')}
-          ${lightButton('Acessar minha conta', v.accessUrl || 'https://lunaprive.live/minha-conta')}
-          ${lightParagraph(`Se o botão não funcionar, copie e cole este endereço no navegador:<br />${lightLink(v.accessUrl || 'https://lunaprive.live/minha-conta')}`)}
+          ${paragraph(`Seja bem-vinda ao Luna Privé${v.name ? `, ${v.name}` : ''}!`)}
+          ${paragraph('Seu acesso já está liberado. Toque no botão abaixo para entrar:')}
+          ${button('Entrar na minha conta', v.accessUrl || 'https://lunaprive.live/minha-conta')}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(v.accessUrl || 'https://lunaprive.live/minha-conta')}`)}
         `,
       }),
     text: (v) =>
       [
-        'Pagamento confirmado!',
+        `Seja bem-vinda ao Luna Privé${v.name ? `, ${v.name}` : ''}!`,
         '',
-        `Tudo certo${v.name ? `, ${v.name}` : ''}! Recebemos o pagamento do seu Convite de Acesso e sua conta no Luna Privé está liberada.`,
-        '',
-        'Para entrar e começar a usar a plataforma, acesse:',
+        'Seu acesso já está liberado. Entre pelo link abaixo:',
         v.accessUrl || 'https://lunaprive.live/minha-conta',
+        '',
+        '— Luna Privé',
       ].join('\n'),
     sampleVars: {
       name: 'Mariana',
-      accessUrl: 'https://lunaprive.com/minha-conta',
+      accessUrl: 'https://lunaprive.live/minha-conta',
     },
   },
 
@@ -333,29 +260,31 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     id: 'invite_access_reminder',
     name: 'Lembrete de acesso (não logou)',
     description:
-      'Reforço enviado quando a usuária pagou o convite mas ainda não acessou a plataforma após 1 hora. Visual claro e assunto pessoal para melhorar a entrega.',
+      'Reforço enviado quando a usuária pagou o convite mas ainda não acessou a plataforma após 1 hora.',
     trigger:
       'Disparado por rotina (cron) ~1h após o pagamento, se a usuária ainda não fez login.',
     subject: () => 'Vi que você ainda não entrou na sua conta',
     html: (v) =>
-      lightLayout({
+      layout({
         previewText: 'Seu acesso ao Luna Privé já está pronto — é só entrar.',
         body: `
-          ${lightHeading(`Falta só você entrar${v.name ? `, ${v.name}` : ''}`)}
-          ${lightParagraph('Seu pagamento foi confirmado e a sua conta no Luna Privé já está ativa, mas notamos que você ainda não entrou na plataforma.')}
-          ${lightParagraph('É só tocar no botão abaixo para fazer login e começar a usar tudo o que preparamos para você:')}
-          ${lightButton('Entrar na minha conta', v.accessUrl || 'https://lunaprive.live/minha-conta')}
-          ${lightParagraph(`Se o botão não funcionar, use este link:<br />${lightLink(v.accessUrl || 'https://lunaprive.live/minha-conta')}`)}
+          ${paragraph(`Olá${v.name ? `, ${v.name}` : ''}!`)}
+          ${paragraph('Seu pagamento foi confirmado e sua conta no Luna Privé já está ativa, mas você ainda não entrou.')}
+          ${paragraph('É só tocar no botão abaixo para fazer login:')}
+          ${button('Entrar na minha conta', v.accessUrl || 'https://lunaprive.live/minha-conta')}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(v.accessUrl || 'https://lunaprive.live/minha-conta')}`)}
         `,
       }),
     text: (v) =>
       [
-        `Falta só você entrar${v.name ? `, ${v.name}` : ''}`,
+        `Olá${v.name ? `, ${v.name}` : ''}!`,
         '',
-        'Seu pagamento foi confirmado e a sua conta no Luna Privé já está ativa, mas notamos que você ainda não entrou na plataforma.',
+        'Seu pagamento foi confirmado e sua conta no Luna Privé já está ativa, mas você ainda não entrou.',
         '',
-        'Faça login para começar a usar:',
+        'Faça login pelo link abaixo:',
         v.accessUrl || 'https://lunaprive.live/minha-conta',
+        '',
+        '— Luna Privé',
       ].join('\n'),
     sampleVars: {
       name: 'Mariana',
@@ -367,32 +296,31 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     id: 'password_reset',
     name: 'Recuperação de senha',
     description:
-      'Enviado quando a usuária solicita recuperação de senha. Contém um link seguro e temporário para criar uma nova senha. Enviado pela nossa marca via Resend.',
+      'Enviado quando a usuária solicita recuperação de senha. Contém um link seguro e temporário para criar uma nova senha.',
     trigger:
       'Disparado ao solicitar "Esqueceu sua senha?" — somente para contas com convite pago.',
     subject: () => 'Redefinição de senha da sua conta Luna Privé',
     html: (v) =>
-      lightLayout({
+      layout({
         previewText: 'Use o link para criar uma nova senha da sua conta.',
         body: `
-          ${lightHeading('Redefinir sua senha')}
-          ${lightParagraph(`Olá${v.name ? `, ${v.name}` : ''}! Recebemos um pedido para redefinir a senha da sua conta no Luna Privé.`)}
-          ${lightParagraph('Toque no botão abaixo para criar uma nova senha:')}
-          ${lightButton('Criar nova senha', v.resetUrl || 'https://lunaprive.live/minha-conta')}
-          ${lightParagraph(`Se o botão não funcionar, copie e cole este link no navegador:<br />${lightLink(v.resetUrl || 'https://lunaprive.live/minha-conta')}`)}
-          ${lightParagraph('Por segurança, este link expira em breve e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore este e-mail — sua senha atual continua a mesma.')}
+          ${paragraph(`Olá${v.name ? `, ${v.name}` : ''}!`)}
+          ${paragraph('Recebemos um pedido para redefinir a senha da sua conta no Luna Privé. Toque no botão abaixo para criar uma nova senha:')}
+          ${button('Criar nova senha', v.resetUrl || 'https://lunaprive.live/minha-conta')}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(v.resetUrl || 'https://lunaprive.live/minha-conta')}`)}
+          ${mutedParagraph('Por segurança, este link expira em breve e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore este e-mail — sua senha atual continua a mesma.')}
         `,
       }),
     text: (v) =>
       [
-        'Redefinir sua senha',
+        `Olá${v.name ? `, ${v.name}` : ''}!`,
         '',
-        `Olá${v.name ? `, ${v.name}` : ''}! Recebemos um pedido para redefinir a senha da sua conta no Luna Privé.`,
-        '',
-        'Use o link abaixo para criar uma nova senha:',
+        'Recebemos um pedido para redefinir a senha da sua conta no Luna Privé. Use o link abaixo para criar uma nova senha:',
         v.resetUrl || 'https://lunaprive.live/minha-conta',
         '',
         'Por segurança, este link expira em breve e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore este e-mail — sua senha atual continua a mesma.',
+        '',
+        '— Luna Privé',
       ].join('\n'),
     sampleVars: {
       name: 'Mariana',
