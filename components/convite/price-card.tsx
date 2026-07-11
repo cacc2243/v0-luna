@@ -1,7 +1,6 @@
 'use client'
 
 import { Check, ChevronRight, Gift } from 'lucide-react'
-import { DiscountDeadline } from '@/components/convite/discount-deadline'
 
 const benefits = [
   'Código de convite Luna Privé',
@@ -93,9 +92,6 @@ export function PriceCard({
           </div>
 
           <span className="mt-2 text-sm text-muted-foreground">Pagamento único via PIX</span>
-
-          {/* Informe de desconto por tempo limitado */}
-          <DiscountDeadline className="mt-3.5" />
         </div>
 
         {/* Benefícios — lista única */}
