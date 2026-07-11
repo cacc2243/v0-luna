@@ -275,7 +275,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ────────��─����──����──────────────────────────────��──────────────────────��─────────
+// ────────���─����──����──────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -1215,7 +1215,8 @@ function AppDashboard() {
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
-    router.push('/login')
+    // Após deslogar, permanece em /minha-conta (que exibe a tela de login).
+    router.push('/minha-conta')
   }
 
   return (
@@ -4137,7 +4138,7 @@ function ProfileScreen({
     setSavingProfile(false)
 
     if (error) {
-      setProfileError('Não foi possível salvar. Tente novamente.')
+      setProfileError('N��o foi possível salvar. Tente novamente.')
       return
     }
 
