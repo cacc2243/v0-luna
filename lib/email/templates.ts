@@ -245,7 +245,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${heading('Bem-vinda ao Luna Privé!')}
           ${paragraph(`Olá${v.name ? `, <strong style="color:${BRAND.text};">${v.name}</strong>` : ''}! Sua conta foi criada com sucesso.`)}
           ${paragraph('Você está a um passo de fazer parte da plataforma. O próximo passo é garantir o seu <strong style="color:' + BRAND.text + ';">Convite de Acesso</strong>, que confirma que você é uma usuária real e comprometida.')}
-          ${paragraph('Qualquer dúvida, é só responder este e-mail. Estamos com você. 💖')}
+          ${button('Resgatar meu convite', 'https://lunaprive.live/convite')}
+          ${paragraph(`Se o botão não funcionar, acesse: ${link('https://lunaprive.live/convite', 'lunaprive.live/convite')}`)}
         `,
       }),
     text: (v) =>
@@ -256,7 +257,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         '',
         'Você está a um passo de fazer parte da plataforma. O próximo passo é garantir o seu Convite de Acesso, que confirma que você é uma usuária real e comprometida.',
         '',
-        'Qualquer dúvida, é só responder este e-mail. Estamos com você.',
+        'Resgate o seu convite agora:',
+        'https://lunaprive.live/convite',
         '',
         '— Luna Privé',
       ].join('\n'),
@@ -352,7 +354,6 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${lightParagraph('É só tocar no botão abaixo para fazer login e começar a usar tudo o que preparamos para você:')}
           ${lightButton('Entrar na minha conta', v.accessUrl || 'https://lunaprive.live/minha-conta')}
           ${lightParagraph(`Se o botão não funcionar, use este link:<br />${lightLink(v.accessUrl || 'https://lunaprive.live/minha-conta')}`)}
-          ${lightParagraph('Qualquer dificuldade para entrar, é só responder este e-mail que a gente te ajuda.')}
         `,
       }),
     text: (v) =>
@@ -363,8 +364,6 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         '',
         'Faça login para começar a usar:',
         v.accessUrl || 'https://lunaprive.live/minha-conta',
-        '',
-        'Qualquer dificuldade para entrar, é só responder este e-mail que a gente te ajuda.',
       ].join('\n'),
     sampleVars: {
       name: 'Mariana',
