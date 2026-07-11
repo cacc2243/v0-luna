@@ -547,7 +547,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
           {/* Nome do adquirente que processa o PIX (extraído do BR Code) */}
           {extractPixMerchantName(pixCode) && (
-            <p className="mt-2.5 text-center text-xs font-medium tracking-wide text-muted-foreground">
+            <p className="mt-2.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground">
               Processado por{' '}
               <span className="font-semibold text-foreground/90">
                 {extractPixMerchantName(pixCode)}
