@@ -275,7 +275,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ──────────����──����──────────────────────────────��──────────────────────��─────────
+// ────────��─����──����──────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -493,26 +493,27 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
     setResetLoading(true)
     setResetError('')
 
-    const supabase = createClient()
-    // O link do e-mail passa pelo /auth/callback (troca o code por sessão) e
-    // então cai na tela de redefinição de senha.
-    const redirectTo = `${window.location.origin}/auth/callback?next=/minha-conta/redefinir-senha`
+    // Chamamos a NOSSA rota, que envia o e-mail pela marca Luna Privé (via
+    // Resend) e só dispara para contas com convite pago. A resposta é sempre
+    // genérica (anti-enumeração), então sempre mostramos a tela de confirmação.
+    try {
+      const res = await fetch('/api/auth/request-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: target }),
+      })
 
-    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(target, {
-      redirectTo,
-    })
-
-    setResetLoading(false)
-
-    if (resetErr) {
-      // Por segurança, não revelamos se o e-mail existe ou não: tratamos
-      // limites de envio explicitamente e, no resto, mostramos sucesso.
-      if (/rate|too many|limit/i.test(resetErr.message)) {
+      if (res.status === 429) {
+        setResetLoading(false)
         setResetError('Muitas tentativas. Aguarde alguns minutos e tente novamente.')
         return
       }
+    } catch {
+      // Falha de rede: ainda assim mostramos sucesso genérico (o pedido pode
+      // ter chegado) e evitamos vazar informação.
     }
 
+    setResetLoading(false)
     // Sempre confirmamos o envio (evita enumeração de contas).
     setResetSent(true)
   }

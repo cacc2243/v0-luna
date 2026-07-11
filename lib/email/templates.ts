@@ -15,6 +15,7 @@ export type EmailTemplateId =
   | 'invite_pix'
   | 'invite_paid'
   | 'invite_access_reminder'
+  | 'password_reset'
 
 export interface EmailTemplateVars {
   /** Nome de usuaria / display name */
@@ -27,6 +28,8 @@ export interface EmailTemplateVars {
   amount?: string
   /** URL de acesso a conta (template invite_paid) */
   accessUrl?: string
+  /** URL para redefinir a senha (template password_reset) */
+  resetUrl?: string
 }
 
 export interface EmailTemplate {
@@ -366,6 +369,43 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
     sampleVars: {
       name: 'Mariana',
       accessUrl: 'https://lunaprive.live/minha-conta',
+    },
+  },
+
+  password_reset: {
+    id: 'password_reset',
+    name: 'Recuperação de senha',
+    description:
+      'Enviado quando a usuária solicita recuperação de senha. Contém um link seguro e temporário para criar uma nova senha. Enviado pela nossa marca via Resend.',
+    trigger:
+      'Disparado ao solicitar "Esqueceu sua senha?" — somente para contas com convite pago.',
+    subject: () => 'Redefinição de senha da sua conta Luna Privé',
+    html: (v) =>
+      lightLayout({
+        previewText: 'Use o link para criar uma nova senha da sua conta.',
+        body: `
+          ${lightHeading('Redefinir sua senha')}
+          ${lightParagraph(`Olá${v.name ? `, ${v.name}` : ''}! Recebemos um pedido para redefinir a senha da sua conta no Luna Privé.`)}
+          ${lightParagraph('Toque no botão abaixo para criar uma nova senha:')}
+          ${lightButton('Criar nova senha', v.resetUrl || 'https://lunaprive.live/minha-conta')}
+          ${lightParagraph(`Se o botão não funcionar, copie e cole este link no navegador:<br />${lightLink(v.resetUrl || 'https://lunaprive.live/minha-conta')}`)}
+          ${lightParagraph('Por segurança, este link expira em breve e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore este e-mail — sua senha atual continua a mesma.')}
+        `,
+      }),
+    text: (v) =>
+      [
+        'Redefinir sua senha',
+        '',
+        `Olá${v.name ? `, ${v.name}` : ''}! Recebemos um pedido para redefinir a senha da sua conta no Luna Privé.`,
+        '',
+        'Use o link abaixo para criar uma nova senha:',
+        v.resetUrl || 'https://lunaprive.live/minha-conta',
+        '',
+        'Por segurança, este link expira em breve e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore este e-mail — sua senha atual continua a mesma.',
+      ].join('\n'),
+    sampleVars: {
+      name: 'Mariana',
+      resetUrl: 'https://lunaprive.live/minha-conta/redefinir-senha',
     },
   },
 }
