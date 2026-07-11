@@ -30,7 +30,7 @@ const FAQS = [
   },
   {
     q: 'Existe garantia? Posso solicitar reembolso?',
-    a: 'Você poderá solicitar o reembolso em até 7 dias, conforme previsto na legislação, desde que não tenha realizado nenhum saque na plataforma. Caso não efetue nenhuma venda nesse período, será possível solicitar a devolução integral do seu investimento.',
+    a: 'Você poderá solicitar o reembolso em até 30 dias, conforme previsto na legislação, desde que não tenha realizado nenhum saque na plataforma. Caso não efetue nenhuma venda nesse período, será possível solicitar a devolução integral do seu investimento.',
   },
 ] as const
 
