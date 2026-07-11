@@ -64,6 +64,7 @@ import {
   ToggleLeft,
   ToggleRight,
   AlertCircle,
+  Ban,
   Gift,
   Clock,
   DollarSign,
@@ -288,8 +289,14 @@ async function fetchNotifications() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function MinhaContaPage() {
-  const [authState, setAuthState] = useState<'checking' | 'logged_in' | 'logged_out' | 'no_invite'>('checking')
+  const [authState, setAuthState] = useState<'checking' | 'logged_in' | 'logged_out' | 'no_invite' | 'banned'>('checking')
   const [noInviteEmail, setNoInviteEmail] = useState('')
+  const [bannedReason, setBannedReason] = useState<string | null>(null)
+  // Email da sessao atual (para o monitor de banimento consultar o status).
+  const sessionEmailRef = useRef('')
+  // Marca que o logout foi disparado por banimento, para o handler de
+  // SIGNED_OUT nao sobrescrever a tela de aviso com a de login.
+  const bannedRef = useRef(false)
 
   // Verificar autenticacao
   useEffect(() => {
@@ -329,6 +336,7 @@ export default function MinhaContaPage() {
       const email = user.email || ''
       const allowed = await hasPaidInvite(email)
       if (allowed) {
+        sessionEmailRef.current = email
         setAuthState('logged_in')
       } else {
         setNoInviteEmail(email)
@@ -341,12 +349,52 @@ export default function MinhaContaPage() {
     // Escutar mudancas de autenticacao
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
+        // Se o logout veio de um banimento, mantemos a tela de aviso.
+        if (bannedRef.current) return
         setAuthState('logged_out')
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Monitor de banimento: enquanto a conta esta logada, verifica periodicamente
+  // se ela foi banida. Assim que for, desloga imediatamente, limpa as credenciais
+  // salvas (para nao reentrar via login automatico) e mostra o aviso.
+  useEffect(() => {
+    if (authState !== 'logged_in') return
+    const supabase = createClient()
+    let cancelled = false
+
+    async function checkBan() {
+      const email = sessionEmailRef.current
+      if (!email) return
+      try {
+        const res = await fetch('/api/account/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        })
+        const json = await res.json().catch(() => null)
+        if (!cancelled && json?.banned) {
+          bannedRef.current = true
+          clearCreds()
+          setBannedReason(json.reason || 'Violação dos termos de uso da plataforma')
+          setAuthState('banned')
+          await supabase.auth.signOut()
+        }
+      } catch {
+        // Falha de rede: tenta novamente no proximo ciclo.
+      }
+    }
+
+    checkBan()
+    const interval = setInterval(checkBan, 30000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [authState])
 
   if (authState === 'checking') {
     return (
@@ -357,6 +405,18 @@ export default function MinhaContaPage() {
           className="luna-logo-breathe size-20 object-contain"
         />
       </div>
+    )
+  }
+
+  if (authState === 'banned') {
+    return (
+      <BannedScreen
+        reason={bannedReason}
+        onBackToLogin={() => {
+          bannedRef.current = false
+          setAuthState('logged_out')
+        }}
+      />
     )
   }
 
@@ -399,6 +459,65 @@ async function hasPaidInvite(email: string): Promise<boolean> {
 // ─────────────────────────────────────────────────────────────────────────────
 // Tela "Sem convite ativo"
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Tela exibida quando a conta e banida enquanto estava logada. A sessao ja foi
+// encerrada; aqui apenas explicamos o motivo e oferecemos voltar ao login.
+function BannedScreen({
+  reason,
+  onBackToLogin,
+}: {
+  reason: string | null
+  onBackToLogin: () => void
+}) {
+  return (
+    <div className="relative flex min-h-screen flex-col bg-background">
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-20"
+        style={{ backgroundImage: 'url(/images/hero-bg.png)' }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(to bottom, oklch(0.11 0.02 360 / 0.3) 0%, oklch(0.11 0.02 360) 60%)',
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-12">
+        <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="mb-8 h-10 w-auto" />
+
+        <div className="w-full max-w-sm">
+          <div className="luna-border rounded-3xl bg-card p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-destructive/10">
+              <Ban className="size-8 text-destructive" />
+            </div>
+
+            <h1 className="text-xl font-bold text-foreground">Conta desabilitada</h1>
+            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+              Sua conta foi desabilitada e você foi desconectada. Não é possível acessá-la
+              novamente.
+            </p>
+
+            <p className="mt-4 rounded-xl bg-destructive/10 px-4 py-3 text-left text-sm text-destructive">
+              <span className="font-semibold">Motivo:</span>{' '}
+              {reason || 'Violação dos termos de uso da plataforma'}
+            </p>
+
+            <button
+              type="button"
+              onClick={onBackToLogin}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-secondary py-3.5 text-sm font-semibold text-foreground transition active:scale-[0.98]"
+            >
+              Voltar para o login
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function NoInviteScreen({ email }: { email: string }) {
   const router = useRouter()
@@ -3175,7 +3294,7 @@ function PackMetric({
   )
 }
 
-// ────────────���─────────���───��───────────────────────────��──────────────────────
+// ───────────�����─────────���───��───────────────────────────��──────────────────────
 // Tela Carteira
 // ─────────────────────��──────────────────────────────���────────────────────────
 
