@@ -350,7 +350,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${v.pixCode ? pixBox(v.pixCode) : ''}
           ${accountInfoBox(v)}
           ${paragraph('Assim que o pagamento for confirmado, enviamos um e-mail com o link de acesso à sua conta. O código expira em alguns minutos, então finalize o quanto antes.')}
-          ${paragraph(`O seu código expirou? Toque em ${link(buildConviteUrl(v), 'lunaprive.live/convite')} para gerar um novo convite.`)}
+          ${paragraph('O seu código expirou? Gere um novo agora — seus dados já vêm preenchidos:')}
+          ${button('Gerar novo código PIX', buildConviteUrl(v))}
         `,
       }),
     text: (v) =>
@@ -365,7 +366,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         '',
         'Assim que o pagamento for confirmado, enviamos um e-mail com o link de acesso à sua conta. O código expira em alguns minutos, então finalize o quanto antes.',
         '',
-        `O seu código expirou? Acesse ${buildConviteUrl(v)} para gerar um novo convite.`,
+        'O seu código expirou? Gere um novo código PIX (seus dados já vêm preenchidos):',
+        buildConviteUrl(v),
       ].join('\n'),
     sampleVars: {
       name: 'Mariana',
