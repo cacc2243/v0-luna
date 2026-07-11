@@ -20,6 +20,23 @@ function getFrom(): string {
   return cleaned || 'Luna Privé <onboarding@resend.dev>'
 }
 
+/** Extrai apenas o endereço de e-mail de um "Nome <email>" ou "email". */
+function extractAddress(value: string): string {
+  const match = value.match(/<([^>]+)>/)
+  return (match ? match[1] : value).trim()
+}
+
+/**
+ * Endereço de resposta. Definir um Reply-To válido (idealmente uma caixa real)
+ * melhora a reputação e reduz spam. Usa EMAIL_REPLY_TO se definido; caso
+ * contrário cai para o endereço do remetente.
+ */
+function getReplyTo(): string {
+  const raw = process.env.EMAIL_REPLY_TO?.replace(/[`*]/g, '').trim()
+  if (raw) return raw
+  return extractAddress(getFrom())
+}
+
 export type EmailSendStatus = 'sent' | 'skipped' | 'error'
 
 export interface EmailSendResult {
@@ -82,11 +99,21 @@ export async function sendTemplateEmail(
 
   try {
     const resend = new Resend(apiKey)
+    const replyTo = getReplyTo()
     const { data, error } = await resend.emails.send({
       from: getFrom(),
       to,
       subject,
       html: template.html(vars),
+      // Alternativa em texto puro: forte fator de deliverability.
+      text: template.text(vars),
+      replyTo,
+      // List-Unsubscribe: exigido por boas praticas de bulk e valorizado por
+      // Gmail/Outlook; reduz a chance de cair em spam.
+      headers: {
+        'List-Unsubscribe': `<mailto:${replyTo}?subject=unsubscribe>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     })
 
     if (error) {
