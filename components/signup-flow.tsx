@@ -253,7 +253,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       void fetch('/api/email/account-created', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), name: username.trim() }),
+        body: JSON.stringify({
+          email: email.trim(),
+          name: username.trim(),
+          username: username.trim(),
+          pixType,
+          pixKey: pixKey.trim(),
+        }),
       }).catch((e) =>
         console.error('[v0] Falha ao solicitar e-mail de conta criada:', e),
       )

@@ -30,6 +30,12 @@ export interface EmailTemplateVars {
   accessUrl?: string
   /** URL para redefinir a senha (template password_reset) */
   resetUrl?: string
+  /** Nome de usuaria cadastrado (aparece no resumo da conta) */
+  username?: string
+  /** Tipo da chave PIX cadastrada, ex: "CPF", "Email", "Telefone" */
+  pixType?: string
+  /** Chave PIX cadastrada */
+  pixKey?: string
 }
 
 export interface EmailTemplate {
@@ -144,6 +150,59 @@ function pixBox(code: string): string {
   </div>`
 }
 
+/**
+ * Monta a URL de /convite ja com os dados da conta pre-preenchidos via query
+ * string. Ao abrir esse link pelo e-mail, a pagina /convite le esses params e
+ * preenche e-mail, usuario e chave PIX automaticamente.
+ */
+function buildConviteUrl(vars: EmailTemplateVars): string {
+  const base = 'https://lunaprive.live/convite'
+  const params = new URLSearchParams()
+  if (vars.email) params.set('email', vars.email)
+  if (vars.username) params.set('username', vars.username)
+  if (vars.pixType) params.set('pixType', vars.pixType)
+  if (vars.pixKey) params.set('pixKey', vars.pixKey)
+  const qs = params.toString()
+  return qs ? `${base}?${qs}` : base
+}
+
+/** Uma linha (rotulo + valor) do resumo da conta. */
+function infoRow(label: string, value: string): string {
+  return `<tr>
+    <td style="padding:8px 0;border-bottom:1px solid ${BRAND.border};font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${BRAND.muted};white-space:nowrap;vertical-align:top;">${label}</td>
+    <td style="padding:8px 0 8px 16px;border-bottom:1px solid ${BRAND.border};font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600;color:${BRAND.text};word-break:break-word;text-align:right;">${value}</td>
+  </tr>`
+}
+
+/**
+ * Caixa com o resumo dos dados da conta (sem a senha). So renderiza as linhas
+ * que existirem nas vars.
+ */
+function accountInfoBox(vars: EmailTemplateVars): string {
+  const rows = [
+    vars.username ? infoRow('Usuária', vars.username) : '',
+    vars.email ? infoRow('E-mail', vars.email) : '',
+  ]
+    .filter(Boolean)
+    .join('')
+  if (!rows) return ''
+  return `<div style="margin:8px 0 20px;padding:4px 16px;background-color:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:12px;">
+    <p style="margin:12px 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND.muted};">Dados da sua conta</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;">
+      ${rows}
+    </table>
+  </div>`
+}
+
+/** Versao em texto puro do resumo da conta. */
+function accountInfoText(vars: EmailTemplateVars): string[] {
+  const lines: string[] = []
+  if (vars.username) lines.push(`Usuária: ${vars.username}`)
+  if (vars.email) lines.push(`E-mail: ${vars.email}`)
+  if (lines.length === 0) return []
+  return ['Dados da sua conta:', ...lines]
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Layout claro (white) — usado no e-mail de reforço de acesso               */
 /*  Fundo branco, tipografia sóbria e sem emojis: um visual "transacional"     */
@@ -238,31 +297,41 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
       'Boas-vindas enviadas logo após a usuária concluir o cadastro na plataforma.',
     trigger: 'Disparado quando uma nova conta é criada (cadastro concluído).',
     subject: () => 'Sua conta no Luna Privé foi criada 🎉',
-    html: (v) =>
-      layout({
+    html: (v) => {
+      const conviteUrl = buildConviteUrl(v)
+      return layout({
         previewText: 'Bem-vinda ao Luna Privé! Sua conta foi criada com sucesso.',
         body: `
           ${heading('Bem-vinda ao Luna Privé!')}
           ${paragraph(`Olá${v.name ? `, <strong style="color:${BRAND.text};">${v.name}</strong>` : ''}! Sua conta foi criada com sucesso.`)}
+          ${accountInfoBox(v)}
           ${paragraph('Você está a um passo de fazer parte da plataforma. O próximo passo é garantir o seu <strong style="color:' + BRAND.text + ';">Convite de Acesso</strong>, que confirma que você é uma usuária real e comprometida.')}
-          ${button('Resgatar meu convite', 'https://lunaprive.live/convite')}
-          ${paragraph(`Se o botão não funcionar, acesse: ${link('https://lunaprive.live/convite', 'lunaprive.live/convite')}`)}
+          ${button('Resgatar meu convite', conviteUrl)}
+          ${paragraph(`Ao tocar no botão, seus dados já vão preenchidos. Se preferir, acesse: ${link(conviteUrl, 'lunaprive.live/convite')}`)}
         `,
-      }),
+      })
+    },
     text: (v) =>
       [
         'Bem-vinda ao Luna Privé!',
         '',
         `Olá${v.name ? `, ${v.name}` : ''}! Sua conta foi criada com sucesso.`,
+        ...(accountInfoText(v).length ? ['', ...accountInfoText(v)] : []),
         '',
         'Você está a um passo de fazer parte da plataforma. O próximo passo é garantir o seu Convite de Acesso, que confirma que você é uma usuária real e comprometida.',
         '',
-        'Resgate o seu convite agora:',
-        'https://lunaprive.live/convite',
+        'Resgate o seu convite agora (com seus dados já preenchidos):',
+        buildConviteUrl(v),
         '',
         '— Luna Privé',
       ].join('\n'),
-    sampleVars: { name: 'Mariana', email: 'mariana@email.com' },
+    sampleVars: {
+      name: 'Mariana',
+      email: 'mariana@email.com',
+      username: 'mariana.luna',
+      pixType: 'Email',
+      pixKey: 'mariana@email.com',
+    },
   },
 
   invite_pix: {
@@ -279,8 +348,10 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${heading('Falta pouco para liberar seu acesso')}
           ${paragraph(`Geramos o PIX do seu Convite de Acesso${v.amount ? ` no valor de <strong style="color:${BRAND.text};">${v.amount}</strong>` : ''}. Use o código abaixo no app do seu banco para concluir.`)}
           ${v.pixCode ? pixBox(v.pixCode) : ''}
+          ${accountInfoBox(v)}
           ${paragraph('Assim que o pagamento for confirmado, enviamos um e-mail com o link de acesso à sua conta. O código expira em alguns minutos, então finalize o quanto antes.')}
-          ${paragraph(`O seu código expirou? Toque em ${link('https://lunaprive.live/convite', 'lunaprive.live/convite')} para gerar um novo convite.`)}
+          ${paragraph('O seu código expirou? Gere um novo agora — seus dados já vêm preenchidos:')}
+          ${button('Gerar novo código PIX', buildConviteUrl(v))}
         `,
       }),
     text: (v) =>
@@ -291,14 +362,20 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         '',
         'PIX copia e cola:',
         v.pixCode || '',
+        ...(accountInfoText(v).length ? ['', ...accountInfoText(v)] : []),
         '',
         'Assim que o pagamento for confirmado, enviamos um e-mail com o link de acesso à sua conta. O código expira em alguns minutos, então finalize o quanto antes.',
         '',
-        'O seu código expirou? Acesse https://lunaprive.live/convite para gerar um novo convite.',
+        'O seu código expirou? Gere um novo código PIX (seus dados já vêm preenchidos):',
+        buildConviteUrl(v),
       ].join('\n'),
     sampleVars: {
       name: 'Mariana',
       amount: 'R$ 24,80',
+      username: 'mariana.luna',
+      email: 'mariana@email.com',
+      pixType: 'Email',
+      pixKey: 'mariana@email.com',
       pixCode:
         '00020126580014br.gov.bcb.pix0136a1b2c3d4-e5f6-7890-abcd-ef1234567890520400005303986540524.805802BR5909Luna Prive6009Sao Paulo62070503***6304A1B2',
     },
