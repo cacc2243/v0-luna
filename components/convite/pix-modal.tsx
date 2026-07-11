@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode, Lock, ShieldCheck } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -649,6 +649,29 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 enviado no e-mail cadastrado.
               </p>
             )}
+          </div>
+
+          {/* Rodapé de segurança */}
+          <div className={`${compact ? 'mt-3' : 'mt-4'} border-t border-border/50 pt-3`}>
+            <div className="flex items-center justify-center gap-3 text-[0.7rem] font-medium text-positive">
+              <span className="flex items-center gap-1.5">
+                <Lock className="size-3.5" aria-hidden="true" />
+                Pagamento seguro
+              </span>
+              <span className="text-border" aria-hidden="true">
+                |
+              </span>
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="size-3.5" aria-hidden="true" />
+                Dados protegidos
+              </span>
+            </div>
+            <p className="mt-2.5 text-center text-[0.65rem] leading-relaxed text-muted-foreground">
+              MADAME ROSA SERVIÇOS DIGITAIS LTDA · CNPJ 57.066.280/0001-97
+            </p>
+            <p className="mt-0.5 text-center text-[0.65rem] leading-relaxed text-muted-foreground">
+              Transação processada por gateway autorizado pelo Banco Central
+            </p>
           </div>
 
         </>
