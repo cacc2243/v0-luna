@@ -169,6 +169,39 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     }
   }, [isOpen])
 
+  // Bloqueia o scroll do fundo enquanto o modal cheio estiver aberto. Usa a
+  // técnica `position: fixed` no body (a mais confiável no mobile/iOS Safari),
+  // preservando e restaurando a posição de rolagem ao fechar. Não se aplica ao
+  // modo embutido, que rola junto com a página normalmente.
+  useEffect(() => {
+    if (embedded || !isOpen) return
+    const { body } = document
+    const scrollY = window.scrollY
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    }
+    body.style.position = 'fixed'
+    body.style.top = `-${scrollY}px`
+    body.style.left = '0'
+    body.style.right = '0'
+    body.style.width = '100%'
+    body.style.overflow = 'hidden'
+    return () => {
+      body.style.position = prev.position
+      body.style.top = prev.top
+      body.style.left = prev.left
+      body.style.right = prev.right
+      body.style.width = prev.width
+      body.style.overflow = prev.overflow
+      window.scrollTo(0, scrollY)
+    }
+  }, [isOpen, embedded])
+
   // Preço "de" (âncora) fixo em R$ 169,90, igual ao PriceCard.
   const originalAmount = 169.9
 
@@ -627,7 +660,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             {compact ? (
               <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
                 Após o pagamento confirmado, seu{' '}
-                <span className="font-semibold text-foreground">acesso é liberado automaticamente</span>.
+                <span className="font-semibold text-foreground">acesso �� liberado automaticamente</span>.
                 Você receberá o e-mail de confirmação imediatamente.
               </p>
             ) : (
@@ -716,7 +749,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </button>
 
         {/* Conteúdo */}
-        <div className="relative z-10 overflow-y-auto px-5 pb-6 pt-7 sm:px-7">
+        <div className="relative z-10 overflow-y-auto overscroll-contain px-5 pb-6 pt-7 sm:px-7">
           {content}
         </div>
       </div>
