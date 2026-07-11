@@ -48,7 +48,7 @@ export function DiscountDeadline({ className = '' }: { className?: string }) {
       <Clock className="size-4 shrink-0 text-primary" aria-hidden="true" />
       <div className="flex flex-col text-left leading-tight">
         <span className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
-          Oferta por tempo limitado
+          Redução exclusiva até:
         </span>
         <span className="text-xs font-semibold text-foreground">
           Válido até{' '}
