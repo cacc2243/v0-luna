@@ -1071,7 +1071,12 @@ function AppDashboard() {
 
   // Calcular estatisticas
   const balance = profile?.balance || 0
-  const pendingSales = sales.filter(s => s.status === 'pending')
+  // Pedidos pendentes expiram apos 5 horas: nao aparecem mais na lista nem
+  // contam no saldo pendente depois desse prazo.
+  const PENDING_TTL_MS = 5 * 60 * 60 * 1000
+  const pendingSales = sales.filter(
+    s => s.status === 'pending' && Date.now() - new Date(s.created_at).getTime() < PENDING_TTL_MS,
+  )
   const pendingBalance = pendingSales.reduce((sum, s) => sum + Number(s.net_amount), 0)
   const completedSales = sales.filter(s => s.status === 'completed')
   // "Hoje" = total liquido das vendas confirmadas hoje.
