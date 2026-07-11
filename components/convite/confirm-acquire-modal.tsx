@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Pencil, Check } from 'lucide-react'
+import { X, Pencil, Check, QrCode } from 'lucide-react'
 import { DiscountDeadline } from '@/components/convite/discount-deadline'
+import { CtaButton } from '@/components/cta-button'
 
 interface ConfirmAcquireModalProps {
   isOpen: boolean
@@ -87,9 +88,15 @@ export function ConfirmAcquireModal({
       onClick={onClose}
     >
       <div
-        className="relative flex w-full max-w-xs flex-col overflow-hidden rounded-3xl border border-border bg-card text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className="animate-pop relative flex w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-primary/25 bg-card p-7 text-center shadow-2xl shadow-primary/20"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Brilho superior */}
+        <div
+          className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl"
+          aria-hidden="true"
+        />
+
         <button
           type="button"
           onClick={onClose}
@@ -99,16 +106,15 @@ export function ConfirmAcquireModal({
           <X className="size-4" aria-hidden="true" />
         </button>
 
-        {/* Banner do topo */}
         <img
-          src="/images/convite-banner.png"
-          alt="Seu Convite Luna Privé está a um passo: seguro e privado, sem exposição do seu nome e pagamento via PIX"
-          className="aspect-[2/1] w-full object-cover"
+          src="/images/luna-prive-logo.png"
+          alt="Luna Privé"
+          className="relative mx-auto mt-1 h-6 w-auto"
         />
 
         {editing ? (
           /* ----- Modo de edição de e-mail ----- */
-          <div className="flex flex-col gap-4 px-6 pb-7 pt-6">
+          <div className="relative flex flex-col gap-4 pt-6">
             <div className="text-center">
               <h2 className="text-sm font-bold text-foreground">Alterar e-mail</h2>
               <p className="mt-1 text-pretty text-xs leading-relaxed text-muted-foreground">
@@ -172,19 +178,28 @@ export function ConfirmAcquireModal({
           </div>
         ) : (
           /* ----- Modo de confirmação ----- */
-          <div className="flex flex-col gap-4 px-6 pb-7 pt-6">
-            <p
+          <div className="relative">
+            <div className="relative mx-auto mt-6 flex size-20 items-center justify-center">
+              <span className="absolute inset-0 rounded-full border border-primary/30" aria-hidden="true" />
+              <span className="absolute inset-1.5 rounded-full bg-primary/10" aria-hidden="true" />
+              <QrCode className="relative size-9 text-primary" aria-hidden="true" />
+            </div>
+
+            <h2
               id="confirm-acquire-title"
-              className="text-pretty text-center text-sm leading-relaxed text-muted-foreground"
+              className="relative mt-5 text-balance text-xl font-bold leading-tight text-foreground"
             >
+              Seu convite está a um passo!
+            </h2>
+            <p className="relative mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
               Vamos gerar o seu convite e enviar o acesso para o e-mail{' '}
               <span className="break-all font-semibold text-foreground">{displayEmail}</span>.
               Confirma a geração do PIX de pagamento?
             </p>
 
             {/* Destaque do valor — faixa compacta horizontal */}
-            <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
-              <div className="flex flex-col text-left">
+            <div className="relative mt-5 flex items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-left">
+              <div className="flex flex-col">
                 <span className="text-[0.65rem] font-medium uppercase tracking-wider text-muted-foreground">
                   Valor do convite
                 </span>
@@ -205,16 +220,14 @@ export function ConfirmAcquireModal({
             </div>
 
             {/* Informe de desconto por tempo limitado */}
-            <DiscountDeadline className="self-center" />
+            <div className="relative mt-4 flex justify-center">
+              <DiscountDeadline />
+            </div>
 
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={onConfirm}
-                className="cta-gradient animate-cta-breathe flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground ring-1 ring-inset ring-white/20 transition-all duration-300 ease-out hover:brightness-110 active:scale-[0.98]"
-              >
+            <div className="relative mt-6 flex flex-col gap-2">
+              <CtaButton onClick={onConfirm} className="animate-cta-breathe">
                 Sim, gerar agora!
-              </button>
+              </CtaButton>
               <button
                 type="button"
                 onClick={openEditor}
