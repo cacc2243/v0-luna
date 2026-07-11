@@ -65,7 +65,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [status, setStatus] = useState<'form' | 'sending' | 'verify' | 'loading' | 'invite' | 'error' | 'whatsappCode'>('form')
-  const [loadingPhase, setLoadingPhase] = useState<'configuring' | 'welcome'>('configuring')
+  const [loadingPhase, setLoadingPhase] = useState<'configuring'>('configuring')
   const [errorMessage, setErrorMessage] = useState('')
 
   // Campos
@@ -285,13 +285,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         status: true,
       })
 
-      // Fase 1: "Configurando sua conta..." por >= 2.5s.
+      // "Configurando sua conta..." por >= 2.5s e leva direto para /convite.
+      // O aviso de "conta criada" fica so no /convite (WelcomePopup), sem duplicar aqui.
       await ensureMinLoading()
-      // Fase 2: troca o conteudo do mesmo modal para as boas-vindas por 1.5s.
-      setLoadingPhase('welcome')
-      await new Promise((r) => setTimeout(r, 1500))
-      // Depois leva o usuario para a pagina /convite,
-      // onde o codigo de convite e exibido (nao mais dentro deste fluxo).
       router.push('/convite')
     } catch (err) {
       console.error('[v0] Signup error:', err)
@@ -1225,21 +1221,7 @@ function SendingPixCard({
   )
 }
 
-function LoadingCard({ phase }: { phase: 'configuring' | 'welcome' }) {
-  if (phase === 'welcome') {
-    return (
-      <div className="animate-pop luna-border flex w-full max-w-sm flex-col items-center rounded-3xl bg-card px-6 py-10 text-center shadow-2xl shadow-primary/15">
-        <div className="flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary">
-          <Check className="size-8" aria-hidden="true" />
-        </div>
-        <p className="mt-5 text-lg font-bold text-foreground">Seja bem-vinda ao Luna Privé!</p>
-        <p className="mt-1.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-          Sua conta esta pronta. Vamos comecar.
-        </p>
-      </div>
-    )
-  }
-
+function LoadingCard({ phase: _phase }: { phase: 'configuring' }) {
   return (
     <div className="animate-pop luna-border flex w-full max-w-sm flex-col items-center rounded-3xl bg-card px-6 py-10 text-center shadow-2xl shadow-primary/15">
       <Loader2 className="size-10 animate-spin text-primary" aria-hidden="true" />
