@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Pencil, Check, QrCode } from 'lucide-react'
+import { X, Pencil, Check } from 'lucide-react'
 import { DiscountDeadline } from '@/components/convite/discount-deadline'
 import { CtaButton } from '@/components/cta-button'
 
@@ -107,9 +107,9 @@ export function ConfirmAcquireModal({
         </button>
 
         <img
-          src="/images/luna-prive-logo.png"
-          alt="Luna Privé"
-          className="relative mx-auto mt-1 h-6 w-auto"
+          src="/images/convite-banner-ong.png"
+          alt="Seu convite ao Luna Privé está a um passo"
+          className="relative -mx-7 -mt-7 mb-1 w-[calc(100%+3.5rem)] max-w-none object-cover"
         />
 
         {editing ? (
@@ -179,19 +179,10 @@ export function ConfirmAcquireModal({
         ) : (
           /* ----- Modo de confirmação ----- */
           <div className="relative">
-            <div className="relative mx-auto mt-6 flex size-20 items-center justify-center">
-              <span className="absolute inset-0 rounded-full border border-primary/30" aria-hidden="true" />
-              <span className="absolute inset-1.5 rounded-full bg-primary/10" aria-hidden="true" />
-              <QrCode className="relative size-9 text-primary" aria-hidden="true" />
-            </div>
-
-            <h2
+            <p
               id="confirm-acquire-title"
-              className="relative mt-5 text-balance text-xl font-bold leading-tight text-foreground"
+              className="relative mt-4 text-pretty text-sm leading-relaxed text-muted-foreground"
             >
-              Seu convite está a um passo!
-            </h2>
-            <p className="relative mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
               Vamos gerar o seu convite e enviar o acesso para o e-mail{' '}
               <span className="break-all font-semibold text-foreground">{displayEmail}</span>.
               Confirma a geração do PIX de pagamento?
