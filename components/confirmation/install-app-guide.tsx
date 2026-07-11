@@ -26,7 +26,7 @@ function isStandalone(): boolean {
  * do celular. Instalar e o que permite receber as notificacoes de venda mesmo
  * com o app fechado e a tela bloqueada (obrigatorio no iPhone).
  */
-export function InstallAppGuide() {
+export function InstallAppGuide({ className = 'mt-5' }: { className?: string }) {
   const [platform, setPlatform] = useState<Platform>('desktop')
   const [installed, setInstalled] = useState(false)
 
@@ -38,7 +38,7 @@ export function InstallAppGuide() {
   // Ja esta rodando como app instalado: nao precisa mostrar o guia.
   if (installed) {
     return (
-      <div className="mt-5 flex w-full items-center gap-2.5 rounded-2xl border border-positive/30 bg-positive/10 px-4 py-3 text-left">
+      <div className={`${className} flex w-full items-center gap-2.5 rounded-2xl border border-positive/30 bg-positive/10 px-4 py-3 text-left`}>
         <Check className="size-5 shrink-0 text-positive" aria-hidden="true" />
         <p className="text-xs leading-relaxed text-foreground">
           <strong className="font-bold">App instalado!</strong> Você já pode receber os alertas de
@@ -130,7 +130,7 @@ export function InstallAppGuide() {
         ]
 
   return (
-    <div className="mt-5 w-full rounded-2xl border border-border bg-card/70 p-4 text-left backdrop-blur-sm">
+    <div className={`${className} w-full rounded-2xl border border-border bg-card/70 p-4 text-left backdrop-blur-sm`}>
       <div className="flex items-center gap-2.5">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
           <Smartphone className="size-4" aria-hidden="true" />

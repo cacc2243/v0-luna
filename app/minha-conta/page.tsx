@@ -42,6 +42,7 @@ import {
   Video,
   Camera,
   Settings,
+  Smartphone,
   HelpCircle,
   LogOut,
   Star,
@@ -77,7 +78,8 @@ import { ChatsActive } from '@/components/minha-conta/chats-active'
  import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
 import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
  import { SupportModal } from '@/components/minha-conta/support-modal'
-import { EnablePushBanner } from '@/components/minha-conta/enable-push-banner'
+ import { EnablePushBanner } from '@/components/minha-conta/enable-push-banner'
+import { InstallAppGuide } from '@/components/confirmation/install-app-guide'
 import { saveCreds, readCreds, clearCreds } from '@/lib/auth/creds'
 import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
 import { cn } from '@/lib/utils'
@@ -4142,7 +4144,7 @@ function ProfileScreen({
   onHighlightsUpdated?: () => void
   onNotificationsChange?: () => void
 }) {
-  const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help'>('main')
+  const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help' | 'install'>('main')
   const [supportOpen, setSupportOpen] = useState(false)
   const [localProfile, setLocalProfile] = useState({
     username: userProfile?.username || '@usuario',
@@ -4520,6 +4522,22 @@ function ProfileScreen({
   }
 
   // Tela de Ajuda e Suporte
+  if (currentView === 'install') {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col bg-background">
+        <SubHeader title="Instalar o app" onBack={() => setCurrentView('main')} />
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
+            Instale a Luna Privé como um app no seu celular para uma experiência mais rápida e para
+            receber uma <strong className="text-foreground">notificação a cada venda</strong>, mesmo
+            com o app fechado.
+          </p>
+          <InstallAppGuide className="mt-4" />
+        </div>
+      </div>
+    )
+  }
+
   if (currentView === 'help') {
     const faqItems = [
       { q: 'Como recebo meus pagamentos?', a: 'Os pagamentos sao processados automaticamente e enviados para sua conta cadastrada em ate 7 dias uteis apos a venda.' },
@@ -4946,6 +4964,18 @@ function ProfileScreen({
           <ChevronRight className="size-5 text-muted-foreground" />
         </button>
         
+        <button
+          type="button"
+          onClick={() => setCurrentView('install')}
+          className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+            <Smartphone className="size-5 text-primary" aria-hidden="true" />
+          </span>
+          <span className="flex-1 text-sm font-semibold text-foreground">Instalar o app</span>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </button>
+
         <button
           type="button"
           onClick={() => setCurrentView('settings')}

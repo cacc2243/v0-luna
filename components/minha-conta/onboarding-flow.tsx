@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ChevronRight } from 'lucide-react'
+import { InstallAppGuide } from '@/components/confirmation/install-app-guide'
 
 interface OnboardingFlowProps {
   onClose: () => void
@@ -13,6 +14,9 @@ interface Step {
   description: string
   items: string[]
   cta: string
+  // Quando true, o passo mostra o guia de instalacao do app (PWA) em vez
+  // da lista de itens numerados.
+  install?: boolean
 }
 
 const STEPS: Step[] = [
@@ -47,7 +51,16 @@ const STEPS: Step[] = [
       'Acompanhe quem está visualizando seus packs',
       'Confira seu saldo e histórico na aba Carteira',
     ],
+    cta: 'Continuar',
+  },
+  {
+    emoji: '',
+    title: 'Instale o app no celular',
+    description:
+      'Instale a Luna Privé na tela de início e receba uma notificação a cada venda — mesmo com o celular bloqueado.',
+    items: [],
     cta: 'Começar agora',
+    install: true,
   },
 ]
 
@@ -104,19 +117,24 @@ export function OnboardingFlow({ onClose }: OnboardingFlowProps) {
             {step.description}
           </p>
 
-          {/* Itens numerados */}
-          <ul className="mt-6 flex flex-col gap-4">
-            {step.items.map((item, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-sm font-bold text-primary">
-                  {i + 1}
-                </span>
-                <span className="pt-0.5 text-pretty text-sm leading-relaxed text-foreground">
-                  {item}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {/* Passo de instalacao: mostra o guia do app (PWA) com passos por plataforma */}
+          {step.install ? (
+            <InstallAppGuide className="mt-6" />
+          ) : (
+            /* Itens numerados */
+            <ul className="mt-6 flex flex-col gap-4">
+              {step.items.map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-sm font-bold text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="pt-0.5 text-pretty text-sm leading-relaxed text-foreground">
+                    {item}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {/* Botão de ação */}
           <button
