@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Check, ArrowRight, Sparkles, ShieldCheck, Mail } from 'lucide-react'
+import { Check, ArrowRight, Sparkles, ShieldCheck, Mail, AlertTriangle } from 'lucide-react'
 
 export function ConfirmationContent() {
   const [mounted, setMounted] = useState(false)
@@ -12,38 +12,9 @@ export function ConfirmationContent() {
   }, [])
 
   return (
-    <section className="relative z-10 w-full max-w-sm">
-      {/* Card no mesmo estilo do fluxo de convite */}
-      <div className="relative flex flex-col overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/25">
-        {/* Borda em gradiente: forte no topo, suavizando até a base */}
-        <div
-          className="pointer-events-none absolute inset-0 z-20 rounded-3xl"
-          aria-hidden="true"
-          style={{
-            padding: '1.25px',
-            background:
-              'linear-gradient(to bottom, oklch(0.5 0.15 15 / 0.95), oklch(0.6 0.16 15 / 0.32) 45%, oklch(0.66 0.17 15 / 0.08) 100%)',
-            WebkitMask:
-              'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
-            WebkitMaskComposite: 'xor',
-            maskComposite: 'exclude',
-          }}
-        />
-
-        {/* Imagem de fundo */}
-        <div className="absolute inset-0" aria-hidden="true">
-          <img
-            src="/images/convite-fundo.jpg"
-            alt=""
-            className="size-full object-cover object-center"
-          />
-          {/* Camadas para legibilidade do texto sobre a imagem */}
-          <div className="absolute inset-0 bg-card/65" />
-          <div className="absolute inset-0 bg-gradient-to-b from-card/30 via-card/60 to-card/90" />
-        </div>
-
-        {/* Conteúdo */}
-        <div className="relative z-10 flex flex-col items-center px-6 pb-8 pt-9 text-center">
+    <section className="relative z-10 flex w-full max-w-sm flex-1 flex-col justify-center">
+      {/* Conteúdo em tela cheia (sem card/modal) */}
+      <div className="flex flex-col items-center text-center">
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
@@ -81,15 +52,30 @@ export function ConfirmationContent() {
             com a gente — tudo o que preparamos já está pronto para você aproveitar.
           </p>
 
-          {/* Aviso de acesso enviado por e-mail */}
-          <div className="mt-5 flex w-full items-start gap-3 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-left">
-            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-              <Mail className="size-4" aria-hidden="true" />
-            </span>
-            <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-              Também enviamos os seus dados de acesso para o seu <strong className="font-semibold text-foreground">e-mail</strong>.
-              Caso não encontre, verifique a caixa de spam ou promoções.
+          {/* Aviso em destaque: dados de acesso por e-mail + checar spam */}
+          <div className="mt-5 w-full rounded-2xl border-2 border-primary/50 bg-primary/10 px-4 py-4 text-left shadow-md shadow-primary/20">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Mail className="size-4" aria-hidden="true" />
+              </span>
+              <p className="text-sm font-bold leading-tight text-foreground">
+                Enviamos seu acesso por e-mail
+              </p>
+            </div>
+            <p className="mt-2.5 text-pretty text-xs leading-relaxed text-muted-foreground">
+              Seus dados de acesso foram enviados para o seu e-mail cadastrado.
             </p>
+            {/* Alerta específico da caixa de spam, em destaque máximo */}
+            <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-primary/50 bg-primary/15 px-3 py-2.5">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <p className="text-pretty text-xs leading-relaxed text-foreground">
+                <strong className="font-bold">Não achou o e-mail?</strong> Confira a{' '}
+                <strong className="font-bold text-primary">caixa de spam</strong> ou a aba{' '}
+                <strong className="font-bold text-primary">Promoções</strong> e marque como{' '}
+                <strong className="font-semibold">&quot;não é spam&quot;</strong> para receber os
+                próximos normalmente.
+              </p>
+            </div>
           </div>
 
           <Link
@@ -104,7 +90,6 @@ export function ConfirmationContent() {
             <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
             Acesso protegido e exclusivo
           </p>
-        </div>
       </div>
     </section>
   )

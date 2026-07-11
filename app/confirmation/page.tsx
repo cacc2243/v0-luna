@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 
 export default function ConfirmationPage() {
   return (
-    <main className="relative flex min-h-[100dvh] w-full items-center justify-center bg-background px-5 py-10">
+    <main className="relative flex min-h-[100dvh] w-full flex-col items-center bg-background px-5 pb-12 pt-10">
       <div className="fixed inset-0 z-0">
         <PageBackground />
-        <div className="absolute inset-0 bg-background/80" aria-hidden="true" />
+        <div className="absolute inset-0 bg-background/90" aria-hidden="true" />
       </div>
       <ConfirmationContent />
     </main>

@@ -263,7 +263,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
       'Reforço enviado quando a usuária pagou o convite mas ainda não acessou a plataforma após 1 hora.',
     trigger:
       'Disparado por rotina (cron) ~1h após o pagamento, se a usuária ainda não fez login.',
-    subject: () => 'Vi que você ainda não entrou na sua conta',
+    subject: () => 'Seu acesso ao Luna Privé está pronto',
     html: (v) =>
       layout({
         previewText: 'Seu acesso ao Luna Privé já está pronto — é só entrar.',
