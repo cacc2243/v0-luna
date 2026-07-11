@@ -57,6 +57,12 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
   // Sinaliza que o PIX já foi 100% gerado e está pronto para exibir. Enquanto
   // false, a animação de pré-checkout permanece na tela (sem lacunas).
   const [pixReady, setPixReady] = useState(false)
+  // Identificador da geração atual do PIX. É incrementado a cada nova
+  // confirmação e usado como `key` do PixModal, forçando-o a remontar do zero.
+  // Isso evita que estado antigo (loading, pixCode, refs internos) trave a
+  // segunda geração — bug que deixava o "Aguardando..." carregando sem fim
+  // quando a usuária alterava o e-mail e gerava o PIX novamente.
+  const [pixSession, setPixSession] = useState(0)
   // Ativa as notificações de prova social no topo após o modal de convite fechar
   const [socialProofActive, setSocialProofActive] = useState(false)
   // Valor do convite ja chega resolvido do servidor (Server Component), entao
@@ -181,6 +187,8 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
   function handleConfirmAcquire() {
     setShowConfirm(false)
     setPixReady(false)
+    // Nova sessão => o PixModal remonta limpo e gera um PIX novo do zero.
+    setPixSession((n) => n + 1)
     setShowPixModal(true)
     setShowPreCheckout(true)
   }
@@ -285,6 +293,7 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
 
       {/* Modal de PIX */}
       <PixModal
+        key={pixSession}
         isOpen={showPixModal}
         onClose={() => {
           setShowPixModal(false)
