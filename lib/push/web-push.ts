@@ -107,3 +107,71 @@ export async function sendAdminPush(payload: PushPayload): Promise<{ sent: numbe
 
   return { sent, total: subs.length }
 }
+
+/**
+ * Envia uma notificacao push para todos os dispositivos de UMA criadora
+ * (usuaria dona de /minha-conta), usada para avisar sobre novas vendas.
+ * Remove inscricoes expiradas (404/410) automaticamente.
+ */
+export async function sendUserPush(
+  userId: string,
+  payload: PushPayload,
+): Promise<{ sent: number; total: number }> {
+  if (!ensureConfigured()) return { sent: 0, total: 0 }
+  if (!userId) return { sent: 0, total: 0 }
+
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('user_push_subscriptions')
+    .select('id, endpoint, p256dh, auth')
+    .eq('user_id', userId)
+
+  if (error) {
+    console.log('[v0] Web Push (user): erro ao carregar inscricoes:', error.message)
+    return { sent: 0, total: 0 }
+  }
+
+  const subs = (data || []) as SubscriptionRow[]
+  if (subs.length === 0) return { sent: 0, total: 0 }
+
+  const body = JSON.stringify({
+    title: payload.title,
+    body: payload.body,
+    url: payload.url || '/minha-conta',
+    tag: payload.tag,
+    icon: payload.icon,
+  })
+
+  let sent = 0
+  const staleIds: string[] = []
+
+  await Promise.all(
+    subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: sub.endpoint,
+            keys: { p256dh: sub.p256dh, auth: sub.auth },
+          },
+          body,
+          { TTL: 3600, urgency: 'high' },
+        )
+        sent++
+      } catch (e) {
+        const statusCode = (e as { statusCode?: number })?.statusCode
+        if (statusCode === 404 || statusCode === 410) {
+          staleIds.push(sub.id)
+        } else {
+          const msg = e instanceof Error ? e.message : 'erro desconhecido'
+          console.log(`[v0] Web Push (user): falha ao enviar (${statusCode || '?'}):`, msg)
+        }
+      }
+    }),
+  )
+
+  if (staleIds.length > 0) {
+    await supabase.from('user_push_subscriptions').delete().in('id', staleIds)
+  }
+
+  return { sent, total: subs.length }
+}

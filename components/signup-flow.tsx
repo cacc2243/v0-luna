@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { fbTrack } from '@/lib/fb/track'
+import { saveCreds } from '@/lib/auth/creds'
 import {
   User,
   Mail,
@@ -273,6 +274,10 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       } catch {
         // ignore storage errors
       }
+
+      // Salvar credenciais no dispositivo para o login automatico apos o
+      // pagamento do convite (contas com convite pago entram sem digitar nada).
+      saveCreds({ email: email.trim(), password })
 
       // Evento padrao do Facebook: cadastro concluido com sucesso.
       fbTrack('CompleteRegistration', {

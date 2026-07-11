@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Check, ArrowRight, Sparkles, ShieldCheck, Mail, AlertTriangle } from 'lucide-react'
+import { InstallAppGuide } from './install-app-guide'
 
 export function ConfirmationContent() {
   const [mounted, setMounted] = useState(false)
@@ -77,6 +78,9 @@ export function ConfirmationContent() {
               </p>
             </div>
           </div>
+
+          {/* Guia de instalacao do app (PWA) para receber notificacoes de venda */}
+          <InstallAppGuide />
 
           <Link
             href="/minha-conta"

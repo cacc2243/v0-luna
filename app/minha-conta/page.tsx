@@ -77,6 +77,8 @@ import { ChatsActive } from '@/components/minha-conta/chats-active'
  import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
 import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
  import { SupportModal } from '@/components/minha-conta/support-modal'
+import { EnablePushBanner } from '@/components/minha-conta/enable-push-banner'
+import { saveCreds, readCreds, clearCreds } from '@/lib/auth/creds'
 import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
 import { cn } from '@/lib/utils'
 
@@ -275,7 +277,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ────────����─����──����──────────────────────────────��──────────────────────��─────────
+// ────────�����─����──����──────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -292,8 +294,30 @@ export default function MinhaContaPage() {
     const supabase = createClient()
 
     async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession()
-      const user = session?.user
+      let { data: { session } } = await supabase.auth.getSession()
+      let user = session?.user
+
+      // Sem sessao ativa: tenta o LOGIN AUTOMATICO com as credenciais salvas no
+      // dispositivo (cadastro/entrada anteriores). Isso faz a usuaria com
+      // convite pago voltar a entrar sem digitar nada.
+      if (!user) {
+        const creds = readCreds()
+        if (creds) {
+          const { error } = await supabase.auth.signInWithPassword({
+            email: creds.email,
+            password: creds.password,
+          })
+          if (!error) {
+            const res = await supabase.auth.getSession()
+            session = res.data.session
+            user = session?.user
+          } else {
+            // Credenciais invalidas (senha alterada, conta removida): limpa.
+            clearCreds()
+          }
+        }
+      }
+
       if (!user) {
         setAuthState('logged_out')
         return
@@ -382,6 +406,8 @@ function NoInviteScreen({ email }: { email: string }) {
     setSigningOut(true)
     const supabase = createClient()
     await supabase.auth.signOut()
+    // Evita reentrar automaticamente numa conta sem convite pago.
+    clearCreds()
     router.push('/')
   }
 
@@ -574,6 +600,8 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
     // Verificar se o convite está pago — somente contas com convite pago acessam.
     const allowed = await hasPaidInvite(email.trim())
     if (allowed) {
+      // Guarda as credenciais para o login automatico nos proximos acessos.
+      saveCreds({ email: email.trim(), password })
       setIsLoading(false)
       onSuccess()
     } else {
@@ -1278,6 +1306,8 @@ function AppDashboard() {
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
+    // Remove as credenciais salvas para nao reentrar automaticamente.
+    clearCreds()
     // Após deslogar, permanece em /minha-conta (que exibe a tela de login).
     router.push('/minha-conta')
   }
@@ -2341,6 +2371,11 @@ function HomeScreen({
         <StatCard icon={Wallet} label="Hoje" value={brl(today)} />
         <StatCard icon={Eye} label="Views" value={String(views)} />
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
+      </div>
+
+      {/* Ativar notificacoes de venda no celular (some quando ja ativo) */}
+      <div className="mt-3">
+        <EnablePushBanner />
       </div>
 
       {/* Saldo pendente — soma dos pedidos ainda nao aceitos */}
