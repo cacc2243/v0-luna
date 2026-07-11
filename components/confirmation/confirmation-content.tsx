@@ -81,14 +81,23 @@ export function ConfirmationContent() {
             com a gente — tudo o que preparamos já está pronto para você aproveitar.
           </p>
 
-          {/* Aviso de acesso enviado por e-mail */}
-          <div className="mt-5 flex w-full items-start gap-3 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-left">
-            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-              <Mail className="size-4" aria-hidden="true" />
-            </span>
-            <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-              Também enviamos os seus dados de acesso para o seu <strong className="font-semibold text-foreground">e-mail</strong>.
-              Caso não encontre, verifique a caixa de spam ou promoções.
+          {/* Aviso em destaque: dados de acesso por e-mail + checar spam */}
+          <div className="mt-5 w-full rounded-2xl border-2 border-primary/50 bg-primary/10 px-4 py-4 text-left shadow-md shadow-primary/20">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Mail className="size-4" aria-hidden="true" />
+              </span>
+              <p className="text-sm font-bold leading-tight text-foreground">
+                Enviamos seu acesso por e-mail
+              </p>
+            </div>
+            <p className="mt-2.5 text-pretty text-xs leading-relaxed text-muted-foreground">
+              Seus dados de acesso foram enviados para o seu e-mail cadastrado. Se não encontrar na
+              caixa de entrada, confira a{' '}
+              <strong className="font-bold text-primary">caixa de spam</strong> ou a aba de{' '}
+              <strong className="font-bold text-primary">promoções</strong> — e marque como{' '}
+              <strong className="font-semibold text-foreground">&quot;não é spam&quot;</strong> para
+              receber os próximos normalmente.
             </p>
           </div>
 
