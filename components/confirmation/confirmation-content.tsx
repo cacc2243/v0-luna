@@ -12,38 +12,9 @@ export function ConfirmationContent() {
   }, [])
 
   return (
-    <section className="relative z-10 w-full max-w-sm">
-      {/* Card no mesmo estilo do fluxo de convite */}
-      <div className="relative flex flex-col overflow-hidden rounded-3xl bg-card shadow-2xl shadow-primary/25">
-        {/* Borda em gradiente: forte no topo, suavizando até a base */}
-        <div
-          className="pointer-events-none absolute inset-0 z-20 rounded-3xl"
-          aria-hidden="true"
-          style={{
-            padding: '1.25px',
-            background:
-              'linear-gradient(to bottom, oklch(0.5 0.15 15 / 0.95), oklch(0.6 0.16 15 / 0.32) 45%, oklch(0.66 0.17 15 / 0.08) 100%)',
-            WebkitMask:
-              'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
-            WebkitMaskComposite: 'xor',
-            maskComposite: 'exclude',
-          }}
-        />
-
-        {/* Imagem de fundo */}
-        <div className="absolute inset-0" aria-hidden="true">
-          <img
-            src="/images/convite-fundo.jpg"
-            alt=""
-            className="size-full object-cover object-center"
-          />
-          {/* Camadas para legibilidade do texto sobre a imagem */}
-          <div className="absolute inset-0 bg-card/65" />
-          <div className="absolute inset-0 bg-gradient-to-b from-card/30 via-card/60 to-card/90" />
-        </div>
-
-        {/* Conteúdo */}
-        <div className="relative z-10 flex flex-col items-center px-6 pb-8 pt-9 text-center">
+    <section className="relative z-10 flex w-full max-w-sm flex-1 flex-col justify-center">
+      {/* Conteúdo em tela cheia (sem card/modal) */}
+      <div className="flex flex-col items-center text-center">
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
@@ -119,7 +90,6 @@ export function ConfirmationContent() {
             <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
             Acesso protegido e exclusivo
           </p>
-        </div>
       </div>
     </section>
   )
