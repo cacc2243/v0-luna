@@ -617,6 +617,124 @@ export interface UtmStat {
   conversionRate: number
 }
 
+/* ===================== Adquirentes (recebedor do PIX) ===================== */
+
+// Extrai o nome do recebedor (Merchant Name — campo 59) de um código PIX
+// copia-e-cola (BR Code / EMV). É o "nome que aparece no meio do PIX".
+// O BR Code é um TLV: cada campo tem ID (2 dígitos) + tamanho (2 dígitos) +
+// valor. Percorremos apenas o nível raiz, onde o campo 59 fica.
+export function parsePixMerchantName(pixCode: string | null): string | null {
+  if (!pixCode) return null
+  const code = pixCode.trim()
+  let i = 0
+  while (i + 4 <= code.length) {
+    const id = code.slice(i, i + 2)
+    const len = Number.parseInt(code.slice(i + 2, i + 4), 10)
+    if (Number.isNaN(len)) break
+    const start = i + 4
+    const value = code.slice(start, start + len)
+    if (value.length < len) break
+    if (id === '59') {
+      const name = value.trim()
+      return name || null
+    }
+    i = start + len
+  }
+  return null
+}
+
+// Desempenho de um gateway dentro de um adquirente específico.
+export interface AcquirerGatewayStat {
+  id: string
+  label: string
+  generated: number
+  paid: number
+}
+
+// Estatística agregada de um adquirente (recebedor do PIX).
+export interface AcquirerStat {
+  /** Nome do recebedor extraído do PIX (campo 59). */
+  name: string
+  /** PIX gerados com este recebedor. */
+  generated: number
+  /** Vendas pagas (PIX confirmado). */
+  paid: number
+  /** Receita confirmada por este recebedor. */
+  revenue: number
+  /** % de conversão: gerou PIX -> pagou. */
+  conversionRate: number
+  /** Gateways usados para gerar PIX deste recebedor. */
+  gateways: AcquirerGatewayStat[]
+}
+
+// Agrupa os invites pelo nome do recebedor extraído do PIX. Considera apenas
+// invites que realmente geraram um código PIX. Invites sem recebedor
+// identificável caem em "Não identificado".
+export function aggregateByAcquirer(invites: InviteRow[]): AcquirerStat[] {
+  interface Acc extends AcquirerStat {
+    _gw: Map<string, { generated: number; paid: number }>
+  }
+  const map = new Map<string, Acc>()
+
+  for (const inv of invites) {
+    if (!inv.pix_code) continue
+    const name = parsePixMerchantName(inv.pix_code) || 'Não identificado'
+    const key = name.toUpperCase()
+    let stat = map.get(key)
+    if (!stat) {
+      stat = {
+        name,
+        generated: 0,
+        paid: 0,
+        revenue: 0,
+        conversionRate: 0,
+        gateways: [],
+        _gw: new Map(),
+      }
+      map.set(key, stat)
+    }
+    stat.generated += 1
+
+    const gwId = inv.gateway || '__unknown__'
+    let gw = stat._gw.get(gwId)
+    if (!gw) {
+      gw = { generated: 0, paid: 0 }
+      stat._gw.set(gwId, gw)
+    }
+    gw.generated += 1
+
+    if (isPaid(inv.status)) {
+      stat.paid += 1
+      stat.revenue += Number(inv.amount) || 0
+      gw.paid += 1
+    }
+  }
+
+  const list: AcquirerStat[] = Array.from(map.values()).map((s) => ({
+    name: s.name,
+    generated: s.generated,
+    paid: s.paid,
+    revenue: s.revenue,
+    conversionRate: s.generated > 0 ? (s.paid / s.generated) * 100 : 0,
+    gateways: Array.from(s._gw.entries())
+      .map(([id, v]) => ({
+        id,
+        label: id === '__unknown__' ? 'Não identificado' : gatewayLabel(id),
+        generated: v.generated,
+        paid: v.paid,
+      }))
+      .sort((a, b) => b.generated - a.generated),
+  }))
+
+  // Mais vendas primeiro; depois mais PIX gerados.
+  return list.sort((a, b) => {
+    if (b.paid !== a.paid) return b.paid - a.paid
+    return b.generated - a.generated
+  })
+}
+
+/* ===================== Atribuição / UTMs (continuação) ===================== */
+
 // Agrupa os invites por uma chave de UTM, somando geração, vendas e receita.
 // Invites sem aquela UTM caem em "Sem atribuição".
 export function aggregateByUtm(invites: InviteRow[], key: UtmKey): UtmStat[] {
