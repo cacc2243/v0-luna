@@ -66,6 +66,8 @@ import {
   Gift,
   Clock,
   DollarSign,
+  EyeOff,
+  KeyRound,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
   import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead } from './actions'
@@ -273,7 +275,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ──────────����──���──────────────────────────────��──────────────────────��─────────
+// ──────────����──����──────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -463,6 +465,58 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Fluxo de recuperação de senha.
+  const [view, setView] = useState<'login' | 'forgot'>('login')
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetError, setResetError] = useState('')
+  const [resetSent, setResetSent] = useState(false)
+
+  function openForgot() {
+    // Pré-preenche com o e-mail já digitado no login, se houver.
+    setResetEmail(email.trim())
+    setResetError('')
+    setResetSent(false)
+    setView('forgot')
+  }
+
+  function backToLogin() {
+    setResetError('')
+    setView('login')
+  }
+
+  async function handleForgotSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const target = resetEmail.trim()
+    if (!target) return
+
+    setResetLoading(true)
+    setResetError('')
+
+    const supabase = createClient()
+    // O link do e-mail passa pelo /auth/callback (troca o code por sessão) e
+    // então cai na tela de redefinição de senha.
+    const redirectTo = `${window.location.origin}/auth/callback?next=/minha-conta/redefinir-senha`
+
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(target, {
+      redirectTo,
+    })
+
+    setResetLoading(false)
+
+    if (resetErr) {
+      // Por segurança, não revelamos se o e-mail existe ou não: tratamos
+      // limites de envio explicitamente e, no resto, mostramos sucesso.
+      if (/rate|too many|limit/i.test(resetErr.message)) {
+        setResetError('Muitas tentativas. Aguarde alguns minutos e tente novamente.')
+        return
+      }
+    }
+
+    // Sempre confirmamos o envio (evita enumeração de contas).
+    setResetSent(true)
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     if (!email || !password) return
@@ -550,79 +604,190 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
         {/* Card de Login */}
         <div className="w-full max-w-sm">
           <div className="luna-border rounded-3xl bg-card p-6 shadow-2xl">
-            <div className="mb-6 text-center">
-              <h1 className="text-2xl font-bold text-foreground">Entrar</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Acesse sua conta Luna Prive
-              </p>
-            </div>
-
-            {error && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                <AlertCircle className="size-4 shrink-0" />
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleLogin} className="flex flex-col gap-4">
-              <div>
-                <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-foreground">
-                  E-mail
-                </label>
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
-                  <Mail className="size-5 text-muted-foreground" />
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                    className="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/60"
-                    required
-                  />
+            {view === 'login' ? (
+              <>
+                <div className="mb-6 text-center">
+                  <h1 className="text-2xl font-bold text-foreground">Entrar</h1>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Acesse sua conta Luna Prive
+                  </p>
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="password" className="mb-1.5 block text-sm font-semibold text-foreground">
-                  Senha
-                </label>
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
-                  <Lock className="size-5 text-muted-foreground" />
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="******"
-                    className="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/60"
-                    required
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="luna-gradient mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="size-5 animate-spin" />
-                    Entrando...
-                  </>
-                ) : (
-                  'Entrar'
+                {error && (
+                  <div className="mb-4 flex items-center gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    <AlertCircle className="size-4 shrink-0" />
+                    {error}
+                  </div>
                 )}
-              </button>
-            </form>
 
-            <p className="mt-5 text-center text-xs text-muted-foreground">
-              Ainda nao tem conta?{' '}
-              <a href="/" className="font-semibold text-primary hover:underline">
-                Criar conta
-              </a>
-            </p>
+                <form onSubmit={handleLogin} className="flex flex-col gap-4">
+                  <div>
+                    <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-foreground">
+                      E-mail
+                    </label>
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+                      <Mail className="size-5 text-muted-foreground" />
+                      <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="seu@email.com"
+                        className="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/60"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label htmlFor="password" className="block text-sm font-semibold text-foreground">
+                        Senha
+                      </label>
+                      <button
+                        type="button"
+                        onClick={openForgot}
+                        className="text-xs font-semibold text-primary transition hover:underline"
+                      >
+                        Esqueceu sua senha?
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+                      <Lock className="size-5 text-muted-foreground" />
+                      <input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="******"
+                        className="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/60"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="luna-gradient mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="size-5 animate-spin" />
+                        Entrando...
+                      </>
+                    ) : (
+                      'Entrar'
+                    )}
+                  </button>
+                </form>
+
+                <p className="mt-5 text-center text-xs text-muted-foreground">
+                  Ainda nao tem conta?{' '}
+                  <a href="/" className="font-semibold text-primary hover:underline">
+                    Criar conta
+                  </a>
+                </p>
+              </>
+            ) : resetSent ? (
+              /* ----- Confirmação de envio do link ----- */
+              <div className="text-center">
+                <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-primary/10">
+                  <CheckCircle2 className="size-8 text-primary" />
+                </div>
+                <h1 className="text-2xl font-bold text-foreground">Verifique seu e-mail</h1>
+                <p className="mx-auto mt-2 max-w-[18rem] text-pretty text-sm leading-relaxed text-muted-foreground">
+                  Se houver uma conta associada a{' '}
+                  <strong className="font-semibold text-foreground">{resetEmail.trim()}</strong>,
+                  enviamos um link para você criar uma nova senha. Confira também a caixa de spam.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={backToLogin}
+                  className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+                >
+                  Voltar para o login
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetSent(false)
+                  }}
+                  className="mt-3 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+                >
+                  Não recebeu? Enviar novamente
+                </button>
+              </div>
+            ) : (
+              /* ----- Formulário de recuperação de senha ----- */
+              <>
+                <button
+                  type="button"
+                  onClick={backToLogin}
+                  className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
+                >
+                  <ArrowLeft className="size-4" />
+                  Voltar
+                </button>
+
+                <div className="mb-6 text-center">
+                  <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-primary/10">
+                    <KeyRound className="size-7 text-primary" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-foreground">Recuperar senha</h1>
+                  <p className="mx-auto mt-1 max-w-[18rem] text-pretty text-sm leading-relaxed text-muted-foreground">
+                    Informe o e-mail da sua conta e enviaremos um link para você criar uma nova senha.
+                  </p>
+                </div>
+
+                {resetError && (
+                  <div className="mb-4 flex items-center gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    <AlertCircle className="size-4 shrink-0" />
+                    {resetError}
+                  </div>
+                )}
+
+                <form onSubmit={handleForgotSubmit} className="flex flex-col gap-4">
+                  <div>
+                    <label htmlFor="reset-email" className="mb-1.5 block text-sm font-semibold text-foreground">
+                      E-mail
+                    </label>
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+                      <Mail className="size-5 text-muted-foreground" />
+                      <input
+                        id="reset-email"
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="seu@email.com"
+                        className="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/60"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={resetLoading}
+                    className="luna-gradient mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98] disabled:opacity-70"
+                  >
+                    {resetLoading ? (
+                      <>
+                        <Loader2 className="size-5 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="size-5" />
+                        Enviar link de recuperação
+                      </>
+                    )}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -2320,7 +2485,7 @@ function StatCard({
 
 // ��────────────────────────────────────────────────────────────────────────────
 // Tela Packs
-// ─────────────��───────────────────────────────────────────────────────────────
+// ─────────────��────────────────────────────────────────────���──────────────────
 
 function PacksScreen({
   balance,
