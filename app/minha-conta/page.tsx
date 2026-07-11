@@ -2036,6 +2036,9 @@ function ChatsScreen({
                 <Lock className="size-5" aria-hidden="true" />
                 Desbloquear Chat
               </button>
+              <p className="mt-3 text-center text-xs font-medium text-positive">
+                Garantia de 7 dias · reembolso total se não gostar
+              </p>
             </div>
           </div>
         </div>

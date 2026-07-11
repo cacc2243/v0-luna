@@ -197,6 +197,9 @@ export function ChatLockedModal({
           <p className="mt-3 text-center text-[0.7rem] text-muted-foreground">
             Pagamento único · Acesso permanente
           </p>
+          <p className="mt-1.5 text-center text-[0.7rem] font-medium text-positive">
+            Garantia de 7 dias · reembolso total se não gostar
+          </p>
         </div>
       </div>
     </div>
@@ -313,6 +316,9 @@ export function UnlockChatModal({
           <p className="mt-3 text-center text-[0.7rem] text-muted-foreground">
             Pagamento único · Acesso permanente
           </p>
+          <p className="mt-1.5 text-center text-[0.7rem] font-medium text-positive">
+            Garantia de 7 dias · reembolso total se não gostar
+          </p>
         </div>
       </div>
     </div>
@@ -321,7 +327,7 @@ export function UnlockChatModal({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal 3: Conta bombando — pedidos aguardando (leva à aba de Chats)
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────��────────────────────────────────────────────────
 
 interface FansWaitingModalProps {
   isOpen: boolean
@@ -481,6 +487,11 @@ export function FansWaitingModal({
           >
             Agora não
           </button>
+          {!chatUnlocked && (
+            <p className="mt-2 text-center text-[0.7rem] font-medium text-positive">
+              Garantia de 7 dias · reembolso total se não gostar
+            </p>
+          )}
         </div>
       </div>
     </div>
