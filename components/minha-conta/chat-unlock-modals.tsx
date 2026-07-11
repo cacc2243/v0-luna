@@ -178,6 +178,15 @@ export function ChatLockedModal({
             </p>
           </div>
 
+          <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 p-4">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+              Você <span className="font-semibold text-foreground">não é obrigada a falar com
+              ninguém</span> se não quiser. Mas para aceitar packs com chat, o chat precisa estar
+              ativo. A escolha de conversar é sempre sua.
+            </p>
+          </div>
+
           <button
             onClick={onUnlock}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
@@ -187,6 +196,9 @@ export function ChatLockedModal({
           </button>
           <p className="mt-3 text-center text-[0.7rem] text-muted-foreground">
             Pagamento único · Acesso permanente
+          </p>
+          <p className="mt-1.5 text-center text-[0.7rem] font-medium text-positive">
+            Garantia de 7 dias · reembolso total se não gostar
           </p>
         </div>
       </div>
@@ -284,6 +296,16 @@ export function UnlockChatModal({
             </p>
           </div>
 
+          {/* Você não precisa falar com ninguém */}
+          <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 p-4">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+              Você <span className="font-semibold text-foreground">não é obrigada a falar com
+              ninguém</span> se não quiser. O chat ativo é apenas o que permite aceitar packs com
+              conversa — você decide com quem e se quer falar.
+            </p>
+          </div>
+
           <button
             onClick={onConfirm}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98]"
@@ -294,6 +316,9 @@ export function UnlockChatModal({
           <p className="mt-3 text-center text-[0.7rem] text-muted-foreground">
             Pagamento único · Acesso permanente
           </p>
+          <p className="mt-1.5 text-center text-[0.7rem] font-medium text-positive">
+            Garantia de 7 dias · reembolso total se não gostar
+          </p>
         </div>
       </div>
     </div>
@@ -302,7 +327,7 @@ export function UnlockChatModal({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal 3: Conta bombando — pedidos aguardando (leva à aba de Chats)
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────��────────────────────────────────────────────────
 
 interface FansWaitingModalProps {
   isOpen: boolean
@@ -429,6 +454,17 @@ export function FansWaitingModal({
             </p>
           </div>
 
+          {!chatUnlocked && (
+            <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 p-4">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                Você <span className="font-semibold text-foreground">não é obrigada a falar com
+                ninguém</span> se não quiser. Liberar o chat só permite aceitar packs com conversa —
+                você continua no controle de com quem fala.
+              </p>
+            </div>
+          )}
+
           <button
             onClick={onRespond}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
@@ -451,6 +487,11 @@ export function FansWaitingModal({
           >
             Agora não
           </button>
+          {!chatUnlocked && (
+            <p className="mt-2 text-center text-[0.7rem] font-medium text-positive">
+              Garantia de 7 dias · reembolso total se não gostar
+            </p>
+          )}
         </div>
       </div>
     </div>
