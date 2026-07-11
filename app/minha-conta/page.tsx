@@ -2514,6 +2514,12 @@ function HomeScreen({
 }) {
   const [accepting, setAccepting] = useState<string | null>(null)
   const viewNotifs = notifications.filter(n => n.type === 'like' || n.type === 'follow').slice(0, 3)
+  // Vendas aceitas so aparecem na lista por 5h; depois somem para nao acumular.
+  // (nao afeta os ganhos totais, que usam a lista completa de completedSales)
+  const RECENT_SALE_TTL_MS = 5 * 60 * 60 * 1000
+  const recentCompletedSales = completedSales.filter(
+    s => Date.now() - new Date(s.created_at).getTime() < RECENT_SALE_TTL_MS,
+  )
 
   function handleAccept(id: string) {
     // Trava: enquanto um pedido esta sendo aceito, nenhum outro pode ser aceito.
@@ -2694,7 +2700,7 @@ function HomeScreen({
         ))}
 
         {/* Histórico de aceitas / vazio */}
-        {pendingSales.length === 0 && completedSales.length === 0 ? (
+        {pendingSales.length === 0 && recentCompletedSales.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card/60 px-4 py-6 text-center">
             <p className="text-xs text-muted-foreground">
               {packs.length === 0
@@ -2703,7 +2709,7 @@ function HomeScreen({
             </p>
           </div>
         ) : (
-          completedSales.slice(0, 10).map((s) => (
+          recentCompletedSales.slice(0, 10).map((s) => (
             <div
               key={`done-${s.id}`}
               className="luna-border mb-2 flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5"
@@ -2742,7 +2748,7 @@ function relativeTime(dateStr: string) {
 
 // ─────────────────────���─────��──────────��─────────────���───���────────���───────────
 // StatCard
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────��───────────────────────────────────────────────
 
 function StatCard({
   icon: Icon,
