@@ -172,39 +172,15 @@ export function ConfirmAcquireModal({
           </div>
         ) : (
           /* ----- Modo de confirmação ----- */
-          <div className="flex flex-col gap-3.5 px-6 pb-7 pt-6">
-            <div className="text-center">
-              <h2
-                id="confirm-acquire-title"
-                className="text-balance text-base font-bold leading-snug text-foreground"
-              >
-                Tudo pronto para gerar o seu PIX
-              </h2>
-              <p className="mt-1.5 text-pretty text-xs leading-relaxed text-muted-foreground">
-                Vamos gerar o seu convite Luna Privé e enviar o código de acesso, junto com a
-                confirmação do pagamento, para o e-mail abaixo.
-              </p>
-            </div>
-
-            {/* E-mail de destino */}
-            <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-background/40 px-4 py-2.5 text-left">
-              <div className="flex min-w-0 flex-col">
-                <span className="text-[0.65rem] font-medium uppercase tracking-wider text-muted-foreground">
-                  Convite enviado para
-                </span>
-                <span className="min-w-0 break-all text-sm font-semibold text-foreground">
-                  {displayEmail}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={openEditor}
-                className="flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-1 text-xs font-medium text-primary transition hover:text-primary/80"
-              >
-                <Pencil className="size-3.5" aria-hidden="true" />
-                Alterar
-              </button>
-            </div>
+          <div className="flex flex-col gap-4 px-6 pb-7 pt-6">
+            <p
+              id="confirm-acquire-title"
+              className="text-pretty text-center text-sm leading-relaxed text-muted-foreground"
+            >
+              Vamos gerar o seu convite e enviar o acesso para o e-mail{' '}
+              <span className="break-all font-semibold text-foreground">{displayEmail}</span>.
+              Confirma a geração do PIX de pagamento?
+            </p>
 
             {/* Destaque do valor — faixa compacta horizontal */}
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
@@ -231,13 +207,23 @@ export function ConfirmAcquireModal({
             {/* Informe de desconto por tempo limitado */}
             <DiscountDeadline className="self-center" />
 
-            <button
-              type="button"
-              onClick={onConfirm}
-              className="cta-gradient animate-cta-breathe mt-0.5 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground ring-1 ring-inset ring-white/20 transition-all duration-300 ease-out hover:brightness-110 active:scale-[0.98]"
-            >
-              Sim, gerar agora!
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={onConfirm}
+                className="cta-gradient animate-cta-breathe flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground ring-1 ring-inset ring-white/20 transition-all duration-300 ease-out hover:brightness-110 active:scale-[0.98]"
+              >
+                Sim, gerar agora!
+              </button>
+              <button
+                type="button"
+                onClick={openEditor}
+                className="mx-auto flex items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+              >
+                <Pencil className="size-3.5" aria-hidden="true" />
+                Alterar e-mail
+              </button>
+            </div>
           </div>
         )}
       </div>
