@@ -275,7 +275,7 @@ async function fetchNotifications() {
   return (data || []) as Notification[]
 }
 
-// ────────���─����──����──────────────────────────────��──────────────────────��─────────
+// ────────����─����──����──────────────────────────────��──────────────────────��─────────
 // Dados mockados (REMOVIDOS - agora usamos dados reais)
 // ───────────────────────────────────────────────���─────────────────────────────
 
@@ -460,10 +460,14 @@ function NoInviteScreen({ email }: { email: string }) {
 // ─────────��──────���───────────────────────────────────────────────────────────��
 
 function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInvite: (email: string) => void }) {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Modal exibido quando a conta existe mas não tem convite pago ativo.
+  const [showNoInviteModal, setShowNoInviteModal] = useState(false)
 
   // Fluxo de recuperação de senha.
   const [view, setView] = useState<'login' | 'forgot'>('login')
@@ -569,11 +573,16 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
     
     // Verificar se o convite está pago — somente contas com convite pago acessam.
     const allowed = await hasPaidInvite(email.trim())
-    setIsLoading(false)
     if (allowed) {
+      setIsLoading(false)
       onSuccess()
     } else {
-      onNoInvite(email.trim())
+      // Conta existe mas sem convite ativo: encerramos a sessão recém-criada
+      // (para não deixar a pessoa "logada sem acesso") e mostramos o modal
+      // sobre a própria tela de login.
+      await supabase.auth.signOut()
+      setIsLoading(false)
+      setShowNoInviteModal(true)
     }
   }
 
@@ -792,6 +801,60 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
           </div>
         </div>
       </div>
+
+      {/* Modal: conta sem convite ativo */}
+      {showNoInviteModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/70 px-6 py-10 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="no-invite-title"
+          onClick={() => setShowNoInviteModal(false)}
+        >
+          <div
+            className="luna-border relative w-full max-w-sm rounded-3xl bg-card p-6 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowNoInviteModal(false)}
+              className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+              aria-label="Fechar"
+            >
+              <X className="size-4" />
+            </button>
+
+            <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-destructive/10">
+              <Gift className="size-8 text-destructive" />
+            </div>
+
+            <h2 id="no-invite-title" className="text-xl font-bold text-foreground">
+              Você precisa de um convite ativo
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Encontramos a sua conta, mas ela ainda não tem um convite ativo. Para entrar na
+              plataforma, resgate o seu convite de acesso.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => router.push('/convite')}
+              className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+            >
+              Resgatar convite
+              <ChevronRight className="size-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowNoInviteModal(false)}
+              className="mt-3 w-full rounded-xl border border-border bg-secondary py-3.5 text-sm font-semibold text-foreground transition active:scale-[0.98]"
+            >
+              Voltar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -4025,7 +4088,7 @@ function WalletScreen({
 
 // ───────────────────────────────────────────────��──────���──��───────────────────
 // Tela Perfil
-// ─────────────────────────────────────────────────────────────────────��───────
+// ─────────────────────────────────────────────────────────────────────��────���──
 
 function ProfileScreen({ 
   profile: userProfile, 
