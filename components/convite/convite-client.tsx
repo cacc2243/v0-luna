@@ -13,7 +13,7 @@ import { FaqSection } from '@/components/convite/faq-section'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PreCheckoutModal } from '@/components/convite/pre-checkout-modal'
-import { ConfirmAcquireModal } from '@/components/convite/confirm-acquire-modal'
+
 import { WelcomePopup } from '@/components/convite/welcome-popup'
 import { SocialProofToaster } from '@/components/convite/social-proof-toaster'
 
@@ -107,7 +107,6 @@ export function ConviteClient({
   }, [])
   // Controla a exibição da barra fixa de topo: só aparece após rolar um pouco.
   const [showTopBar, setShowTopBar] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
   const [showPreCheckout, setShowPreCheckout] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)
   // Sinaliza que o PIX já foi 100% gerado e está pronto para exibir. Enquanto
@@ -253,9 +252,8 @@ export function ConviteClient({
       })
     }
 
-    // Abre o popup de confirmação antes de gerar o PIX. A geração só começa
-    // quando a usuária confirmar em "Sim, gerar agora!".
-    setShowConfirm(true)
+    // Gera o PIX direto, sem popup de confirmação intermediário.
+    handleConfirmAcquire()
   }
 
   // Confirmação do popup: aqui sim iniciamos a geração do PIX (modal montado
@@ -263,7 +261,6 @@ export function ConviteClient({
   // acontece em paralelo à animação, que só sai de cena quando o PIX estiver
   // 100% pronto.
   function handleConfirmAcquire() {
-    setShowConfirm(false)
     setPixReady(false)
     // Nova sessão => o PixModal remonta limpo e gera um PIX novo do zero.
     setPixSession((n) => n + 1)
@@ -372,16 +369,6 @@ export function ConviteClient({
         <CompanyInfo />
         </div>
       </div>
-
-      {/* Popup de confirmação (antes de iniciar a geração do PIX) */}
-      <ConfirmAcquireModal
-        isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={handleConfirmAcquire}
-        email={data.email}
-        onEmailChange={(email) => updateField('email', email)}
-        amountCents={inviteCents}
-      />
 
       {/* Etapa de pré-confirmação (antes de gerar o PIX) */}
       <PreCheckoutModal
