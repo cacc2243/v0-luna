@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Check, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react'
+import { Check, ArrowRight, Sparkles, ShieldCheck, Mail } from 'lucide-react'
 
 export function ConfirmationContent() {
   const [mounted, setMounted] = useState(false)
@@ -73,19 +73,30 @@ export function ConfirmationContent() {
           </span>
 
           <h1 className="text-balance text-2xl font-bold leading-tight text-foreground">
-            Seu código de convite já está ativo
+            Seja bem-vindo(a) ao Luna Privé!
           </h1>
 
           <p className="mx-auto mt-3 max-w-[20rem] text-pretty text-sm leading-relaxed text-muted-foreground">
-            Recebemos a confirmação do seu PIX e seu código de convite foi ativado com sucesso. Agora é
-            só entrar na sua conta para aproveitar tudo o que preparamos para você.
+            Recebemos a confirmação do seu PIX e seu acesso já está liberado. É uma alegria ter você
+            com a gente — tudo o que preparamos já está pronto para você aproveitar.
           </p>
+
+          {/* Aviso de acesso enviado por e-mail */}
+          <div className="mt-5 flex w-full items-start gap-3 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-left">
+            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <Mail className="size-4" aria-hidden="true" />
+            </span>
+            <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+              Também enviamos os seus dados de acesso para o seu <strong className="font-semibold text-foreground">e-mail</strong>.
+              Caso não encontre, verifique a caixa de spam ou promoções.
+            </p>
+          </div>
 
           <Link
             href="/minha-conta"
-            className="luna-gradient-cta mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/40 ring-1 ring-inset ring-white/20 transition active:scale-[0.98]"
+            className="luna-gradient-cta mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/40 ring-1 ring-inset ring-white/20 transition active:scale-[0.98]"
           >
-            Acessar minha conta
+            Entrar agora!
             <ArrowRight className="size-5" aria-hidden="true" />
           </Link>
 
