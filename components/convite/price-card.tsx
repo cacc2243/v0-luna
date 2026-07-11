@@ -7,6 +7,7 @@ const benefits = [
   '100% Anonimato',
   'Suporte Exclusivo',
   'Clube de Benefícios',
+  'Comece a vender imediatamente',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -117,6 +118,11 @@ export function PriceCard({
           {priceReady ? 'Adquirir meu Convite' : 'Carregando valor...'}
           {priceReady && <ChevronRight className="size-5" aria-hidden="true" />}
         </button>
+
+        {/* Garantia */}
+        <p className="relative mx-auto mt-3 max-w-[17rem] text-center text-xs leading-relaxed text-muted-foreground">
+          Garantia de 30 dias: não gostou, devolvemos 100% do valor pago.
+        </p>
       </div>
     </section>
   )
