@@ -3175,7 +3175,7 @@ function PackMetric({
   )
 }
 
-// ──────────────────────���───��───────────────────────────��──────────────────────
+// ────────────��─────────���───��───────────────────────────��──────────────────────
 // Tela Carteira
 // ─────────────────────��──────────────────────────────���────────────────────────
 
@@ -3438,16 +3438,16 @@ function WalletScreen({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {/* Header fixo */}
-      <header className="shrink-0 px-4 pt-6">
+    <div className="flex-1 overflow-y-auto pb-6">
+      {/* Header */}
+      <header className="px-4 pt-6">
         <div className="flex items-center justify-between gap-3">
           <img src="/images/luna-prive-logo.png" alt="Luna Prive" className="h-9 w-auto" />
         </div>
       </header>
 
       {/* Card de saldo principal */}
-      <div className="shrink-0 px-4 pt-5">
+      <div className="px-4 pt-5">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-5 ring-1 ring-primary/20">
           <div className="absolute -right-8 -top-8 size-32 rounded-full bg-primary/10 blur-2xl" />
           <div className="absolute -bottom-8 -left-8 size-32 rounded-full bg-primary/5 blur-2xl" />
@@ -3482,7 +3482,7 @@ function WalletScreen({
       </div>
 
       {/* Botao de saque principal */}
-      <div className="shrink-0 px-4 pt-4">
+      <div className="px-4 pt-4">
         <button
           type="button"
           onClick={openWithdraw}
@@ -3501,7 +3501,7 @@ function WalletScreen({
       </div>
 
       {/* Tabs */}
-      <div className="mt-5 shrink-0 px-4">
+      <div className="mt-5 px-4">
         <div className="flex rounded-2xl bg-card/60 p-1 ring-1 ring-border">
           {(['resumo', 'extrato', 'saques'] as const).map((tab) => (
             <button
@@ -3520,8 +3520,8 @@ function WalletScreen({
         </div>
       </div>
 
-      {/* Conteudo scrollavel */}
-      <div className="flex-1 overflow-y-auto px-4 pb-6 pt-5">
+      {/* Conteudo */}
+      <div className="px-4 pt-5">
         {activeTab === 'resumo' && (
           <>
             {/* Stats rapidos */}
