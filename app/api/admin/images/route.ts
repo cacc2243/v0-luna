@@ -8,6 +8,7 @@ interface PackRow {
   id: string
   user_id: string | null
   title: string | null
+  price: number | null
   cover_image_url: string | null
   is_published: boolean | null
   created_at: string
@@ -36,6 +37,7 @@ export interface AdminImage {
   rowId: string // id da pack_image OU id do pack (para a capa)
   packId: string | null
   packTitle: string | null
+  packPrice: number | null
   imageUrl: string
   isPreview: boolean
   createdAt: string
@@ -58,7 +60,7 @@ export async function GET() {
   const [packsRes, packImagesRes, profilesRes] = await Promise.all([
     supabase
       .from('packs')
-      .select('id, user_id, title, cover_image_url, is_published, created_at')
+      .select('id, user_id, title, price, cover_image_url, is_published, created_at')
       .order('created_at', { ascending: false }),
     supabase
       .from('pack_images')
@@ -129,6 +131,7 @@ export async function GET() {
       rowId: pk.id,
       packId: pk.id,
       packTitle: pk.title,
+      packPrice: pk.price != null ? Number(pk.price) : null,
       imageUrl: pk.cover_image_url,
       isPreview: true,
       createdAt: pk.created_at,
@@ -154,6 +157,7 @@ export async function GET() {
       rowId: img.id,
       packId: img.pack_id,
       packTitle: pk?.title || null,
+      packPrice: pk?.price != null ? Number(pk.price) : null,
       imageUrl: img.image_url,
       isPreview: !!img.is_preview,
       createdAt: img.created_at,

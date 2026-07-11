@@ -907,6 +907,8 @@ function AppDashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [balanceFlash, setBalanceFlash] = useState(false)
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null)
+  // Convite ao impulsionamento: abre logo apos publicar um pack
+  const [showBoostPromo, setShowBoostPromo] = useState(false)
 
   // Fluxo do Chat Exclusivo (condicao para aceitar vendas)
   const [showPersonalizedSale, setShowPersonalizedSale] = useState(false)
@@ -1280,6 +1282,9 @@ function AppDashboard() {
     resetPackForm()
     mutatePacks()
 
+    // Convida a impulsionar o perfil logo apos publicar, para ganhar visibilidade.
+    setShowBoostPromo(true)
+
     // A atividade inicial (views, pedidos, notificacoes) NAO dispara na hora:
     // o motor de atividade abaixo agenda a primeira leva ~20s apos a publicacao.
   }
@@ -1329,6 +1334,46 @@ function AppDashboard() {
 
       {/* Onboarding em 3 passos (primeira visita) */}
       {showOnboarding && <OnboardingFlow onClose={closeOnboarding} />}
+
+      {/* Convite ao impulsionamento — abre logo apos publicar um pack */}
+      {showBoostPromo && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
+          <div className="w-full max-w-sm overflow-hidden rounded-3xl border border-primary/30 bg-card shadow-2xl shadow-primary/25">
+            <div className="flex flex-col items-center px-6 pb-6 pt-7 text-center">
+              <span className="flex size-16 items-center justify-center rounded-full bg-primary/15">
+                <Rocket className="size-8 text-primary" aria-hidden="true" />
+              </span>
+              <h2 className="mt-4 text-pretty text-xl font-bold text-foreground">
+                Pack publicado! Bora vender mais?
+              </h2>
+              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                Impulsione o seu perfil para aumentar a sua visibilidade e ter{' '}
+                <strong className="font-semibold text-foreground">muito mais pedidos</strong>{' '}
+                acontecendo. Seu perfil aparece em destaque para novos compradores.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBoostPromo(false)
+                  setActiveTab('Impulsionar')
+                }}
+                className="luna-gradient mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                <Rocket className="size-5" aria-hidden="true" />
+                Impulsionar meu perfil
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBoostPromo(false)}
+                className="mt-2 w-full rounded-2xl py-3 text-sm font-semibold text-muted-foreground transition active:scale-[0.98]"
+              >
+                Agora não
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Conteudo rolavel do app */}
       <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
@@ -1590,7 +1635,7 @@ function AppDashboard() {
               <label htmlFor="pack-price" className="mb-1.5 block text-sm font-semibold text-foreground">
                 Preço (R$)
               </label>
-              <div className="mb-5 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+              <div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
                 <span className="text-base font-medium text-muted-foreground">R$</span>
                 <input
                   id="pack-price"
@@ -1599,6 +1644,15 @@ function AppDashboard() {
                   inputMode="decimal"
                   className="w-full bg-transparent text-base text-foreground outline-none"
                 />
+              </div>
+              <div className="mb-5 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2.5">
+                <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                  Usuárias novas costumam vender mais rápido com valores entre{' '}
+                  <strong className="font-semibold text-foreground">R$ 20,00</strong> e{' '}
+                  <strong className="font-semibold text-foreground">R$ 70,00</strong>. Mas você é
+                  livre para cobrar o valor que desejar!
+                </p>
               </div>
 
               <label htmlFor="pack-desc" className="mb-1.5 block text-sm font-semibold text-foreground">
@@ -2561,7 +2615,7 @@ function relativeTime(dateStr: string) {
   return `${Math.floor(h / 24)}d`
 }
 
-// ───────────────────────────��──────────��─────────────���───���────────���───────────
+// ─────────────────────���─────��──────────��─────────────���───���────────���───────────
 // StatCard
 // ─────────────────────────────────────────────────────────────────────────────
 
