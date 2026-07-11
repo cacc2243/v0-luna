@@ -301,7 +301,7 @@ export function UnlockChatModal({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Modal 3: Conta bombando — fãs querendo conversar agora (leva à aba de Chats)
+// Modal 3: Conta bombando — pedidos aguardando (leva à aba de Chats)
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface FansWaitingModalProps {
@@ -311,6 +311,8 @@ interface FansWaitingModalProps {
   chatCount: number
   totalViews: number
   pendingAmount: number
+  /** Se o chat já foi desbloqueado. Muda o texto e a CTA do modal. */
+  chatUnlocked?: boolean
 }
 
 export function FansWaitingModal({
@@ -320,6 +322,7 @@ export function FansWaitingModal({
   chatCount,
   totalViews,
   pendingAmount,
+  chatUnlocked = false,
 }: FansWaitingModalProps) {
   if (!isOpen) return null
 
@@ -346,11 +349,13 @@ export function FansWaitingModal({
           </div>
 
           <h2 className="mt-4 flex items-center justify-center gap-2 text-xl font-bold text-foreground">
-            Sua conta está bombando!
+            Seus pedidos estão bombando!
             <Flame className="size-5 text-primary" />
           </h2>
           <p className="mt-1 text-sm font-medium text-primary">
-            {chatCount} {chatCount === 1 ? 'fã quer' : 'fãs querem'} conversar com você agora
+            {chatUnlocked
+              ? `${chatCount} ${chatCount === 1 ? 'pedido aguarda' : 'pedidos aguardam'} sua resposta agora`
+              : `Você tem ${brl(pendingAmount)} em pedidos pendentes`}
           </p>
         </div>
 
@@ -376,15 +381,33 @@ export function FansWaitingModal({
             <div className="flex items-start gap-3">
               <MessageCircleHeart className="mt-0.5 size-5 shrink-0 text-primary" />
               <div className="min-w-0">
-                <p className="text-sm leading-relaxed text-foreground">
-                  Seus fãs estão{' '}
-                  <span className="font-semibold text-primary">esperando uma resposta</span>. Quanto antes
-                  você responder, mais vendas você fecha.
-                </p>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  Conversas ativas convertem em{' '}
-                  <span className="font-semibold text-foreground">média 3x mais</span> presentes e pedidos.
-                </p>
+                {chatUnlocked ? (
+                  <>
+                    <p className="text-sm leading-relaxed text-foreground">
+                      Seus pedidos estão{' '}
+                      <span className="font-semibold text-primary">esperando uma resposta</span>. Quanto
+                      antes você responder, mais vendas você fecha.
+                    </p>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      Conversas ativas convertem em{' '}
+                      <span className="font-semibold text-foreground">média 3x mais</span> presentes e
+                      pedidos.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm leading-relaxed text-foreground">
+                      Você tem{' '}
+                      <span className="font-semibold text-positive">{brl(pendingAmount)}</span> em
+                      pedidos pendentes aguardando você{' '}
+                      <span className="font-semibold text-primary">liberar o chat</span>.
+                    </p>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      Libere o chat para receber esses pedidos e{' '}
+                      <span className="font-semibold text-foreground">liberar seu saldo</span>.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -402,7 +425,7 @@ export function FansWaitingModal({
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Compradores esperando para conversar com você
+              Compradores com pedidos aguardando você
             </p>
           </div>
 
@@ -410,8 +433,17 @@ export function FansWaitingModal({
             onClick={onRespond}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
           >
-            <MessagesSquare className="size-5" />
-            Responder fãs
+            {chatUnlocked ? (
+              <>
+                <MessagesSquare className="size-5" />
+                Ver pedidos
+              </>
+            ) : (
+              <>
+                <Lock className="size-5" />
+                Liberar chat e receber pedidos
+              </>
+            )}
           </button>
           <button
             onClick={onClose}

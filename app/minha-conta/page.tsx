@@ -1564,6 +1564,7 @@ function AppDashboard() {
         chatCount={conversations.length}
         totalViews={totalViews}
         pendingAmount={pendingBalance}
+        chatUnlocked={!!profile?.chat_unlocked}
         onRespond={() => {
           setShowFansWaiting(false)
           setActiveTab('Chats')
@@ -3174,7 +3175,7 @@ function PackMetric({
   )
 }
 
-// ──────────────────────���───────────────────────────────��──────────────────────
+// ──────────────────────���───��───────────────────────────��──────────────────────
 // Tela Carteira
 // ─────────────────────��──────────────────────────────���────────────────────────
 
