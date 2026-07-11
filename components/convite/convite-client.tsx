@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Lock, Gift } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { PageBackground } from '@/components/page-background'
@@ -106,7 +106,6 @@ export function ConviteClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   // Controla a exibição da barra fixa de topo: só aparece após rolar um pouco.
-  const [showTopBar, setShowTopBar] = useState(false)
   const [showPreCheckout, setShowPreCheckout] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)
   // Sinaliza que o PIX já foi 100% gerado e está pronto para exibir. Enquanto
@@ -141,14 +140,6 @@ export function ConviteClient({
     }
     window.addEventListener('pageshow', onPageShow)
     return () => window.removeEventListener('pageshow', onPageShow)
-  }, [])
-
-  // A barra fixa de topo só aparece depois que o usuário rola um pouco a página.
-  useEffect(() => {
-    const onScroll = () => setShowTopBar(window.scrollY > 120)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   // InitiateCheckout: disparado ao ENTRAR na pagina /convite (uma unica vez),
@@ -285,19 +276,6 @@ export function ConviteClient({
       <PageBackground />
 
       {/* Barra fixa de destaque no topo (aparece após rolar um pouco) */}
-      <div
-        className={`fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-black/70 backdrop-blur-md transition-all duration-300 ${
-          showTopBar ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
-        }`}
-      >
-        <div className="mx-auto flex max-w-md items-center justify-center gap-2 px-4 py-2">
-          <Gift className="size-3.5 shrink-0 text-white" aria-hidden="true" />
-          <span className="truncate text-[0.7rem] font-bold uppercase tracking-wider text-white">
-            Convites com vagas limitadas
-          </span>
-        </div>
-      </div>
-
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-8">
         {/* Logo centralizada, igual às demais telas do fluxo */}
         <header className="flex flex-col items-center gap-4">
