@@ -108,11 +108,17 @@ export async function sendTemplateEmail(
       // Alternativa em texto puro: forte fator de deliverability.
       text: template.text(vars),
       replyTo,
-      // List-Unsubscribe: exigido por boas praticas de bulk e valorizado por
-      // Gmail/Outlook; reduz a chance de cair em spam.
+      // List-Unsubscribe apenas via mailto — que e RFC-valido por si so e e um
+      // sinal POSITIVO para Gmail/Outlook.
+      //
+      // NAO enviamos "List-Unsubscribe-Post: One-Click" porque o descadastro em
+      // um clique (RFC 8058) EXIGE uma URL https:// no List-Unsubscribe. Como
+      // aqui so temos um mailto:, declarar One-Click deixaria o header
+      // malformado — o que o Gmail penaliza (fator de spam). Se um dia existir
+      // um endpoint https de descadastro, adiciona-se a URL e o header One-Click
+      // juntos.
       headers: {
         'List-Unsubscribe': `<mailto:${replyTo}?subject=unsubscribe>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
     })
 
