@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Check, ArrowRight, Sparkles, ShieldCheck, Mail } from 'lucide-react'
+import { Check, ArrowRight, Sparkles, ShieldCheck, Mail, AlertTriangle } from 'lucide-react'
 
 export function ConfirmationContent() {
   const [mounted, setMounted] = useState(false)
@@ -92,13 +92,19 @@ export function ConfirmationContent() {
               </p>
             </div>
             <p className="mt-2.5 text-pretty text-xs leading-relaxed text-muted-foreground">
-              Seus dados de acesso foram enviados para o seu e-mail cadastrado. Se não encontrar na
-              caixa de entrada, confira a{' '}
-              <strong className="font-bold text-primary">caixa de spam</strong> ou a aba de{' '}
-              <strong className="font-bold text-primary">promoções</strong> — e marque como{' '}
-              <strong className="font-semibold text-foreground">&quot;não é spam&quot;</strong> para
-              receber os próximos normalmente.
+              Seus dados de acesso foram enviados para o seu e-mail cadastrado.
             </p>
+            {/* Alerta específico da caixa de spam, em destaque máximo */}
+            <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-primary/50 bg-primary/15 px-3 py-2.5">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <p className="text-pretty text-xs leading-relaxed text-foreground">
+                <strong className="font-bold">Não achou o e-mail?</strong> Confira a{' '}
+                <strong className="font-bold text-primary">caixa de spam</strong> ou a aba{' '}
+                <strong className="font-bold text-primary">Promoções</strong> e marque como{' '}
+                <strong className="font-semibold">&quot;não é spam&quot;</strong> para receber os
+                próximos normalmente.
+              </p>
+            </div>
           </div>
 
           <Link
