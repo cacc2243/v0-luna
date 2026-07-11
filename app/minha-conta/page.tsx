@@ -2798,6 +2798,7 @@ function PacksScreen({
   onCreate: () => void
   onSelect: (id: string) => void
 }) {
+  const [showGuide, setShowGuide] = useState(false)
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-6 pt-6">
       {/* Header */}
@@ -2829,6 +2830,22 @@ function PacksScreen({
           Criar Pack
         </button>
       </div>
+
+      {/* Gatilho — como criar seus packs */}
+      <button
+        type="button"
+        onClick={() => setShowGuide(true)}
+        className="luna-border mt-4 flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+          <Info className="size-5" aria-hidden="true" />
+        </span>
+        <span className="flex-1 leading-tight">
+          <span className="block text-sm font-semibold text-foreground">Como criar seus packs</span>
+          <span className="block text-xs text-muted-foreground">Regras e dicas para suas fotos e vídeos</span>
+        </span>
+        <ChevronRight className="size-5 shrink-0 text-muted-foreground/50" aria-hidden="true" />
+      </button>
 
       {/* Vitrine */}
       <div className="mt-5 flex flex-col gap-3">
@@ -2884,6 +2901,96 @@ function PacksScreen({
           ))
         )}
       </div>
+
+      {/* Modal — Como criar seus packs */}
+      {showGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
+          onClick={() => setShowGuide(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Como criar seus packs"
+        >
+          <div
+            className="luna-border max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-card sm:rounded-3xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Cabeçalho */}
+            <div className="sticky top-0 flex items-center justify-between gap-3 border-b border-border/60 bg-card px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                  <Camera className="size-5" aria-hidden="true" />
+                </span>
+                <h2 className="text-base font-bold text-foreground">Como criar seus packs</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGuide(false)}
+                className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                aria-label="Fechar"
+              >
+                <X className="size-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-4 px-5 py-5">
+              <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
+                Monte seus packs com o conteúdo que você quiser. Aqui vão as regras e dicas para suas
+                publicações renderem mais.
+              </p>
+
+              {/* O que você pode postar */}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl bg-positive/15 text-positive">
+                    <Image className="size-4" aria-hidden="true" />
+                  </span>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    <span className="font-semibold text-foreground">Aceitamos todos os tipos de
+                    imagens e vídeos.</span> Você pode postar a foto que quiser.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl bg-positive/15 text-positive">
+                    <CheckCircle2 className="size-4" aria-hidden="true" />
+                  </span>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    Fotos dos <span className="font-semibold text-foreground">pés</span>, do{' '}
+                    <span className="font-semibold text-foreground">corpo</span> ou de qualquer parte
+                    — a escolha é totalmente sua.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl bg-positive/15 text-positive">
+                    <Video className="size-4" aria-hidden="true" />
+                  </span>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    Prefira imagens nítidas e bem iluminadas: quanto melhor a qualidade, mais vendas
+                    o seu pack tende a gerar.
+                  </p>
+                </div>
+              </div>
+
+              {/* Aviso de IA */}
+              <div className="flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4">
+                <Ban className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
+                <p className="text-sm leading-relaxed text-foreground">
+                  <span className="font-semibold">Não aceitamos imagens geradas por inteligência
+                  artificial.</span> Todo o conteúdo precisa ser real e feito por você.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowGuide(false)}
+                className="luna-gradient mt-1 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-[0.98]"
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
