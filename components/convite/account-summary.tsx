@@ -126,7 +126,10 @@ export function AccountSummary({ username, email, pixType, pixKey, onUpdate }: A
               </span>
 
               <div className="min-w-0 flex-1">
-                <p className="text-[0.62rem] font-medium uppercase tracking-wide text-muted-foreground">
+                <p
+                  suppressHydrationWarning
+                  className="text-[0.62rem] font-medium uppercase tracking-wide text-muted-foreground"
+                >
                   {row.label}
                 </p>
 
@@ -155,7 +158,18 @@ export function AccountSummary({ username, email, pixType, pixKey, onUpdate }: A
                     )}
                   </div>
                 ) : (
-                  <p className="truncate text-[0.82rem] font-semibold text-foreground">{row.display}</p>
+                  // suppressHydrationWarning: o valor vem de dados especificos do
+                  // cliente (URL do e-mail / sessionStorage). Se por qualquer
+                  // motivo o HTML do servidor divergir do cliente (ex.: cache de
+                  // bundle desatualizado em producao, webview de app), o React
+                  // apenas corrige o texto em silencio, em vez de regenerar a
+                  // arvore — o que travava a interatividade dos modais.
+                  <p
+                    suppressHydrationWarning
+                    className="truncate text-[0.82rem] font-semibold text-foreground"
+                  >
+                    {row.display}
+                  </p>
                 )}
               </div>
 
