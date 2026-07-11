@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Lock } from 'lucide-react'
+import { Lock, Sparkles } from 'lucide-react'
 import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { PageBackground } from '@/components/page-background'
@@ -191,7 +191,17 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
     <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">
       <PageBackground />
 
-      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-8">
+      {/* Barra fixa de destaque no topo */}
+      <div className="fixed inset-x-0 top-0 z-40 border-b border-primary/20 bg-primary/10 backdrop-blur-md">
+        <div className="mx-auto flex max-w-md items-center justify-center gap-2 px-4 py-2">
+          <Sparkles className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+          <span className="truncate text-[0.7rem] font-bold uppercase tracking-wider text-primary">
+            É o maior desconto dos últimos anos
+          </span>
+        </div>
+      </div>
+
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-16">
         {/* Logo centralizada, igual às demais telas do fluxo */}
         <header className="flex flex-col items-center gap-4">
           <img
