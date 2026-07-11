@@ -16,7 +16,7 @@ function formatBRL(value: number): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, amount, name, document, phone, type, boostDays, fbp, fbc, eventSourceUrl, fbEventId, attribution } = await request.json()
+    const { userId, email, amount, name, username, pixType, pixKey, document, phone, type, boostDays, fbp, fbc, eventSourceUrl, fbEventId, attribution } = await request.json()
 
     if (!email) {
       return NextResponse.json(
@@ -274,6 +274,10 @@ export async function POST(request: NextRequest) {
         name: (name || '').trim() || undefined,
         amount: formatBRL(effectiveAmount),
         pixCode: invite.pix_code,
+        email,
+        username: (username || name || '').trim() || undefined,
+        pixType: (pixType || '').trim() || undefined,
+        pixKey: (pixKey || '').trim() || undefined,
       }).catch((e) =>
         console.error('[v0] Falha ao enviar e-mail invite_pix:', (e as Error)?.message),
       )
