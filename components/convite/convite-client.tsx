@@ -244,7 +244,8 @@ export function ConviteClient({ initialInviteCents }: { initialInviteCents: numb
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
         onConfirm={handleConfirmAcquire}
-        userName={data.username}
+        email={data.email}
+        onEmailChange={(email) => updateField('email', email)}
         amountCents={inviteCents}
       />
 
