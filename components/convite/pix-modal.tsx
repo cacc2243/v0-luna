@@ -653,15 +653,15 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
           {/* Rodapé de segurança */}
           <div className={`${compact ? 'mt-3' : 'mt-4'} border-t border-border/50 pt-3`}>
-            <div className="flex items-center justify-center gap-2 text-[0.7rem] font-medium">
-              <span className="flex items-center gap-1.5 text-positive">
+            <div className="flex items-center justify-center gap-2 text-[0.7rem] font-medium text-foreground">
+              <span className="flex items-center gap-1.5">
                 <Lock className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
-                <span className="text-positive">Pagamento seguro</span>
+                Pagamento seguro
               </span>
               <span className="h-3 w-px bg-border" aria-hidden="true" />
-              <span className="flex items-center gap-1.5 text-positive">
+              <span className="flex items-center gap-1.5">
                 <ShieldCheck className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
-                <span className="text-positive">Dados protegidos</span>
+                Dados protegidos
               </span>
             </div>
             <div className="mt-3 flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
