@@ -118,6 +118,25 @@ export function ConviteClient({
   // o preco aparece imediatamente, sem blur nem fetch no cliente.
   const [inviteCents] = useState(initialInviteCents)
 
+  // ── Guard de bfcache (back/forward cache) ──────────────────────────────────
+  // No celular, ao sair para o app de e-mail e voltar (ou abrir o link do
+  // e-mail que reaproveita o mesmo webview), navegadores como Chrome/Safari e
+  // webviews de apps (Gmail, Instagram) RESTAURAM a pagina congelada do
+  // bfcache em vez de recarregar. Nesse caso o React nao re-monta, os efeitos
+  // nao rodam e os toques nos botoes ficam "mortos" — exatamente o modal que
+  // travava depois de gerar um PIX e voltar pelo link. Ao detectar a
+  // restauracao (event.persisted === true), forcamos um reload para garantir
+  // uma pagina 100% fresca e interativa.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        window.location.reload()
+      }
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
+
   // A barra fixa de topo só aparece depois que o usuário rola um pouco a página.
   useEffect(() => {
     const onScroll = () => setShowTopBar(window.scrollY > 120)
