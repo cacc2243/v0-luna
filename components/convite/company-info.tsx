@@ -6,7 +6,7 @@ export function CompanyInfo() {
   return (
     <section aria-label="Links legais" className="flex flex-col items-center gap-4">
       {/* Card de taxas da plataforma */}
-      <div className="luna-border w-full max-w-sm rounded-2xl bg-card/60 p-4">
+      <div className="luna-border-soft w-full max-w-sm rounded-2xl bg-card/60 p-4">
         <h3 className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Taxas da plataforma
         </h3>

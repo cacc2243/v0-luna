@@ -73,7 +73,7 @@ export function BonusAndReviews({ middleSlot }: { middleSlot?: React.ReactNode }
               <article
                 key={`${r.handle}-${i}`}
                 aria-hidden={i >= reviews.length}
-                className="luna-border w-[80vw] max-w-[320px] shrink-0 rounded-2xl bg-card p-4"
+                className="luna-border-soft w-[80vw] max-w-[320px] shrink-0 rounded-2xl bg-card p-4"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
