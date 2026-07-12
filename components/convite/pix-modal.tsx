@@ -605,18 +605,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 className="pointer-events-none absolute left-1/2 top-1/2 size-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/25 blur-3xl"
                 aria-hidden="true"
               />
-              <div className="relative rounded-3xl bg-white p-3.5 shadow-xl shadow-primary/20 ring-1 ring-black/5">
-                {/* Cantos decorativos na cor da marca */}
-                <span className="pointer-events-none absolute left-2 top-2 size-4 rounded-tl-lg border-l-2 border-t-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute right-2 top-2 size-4 rounded-tr-lg border-r-2 border-t-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute bottom-2 left-2 size-4 rounded-bl-lg border-b-2 border-l-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute bottom-2 right-2 size-4 rounded-br-lg border-b-2 border-r-2 border-primary/70" aria-hidden="true" />
+              <div className="relative rounded-2xl bg-white p-1 shadow-xl shadow-primary/20 ring-1 ring-black/5">
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
                   width={180}
                   height={180}
-                  className={compact ? 'size-[124px] rounded-lg' : 'size-[164px] rounded-lg sm:size-[184px]'}
+                  className={compact ? 'size-[124px] rounded-xl' : 'size-[164px] rounded-xl sm:size-[184px]'}
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
