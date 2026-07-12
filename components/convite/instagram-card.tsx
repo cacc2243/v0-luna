@@ -3,7 +3,7 @@ import { Instagram, Camera, Lock } from 'lucide-react'
 export function InstagramCard() {
   return (
     <section aria-label="Instagram Luna Privé">
-      <div className="luna-border overflow-hidden rounded-2xl bg-card/60 backdrop-blur-sm">
+      <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm">
         <div className="flex flex-col gap-3 px-4 py-4">
           {/* Cabeçalho do perfil */}
           <div className="flex items-center gap-3">
