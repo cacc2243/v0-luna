@@ -349,12 +349,14 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           const qrDataUrl = await QRCode.toDataURL(data.pixCode, {
             // Resolucao alta para renderizacao nitida em telas retina.
             width: 512,
-            margin: 1,
+            margin: 2,
             // 'H' (recuperacao de ate 30%) garante a leitura mesmo com a logo no centro.
             errorCorrectionLevel: 'H',
+            // QR invertido: modulos brancos sobre fundo transparente, para
+            // aparecer sobre o degrade escuro do painel.
             color: {
-              dark: '#0a0a0a',
-              light: '#ffffff',
+              dark: '#ffffff',
+              light: '#00000000',
             },
           })
           setPixQrCode(qrDataUrl)
@@ -604,7 +606,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 className="pointer-events-none absolute left-1/2 top-1/2 size-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/25 blur-3xl"
                 aria-hidden="true"
               />
-              <div className="relative rounded-3xl bg-white p-3.5 shadow-xl shadow-primary/20 ring-1 ring-black/5">
+              <div className="relative rounded-3xl bg-gradient-to-br from-black/85 via-zinc-900/70 to-black/90 p-3.5 shadow-xl shadow-primary/25 ring-1 ring-white/10 backdrop-blur-md">
                 {/* Cantos decorativos na cor da marca */}
                 <span className="pointer-events-none absolute left-2 top-2 size-4 rounded-tl-lg border-l-2 border-t-2 border-primary/70" aria-hidden="true" />
                 <span className="pointer-events-none absolute right-2 top-2 size-4 rounded-tr-lg border-r-2 border-t-2 border-primary/70" aria-hidden="true" />
@@ -619,7 +621,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
-                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-1 shadow-md ring-1 ring-black/5">
+                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-zinc-950 p-1 shadow-md ring-1 ring-white/15">
                   <Image
                     src="/images/luna-icon.png"
                     alt=""
