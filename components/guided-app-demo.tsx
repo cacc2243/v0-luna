@@ -27,6 +27,8 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  ImagePlus,
+  Video,
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { CtaButton } from '@/components/cta-button'
@@ -108,7 +110,7 @@ function useCountUp(target: number, duration = 700) {
 
 export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [phase, setPhase] = useState<
-    'tour' | 'selling' | 'done' | 'selling2' | 'celebrate' | 'projection' | 'wallet' | 'profile' | 'signup'
+    'tour' | 'selling' | 'done' | 'selling2' | 'celebrate' | 'projection' | 'packs' | 'wallet' | 'profile' | 'signup'
   >('tour')
   const [showSellModal, setShowSellModal] = useState(false)
   const [tourStep, setTourStep] = useState(0)
@@ -292,11 +294,13 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   }
 
   const activeTab =
-    phase === 'wallet'
-      ? 'Carteira'
-      : phase === 'profile' || phase === 'signup'
-        ? 'Perfil'
-        : 'Início'
+    phase === 'packs'
+      ? 'Packs'
+      : phase === 'wallet'
+        ? 'Carteira'
+        : phase === 'profile' || phase === 'signup'
+          ? 'Perfil'
+          : 'Início'
 
   const currentSale = activeSale !== null ? sellingList[activeSale] : null
   const saleActive = currentSale !== null && (phase === 'selling' || phase === 'selling2')
@@ -363,7 +367,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       ))}
 
       {/* Conteúdo rolável do app */}
-      {phase === 'wallet' ? (
+      {phase === 'packs' ? (
+        <div key="packs-screen" className="animate-slide-in-right flex min-h-0 flex-1 flex-col">
+          <PacksScreen onDone={() => setPhase('wallet')} />
+        </div>
+      ) : phase === 'wallet' ? (
         <div key="wallet-screen" className="animate-slide-in-right flex min-h-0 flex-1 flex-col">
           <WalletScreen onDone={() => setPhase('profile')} />
         </div>
@@ -793,7 +801,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               </p>
 
               <div className="animate-card-enter mt-5" style={{ animationDelay: '400ms' }}>
-                <CtaButton onClick={() => setPhase('wallet')}>Ver minha carteira</CtaButton>
+                <CtaButton onClick={() => setPhase('packs')}>Ver como criar meus packs</CtaButton>
               </div>
             </div>
           </div>
@@ -1148,6 +1156,114 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
                     onDone()
                   }}
                 className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Entendi
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function PacksScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boolean }) {
+  const [showHint, setShowHint] = useState(true)
+
+  const packs = [
+    { name: 'Pés & Saltos', price: 29.9, sales: 87 },
+    { name: 'Ensaio na Praia', price: 49.9, sales: 54 },
+  ]
+
+  return (
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-6 pt-6">
+        {/* Header */}
+        <header className="shrink-0">
+          <div className="flex items-center justify-between gap-3">
+            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
+          </div>
+        </header>
+
+        <div className="mt-5">
+          <h1 className="text-lg font-bold text-foreground">Meus packs</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Crie e gerencie o conteúdo que você vende.
+          </p>
+        </div>
+
+        {/* Botão criar novo pack (destaque) */}
+        <button
+          type="button"
+          className="animate-coach-glow mt-4 flex w-full flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-primary/50 bg-primary/5 px-4 py-7 text-center transition active:scale-[0.99]"
+        >
+          <span className="luna-gradient flex size-14 items-center justify-center rounded-full shadow-lg shadow-primary/30">
+            <Plus className="size-7 text-primary-foreground" aria-hidden="true" />
+          </span>
+          <span className="mt-1 text-base font-bold text-foreground">Criar novo pack</span>
+          <span className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <ImagePlus className="size-3.5 text-primary" aria-hidden="true" />
+              Enviar foto
+            </span>
+            <span className="flex items-center gap-1">
+              <Video className="size-3.5 text-primary" aria-hidden="true" />
+              Enviar vídeo
+            </span>
+          </span>
+        </button>
+
+        {/* Packs publicados */}
+        <div className="mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Seus packs publicados</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {packs.map((p) => (
+              <div key={p.name} className="luna-border overflow-hidden rounded-2xl bg-card">
+                <div className="relative flex aspect-[4/5] items-center justify-center bg-gradient-to-br from-primary/25 to-secondary/50">
+                  <Lock className="size-6 text-foreground/60" aria-hidden="true" />
+                  <span className="absolute right-2 top-2 rounded-full bg-background/85 px-2 py-0.5 text-[0.6rem] font-bold text-foreground">
+                    {brl(p.price)}
+                  </span>
+                </div>
+                <div className="px-3 py-2.5">
+                  <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
+                  <p className="text-[0.65rem] text-muted-foreground">{p.sales} vendas</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Coach — mentora explicando a aba de Packs */}
+      {showHint && !hideHint && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[50] h-72 bg-gradient-to-t from-background via-background/90 to-transparent"
+            aria-hidden="true"
+          />
+          <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
+            <div className="luna-border animate-pop animate-coach-glow relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
+              <img
+                src="/images/mentor.png"
+                alt="Camila"
+                className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+              />
+              <div className="flex-1">
+                <p className="animate-item text-pretty text-base leading-relaxed text-foreground">
+                  Essa é a aba de <span className="font-bold text-primary">Packs</span>. É aqui que
+                  você cria seu conteúdo: toque em{' '}
+                  <span className="font-bold text-primary">Criar novo pack</span> para enviar suas
+                  fotos ou vídeos e definir o preço. Simples assim.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHint(false)
+                    onDone()
+                  }}
+                  className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Entendi
                 </button>
