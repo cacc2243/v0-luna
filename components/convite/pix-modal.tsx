@@ -347,10 +347,15 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       if (data.pixCode) {
         try {
           const qrDataUrl = await QRCode.toDataURL(data.pixCode, {
-            width: 240,
+            // Resolucao alta para renderizacao nitida em telas retina.
+            width: 512,
             margin: 1,
             // 'H' (recuperacao de ate 30%) garante a leitura mesmo com a logo no centro.
             errorCorrectionLevel: 'H',
+            color: {
+              dark: '#0a0a0a',
+              light: '#ffffff',
+            },
           })
           setPixQrCode(qrDataUrl)
         } catch (qrErr) {
@@ -588,18 +593,28 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         <>
           {/* QR Code */}
           {pixQrCode && (
-            <div className={compact ? 'mt-4 flex justify-center' : 'mt-6 flex justify-center'}>
-              <div className="relative rounded-2xl bg-white p-2.5 shadow-lg shadow-black/30">
+            <div className={compact ? 'relative mt-4 flex justify-center' : 'relative mt-6 flex justify-center'}>
+              {/* Brilho suave da marca por tras do QR */}
+              <span
+                className="pointer-events-none absolute left-1/2 top-1/2 size-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/25 blur-3xl"
+                aria-hidden="true"
+              />
+              <div className="relative rounded-3xl bg-white p-3.5 shadow-xl shadow-primary/20 ring-1 ring-black/5">
+                {/* Cantos decorativos na cor da marca */}
+                <span className="pointer-events-none absolute left-2 top-2 size-4 rounded-tl-lg border-l-2 border-t-2 border-primary/70" aria-hidden="true" />
+                <span className="pointer-events-none absolute right-2 top-2 size-4 rounded-tr-lg border-r-2 border-t-2 border-primary/70" aria-hidden="true" />
+                <span className="pointer-events-none absolute bottom-2 left-2 size-4 rounded-bl-lg border-b-2 border-l-2 border-primary/70" aria-hidden="true" />
+                <span className="pointer-events-none absolute bottom-2 right-2 size-4 rounded-br-lg border-b-2 border-r-2 border-primary/70" aria-hidden="true" />
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
                   width={180}
                   height={180}
-                  className={compact ? 'size-[120px]' : 'size-[160px] sm:size-[180px]'}
+                  className={compact ? 'size-[124px] rounded-lg' : 'size-[164px] rounded-lg sm:size-[184px]'}
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
-                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white p-1 shadow-sm">
+                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-white p-1.5 shadow-md ring-1 ring-black/5">
                   <Image
                     src="/images/luna-icon.png"
                     alt=""
