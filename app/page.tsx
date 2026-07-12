@@ -19,6 +19,7 @@ import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
 import { PrivacyStep } from '@/components/privacy-step'
 import { CommunityStep } from '@/components/community-step'
+import { WhyLunaStep } from '@/components/why-luna-step'
 import { MentorQuiz } from '@/components/mentor-quiz'
 import { GuidedAppDemo } from '@/components/guided-app-demo'
 import { CtaButton } from '@/components/cta-button'
@@ -117,7 +118,7 @@ const myths = [
   },
 ]
 
-const TOTAL_STEPS = 8
+const TOTAL_STEPS = 9
 
 export default function Page() {
   const [step, setStep] = useState(0)
@@ -349,9 +350,16 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 7 — Jornada gamificada dentro da plataforma */}
+        {/* STEP 7 — Por que a Luna Privé (comparação) */}
         {step === 6 && (
           <div key="step-6" className="animate-screen flex flex-col">
+            <WhyLunaStep onContinue={next} />
+          </div>
+        )}
+
+        {/* STEP 8 — Jornada gamificada dentro da plataforma */}
+        {step === 7 && (
+          <div key="step-7" className="animate-screen flex flex-col">
             <MentorQuiz
               finalLabel="Quero meu convite de acesso"
               onComplete={next}
@@ -359,8 +367,8 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 8 — Demonstração guiada do app (tela cheia) */}
-        {step === 7 && <GuidedAppDemo key="step-7" onComplete={next} />}
+        {/* STEP 9 — Demonstração guiada do app (tela cheia) */}
+        {step === 8 && <GuidedAppDemo key="step-8" onComplete={next} />}
       </div>
     </main>
   )
