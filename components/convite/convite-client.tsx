@@ -124,6 +124,13 @@ export function ConviteClient({
   // o preco aparece imediatamente, sem blur nem fetch no cliente.
   const [inviteCents] = useState(initialInviteCents)
 
+  // Sinal para abrir automaticamente a edicao de um campo no AccountSummary
+  // (ex.: e-mail faltando ao tentar adquirir) em vez de mostrar um alerta.
+  const [focusRequest, setFocusRequest] = useState<{
+    field: 'username' | 'email' | 'pixKey'
+    nonce: number
+  } | null>(null)
+
   // ── Guard de bfcache (back/forward cache) ──────────────────────────────────
   // No celular, ao sair para o app de e-mail e voltar (ou abrir o link do
   // e-mail que reaproveita o mesmo webview), navegadores como Chrome/Safari e
@@ -220,7 +227,9 @@ export function ConviteClient({
     // O e-mail e obrigatorio e precisa ser valido para gerar o PIX corretamente.
     const email = data.email.trim()
     if (!email || email === 'seu@email.com' || !EMAIL_REGEX.test(email)) {
-      alert('Por favor, informe um e-mail válido tocando no lápis ao lado do campo E-mail.')
+      // Em vez de um alerta do navegador, abrimos direto o campo de e-mail e
+      // levamos o usuario ate ele para corrigir.
+      setFocusRequest((prev) => ({ field: 'email', nonce: (prev?.nonce ?? 0) + 1 }))
       return
     }
 
@@ -327,6 +336,7 @@ export function ConviteClient({
             pixType={data.pixType}
             pixKey={data.pixKey}
             onUpdate={updateField}
+            focusRequest={focusRequest}
           />
         ) : (
           <section aria-hidden="true">
