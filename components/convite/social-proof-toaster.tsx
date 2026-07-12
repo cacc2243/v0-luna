@@ -123,7 +123,7 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
           />
         </span>
 
-        <p className="min-w-0 flex-1 text-pretty text-sm leading-snug text-foreground">
+        <p className="min-w-0 flex-1 text-pretty text-xs leading-snug text-foreground">
           <span className="font-semibold">@{current.username}</span> acabou de receber{' '}
           <span className="font-bold text-emerald-400">{brl(current.amount)}</span>
         </p>
