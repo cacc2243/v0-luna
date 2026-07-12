@@ -4,17 +4,15 @@ import { X, Check, Users, DollarSign, Zap, ShieldCheck } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 
 const cons = [
-  'Você precisa buscar seus próprios clientes',
-  'Concorrência desleal com milhares de perfis',
-  'Pagamentos demorados e taxas abusivas',
-  'Exposição da sua identidade',
+  'Você corre atrás de clientes',
+  'Pagamentos lentos e taxas altas',
+  'Sua identidade exposta',
 ]
 
 const pros = [
-  'Compradores ativos procurando packs todo dia',
-  'Clientes prontos para comprar e pagar bem',
-  'Pagamento via PIX na hora, sem burocracia',
-  '100% anônima — ninguém sabe quem você é',
+  'Compradores ativos todo dia',
+  'Pagamento via PIX na hora',
+  '100% anônima e segura',
 ]
 
 const stats = [
@@ -50,23 +48,20 @@ export function WhyLunaStep({ onContinue }: { onContinue: () => void }) {
 
       {/* Card - Outras plataformas */}
       <section
-        className="animate-item mt-6 rounded-2xl border border-destructive/25 bg-destructive/5 p-4"
+        className="animate-item mt-6 rounded-xl border border-destructive/30 bg-card/95 p-3.5 shadow-lg shadow-black/30 backdrop-blur-md"
         style={{ animationDelay: '140ms' }}
       >
-        <h2 className="flex items-center gap-2 text-sm font-bold text-destructive">
+        <h2 className="flex items-center gap-2 text-[0.8rem] font-bold text-destructive">
           <X className="size-4 shrink-0" aria-hidden="true" />
           Outras plataformas
         </h2>
-        <ul className="mt-3 flex flex-col gap-2">
+        <ul className="mt-2.5 flex flex-col gap-1.5">
           {cons.map((item) => (
             <li
               key={item}
-              className="flex items-start gap-2.5 text-xs leading-relaxed text-muted-foreground"
+              className="flex items-center gap-2 text-xs leading-snug text-foreground/80"
             >
-              <span
-                className="mt-1.5 size-1.5 shrink-0 rounded-full bg-destructive/70"
-                aria-hidden="true"
-              />
+              <X className="size-3.5 shrink-0 text-destructive/80" aria-hidden="true" />
               {item}
             </li>
           ))}
@@ -75,21 +70,21 @@ export function WhyLunaStep({ onContinue }: { onContinue: () => void }) {
 
       {/* Card - Luna Privé */}
       <section
-        className="animate-item mt-3 rounded-2xl border border-positive/30 bg-positive/5 p-4"
+        className="animate-item mt-3 rounded-xl border border-positive/40 bg-card/95 p-3.5 shadow-lg shadow-black/30 backdrop-blur-md"
         style={{ animationDelay: '220ms' }}
       >
-        <h2 className="flex items-center gap-2 text-sm font-bold text-positive">
+        <h2 className="flex items-center gap-2 text-[0.8rem] font-bold text-positive">
           <Check className="size-4 shrink-0" aria-hidden="true" />
           Luna Privé
         </h2>
-        <ul className="mt-3 flex flex-col gap-2">
+        <ul className="mt-2.5 flex flex-col gap-1.5">
           {pros.map((item) => (
             <li
               key={item}
-              className="flex items-start gap-2.5 text-xs leading-relaxed text-foreground"
+              className="flex items-center gap-2 text-xs font-medium leading-snug text-foreground"
             >
               <Check
-                className="mt-0.5 size-3.5 shrink-0 text-positive"
+                className="size-3.5 shrink-0 text-positive"
                 aria-hidden="true"
               />
               {item}
