@@ -9,6 +9,7 @@ import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
 import { InstagramCard } from '@/components/convite/instagram-card'
+import { PlatformFees } from '@/components/convite/platform-fees'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
@@ -365,6 +366,9 @@ export function ConviteClient({
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
+
+        {/* Taxas da plataforma */}
+        <PlatformFees />
 
         {/* Empresa */}
         <CompanyInfo />
