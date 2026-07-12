@@ -105,7 +105,7 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 top-0 z-[110] flex flex-col items-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
+      className="pointer-events-none fixed inset-x-0 top-0 z-[130] flex flex-col items-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
       role="region"
       aria-live="polite"
       aria-label="Atividade recente"
