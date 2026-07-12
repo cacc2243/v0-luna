@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail } from 'lucide-react'
+import { Mail, Users } from 'lucide-react'
 import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { PageBackground } from '@/components/page-background'
@@ -298,6 +298,14 @@ export function ConviteClient({
         </section>
 
         <div className="mt-8 flex flex-col gap-7">
+        {/* Escassez: convites restantes hoje */}
+        <div className="luna-border flex items-center justify-center gap-2.5 rounded-2xl bg-card px-4 py-3 ring-1 ring-primary/25">
+          <Users className="size-4 shrink-0 text-primary" aria-hidden="true" />
+          <p className="text-sm text-foreground">
+            Restam apenas <span className="font-bold text-primary">9</span> convites hoje
+          </p>
+        </div>
+
         {/* Dados da conta.
             IMPORTANTE: renderizado SOMENTE apos a montagem no cliente.
             Motivo: o texto de placeholder do e-mail ("seu@email.com") e o
