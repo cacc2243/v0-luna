@@ -1581,7 +1581,10 @@ function AppDashboard() {
           { icon: Home, label: 'Início' as const },
           { icon: Package, label: 'Packs' as const },
           { icon: Wallet, label: 'Carteira' as const },
-          { icon: MessageCircle, label: 'Chats' as const, center: true },
+          // A aba de Chats só aparece depois que o Chat Exclusivo for pago.
+          ...(chatUnlocked
+            ? [{ icon: MessageCircle, label: 'Chats' as const, center: true }]
+            : []),
           { icon: Rocket, label: 'Impulsionar' as const },
           { icon: User, label: 'Perfil' as const },
         ].map((item) => (
