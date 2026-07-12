@@ -325,9 +325,9 @@ export function UnlockChatModal({
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────────��──────────────────────────────────────────────────────────
 // Modal 3: Conta bombando — pedidos aguardando (leva à aba de Chats)
-// ────────────────────────────��────────────────────────────────────────────────
+// ��───────────────────────────��────────────────────────────────────────────────
 
 interface FansWaitingModalProps {
   isOpen: boolean
@@ -351,13 +351,11 @@ export function FansWaitingModal({
 }: FansWaitingModalProps) {
   if (!isOpen) return null
 
-  const initials = ['L', 'P', 'B']
-
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4">
       <div className="relative flex max-h-[95dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
         {/* Header */}
-        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-primary/25 via-primary/10 to-transparent px-5 pb-5 pt-7 text-center">
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-primary/20 via-primary/8 to-transparent px-5 pb-3 pt-5 text-center">
           <button
             onClick={onClose}
             aria-label="Fechar"
@@ -366,16 +364,9 @@ export function FansWaitingModal({
             <X className="size-5" />
           </button>
 
-          <div className="relative mx-auto flex size-14 items-center justify-center rounded-full bg-primary/15 ring-2 ring-primary/40">
-            <Zap className="size-6 text-primary" />
-            <span className="absolute -right-1 -top-1 flex min-w-6 items-center justify-center rounded-full bg-positive px-1.5 py-0.5 text-[0.65rem] font-bold text-background ring-2 ring-card">
-              {chatCount}
-            </span>
-          </div>
-
-          <h2 className="mt-4 flex items-center justify-center gap-2 text-xl font-bold text-foreground">
+          <h2 className="flex items-center justify-center gap-2 pr-8 text-lg font-bold text-foreground">
             Seus pedidos estão bombando!
-            <Flame className="size-5 text-primary" />
+            <Flame className="size-4 shrink-0 text-primary" />
           </h2>
           <p className="mt-1 text-sm font-medium text-primary">
             {chatUnlocked
@@ -385,7 +376,7 @@ export function FansWaitingModal({
         </div>
 
         {/* Conteúdo */}
-        <div className="overflow-y-auto px-5 pb-5">
+        <div className="overflow-y-auto px-5 pb-5 pt-1">
           {/* Métricas */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3 text-center">
@@ -437,23 +428,6 @@ export function FansWaitingModal({
             </div>
           </div>
 
-          {/* Avatares */}
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex -space-x-2">
-              {initials.map((ini, i) => (
-                <span
-                  key={i}
-                  className="flex size-9 items-center justify-center rounded-full border-2 border-card bg-primary/25 text-xs font-bold text-primary"
-                >
-                  {ini}
-                </span>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Compradores com pedidos aguardando você
-            </p>
-          </div>
-
           {!chatUnlocked && (
             <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 p-4">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
@@ -500,7 +474,7 @@ export function FansWaitingModal({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal 4: Gerando seu PIX... — tela de transição com spinner + barra de progresso
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────��─────────────────────────────────────────────────────
 
 interface GeneratingPixModalProps {
   isOpen: boolean
