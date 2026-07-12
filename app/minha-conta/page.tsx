@@ -79,7 +79,7 @@ import { ChatsActive } from '@/components/minha-conta/chats-active'
  import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
 import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
  import { SupportModal } from '@/components/minha-conta/support-modal'
- import { EnablePushBanner } from '@/components/minha-conta/enable-push-banner'
+
 import { InstallAppGuide } from '@/components/confirmation/install-app-guide'
 import { saveCreds, readCreds, clearCreds } from '@/lib/auth/creds'
 import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
@@ -2571,11 +2571,6 @@ function HomeScreen({
         <StatCard icon={Wallet} label="Hoje" value={brl(today)} />
         <StatCard icon={Eye} label="Views" value={String(views)} />
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
-      </div>
-
-      {/* Ativar notificacoes de venda no celular (some quando ja ativo) */}
-      <div className="mt-3">
-        <EnablePushBanner />
       </div>
 
       {/* Saldo pendente — soma dos pedidos ainda nao aceitos */}
