@@ -594,7 +594,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         <>
           {/* Prova social discreta acima do QR */}
           <p className={compact ? 'mt-3 text-center text-xs font-medium text-muted-foreground' : 'mt-4 text-center text-xs font-medium text-muted-foreground'}>
-            {'🔥 99.8% pagam o PIX e dizem que valeu a pena!'}
+            {'🔥 99.8% dizem que valeu a pena!'}
           </p>
 
           {/* QR Code */}
