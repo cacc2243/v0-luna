@@ -349,7 +349,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           const qrDataUrl = await QRCode.toDataURL(data.pixCode, {
             // Resolucao alta para renderizacao nitida em telas retina.
             width: 512,
-            margin: 1,
+            // Sem quiet zone para eliminar a borda branca ao redor do QR.
+            margin: 0,
             // 'H' (recuperacao de ate 30%) garante a leitura mesmo com a logo no centro.
             errorCorrectionLevel: 'H',
             color: {
@@ -591,36 +592,41 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
+          {/* Prova social discreta acima do QR */}
+          <p className={compact ? 'mt-3 text-center text-xs font-medium text-muted-foreground' : 'mt-4 text-center text-xs font-medium text-muted-foreground'}>
+            {'🔥 99.8% dizem que valeu a pena!'}
+          </p>
+
           {/* QR Code */}
           {pixQrCode && (
-            <div className={compact ? 'relative mt-4 flex justify-center' : 'relative mt-6 flex justify-center'}>
+            <div className={compact ? 'relative mt-2 flex justify-center' : 'relative mt-3 flex justify-center'}>
               {/* Brilho suave da marca por tras do QR */}
               <span
                 className="pointer-events-none absolute left-1/2 top-1/2 size-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/25 blur-3xl"
                 aria-hidden="true"
               />
-              <div className="relative rounded-3xl bg-white p-3.5 shadow-xl shadow-primary/20 ring-1 ring-black/5">
-                {/* Cantos decorativos na cor da marca */}
-                <span className="pointer-events-none absolute left-2 top-2 size-4 rounded-tl-lg border-l-2 border-t-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute right-2 top-2 size-4 rounded-tr-lg border-r-2 border-t-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute bottom-2 left-2 size-4 rounded-bl-lg border-b-2 border-l-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute bottom-2 right-2 size-4 rounded-br-lg border-b-2 border-r-2 border-primary/70" aria-hidden="true" />
+              <div className="relative rounded-2xl bg-white p-1 shadow-xl shadow-primary/20 ring-1 ring-black/5">
+                {/* Cantos decorativos cinza escuro */}
+                <span className="pointer-events-none absolute -left-1 -top-1 size-5 rounded-tl-2xl border-l-2 border-t-2 border-zinc-600/80" aria-hidden="true" />
+                <span className="pointer-events-none absolute -right-1 -top-1 size-5 rounded-tr-2xl border-r-2 border-t-2 border-zinc-600/80" aria-hidden="true" />
+                <span className="pointer-events-none absolute -bottom-1 -left-1 size-5 rounded-bl-2xl border-b-2 border-l-2 border-zinc-600/80" aria-hidden="true" />
+                <span className="pointer-events-none absolute -bottom-1 -right-1 size-5 rounded-br-2xl border-b-2 border-r-2 border-zinc-600/80" aria-hidden="true" />
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
                   width={180}
                   height={180}
-                  className={compact ? 'size-[124px] rounded-lg' : 'size-[164px] rounded-lg sm:size-[184px]'}
+                  className={compact ? 'size-[124px] rounded-xl' : 'size-[164px] rounded-xl sm:size-[184px]'}
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
-                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-white p-1.5 shadow-md ring-1 ring-black/5">
+                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-1 shadow-md ring-1 ring-black/5">
                   <Image
                     src="/images/luna-icon.png"
                     alt=""
                     width={44}
                     height={44}
-                    className={compact ? 'size-6' : 'size-8'}
+                    className={compact ? 'size-4' : 'size-6'}
                     unoptimized
                   />
                 </span>
@@ -644,10 +650,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               Valor único
             </p>
             <div className="mt-1 flex items-center justify-center gap-2.5">
-              <span className="font-serif text-base font-semibold text-muted-foreground line-through decoration-primary/70">
+              <span className="font-serif text-sm font-semibold text-muted-foreground line-through decoration-primary/70">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
-              <span className={`${compact ? 'text-2xl' : 'text-3xl'} font-serif font-extrabold tracking-tight text-foreground`}>
+              <span className={`${compact ? 'text-xl' : 'text-2xl'} font-serif font-extrabold tracking-tight text-foreground`}>
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
             </div>
