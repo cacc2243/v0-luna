@@ -349,7 +349,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           const qrDataUrl = await QRCode.toDataURL(data.pixCode, {
             // Resolucao alta para renderizacao nitida em telas retina.
             width: 512,
-            margin: 1,
+            // Sem quiet zone para eliminar a borda branca ao redor do QR.
+            margin: 0,
             // 'H' (recuperacao de ate 30%) garante a leitura mesmo com a logo no centro.
             errorCorrectionLevel: 'H',
             color: {
