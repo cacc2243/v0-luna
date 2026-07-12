@@ -10,12 +10,9 @@ import { playNotification } from '@/lib/sounds'
 // circular com a logo (fantasminha) à esquerda e valor destacado em verde.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type Kind = 'withdraw' | 'gift'
-
 type ToastData = {
   key: string
   username: string
-  kind: Kind
   amount: number
 }
 
@@ -51,20 +48,10 @@ function randomInRange(min: number, max: number) {
 
 function buildToast(): ToastData {
   const username = USERNAMES[Math.floor(Math.random() * USERNAMES.length)]
-  const isWithdraw = Math.random() < 0.55
-  if (isWithdraw) {
-    return {
-      key: `${Date.now()}-${Math.random()}`,
-      username,
-      kind: 'withdraw',
-      amount: randomInRange(280, 680),
-    }
-  }
   return {
     key: `${Date.now()}-${Math.random()}`,
     username,
-    kind: 'gift',
-    amount: randomInRange(280, 680),
+    amount: randomInRange(169, 895),
   }
 }
 
@@ -137,12 +124,7 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
         </span>
 
         <p className="min-w-0 flex-1 text-pretty text-xs leading-snug text-foreground">
-          <span className="font-semibold">@{current.username}</span>{' '}
-          {current.kind === 'withdraw' ? (
-            <>acabou de sacar </>
-          ) : (
-            <>acabou de receber um presente no valor de </>
-          )}
+          <span className="font-semibold">@{current.username}</span> acabou de receber{' '}
           <span className="font-bold text-emerald-400">{brl(current.amount)}</span>
         </p>
       </div>

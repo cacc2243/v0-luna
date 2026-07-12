@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Painel Admin · Luna Privé',
   robots: { index: false, follow: false },
+  // Instalar o PWA a partir do painel salva um atalho que abre no /painel.
+  manifest: '/painel.webmanifest',
 }
 
 export default async function PainelPage() {

@@ -60,7 +60,7 @@ export function PreCheckoutModal({ isOpen, onConfirm, ready, minMs = 1400 }: Pre
           <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
         </span>
         <p className="text-pretty text-sm font-medium leading-relaxed text-foreground">
-          Aguardando enquanto geramos seu pagamento...
+          Gerando seu PIX...
         </p>
       </div>
     </div>,

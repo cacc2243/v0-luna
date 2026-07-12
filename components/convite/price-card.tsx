@@ -1,13 +1,13 @@
 'use client'
 
-import { Check, ChevronRight, Gift } from 'lucide-react'
+import { Check, ChevronRight, Gift, Lightbulb } from 'lucide-react'
 
 const benefits = [
-  'Código de convite Luna Privé',
+  'Código de Convite Luna Privé',
+  'Acesso Completo à Plataforma',
+  'Comece a Vender Imediatamente',
+  'Suporte Anônimo 24h',
   '100% Anonimato',
-  'Suporte Exclusivo',
-  'Clube de Benefícios',
-  'Comece a vender imediatamente',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -27,9 +27,9 @@ export function PriceCard({
   amountCents?: number
   priceReady?: boolean
 }) {
-  // Preco "de" (ancora) fixo em R$ 169,90. O desconto e calculado a partir do
+  // Preco "de" (ancora) fixo em R$ 69,90. O desconto e calculado a partir do
   // preco atual em relacao a esse valor ancora.
-  const originalCents = 16990
+  const originalCents = 6990
   const discountPercent = Math.max(0, Math.round((1 - amountCents / originalCents) * 100))
 
   return (
@@ -118,10 +118,17 @@ export function PriceCard({
           {priceReady ? 'Adquirir meu Convite' : 'Carregando valor...'}
           {priceReady && <ChevronRight className="size-5" aria-hidden="true" />}
         </button>
+      </div>
 
-        {/* Garantia */}
-        <p className="relative mx-auto mt-3 max-w-[17rem] text-center text-xs leading-relaxed text-muted-foreground">
-          Garantia de 30 dias: não gostou, devolvemos 100% do valor pago.
+      {/* Card pequeno e discreto de garantia (abaixo do card de preço) */}
+      <div className="relative z-10 mt-3 flex items-start gap-2.5 rounded-2xl border border-border/40 bg-card/40 px-4 py-3 backdrop-blur-sm">
+        <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+        <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+          Você tem <span className="font-semibold text-foreground">7 dias</span> para postar seu
+          pack/foto. Se não vender e sacar em até{' '}
+          <span className="font-semibold text-foreground">7 dias</span>, poderá solicitar{' '}
+          <span className="font-semibold text-foreground">reembolso completo com 1 clique</span>{' '}
+          dentro do nosso site.
         </p>
       </div>
     </section>

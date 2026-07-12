@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Lock } from 'lucide-react'
-import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
-import { getAttributionForCheckout } from '@/lib/fb/attribution'
+import { Mail, Users } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
+import { InstagramCard } from '@/components/convite/instagram-card'
+import { PlatformFees } from '@/components/convite/platform-fees'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
@@ -122,6 +122,13 @@ export function ConviteClient({
   // o preco aparece imediatamente, sem blur nem fetch no cliente.
   const [inviteCents] = useState(initialInviteCents)
 
+  // Sinal para abrir automaticamente a edicao de um campo no AccountSummary
+  // (ex.: e-mail faltando ao tentar adquirir) em vez de mostrar um alerta.
+  const [focusRequest, setFocusRequest] = useState<{
+    field: 'username' | 'email' | 'pixKey'
+    nonce: number
+  } | null>(null)
+
   // ── Guard de bfcache (back/forward cache) ──────────────────────────────────
   // No celular, ao sair para o app de e-mail e voltar (ou abrir o link do
   // e-mail que reaproveita o mesmo webview), navegadores como Chrome/Safari e
@@ -141,64 +148,9 @@ export function ConviteClient({
     return () => window.removeEventListener('pageshow', onPageShow)
   }, [])
 
-  // InitiateCheckout: disparado ao ENTRAR na pagina /convite (uma unica vez),
-  // e nao mais quando o PIX e gerado. Pixel (browser) + Conversions API
-  // (servidor) com o MESMO event_id para deduplicacao. Nunca quebra a pagina.
-  const initiateCheckoutSentRef = useRef(false)
-  useEffect(() => {
-    if (initiateCheckoutSentRef.current) return
-    initiateCheckoutSentRef.current = true
-    try {
-      const value = inviteCents / 100
-      const icEventId = newEventId('ic')
-      fbTrackWhenReady(
-        'InitiateCheckout',
-        {
-          value,
-          currency: 'BRL',
-          content_name: 'Convite Luna Privé',
-          content_type: 'product',
-        },
-        icEventId,
-      )
-
-      // Resolve os dados do cliente (URL/sessionStorage) para enriquecer o
-      // evento — o state `data` ainda esta vazio neste ponto da montagem.
-      const resolved = resolveSignupData(initialFromUrl)
-      const trimmedName = (resolved.username || '').trim()
-      const parts = trimmedName ? trimmedName.split(/\s+/) : []
-      const firstName = parts.length > 0 ? parts[0] : null
-      const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null
-      const normalizedPixType = (resolved.pixType || '').toLowerCase()
-      const phone =
-        normalizedPixType.includes('tele') || normalizedPixType.includes('phone')
-          ? resolved.pixKey || null
-          : null
-
-      const attribution = getAttributionForCheckout()
-      fetch('/api/fb/initiate-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          eventId: icEventId,
-          eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
-          fbp: readCookie('_fbp'),
-          fbc: readCookie('_fbc'),
-          email: resolved.email || null,
-          name: trimmedName || null,
-          firstName,
-          lastName,
-          phone,
-          value,
-          attribution,
-        }),
-      }).catch(() => {})
-    } catch {
-      // o tracking nunca bloqueia a pagina
-    }
-    // Dispara apenas no mount (entrada na pagina).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // Observação: o evento InitiateCheckout NÃO é mais disparado ao entrar na
+  // página. Ele passou a ser disparado apenas quando o cliente copia o código
+  // PIX gerado (intenção real de pagar) — ver components/convite/pix-modal.tsx.
 
   function updateField(field: keyof SignupData, value: string) {
     setData((prev) => {
@@ -218,7 +170,9 @@ export function ConviteClient({
     // O e-mail e obrigatorio e precisa ser valido para gerar o PIX corretamente.
     const email = data.email.trim()
     if (!email || email === 'seu@email.com' || !EMAIL_REGEX.test(email)) {
-      alert('Por favor, informe um e-mail válido tocando no lápis ao lado do campo E-mail.')
+      // Em vez de um alerta do navegador, abrimos direto o campo de e-mail e
+      // levamos o usuario ate ele para corrigir.
+      setFocusRequest((prev) => ({ field: 'email', nonce: (prev?.nonce ?? 0) + 1 }))
       return
     }
 
@@ -272,7 +226,7 @@ export function ConviteClient({
 
   return (
     <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">
-      <PageBackground />
+      <PageBackground grayscale darken />
 
       {/* Barra fixa de destaque no topo (aparece após rolar um pouco) */}
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-8">
@@ -287,19 +241,23 @@ export function ConviteClient({
 
         {/* Hero centralizado no mesmo padrão do fluxo */}
         <section className="mt-7 text-center">
-          <span className="luna-border inline-flex items-center gap-1.5 rounded-full bg-card px-4 py-1.5 text-sm font-semibold text-primary">
-            <Lock className="size-4" aria-hidden="true" />
-            Adquirir meu Convite
-          </span>
-          <h1 className="mt-4 text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
+          <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
             Resgate seu <span className="text-primary">Convite Luna</span>
           </h1>
           <p className="mx-auto mt-3 max-w-md text-pretty text-sm leading-relaxed text-foreground">
-            Seu convite Luna garante acesso seguro e confiável à plataforma Luna Privé. Todas as usuárias possuem um convite ativo.
+            Confirme seus dados abaixo e garanta seu código de convite exclusivo.
           </p>
         </section>
 
         <div className="mt-8 flex flex-col gap-7">
+        {/* Escassez: convites restantes hoje */}
+        <div className="flex items-center justify-center gap-2.5 rounded-xl border border-border/40 bg-card/60 px-4 py-3 backdrop-blur-sm">
+          <Users className="size-4 shrink-0 text-primary" aria-hidden="true" />
+          <p className="text-sm text-foreground">
+            Restam apenas <span className="font-bold text-primary">9</span> convites hoje
+          </p>
+        </div>
+
         {/* Dados da conta.
             IMPORTANTE: renderizado SOMENTE apos a montagem no cliente.
             Motivo: o texto de placeholder do e-mail ("seu@email.com") e o
@@ -321,6 +279,7 @@ export function ConviteClient({
             pixType={data.pixType}
             pixKey={data.pixKey}
             onUpdate={updateField}
+            focusRequest={focusRequest}
           />
         ) : (
           <section aria-hidden="true">
@@ -333,11 +292,26 @@ export function ConviteClient({
           </section>
         )}
 
+        {/* Aviso: acesso enviado por e-mail */}
+        <div className="-mt-3 flex items-center gap-2.5 rounded-2xl border border-border/40 bg-card/60 px-4 py-3 backdrop-blur-sm">
+          <Mail className="size-4 shrink-0 text-primary" aria-hidden="true" />
+          <p className="min-w-0 flex-1 text-pretty text-xs leading-relaxed text-muted-foreground">
+            Você receberá em seu <span className="font-semibold text-primary">E-mail</span> o acesso
+            ao <span className="font-semibold text-primary">Luna Privé</span>.
+          </p>
+        </div>
+
         {/* Preço + garantia */}
         <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady />
 
+        {/* Card do Instagram (privado, só para convites ativos) */}
+        <InstagramCard />
+
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
+
+        {/* Taxas da plataforma */}
+        <PlatformFees />
 
         {/* Empresa */}
         <CompanyInfo />

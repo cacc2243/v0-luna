@@ -1,43 +1,18 @@
 import type { MetadataRoute } from 'next'
+import { buildManifest } from '@/lib/pwa/manifest'
 
+/**
+ * Manifesto padrao (fallback). Usado por rotas que nao definem um manifesto
+ * proprio. As rotas /painel e /minha-conta apontam para manifestos dedicados
+ * (com seu proprio start_url), veja app/painel.webmanifest e
+ * app/minha-conta.webmanifest.
+ */
 export default function manifest(): MetadataRoute.Manifest {
-  return {
+  return buildManifest({
+    id: '/minha-conta',
+    startUrl: '/minha-conta',
     name: 'Luna Privé',
-    short_name: 'Luna Privé',
-    description: 'Painel Luna Privé — acompanhe suas vendas em tempo real.',
-    // Abre direto no painel quando instalado na tela de inicio.
-    start_url: '/painel',
-    scope: '/',
-    display: 'standalone',
-    orientation: 'portrait',
-    background_color: '#0a0a0a',
-    theme_color: '#0a0a0a',
-    lang: 'pt-BR',
-    icons: [
-      {
-        src: '/icons/icon-192.png',
-        sizes: '192x192',
-        type: 'image/png',
-        purpose: 'any',
-      },
-      {
-        src: '/icons/icon-512.png',
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'any',
-      },
-      {
-        src: '/icons/icon-maskable-192.png',
-        sizes: '192x192',
-        type: 'image/png',
-        purpose: 'maskable',
-      },
-      {
-        src: '/icons/icon-maskable-512.png',
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'maskable',
-      },
-    ],
-  }
+    shortName: 'Luna Privé',
+    description: 'Luna Privé — acompanhe suas vendas em tempo real.',
+  })
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { User, Mail, KeyRound, Pencil, Check, X } from 'lucide-react'
 
 interface SignupData {
@@ -17,16 +17,30 @@ interface AccountSummaryProps {
   pixKey: string
   /** Persiste a alteracao de um campo no estado da pagina + sessionStorage. */
   onUpdate: (field: keyof SignupData, value: string) => void
+  /**
+   * Sinal externo para abrir a edicao de um campo automaticamente (ex.: quando
+   * o usuario tenta adquirir sem e-mail valido, abrimos o campo aqui em vez de
+   * mostrar um alerta do navegador).
+   */
+  focusRequest?: { field: FieldKey; nonce: number } | null
 }
 
 type FieldKey = 'username' | 'email' | 'pixKey'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export function AccountSummary({ username, email, pixType, pixKey, onUpdate }: AccountSummaryProps) {
+export function AccountSummary({
+  username,
+  email,
+  pixType,
+  pixKey,
+  onUpdate,
+  focusRequest,
+}: AccountSummaryProps) {
   const [editing, setEditing] = useState<FieldKey | null>(null)
   const [draft, setDraft] = useState('')
   const [fieldError, setFieldError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const rows: {
     key: FieldKey
@@ -74,6 +88,30 @@ export function AccountSummary({ username, email, pixType, pixKey, onUpdate }: A
     setFieldError(null)
   }
 
+  // Abre o campo pedido externamente (ex.: e-mail faltando ao adquirir) e leva
+  // o usuario ate ele, com uma mensagem de ajuda ja visivel.
+  useEffect(() => {
+    if (!focusRequest) return
+    const currentValue =
+      focusRequest.field === 'username'
+        ? username
+        : focusRequest.field === 'email'
+          ? email
+          : pixKey
+    const isPlaceholderEmail = currentValue.trim() === 'seu@email.com'
+    setEditing(focusRequest.field)
+    setDraft(isPlaceholderEmail ? '' : currentValue)
+    setFieldError(
+      focusRequest.field === 'email' ? 'Informe um e-mail válido para continuar.' : null,
+    )
+    // Rola ate o campo e foca o input assim que ele monta.
+    requestAnimationFrame(() => {
+      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      inputRef.current?.focus()
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusRequest?.nonce])
+
   function cancelEdit() {
     setEditing(null)
     setDraft('')
@@ -107,15 +145,7 @@ export function AccountSummary({ username, email, pixType, pixKey, onUpdate }: A
   }
 
   return (
-    <section aria-labelledby="sua-conta">
-      <h2
-        id="sua-conta"
-        className="mb-2.5 flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground"
-      >
-        <span className="cta-gradient size-1.5 rounded-full" aria-hidden="true" />
-        Sua conta
-      </h2>
-
+    <section aria-label="Sua conta">
       <div className="luna-border divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
         {rows.map((row) => {
           const isEditing = editing === row.key
@@ -136,6 +166,7 @@ export function AccountSummary({ username, email, pixType, pixKey, onUpdate }: A
                 {isEditing ? (
                   <div className="mt-1">
                     <input
+                      ref={inputRef}
                       autoFocus
                       type={row.inputType}
                       inputMode={row.inputMode}

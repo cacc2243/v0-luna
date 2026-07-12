@@ -79,7 +79,7 @@ import { ChatsActive } from '@/components/minha-conta/chats-active'
  import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
 import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
  import { SupportModal } from '@/components/minha-conta/support-modal'
- import { EnablePushBanner } from '@/components/minha-conta/enable-push-banner'
+
 import { InstallAppGuide } from '@/components/confirmation/install-app-guide'
 import { saveCreds, readCreds, clearCreds } from '@/lib/auth/creds'
 import { primeSounds, playSaleAccepted, playTabTap } from '@/lib/sounds'
@@ -1451,7 +1451,7 @@ function AppDashboard() {
       {/* Imagem de fundo */}
       <div 
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/images/app-background.webp)' }}
+        style={{ backgroundImage: 'url(/images/app-background.webp)', filter: 'grayscale(0.65)' }}
       >
         <div className="absolute inset-0 bg-black/65" />
       </div>
@@ -1581,7 +1581,10 @@ function AppDashboard() {
           { icon: Home, label: 'Início' as const },
           { icon: Package, label: 'Packs' as const },
           { icon: Wallet, label: 'Carteira' as const },
-          { icon: MessageCircle, label: 'Chats' as const, center: true },
+          // A aba de Chats só aparece depois que o Chat Exclusivo for pago.
+          ...(chatUnlocked
+            ? [{ icon: MessageCircle, label: 'Chats' as const, center: true }]
+            : []),
           { icon: Rocket, label: 'Impulsionar' as const },
           { icon: User, label: 'Perfil' as const },
         ].map((item) => (
@@ -2573,11 +2576,6 @@ function HomeScreen({
         <StatCard icon={ShoppingBag} label="Vendas" value={String(vendas)} />
       </div>
 
-      {/* Ativar notificacoes de venda no celular (some quando ja ativo) */}
-      <div className="mt-3">
-        <EnablePushBanner />
-      </div>
-
       {/* Saldo pendente — soma dos pedidos ainda nao aceitos */}
       {pendingSales.length > 0 && (
         <div className="luna-border mt-2.5 flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
@@ -2694,7 +2692,7 @@ function HomeScreen({
                 type="button"
                 disabled={accepting !== null}
                 onClick={() => handleAccept(sale.id)}
-                className="flex flex-[2] items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-[0.8rem] font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
+                className="flex flex-[2] items-center justify-center gap-1 rounded-lg bg-positive py-2.5 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/25 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
               >
                 {accepting === sale.id ? (
                   <>
@@ -2905,18 +2903,18 @@ function PacksScreen({
       {/* Modal — Como criar seus packs */}
       {showGuide && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
           onClick={() => setShowGuide(false)}
           role="dialog"
           aria-modal="true"
           aria-label="Como criar seus packs"
         >
           <div
-            className="luna-border max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-card sm:rounded-3xl"
+            className="luna-border flex max-h-[calc(100dvh-7rem)] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-card"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Cabeçalho */}
-            <div className="sticky top-0 flex items-center justify-between gap-3 border-b border-border/60 bg-card px-5 py-4">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-card px-5 py-4">
               <div className="flex items-center gap-2.5">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
                   <Camera className="size-5" aria-hidden="true" />
@@ -2933,7 +2931,7 @@ function PacksScreen({
               </button>
             </div>
 
-            <div className="flex flex-col gap-4 px-5 py-5">
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">
               <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
                 Monte seus packs com o conteúdo que você quiser. Aqui vão as regras e dicas para suas
                 publicações renderem mais.

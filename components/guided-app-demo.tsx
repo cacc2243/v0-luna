@@ -27,6 +27,8 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  ImagePlus,
+  Video,
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { CtaButton } from '@/components/cta-button'
@@ -108,7 +110,7 @@ function useCountUp(target: number, duration = 700) {
 
 export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   const [phase, setPhase] = useState<
-    'tour' | 'selling' | 'done' | 'selling2' | 'celebrate' | 'projection' | 'wallet' | 'profile' | 'signup'
+    'tour' | 'selling' | 'done' | 'selling2' | 'celebrate' | 'projection' | 'packs' | 'wallet' | 'profile' | 'signup'
   >('tour')
   const [showSellModal, setShowSellModal] = useState(false)
   const [tourStep, setTourStep] = useState(0)
@@ -292,11 +294,13 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
   }
 
   const activeTab =
-    phase === 'wallet'
-      ? 'Carteira'
-      : phase === 'profile' || phase === 'signup'
-        ? 'Perfil'
-        : 'Início'
+    phase === 'packs'
+      ? 'Packs'
+      : phase === 'wallet'
+        ? 'Carteira'
+        : phase === 'profile' || phase === 'signup'
+          ? 'Perfil'
+          : 'Início'
 
   const currentSale = activeSale !== null ? sellingList[activeSale] : null
   const saleActive = currentSale !== null && (phase === 'selling' || phase === 'selling2')
@@ -363,7 +367,11 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
       ))}
 
       {/* Conteúdo rolável do app */}
-      {phase === 'wallet' ? (
+      {phase === 'packs' ? (
+        <div key="packs-screen" className="animate-slide-in-right flex min-h-0 flex-1 flex-col">
+          <PacksScreen onDone={() => setPhase('wallet')} />
+        </div>
+      ) : phase === 'wallet' ? (
         <div key="wallet-screen" className="animate-slide-in-right flex min-h-0 flex-1 flex-col">
           <WalletScreen onDone={() => setPhase('profile')} />
         </div>
@@ -793,7 +801,7 @@ export function GuidedAppDemo({ onComplete }: GuidedAppDemoProps) {
               </p>
 
               <div className="animate-card-enter mt-5" style={{ animationDelay: '400ms' }}>
-                <CtaButton onClick={() => setPhase('wallet')}>Ver minha carteira</CtaButton>
+                <CtaButton onClick={() => setPhase('packs')}>Ver como criar meus packs</CtaButton>
               </div>
             </div>
           </div>
@@ -918,6 +926,24 @@ const withdrawals = [
   { label: 'Saque PIX', date: '12 mai, 18:47', amount: 3890.0 },
 ]
 
+// Extrato: entradas de venda e saídas de saque
+const statement = [
+  { type: 'in' as const, label: 'Venda de pack · Pés & Saltos', date: 'Hoje, 15:04', amount: 49.9 },
+  { type: 'in' as const, label: 'Gorjeta recebida', date: 'Hoje, 13:20', amount: 30.0 },
+  { type: 'out' as const, label: 'Saque via PIX', date: 'Hoje, 14:32', amount: 4280.0 },
+  { type: 'in' as const, label: 'Venda de pack · Ensaio na Praia', date: 'Ontem, 21:47', amount: 89.9 },
+  { type: 'in' as const, label: 'Venda de pack · Pés & Saltos', date: 'Ontem, 18:12', amount: 29.9 },
+  { type: 'out' as const, label: 'Saque via PIX', date: 'Ontem, 09:10', amount: 2150.0 },
+]
+
+// Saques: histórico de transferências PIX com status
+const payouts = [
+  { pix: 'ca****@gmail.com', date: 'Hoje, 14:32', amount: 4280.0, status: 'Concluído' as const },
+  { pix: 'ca****@gmail.com', date: 'Ontem, 09:10', amount: 2150.0, status: 'Concluído' as const },
+  { pix: '•••.456.789-00', date: '12 mai, 18:47', amount: 3890.0, status: 'Concluído' as const },
+  { pix: '•••.456.789-00', date: '03 mai, 11:05', amount: 5120.0, status: 'Concluído' as const },
+]
+
 const monthlyChart = [
   { label: 'Jun', value: 18541.67, current: true },
   { label: 'Jul', value: 0 },
@@ -927,11 +953,58 @@ const monthlyChart = [
   { label: 'Nov', value: 0 },
 ]
 
+const walletCoachSteps: {
+  tab: 'resumo' | 'extrato' | 'saques'
+  text: React.ReactNode
+}[] = [
+  {
+    tab: 'resumo',
+    text: (
+      <>
+        Essa é a sua <span className="font-bold text-primary">carteira</span>. Na aba{' '}
+        <span className="font-bold text-primary">Resumo</span> você acompanha seu saldo, os ganhos
+        do mês e o gráfico da sua evolução.
+      </>
+    ),
+  },
+  {
+    tab: 'extrato',
+    text: (
+      <>
+        No <span className="font-bold text-primary">Extrato</span> aparece cada movimentação: as{' '}
+        <span className="font-bold text-positive">entradas</span> das suas vendas e as saídas dos
+        seus saques, com data e valor.
+      </>
+    ),
+  },
+  {
+    tab: 'saques',
+    text: (
+      <>
+        E em <span className="font-bold text-primary">Saques</span> fica o histórico das suas
+        transferências via <span className="font-bold text-primary">PIX</span>. O dinheiro cai na
+        hora, quando você quiser.
+      </>
+    ),
+  },
+]
+
 function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boolean }) {
-  const [showHint, setShowHint] = useState(true)
+  const [coachStep, setCoachStep] = useState(0)
   const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
   const available = 18541.67
   const maxValue = Math.max(...monthlyChart.map((d) => d.value), 1)
+  const isLastCoach = coachStep >= walletCoachSteps.length - 1
+
+  function advanceCoach() {
+    if (isLastCoach) {
+      onDone()
+      return
+    }
+    const nextStep = coachStep + 1
+    setCoachStep(nextStep)
+    setActiveTab(walletCoachSteps[nextStep].tab)
+  }
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -1004,7 +1077,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
         </div>
 
         {/* Conteúdo scrollável */}
-        <div className="flex-1 overflow-y-auto px-4 pb-6 pt-5">
+        <div className="flex-1 overflow-y-auto px-4 pb-24 pt-5">
           {activeTab === 'resumo' && (
             <>
               {/* Stats rápidos */}
@@ -1093,35 +1166,87 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
             </>
           )}
 
-          {activeTab !== 'resumo' && (
-            <div className="rounded-2xl bg-card/60 p-8 text-center ring-1 ring-border">
-              <p className="text-sm text-muted-foreground">
-                {activeTab === 'extrato'
-                  ? 'Seu extrato completo aparece aqui.'
-                  : 'Seus saques aparecem aqui.'}
-              </p>
+          {activeTab === 'extrato' && (
+            <div className="flex flex-col gap-2">
+              {statement.map((s, i) => (
+                <div
+                  key={i}
+                  className="luna-border flex items-center justify-between rounded-2xl bg-card px-3.5 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`flex size-9 items-center justify-center rounded-full ${
+                        s.type === 'in' ? 'bg-positive/15' : 'bg-primary/10'
+                      }`}
+                    >
+                      {s.type === 'in' ? (
+                        <ArrowDownLeft className="size-4 text-positive" aria-hidden="true" />
+                      ) : (
+                        <ArrowUpRight className="size-4 text-primary" aria-hidden="true" />
+                      )}
+                    </span>
+                    <div className="leading-tight">
+                      <p className="text-sm font-semibold text-foreground">{s.label}</p>
+                      <p className="text-[0.65rem] text-muted-foreground">{s.date}</p>
+                    </div>
+                  </div>
+                  <p
+                    className={`text-sm font-bold ${s.type === 'in' ? 'text-positive' : 'text-foreground'}`}
+                  >
+                    {s.type === 'in' ? '+' : '-'}
+                    {brl(s.amount)}
+                  </p>
+                </div>
+              ))}
             </div>
+          )}
+
+          {activeTab === 'saques' && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                  <p className="text-xs font-medium text-muted-foreground">Total sacado</p>
+                  <p className="mt-1 text-xl font-bold text-foreground">{brl(94614.76)}</p>
+                </div>
+                <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                  <p className="text-xs font-medium text-muted-foreground">Saques realizados</p>
+                  <p className="mt-1 text-xl font-bold text-foreground">28</p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-col gap-2">
+                {payouts.map((p, i) => (
+                  <div
+                    key={i}
+                    className="luna-border flex items-center justify-between rounded-2xl bg-card px-3.5 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-9 items-center justify-center rounded-full bg-primary/10">
+                        <ArrowUpRight className="size-4 text-primary" aria-hidden="true" />
+                      </span>
+                      <div className="leading-tight">
+                        <p className="text-sm font-semibold text-foreground">{p.pix}</p>
+                        <p className="text-[0.65rem] text-muted-foreground">{p.date}</p>
+                      </div>
+                    </div>
+                    <div className="text-right leading-tight">
+                      <p className="text-sm font-bold text-foreground">{brl(p.amount)}</p>
+                      <span className="text-[0.6rem] font-semibold text-positive">{p.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
 
-      {/* Coach — mentora explicando a carteira */}
-      {showHint && !hideHint && (
+      {/* Coach — mentora guiando pelas abas (Resumo, Extrato e Saques). Nunca fecha. */}
+      {!hideHint && (
         <>
-          {/* Captura/trava os toques por trás, sem escurecer (fundo transparente) */}
-          <button
-            type="button"
-            aria-label="Continuar"
-            onClick={() => {
-              setShowHint(false)
-              onDone()
-            }}
-            className="absolute inset-0 z-[50] cursor-default bg-transparent"
-          />
           {/* Escurecimento apenas na parte de baixo e mais fraco (degradê) */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[50] h-2/5 bg-gradient-to-t from-background/60 to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
-            <div className="luna-border animate-pop animate-coach-glow pointer-events-auto relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[50] h-2/5 bg-gradient-to-t from-background/70 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
+            <div className="luna-border animate-pop animate-coach-glow relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
               <img
                 src="/images/mentor.png"
                 alt="Camila"
@@ -1129,17 +1254,134 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
               />
               <div className="flex-1">
                 <div className="mb-2 flex items-center gap-1.5">
-                  {[0, 1, 2, 3, 4].map((i) => (
+                  {walletCoachSteps.map((_, i) => (
                     <span
                       key={i}
-                      className={`h-1.5 rounded-full ${i === 4 ? 'w-5 bg-primary' : 'w-3 bg-primary/30'}`}
+                      className={`h-1.5 rounded-full transition-all ${i === coachStep ? 'w-5 bg-primary' : 'w-3 bg-primary/30'}`}
                     />
                   ))}
                 </div>
+                <p key={coachStep} className="animate-item text-pretty text-base leading-relaxed text-foreground">
+                  {walletCoachSteps[coachStep].text}
+                </p>
+                <button
+                  type="button"
+                  onClick={advanceCoach}
+                  className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {isLastCoach ? 'Continuar' : 'Próximo'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modo estático (hideHint): botão simples para avançar */}
+      {hideHint && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
+          <button
+            type="button"
+            onClick={onDone}
+            className="animate-cta-breathe luna-gradient pointer-events-auto relative w-full rounded-2xl py-4 text-sm font-bold text-primary-foreground shadow-xl shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
+          >
+            Continuar
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PacksScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boolean }) {
+  const [showHint, setShowHint] = useState(true)
+
+  const packs = [
+    { name: 'Pés & Saltos', price: 29.9, sales: 87 },
+    { name: 'Ensaio na Praia', price: 49.9, sales: 54 },
+  ]
+
+  return (
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-6 pt-6">
+        {/* Header */}
+        <header className="shrink-0">
+          <div className="flex items-center justify-between gap-3">
+            <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
+          </div>
+        </header>
+
+        <div className="mt-5">
+          <h1 className="text-lg font-bold text-foreground">Meus packs</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Crie e gerencie o conteúdo que você vende.
+          </p>
+        </div>
+
+        {/* Botão criar novo pack (destaque) */}
+        <button
+          type="button"
+          className="animate-coach-glow mt-4 flex w-full flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-primary/50 bg-primary/5 px-4 py-7 text-center transition active:scale-[0.99]"
+        >
+          <span className="luna-gradient flex size-14 items-center justify-center rounded-full shadow-lg shadow-primary/30">
+            <Plus className="size-7 text-primary-foreground" aria-hidden="true" />
+          </span>
+          <span className="mt-1 text-base font-bold text-foreground">Criar novo pack</span>
+          <span className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <ImagePlus className="size-3.5 text-primary" aria-hidden="true" />
+              Enviar foto
+            </span>
+            <span className="flex items-center gap-1">
+              <Video className="size-3.5 text-primary" aria-hidden="true" />
+              Enviar vídeo
+            </span>
+          </span>
+        </button>
+
+        {/* Packs publicados */}
+        <div className="mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Seus packs publicados</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {packs.map((p) => (
+              <div key={p.name} className="luna-border overflow-hidden rounded-2xl bg-card">
+                <div className="relative flex aspect-[4/5] items-center justify-center bg-gradient-to-br from-primary/25 to-secondary/50">
+                  <Lock className="size-6 text-foreground/60" aria-hidden="true" />
+                  <span className="absolute right-2 top-2 rounded-full bg-background/85 px-2 py-0.5 text-[0.6rem] font-bold text-foreground">
+                    {brl(p.price)}
+                  </span>
+                </div>
+                <div className="px-3 py-2.5">
+                  <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
+                  <p className="text-[0.65rem] text-muted-foreground">{p.sales} vendas</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Coach — mentora explicando a aba de Packs */}
+      {showHint && !hideHint && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[50] h-72 bg-gradient-to-t from-background via-background/90 to-transparent"
+            aria-hidden="true"
+          />
+          <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
+            <div className="luna-border animate-pop animate-coach-glow relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
+              <img
+                src="/images/mentor.png"
+                alt="Camila"
+                className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+              />
+              <div className="flex-1">
                 <p className="animate-item text-pretty text-base leading-relaxed text-foreground">
-                  Essa é a sua <span className="font-bold text-primary">carteira</span>: aqui você
-                  acompanha seu saldo, seus ganhos e pode transferir tudo para sua conta via PIX a
-                  qualquer momento.
+                  Essa é a aba de <span className="font-bold text-primary">Packs</span>. É aqui que
+                  você cria seu conteúdo: toque em{' '}
+                  <span className="font-bold text-primary">Criar novo pack</span> para enviar suas
+                  fotos ou vídeos e definir o preço. Simples assim.
                 </p>
                 <button
                   type="button"
@@ -1147,7 +1389,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
                     setShowHint(false)
                     onDone()
                   }}
-                className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98]"
+                  className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Entendi
                 </button>

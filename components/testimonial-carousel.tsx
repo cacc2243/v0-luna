@@ -10,12 +10,14 @@ function TestimonialCard({ handle, city, amount, avatar, tenure }: Testimonial) 
   return (
     <article className="luna-border w-[16.5rem] shrink-0 rounded-2xl bg-card p-4">
       <div className="flex items-center gap-3">
-        <img
-          src={avatar || '/placeholder.svg'}
-          alt=""
-          aria-hidden="true"
-          className="size-9 shrink-0 rounded-full object-cover"
-        />
+        <div className="size-9 shrink-0 overflow-hidden rounded-full">
+          <img
+            src={avatar || '/placeholder.svg'}
+            alt=""
+            aria-hidden="true"
+            className="size-full scale-110 object-cover blur-[6px]"
+          />
+        </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">{handle}</p>
           <p className="truncate text-xs text-muted-foreground">{city}</p>
