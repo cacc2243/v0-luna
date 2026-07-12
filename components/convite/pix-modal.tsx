@@ -591,9 +591,14 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
+          {/* Prova social discreta acima do QR */}
+          <p className={compact ? 'mt-3 text-center text-xs font-medium text-muted-foreground' : 'mt-4 text-center text-xs font-medium text-muted-foreground'}>
+            {'🔥 99.8% dizem que valeu a pena!'}
+          </p>
+
           {/* QR Code */}
           {pixQrCode && (
-            <div className={compact ? 'relative mt-4 flex justify-center' : 'relative mt-6 flex justify-center'}>
+            <div className={compact ? 'relative mt-2 flex justify-center' : 'relative mt-3 flex justify-center'}>
               {/* Brilho suave da marca por tras do QR */}
               <span
                 className="pointer-events-none absolute left-1/2 top-1/2 size-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/25 blur-3xl"
