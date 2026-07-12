@@ -2900,18 +2900,18 @@ function PacksScreen({
       {/* Modal — Como criar seus packs */}
       {showGuide && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
           onClick={() => setShowGuide(false)}
           role="dialog"
           aria-modal="true"
           aria-label="Como criar seus packs"
         >
           <div
-            className="luna-border max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-card sm:rounded-3xl"
+            className="luna-border flex max-h-[calc(100dvh-7rem)] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-card"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Cabeçalho */}
-            <div className="sticky top-0 flex items-center justify-between gap-3 border-b border-border/60 bg-card px-5 py-4">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-card px-5 py-4">
               <div className="flex items-center gap-2.5">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
                   <Camera className="size-5" aria-hidden="true" />
@@ -2928,7 +2928,7 @@ function PacksScreen({
               </button>
             </div>
 
-            <div className="flex flex-col gap-4 px-5 py-5">
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">
               <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
                 Monte seus packs com o conteúdo que você quiser. Aqui vão as regras e dicas para suas
                 publicações renderem mais.
