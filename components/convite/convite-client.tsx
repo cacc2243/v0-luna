@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { Mail } from 'lucide-react'
 import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { PageBackground } from '@/components/page-background'
@@ -329,6 +330,15 @@ export function ConviteClient({
             </div>
           </section>
         )}
+
+        {/* Aviso: acesso enviado por e-mail */}
+        <div className="luna-border -mt-3 flex items-center gap-2.5 rounded-2xl bg-card/60 px-4 py-3 ring-1 ring-primary/20 backdrop-blur-sm">
+          <Mail className="size-4 shrink-0 text-primary" aria-hidden="true" />
+          <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            Você receberá em seu <span className="font-semibold text-primary">E-mail</span> o acesso
+            ao <span className="font-semibold text-primary">Luna Privé</span>.
+          </p>
+        </div>
 
         {/* Preço + garantia */}
         <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady />
