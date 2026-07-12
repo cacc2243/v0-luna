@@ -99,7 +99,7 @@ export function BonusAndReviews({ middleSlot }: { middleSlot?: React.ReactNode }
       {middleSlot}
 
       {/* Bônus exclusivo */}
-      <section aria-labelledby="bonus" className="luna-border overflow-hidden rounded-3xl bg-card">
+      <section aria-labelledby="bonus" className="overflow-hidden rounded-3xl border border-border/40 bg-card">
         {/* Cabeçalho */}
         <div className="flex items-center justify-between gap-3 border-b border-border/40 px-4 py-3">
           <div className="flex items-center gap-2">
