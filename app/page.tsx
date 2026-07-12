@@ -18,6 +18,7 @@ import { HowItWorksStep } from '@/components/how-it-works-step'
 import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
 import { PrivacyStep } from '@/components/privacy-step'
+import { CommunityStep } from '@/components/community-step'
 import { MentorQuiz } from '@/components/mentor-quiz'
 import { GuidedAppDemo } from '@/components/guided-app-demo'
 import { CtaButton } from '@/components/cta-button'
@@ -116,7 +117,7 @@ const myths = [
   },
 ]
 
-const TOTAL_STEPS = 7
+const TOTAL_STEPS = 8
 
 export default function Page() {
   const [step, setStep] = useState(0)
@@ -248,9 +249,16 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 3 — Resultados / prova social */}
+        {/* STEP 3 — Comunidade e garantias */}
         {step === 2 && (
           <div key="step-2" className="animate-screen flex flex-col">
+            <CommunityStep onContinue={next} />
+          </div>
+        )}
+
+        {/* STEP 4 — Resultados / prova social */}
+        {step === 3 && (
+          <div key="step-3" className="animate-screen flex flex-col">
             <section
               className="animate-item mt-7 text-center"
               style={{ animationDelay: '60ms' }}
@@ -294,9 +302,9 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 4 — Quebra de objeções / mitos */}
-        {step === 3 && (
-          <div key="step-3" className="animate-screen flex flex-col">
+        {/* STEP 5 — Quebra de objeções / mitos */}
+        {step === 4 && (
+          <div key="step-4" className="animate-screen flex flex-col">
             <section
               className="animate-item mt-7 text-center"
               style={{ animationDelay: '60ms' }}
@@ -334,16 +342,16 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 5 — Privacidade total */}
-        {step === 4 && (
-          <div key="step-4" className="animate-screen flex flex-col">
+        {/* STEP 6 — Privacidade total */}
+        {step === 5 && (
+          <div key="step-5" className="animate-screen flex flex-col">
             <PrivacyStep onContinue={next} />
           </div>
         )}
 
-        {/* STEP 6 — Jornada gamificada dentro da plataforma */}
-        {step === 5 && (
-          <div key="step-5" className="animate-screen flex flex-col">
+        {/* STEP 7 — Jornada gamificada dentro da plataforma */}
+        {step === 6 && (
+          <div key="step-6" className="animate-screen flex flex-col">
             <MentorQuiz
               finalLabel="Quero meu convite de acesso"
               onComplete={next}
@@ -351,8 +359,8 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 7 — Demonstração guiada do app (tela cheia) */}
-        {step === 6 && <GuidedAppDemo key="step-6" onComplete={next} />}
+        {/* STEP 8 — Demonstração guiada do app (tela cheia) */}
+        {step === 7 && <GuidedAppDemo key="step-7" onComplete={next} />}
       </div>
     </main>
   )
