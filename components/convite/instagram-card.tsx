@@ -32,6 +32,24 @@ export function InstagramCard() {
             <Instagram className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           </div>
 
+          {/* Estatísticas estilo Instagram */}
+          <div className="flex items-center justify-around rounded-xl bg-background/40 py-2.5 ring-1 ring-border/40">
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-sm font-bold text-foreground">77</span>
+              <span className="text-[0.65rem] text-muted-foreground">posts</span>
+            </div>
+            <div className="h-7 w-px bg-border/50" aria-hidden="true" />
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-sm font-bold text-foreground">6 mil</span>
+              <span className="text-[0.65rem] text-muted-foreground">seguidores</span>
+            </div>
+            <div className="h-7 w-px bg-border/50" aria-hidden="true" />
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-sm font-bold text-foreground">0</span>
+              <span className="text-[0.65rem] text-muted-foreground">seguindo</span>
+            </div>
+          </div>
+
           {/* Texto do convite */}
           <p className="flex gap-2 text-pretty text-xs leading-relaxed text-muted-foreground">
             <Camera className="mt-0.5 size-4 shrink-0 text-foreground/70" aria-hidden="true" />
