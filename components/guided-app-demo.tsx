@@ -953,11 +953,58 @@ const monthlyChart = [
   { label: 'Nov', value: 0 },
 ]
 
+const walletCoachSteps: {
+  tab: 'resumo' | 'extrato' | 'saques'
+  text: React.ReactNode
+}[] = [
+  {
+    tab: 'resumo',
+    text: (
+      <>
+        Essa é a sua <span className="font-bold text-primary">carteira</span>. Na aba{' '}
+        <span className="font-bold text-primary">Resumo</span> você acompanha seu saldo, os ganhos
+        do mês e o gráfico da sua evolução.
+      </>
+    ),
+  },
+  {
+    tab: 'extrato',
+    text: (
+      <>
+        No <span className="font-bold text-primary">Extrato</span> aparece cada movimentação: as{' '}
+        <span className="font-bold text-positive">entradas</span> das suas vendas e as saídas dos
+        seus saques, com data e valor.
+      </>
+    ),
+  },
+  {
+    tab: 'saques',
+    text: (
+      <>
+        E em <span className="font-bold text-primary">Saques</span> fica o histórico das suas
+        transferências via <span className="font-bold text-primary">PIX</span>. O dinheiro cai na
+        hora, quando você quiser.
+      </>
+    ),
+  },
+]
+
 function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boolean }) {
-  const [showHint, setShowHint] = useState(true)
+  const [coachStep, setCoachStep] = useState(0)
   const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
   const available = 18541.67
   const maxValue = Math.max(...monthlyChart.map((d) => d.value), 1)
+  const isLastCoach = coachStep >= walletCoachSteps.length - 1
+
+  function advanceCoach() {
+    if (isLastCoach) {
+      onDone()
+      return
+    }
+    const nextStep = coachStep + 1
+    setCoachStep(nextStep)
+    setActiveTab(walletCoachSteps[nextStep].tab)
+  }
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -1193,20 +1240,13 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
         </div>
       </div>
 
-      {/* Coach — mentora explicando a carteira */}
-      {showHint && !hideHint && (
+      {/* Coach — mentora guiando pelas abas (Resumo, Extrato e Saques). Nunca fecha. */}
+      {!hideHint && (
         <>
-          {/* Captura/trava os toques por trás, sem escurecer (fundo transparente) */}
-          <button
-            type="button"
-            aria-label="Fechar dica"
-            onClick={() => setShowHint(false)}
-            className="absolute inset-0 z-[50] cursor-default bg-transparent"
-          />
           {/* Escurecimento apenas na parte de baixo e mais fraco (degradê) */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[50] h-2/5 bg-gradient-to-t from-background/60 to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
-            <div className="luna-border animate-pop animate-coach-glow pointer-events-auto relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[50] h-2/5 bg-gradient-to-t from-background/70 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
+            <div className="luna-border animate-pop animate-coach-glow relative flex items-start gap-3 rounded-2xl bg-card px-4 py-3.5 ring-1 ring-primary/30">
               <img
                 src="/images/mentor.png"
                 alt="Camila"
@@ -1214,24 +1254,22 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
               />
               <div className="flex-1">
                 <div className="mb-2 flex items-center gap-1.5">
-                  {[0, 1, 2, 3, 4].map((i) => (
+                  {walletCoachSteps.map((_, i) => (
                     <span
                       key={i}
-                      className={`h-1.5 rounded-full ${i === 4 ? 'w-5 bg-primary' : 'w-3 bg-primary/30'}`}
+                      className={`h-1.5 rounded-full transition-all ${i === coachStep ? 'w-5 bg-primary' : 'w-3 bg-primary/30'}`}
                     />
                   ))}
                 </div>
-                <p className="animate-item text-pretty text-base leading-relaxed text-foreground">
-                  Essa é a sua <span className="font-bold text-primary">carteira</span>: aqui você
-                  acompanha seu saldo, seus ganhos e pode transferir tudo para sua conta via PIX a
-                  qualquer momento.
+                <p key={coachStep} className="animate-item text-pretty text-base leading-relaxed text-foreground">
+                  {walletCoachSteps[coachStep].text}
                 </p>
                 <button
                   type="button"
-                  onClick={() => setShowHint(false)}
-                className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98]"
+                  onClick={advanceCoach}
+                  className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  Entendi
+                  {isLastCoach ? 'Continuar' : 'Próximo'}
                 </button>
               </div>
             </div>
@@ -1239,8 +1277,8 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
         </>
       )}
 
-      {/* Botão continuar — aparece após fechar a dica, permitindo explorar as abas */}
-      {(!showHint || hideHint) && (
+      {/* Modo estático (hideHint): botão simples para avançar */}
+      {hideHint && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
           <button
