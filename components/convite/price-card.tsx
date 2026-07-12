@@ -129,9 +129,11 @@ export function PriceCard({
       <div className="relative z-10 mt-3 flex items-start gap-2.5 rounded-2xl border border-border/40 bg-card/40 px-4 py-3 backdrop-blur-sm">
         <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
         <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-          Experimente o Luna Privé por <span className="font-semibold text-foreground">7 dias</span>.
-          Se você preferir poderá solicitar a{' '}
-          <span className="font-semibold text-foreground">devolução em até 7 dias</span>.
+          Você tem <span className="font-semibold text-foreground">7 dias</span> para postar seu
+          pack/foto. Se não vender e sacar em até{' '}
+          <span className="font-semibold text-foreground">7 dias</span>, poderá solicitar{' '}
+          <span className="font-semibold text-foreground">reembolso completo com 1 clique</span>{' '}
+          dentro do nosso site.
         </p>
       </div>
     </section>
