@@ -105,25 +105,25 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex flex-col items-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
+      className="pointer-events-none fixed inset-x-0 top-0 z-[110] flex flex-col items-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
       role="region"
       aria-live="polite"
       aria-label="Atividade recente"
     >
       <div
-        className={`pointer-events-auto flex w-full max-w-xs items-center gap-2.5 rounded-2xl border border-primary/15 bg-card/95 px-3 py-2.5 shadow-lg shadow-primary/10 backdrop-blur-md ${
+        className={`pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border border-primary/15 bg-card/95 px-4 py-3.5 shadow-lg shadow-primary/10 backdrop-blur-md ${
           leaving ? 'animate-toast-leave' : 'animate-toast-enter'
         }`}
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30">
           <img
             src="/images/luna-icon.png"
             alt="Luna Privé"
-            className="size-5 object-contain"
+            className="size-6 object-contain"
           />
         </span>
 
-        <p className="min-w-0 flex-1 text-pretty text-xs leading-snug text-foreground">
+        <p className="min-w-0 flex-1 text-pretty text-sm leading-snug text-foreground">
           <span className="font-semibold">@{current.username}</span> acabou de receber{' '}
           <span className="font-bold text-emerald-400">{brl(current.amount)}</span>
         </p>
