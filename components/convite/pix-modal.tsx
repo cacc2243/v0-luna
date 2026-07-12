@@ -619,13 +619,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
-                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-white p-1.5 shadow-md ring-1 ring-black/5">
+                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-1 shadow-md ring-1 ring-black/5">
                   <Image
                     src="/images/luna-icon.png"
                     alt=""
                     width={44}
                     height={44}
-                    className={compact ? 'size-6' : 'size-8'}
+                    className={compact ? 'size-4' : 'size-6'}
                     unoptimized
                   />
                 </span>
