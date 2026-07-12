@@ -5,8 +5,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Luna Privé',
     short_name: 'Luna Privé',
     description: 'Painel Luna Privé — acompanhe suas vendas em tempo real.',
-    // Abre direto no painel quando instalado na tela de inicio.
-    start_url: '/painel',
+    // Abre direto na conta do usuario (minha-conta) quando instalado na tela de inicio.
+    start_url: '/minha-conta',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
