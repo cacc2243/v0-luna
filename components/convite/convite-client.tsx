@@ -308,9 +308,9 @@ export function ConviteClient({
 
         <div className="mt-8 flex flex-col gap-7">
         {/* Escassez: convites restantes hoje */}
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-border/40 bg-card/60 px-3 py-2 backdrop-blur-sm">
-          <Users className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
-          <p className="text-xs text-foreground">
+        <div className="flex items-center justify-center gap-2.5 rounded-xl border border-border/40 bg-card/60 px-4 py-3 backdrop-blur-sm">
+          <Users className="size-4 shrink-0 text-primary" aria-hidden="true" />
+          <p className="text-sm text-foreground">
             Restam apenas <span className="font-bold text-primary">9</span> convites hoje
           </p>
         </div>
