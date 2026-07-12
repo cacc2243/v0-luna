@@ -1,26 +1,12 @@
 'use client'
 
-import { BookOpen, Users, Images, Gift, Star, BadgeCheck } from 'lucide-react'
+import { Gift, Star, BadgeCheck, Camera, Scan, TrendingUp, Flame } from 'lucide-react'
 
-const bonuses = [
-  {
-    icon: BookOpen,
-    title: 'Guia: Como faturar R$10 mil',
-    description:
-      'Estratégias reais de quem já vende na plataforma. Passo a passo para suas primeiras vendas.',
-  },
-  {
-    icon: Users,
-    title: 'Acesso à Comunidade VIP',
-    description:
-      'Grupo exclusivo com dicas, suporte e troca de experiências entre vendedoras.',
-  },
-  {
-    icon: Images,
-    title: 'Pack de Poses Profissionais',
-    description:
-      '30 poses que mais vendem, com guia visual de ângulos, iluminação e cenários.',
-  },
+const bonusItems = [
+  { icon: Camera, label: 'Fotos perfeitas' },
+  { icon: Scan, label: 'Melhores ângulos' },
+  { icon: TrendingUp, label: 'Estratégias de 10K' },
+  { icon: Flame, label: 'Packs campeões' },
 ]
 
 const reviews = [
@@ -112,37 +98,48 @@ export function BonusAndReviews({ middleSlot }: { middleSlot?: React.ReactNode }
       {/* Conteúdo intermediário (ex.: card de suporte) */}
       {middleSlot}
 
-      {/* Bônus incluído */}
-      <section aria-labelledby="bonus">
-        <div className="mb-3 flex items-center gap-3 px-1">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary/12 text-primary">
-            <Gift className="size-5" aria-hidden="true" />
-          </span>
-          <div className="leading-tight">
-            <h2 id="bonus" className="text-sm font-bold text-foreground">
-              Bônus incluído
-            </h2>
-            <p className="text-xs text-foreground/70">Grátis com seu Código de Convite</p>
+      {/* Bônus exclusivo */}
+      <section aria-labelledby="bonus" className="luna-border overflow-hidden rounded-3xl bg-card">
+        {/* Cabeçalho */}
+        <div className="flex items-center justify-between gap-3 border-b border-border/40 px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <Gift className="size-5 text-muted-foreground" aria-hidden="true" />
+            <span className="text-sm font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              Bônus exclusivo
+            </span>
           </div>
+          <span className="rounded-full border border-positive/40 bg-positive/10 px-3.5 py-1 text-xs font-bold text-positive">
+            GRÁTIS
+          </span>
         </div>
 
-        <div className="luna-border divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
-          {bonuses.map((b) => (
-            <div key={b.title} className="flex items-start gap-3 px-4 py-4">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
-                <b.icon className="size-4" aria-hidden="true" />
-              </span>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-foreground">{b.title}</p>
-                <p className="mt-0.5 text-pretty text-xs leading-relaxed text-muted-foreground">
-                  {b.description}
-                </p>
-                <p className="mt-1.5 text-[0.7rem] font-semibold text-primary">
-                  Incluso no Luna Privé
-                </p>
+        {/* Corpo */}
+        <div className="px-5 py-5">
+          <h2 id="bonus" className="text-balance text-lg font-bold leading-snug text-foreground">
+            Guia: Como faturar seus primeiros R$ 10 mil
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Material exclusivo enviado ao adquirir seu convite.
+          </p>
+
+          <div className="mt-4 grid grid-cols-2 gap-2.5">
+            {bonusItems.map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center gap-2.5 rounded-2xl bg-secondary/60 px-3.5 py-3"
+              >
+                <item.icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                  {item.label}
+                </span>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          <div className="mt-4 flex items-center justify-center gap-2 text-sm">
+            <span className="text-muted-foreground line-through">R$ 197,00</span>
+            <span className="font-bold text-positive">Incluído no convite!</span>
+          </div>
         </div>
       </section>
     </div>
