@@ -10,7 +10,6 @@ import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
 import { InstagramCard } from '@/components/convite/instagram-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
-import { FaqSection } from '@/components/convite/faq-section'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PreCheckoutModal } from '@/components/convite/pre-checkout-modal'
@@ -366,9 +365,6 @@ export function ConviteClient({
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
-
-        {/* Perguntas frequentes (abaixo dos bônus) */}
-        <FaqSection />
 
         {/* Empresa */}
         <CompanyInfo />
