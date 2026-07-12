@@ -926,6 +926,24 @@ const withdrawals = [
   { label: 'Saque PIX', date: '12 mai, 18:47', amount: 3890.0 },
 ]
 
+// Extrato: entradas de venda e saídas de saque
+const statement = [
+  { type: 'in' as const, label: 'Venda de pack · Pés & Saltos', date: 'Hoje, 15:04', amount: 49.9 },
+  { type: 'in' as const, label: 'Gorjeta recebida', date: 'Hoje, 13:20', amount: 30.0 },
+  { type: 'out' as const, label: 'Saque via PIX', date: 'Hoje, 14:32', amount: 4280.0 },
+  { type: 'in' as const, label: 'Venda de pack · Ensaio na Praia', date: 'Ontem, 21:47', amount: 89.9 },
+  { type: 'in' as const, label: 'Venda de pack · Pés & Saltos', date: 'Ontem, 18:12', amount: 29.9 },
+  { type: 'out' as const, label: 'Saque via PIX', date: 'Ontem, 09:10', amount: 2150.0 },
+]
+
+// Saques: histórico de transferências PIX com status
+const payouts = [
+  { pix: 'ca****@gmail.com', date: 'Hoje, 14:32', amount: 4280.0, status: 'Concluído' as const },
+  { pix: 'ca****@gmail.com', date: 'Ontem, 09:10', amount: 2150.0, status: 'Concluído' as const },
+  { pix: '•••.456.789-00', date: '12 mai, 18:47', amount: 3890.0, status: 'Concluído' as const },
+  { pix: '•••.456.789-00', date: '03 mai, 11:05', amount: 5120.0, status: 'Concluído' as const },
+]
+
 const monthlyChart = [
   { label: 'Jun', value: 18541.67, current: true },
   { label: 'Jul', value: 0 },
@@ -1012,7 +1030,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
         </div>
 
         {/* Conteúdo scrollável */}
-        <div className="flex-1 overflow-y-auto px-4 pb-6 pt-5">
+        <div className="flex-1 overflow-y-auto px-4 pb-24 pt-5">
           {activeTab === 'resumo' && (
             <>
               {/* Stats rápidos */}
@@ -1101,14 +1119,76 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
             </>
           )}
 
-          {activeTab !== 'resumo' && (
-            <div className="rounded-2xl bg-card/60 p-8 text-center ring-1 ring-border">
-              <p className="text-sm text-muted-foreground">
-                {activeTab === 'extrato'
-                  ? 'Seu extrato completo aparece aqui.'
-                  : 'Seus saques aparecem aqui.'}
-              </p>
+          {activeTab === 'extrato' && (
+            <div className="flex flex-col gap-2">
+              {statement.map((s, i) => (
+                <div
+                  key={i}
+                  className="luna-border flex items-center justify-between rounded-2xl bg-card px-3.5 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`flex size-9 items-center justify-center rounded-full ${
+                        s.type === 'in' ? 'bg-positive/15' : 'bg-primary/10'
+                      }`}
+                    >
+                      {s.type === 'in' ? (
+                        <ArrowDownLeft className="size-4 text-positive" aria-hidden="true" />
+                      ) : (
+                        <ArrowUpRight className="size-4 text-primary" aria-hidden="true" />
+                      )}
+                    </span>
+                    <div className="leading-tight">
+                      <p className="text-sm font-semibold text-foreground">{s.label}</p>
+                      <p className="text-[0.65rem] text-muted-foreground">{s.date}</p>
+                    </div>
+                  </div>
+                  <p
+                    className={`text-sm font-bold ${s.type === 'in' ? 'text-positive' : 'text-foreground'}`}
+                  >
+                    {s.type === 'in' ? '+' : '-'}
+                    {brl(s.amount)}
+                  </p>
+                </div>
+              ))}
             </div>
+          )}
+
+          {activeTab === 'saques' && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                  <p className="text-xs font-medium text-muted-foreground">Total sacado</p>
+                  <p className="mt-1 text-xl font-bold text-foreground">{brl(94614.76)}</p>
+                </div>
+                <div className="rounded-2xl bg-card/80 p-4 ring-1 ring-border backdrop-blur-sm">
+                  <p className="text-xs font-medium text-muted-foreground">Saques realizados</p>
+                  <p className="mt-1 text-xl font-bold text-foreground">28</p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-col gap-2">
+                {payouts.map((p, i) => (
+                  <div
+                    key={i}
+                    className="luna-border flex items-center justify-between rounded-2xl bg-card px-3.5 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-9 items-center justify-center rounded-full bg-primary/10">
+                        <ArrowUpRight className="size-4 text-primary" aria-hidden="true" />
+                      </span>
+                      <div className="leading-tight">
+                        <p className="text-sm font-semibold text-foreground">{p.pix}</p>
+                        <p className="text-[0.65rem] text-muted-foreground">{p.date}</p>
+                      </div>
+                    </div>
+                    <div className="text-right leading-tight">
+                      <p className="text-sm font-bold text-foreground">{brl(p.amount)}</p>
+                      <span className="text-[0.6rem] font-semibold text-positive">{p.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -1119,11 +1199,8 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
           {/* Captura/trava os toques por trás, sem escurecer (fundo transparente) */}
           <button
             type="button"
-            aria-label="Continuar"
-            onClick={() => {
-              setShowHint(false)
-              onDone()
-            }}
+            aria-label="Fechar dica"
+            onClick={() => setShowHint(false)}
             className="absolute inset-0 z-[50] cursor-default bg-transparent"
           />
           {/* Escurecimento apenas na parte de baixo e mais fraco (degradê) */}
@@ -1151,10 +1228,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
                 </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowHint(false)
-                    onDone()
-                  }}
+                  onClick={() => setShowHint(false)}
                 className="animate-cta-breathe mt-3 w-full rounded-xl bg-primary py-4 text-sm font-bold text-primary-foreground transition hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Entendi
@@ -1163,6 +1237,20 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
             </div>
           </div>
         </>
+      )}
+
+      {/* Botão continuar — aparece após fechar a dica, permitindo explorar as abas */}
+      {(!showHint || hideHint) && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[55] px-3 pb-3">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
+          <button
+            type="button"
+            onClick={onDone}
+            className="animate-cta-breathe luna-gradient pointer-events-auto relative w-full rounded-2xl py-4 text-sm font-bold text-primary-foreground shadow-xl shadow-primary/30 transition hover:brightness-110 active:scale-[0.98]"
+          >
+            Continuar
+          </button>
+        </div>
       )}
     </div>
   )
