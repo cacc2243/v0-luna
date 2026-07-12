@@ -118,11 +118,6 @@ export function PriceCard({
           {priceReady ? 'Adquirir meu Convite' : 'Carregando valor...'}
           {priceReady && <ChevronRight className="size-5" aria-hidden="true" />}
         </button>
-
-        {/* Garantia */}
-        <p className="relative mx-auto mt-3 max-w-[17rem] text-center text-xs leading-relaxed text-muted-foreground">
-          Garantia de 7 dias: não gostou, devolvemos 100% do valor pago.
-        </p>
       </div>
 
       {/* Card pequeno e discreto de garantia (abaixo do card de preço) */}
