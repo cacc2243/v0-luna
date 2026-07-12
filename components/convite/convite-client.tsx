@@ -7,6 +7,7 @@ import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
+import { InstagramCard } from '@/components/convite/instagram-card'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { FaqSection } from '@/components/convite/faq-section'
 import { CompanyInfo } from '@/components/convite/company-info'
@@ -331,6 +332,9 @@ export function ConviteClient({
 
         {/* Preço + garantia */}
         <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady />
+
+        {/* Card do Instagram (privado, só para convites ativos) */}
+        <InstagramCard />
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
