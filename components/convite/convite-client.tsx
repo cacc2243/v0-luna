@@ -272,7 +272,7 @@ export function ConviteClient({
 
   return (
     <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">
-      <PageBackground grayscale />
+      <PageBackground grayscale darken />
 
       {/* Barra fixa de destaque no topo (aparece após rolar um pouco) */}
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-8">
