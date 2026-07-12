@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode, Lock, ShieldCheck } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Lock, ShieldCheck } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
@@ -531,7 +531,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
-            className="h-7 w-auto"
+            className="h-9 w-auto"
           />
         )}
         {!embedded && (
@@ -689,24 +689,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </button>
           )}
 
-          {/* Aviso de e-mail */}
-          <div className={`${compact ? 'mt-3 py-2.5' : 'mt-4 py-3'} flex items-start gap-2.5 rounded-2xl border border-border/60 bg-background/40 px-4`}>
-            <Mail className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-            {compact ? (
-              <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-                Após o pagamento confirmado, seu{' '}
-                <span className="font-semibold text-foreground">acesso �� liberado automaticamente</span>.
-                Você receberá o e-mail de confirmação imediatamente.
-              </p>
-            ) : (
-              <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-                Após o pagamento, o seu{' '}
-                <span className="font-semibold text-foreground">acesso ao Luna Privé</span> será
-                enviado no e-mail cadastrado.
-              </p>
-            )}
-          </div>
-
           {/* Rodapé de segurança */}
           <div className={`${compact ? 'mt-3' : 'mt-4'} border-t border-border/50 pt-3`}>
             <div className="flex items-center justify-center gap-2 text-[0.7rem] font-medium text-foreground">
@@ -760,7 +742,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
-          <img src="/images/background.png" alt="" className="size-full object-cover" />
+          <img src="/images/background.png" alt="" className="size-full object-cover grayscale" />
             <div className="absolute inset-0 bg-gradient-to-b from-background/68 via-background/78 to-background/88" />
         </div>
 
