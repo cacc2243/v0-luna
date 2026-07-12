@@ -2692,7 +2692,7 @@ function HomeScreen({
                 type="button"
                 disabled={accepting !== null}
                 onClick={() => handleAccept(sale.id)}
-                className="flex flex-[2] items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-[0.8rem] font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
+                className="flex flex-[2] items-center justify-center gap-1 rounded-lg bg-positive py-2.5 text-[0.8rem] font-bold text-white shadow-lg shadow-positive/25 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-90"
               >
                 {accepting === sale.id ? (
                   <>
