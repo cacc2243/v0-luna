@@ -107,15 +107,7 @@ export function AccountSummary({ username, email, pixType, pixKey, onUpdate }: A
   }
 
   return (
-    <section aria-labelledby="sua-conta">
-      <h2
-        id="sua-conta"
-        className="mb-2.5 flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground"
-      >
-        <span className="cta-gradient size-1.5 rounded-full" aria-hidden="true" />
-        Sua conta
-      </h2>
-
+    <section aria-label="Sua conta">
       <div className="luna-border divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
         {rows.map((row) => {
           const isEditing = editing === row.key

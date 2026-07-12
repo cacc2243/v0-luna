@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Lock } from 'lucide-react'
 import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { PageBackground } from '@/components/page-background'
@@ -273,7 +272,7 @@ export function ConviteClient({
 
   return (
     <main className="relative min-h-[100dvh] w-full overflow-hidden bg-background">
-      <PageBackground />
+      <PageBackground grayscale />
 
       {/* Barra fixa de destaque no topo (aparece após rolar um pouco) */}
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-8">
@@ -288,15 +287,11 @@ export function ConviteClient({
 
         {/* Hero centralizado no mesmo padrão do fluxo */}
         <section className="mt-7 text-center">
-          <span className="luna-border inline-flex items-center gap-1.5 rounded-full bg-card px-4 py-1.5 text-sm font-semibold text-primary">
-            <Lock className="size-4" aria-hidden="true" />
-            Adquirir meu Convite
-          </span>
-          <h1 className="mt-4 text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
+          <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
             Resgate seu <span className="text-primary">Convite Luna</span>
           </h1>
           <p className="mx-auto mt-3 max-w-md text-pretty text-sm leading-relaxed text-foreground">
-            Seu convite Luna garante acesso seguro e confiável à plataforma Luna Privé. Todas as usuárias possuem um convite ativo.
+            Confirme seus dados abaixo e garanta seu código de convite exclusivo.
           </p>
         </section>
 

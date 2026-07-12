@@ -1,13 +1,13 @@
 'use client'
 
-import { Check, ChevronRight, Gift } from 'lucide-react'
+import { Check, ChevronRight, Gift, Lightbulb } from 'lucide-react'
 
 const benefits = [
-  'Código de convite Luna Privé',
+  'Código de Convite Luna Privé',
+  'Acesso Completo à Plataforma',
+  'Comece a Vender Imediatamente',
+  'Suporte Anônimo 24h',
   '100% Anonimato',
-  'Suporte Exclusivo',
-  'Clube de Benefícios',
-  'Comece a vender imediatamente',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -121,7 +121,17 @@ export function PriceCard({
 
         {/* Garantia */}
         <p className="relative mx-auto mt-3 max-w-[17rem] text-center text-xs leading-relaxed text-muted-foreground">
-          Garantia de 30 dias: não gostou, devolvemos 100% do valor pago.
+          Garantia de 7 dias: não gostou, devolvemos 100% do valor pago.
+        </p>
+      </div>
+
+      {/* Card pequeno e discreto de garantia (abaixo do card de preço) */}
+      <div className="relative z-10 mt-3 flex items-start gap-2.5 rounded-2xl border border-border/40 bg-card/40 px-4 py-3 backdrop-blur-sm">
+        <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+        <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+          Experimente o Luna Privé por <span className="font-semibold text-foreground">7 dias</span>.
+          Se você preferir poderá solicitar a{' '}
+          <span className="font-semibold text-foreground">devolução em até 7 dias</span>.
         </p>
       </div>
     </section>
