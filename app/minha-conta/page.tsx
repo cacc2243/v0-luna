@@ -1451,7 +1451,7 @@ function AppDashboard() {
       {/* Imagem de fundo */}
       <div 
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/images/app-background.webp)' }}
+        style={{ backgroundImage: 'url(/images/app-background.webp)', filter: 'grayscale(0.65)' }}
       >
         <div className="absolute inset-0 bg-black/65" />
       </div>
