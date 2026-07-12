@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail, Users } from 'lucide-react'
-import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
-import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
@@ -150,64 +148,9 @@ export function ConviteClient({
     return () => window.removeEventListener('pageshow', onPageShow)
   }, [])
 
-  // InitiateCheckout: disparado ao ENTRAR na pagina /convite (uma unica vez),
-  // e nao mais quando o PIX e gerado. Pixel (browser) + Conversions API
-  // (servidor) com o MESMO event_id para deduplicacao. Nunca quebra a pagina.
-  const initiateCheckoutSentRef = useRef(false)
-  useEffect(() => {
-    if (initiateCheckoutSentRef.current) return
-    initiateCheckoutSentRef.current = true
-    try {
-      const value = inviteCents / 100
-      const icEventId = newEventId('ic')
-      fbTrackWhenReady(
-        'InitiateCheckout',
-        {
-          value,
-          currency: 'BRL',
-          content_name: 'Convite Luna Privé',
-          content_type: 'product',
-        },
-        icEventId,
-      )
-
-      // Resolve os dados do cliente (URL/sessionStorage) para enriquecer o
-      // evento — o state `data` ainda esta vazio neste ponto da montagem.
-      const resolved = resolveSignupData(initialFromUrl)
-      const trimmedName = (resolved.username || '').trim()
-      const parts = trimmedName ? trimmedName.split(/\s+/) : []
-      const firstName = parts.length > 0 ? parts[0] : null
-      const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null
-      const normalizedPixType = (resolved.pixType || '').toLowerCase()
-      const phone =
-        normalizedPixType.includes('tele') || normalizedPixType.includes('phone')
-          ? resolved.pixKey || null
-          : null
-
-      const attribution = getAttributionForCheckout()
-      fetch('/api/fb/initiate-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          eventId: icEventId,
-          eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
-          fbp: readCookie('_fbp'),
-          fbc: readCookie('_fbc'),
-          email: resolved.email || null,
-          name: trimmedName || null,
-          firstName,
-          lastName,
-          phone,
-          value,
-          attribution,
-        }),
-      }).catch(() => {})
-    } catch {
-      // o tracking nunca bloqueia a pagina
-    }
-    // Dispara apenas no mount (entrada na pagina).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // Observação: o evento InitiateCheckout NÃO é mais disparado ao entrar na
+  // página. Ele passou a ser disparado apenas quando o cliente copia o código
+  // PIX gerado (intenção real de pagar) — ver components/convite/pix-modal.tsx.
 
   function updateField(field: keyof SignupData, value: string) {
     setData((prev) => {

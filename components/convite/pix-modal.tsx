@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { X, Copy, Check, AlertCircle, RefreshCw, Mail, CheckCircle2, Info, QrCode, Lock, ShieldCheck } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
-import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
+import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 
 const PIX_CONTENT_NAME: Record<string, string> = {
@@ -147,6 +147,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Garante que onReady dispare apenas uma vez por geração de PIX.
   const readyFiredRef = useRef(false)
+  // Garante que o InitiateCheckout (disparado ao copiar o código PIX do convite)
+  // seja enviado apenas uma vez por abertura do modal.
+  const initiateCheckoutFiredRef = useRef(false)
 
   // Sinaliza ao componente pai que a geração do PIX finalizou e o modal já tem
   // algo para exibir imediatamente: o PIX pronto (código + QR) ou o estado de
@@ -163,6 +166,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   useEffect(() => {
     if (!isOpen) {
       readyFiredRef.current = false
+      initiateCheckoutFiredRef.current = false
     }
   }, [isOpen])
 
@@ -397,6 +401,58 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         }).catch(() => {
           // Silencioso: a cópia local já funcionou para o usuário.
         })
+      }
+      // InitiateCheckout: disparado SOMENTE quando o cliente copia o código PIX
+      // do convite (intenção real de pagar), e não mais na entrada da página.
+      // Pixel (browser) + Conversions API (servidor) com o MESMO event_id para
+      // deduplicação. Nunca quebra o fluxo de cópia.
+      if (type === 'invite' && !initiateCheckoutFiredRef.current) {
+        initiateCheckoutFiredRef.current = true
+        try {
+          const value = Number(amount) || 0
+          const icEventId = newEventId('ic')
+          fbTrackWhenReady(
+            'InitiateCheckout',
+            {
+              value,
+              currency: 'BRL',
+              content_name: 'Convite Luna Privé',
+              content_type: 'product',
+            },
+            icEventId,
+          )
+
+          const trimmedName = (userName || '').trim()
+          const parts = trimmedName ? trimmedName.split(/\s+/) : []
+          const firstName = parts.length > 0 ? parts[0] : null
+          const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null
+          const normalizedPixType = (pixType || '').toLowerCase()
+          const phone =
+            normalizedPixType.includes('tele') || normalizedPixType.includes('phone')
+              ? pixKey || null
+              : null
+
+          const attribution = getAttributionForCheckout()
+          fetch('/api/fb/initiate-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              eventId: icEventId,
+              eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
+              fbp: readCookie('_fbp'),
+              fbc: readCookie('_fbc'),
+              email: email || null,
+              name: trimmedName || null,
+              firstName,
+              lastName,
+              phone,
+              value,
+              attribution,
+            }),
+          }).catch(() => {})
+        } catch {
+          // o tracking nunca bloqueia a cópia do PIX
+        }
       }
     }
 
