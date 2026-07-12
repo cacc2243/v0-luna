@@ -606,11 +606,11 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 aria-hidden="true"
               />
               <div className="relative rounded-2xl bg-white p-1 shadow-xl shadow-primary/20 ring-1 ring-black/5">
-                {/* Cantos decorativos na cor da marca */}
-                <span className="pointer-events-none absolute -left-1 -top-1 size-4 rounded-tl-lg border-l-2 border-t-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute -right-1 -top-1 size-4 rounded-tr-lg border-r-2 border-t-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute -bottom-1 -left-1 size-4 rounded-bl-lg border-b-2 border-l-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute -bottom-1 -right-1 size-4 rounded-br-lg border-b-2 border-r-2 border-primary/70" aria-hidden="true" />
+                {/* Cantos decorativos cinza */}
+                <span className="pointer-events-none absolute -left-1 -top-1 size-4 rounded-tl-lg border-l-2 border-t-2 border-zinc-400/70" aria-hidden="true" />
+                <span className="pointer-events-none absolute -right-1 -top-1 size-4 rounded-tr-lg border-r-2 border-t-2 border-zinc-400/70" aria-hidden="true" />
+                <span className="pointer-events-none absolute -bottom-1 -left-1 size-4 rounded-bl-lg border-b-2 border-l-2 border-zinc-400/70" aria-hidden="true" />
+                <span className="pointer-events-none absolute -bottom-1 -right-1 size-4 rounded-br-lg border-b-2 border-r-2 border-zinc-400/70" aria-hidden="true" />
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
