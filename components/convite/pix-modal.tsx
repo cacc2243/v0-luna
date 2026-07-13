@@ -695,26 +695,18 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Botão copiar */}
           <button
             onClick={copyPixCode}
-            className={`${copied ? 'bg-emerald-600' : 'cta-gradient hover:brightness-110'} mt-4 w-full rounded-2xl py-3 text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600' : 'cta-gradient hover:brightness-110'} mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 active:scale-[0.98]`}
           >
-            <span className="flex items-center justify-center gap-2 text-base font-bold">
-              {copied ? (
-                <>
-                  <Check className="size-5 animate-in zoom-in-50 duration-300" />
-                  Código copiado!
-                </>
-              ) : (
-                <>
-                  <Copy className="size-5" />
-                  Copiar código PIX
-                </>
-              )}
-            </span>
-            {!copied && (
-              <span className="mt-0.5 flex items-center justify-center gap-1 text-[0.7rem] font-medium text-primary-foreground/80">
-                <Lock className="size-3" aria-hidden="true" />
-                Copia e cola o código no seu app do banco
-              </span>
+            {copied ? (
+              <>
+                <Check className="size-5 animate-in zoom-in-50 duration-300" />
+                Código copiado!
+              </>
+            ) : (
+              <>
+                <Copy className="size-5" />
+                Copiar código PIX
+              </>
             )}
           </button>
 
