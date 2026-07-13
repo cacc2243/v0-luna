@@ -17,8 +17,14 @@ type ToastData = {
 }
 
 const DISPLAY_MS = 4200
-const GAP_MS = 2600
-const FIRST_DELAY_MS = 1200
+// Intervalo aleatório entre uma notificação e outra (mais espaçado e imprevisível).
+const GAP_MIN_MS = 9000
+const GAP_MAX_MS = 22000
+const FIRST_DELAY_MS = 4000
+
+function randomGap() {
+  return Math.round(Math.random() * (GAP_MAX_MS - GAP_MIN_MS) + GAP_MIN_MS)
+}
 
 // Nomes de usuária no estilo @arroba para dar realismo.
 const USERNAMES = [
@@ -87,7 +93,7 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
         setLeaving(true)
         const next = setTimeout(() => {
           setCurrent(null)
-          const again = setTimeout(showOne, GAP_MS)
+          const again = setTimeout(showOne, randomGap())
           timers.current.push(again)
         }, 360)
         timers.current.push(next)
