@@ -769,9 +769,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <img
             src="/images/background-pix.png"
             alt=""
-            className="size-full object-cover opacity-25"
+            className="size-full object-cover opacity-[0.12]"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-card/40 via-card/60 to-card/85" />
+          <div className="absolute inset-0 bg-gradient-to-b from-card/60 via-card/75 to-card/90" />
         </div>
 
         {/* Fundo: mesmo tratamento dos modais de entrada do /convite
