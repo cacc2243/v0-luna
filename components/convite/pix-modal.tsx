@@ -788,7 +788,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
-          <img src="/images/background.png" alt="" className="size-full object-cover" />
+          <img src="/images/background-pix.png" alt="" className="size-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-b from-background/58 via-background/66 to-background/75" />
         </div>
 
