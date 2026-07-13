@@ -23,8 +23,10 @@ import { StatCard } from './stat-card'
 import { ConversionFunnel } from './conversion-funnel'
 import { TransactionsList } from './transactions-list'
 import { RevenueChart } from './revenue-chart'
+import { AgeInsights } from './age-insights'
 import {
   computeMetrics,
+  computeAgeStats,
   buildTimeSeries,
   getPeriodRange,
   isInRange,
@@ -125,6 +127,11 @@ export function SummaryTab({
   const series = useMemo(
     () => buildTimeSeries(invites, profiles, period),
     [invites, profiles, period],
+  )
+
+  const ageStats = useMemo(
+    () => computeAgeStats(invites, profiles, range),
+    [invites, profiles, range],
   )
 
   const filteredInvites = useMemo(() => {
@@ -348,6 +355,9 @@ export function SummaryTab({
         invitePaid={metrics.funnel.invitePaid}
         chatUnlocked={metrics.funnel.chatUnlocked}
       />
+
+      {/* Idades de quem está no funil */}
+      <AgeInsights stats={ageStats} />
 
       {/* Origem das vendas */}
       <section className="rounded-2xl border border-border bg-card p-5">

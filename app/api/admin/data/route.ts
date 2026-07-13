@@ -39,12 +39,24 @@ interface ProfileRow {
   chat_unlocked_at: string | null
   balance: number | null
   total_earned: number | null
+  age: number | null
 }
 
 interface AuthInfo {
   email: string | null
   banned: boolean
   banReason: string | null
+  age: number | null
+}
+
+// Converte o campo "age" (salvo no metadata do cadastro) em numero.
+// Aceita "18".."64" e "65+".
+function parseAge(raw: unknown): number | null {
+  if (raw === null || raw === undefined) return null
+  const s = String(raw).trim()
+  if (!s) return null
+  const n = parseInt(s.replace('+', ''), 10)
+  return Number.isFinite(n) && n >= 18 && n <= 120 ? n : null
 }
 
 function isBanned(bannedUntil: string | null | undefined): boolean {
@@ -74,6 +86,7 @@ async function listAllAuthInfo(supabase: ReturnType<typeof createAdminClient>) {
         banReason: banned
           ? (u.app_metadata as { ban_reason?: string | null } | undefined)?.ban_reason ?? null
           : null,
+        age: parseAge((u.user_metadata as { age?: unknown } | undefined)?.age),
       })
     }
     if (users.length < perPage) break
@@ -128,6 +141,7 @@ export async function GET() {
       email: info?.email ?? null,
       banned: info?.banned ?? false,
       ban_reason: info?.banReason ?? null,
+      age: info?.age ?? null,
     }
   })
   const verifications = verificationsRes.data || []
