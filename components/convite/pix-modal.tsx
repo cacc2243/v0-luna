@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Lock, ShieldCheck } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Lock, ShieldCheck, Zap, Mail } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
@@ -700,6 +700,24 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 </>
               )}
             </button>
+          )}
+
+          {/* Informe sobre a liberação do acesso */}
+          {!embedded && (
+            <div className="mt-3 rounded-2xl border border-positive/25 bg-positive/10 p-3.5">
+              <div className="flex items-start gap-2.5">
+                <Zap className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+                <p className="text-xs leading-relaxed text-foreground">
+                  Assim que o pagamento for confirmado, seu acesso é{' '}
+                  <span className="font-semibold text-positive">liberado aqui na hora</span>. Você
+                  também recebe um e-mail com seus dados de acesso.
+                </p>
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 pl-[1.625rem] text-[0.7rem] font-medium text-muted-foreground">
+                <Mail className="size-3.5 shrink-0" aria-hidden="true" />
+                Confira também a caixa de spam.
+              </div>
+            </div>
           )}
 
           {/* Rodapé de segurança */}
