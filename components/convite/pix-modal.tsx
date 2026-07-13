@@ -592,9 +592,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
-          {/* Prova social discreta acima do QR */}
-          <p className={compact ? 'mt-3 text-center text-xs font-medium text-muted-foreground' : 'mt-4 text-center text-xs font-medium text-muted-foreground'}>
-            {'🔥 99.8% dizem que valeu a pena!'}
+          {/* Status: aguardando pagamento */}
+          <p className={`flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground ${compact ? 'mt-3' : 'mt-4'}`}>
+            <RefreshCw className="size-3.5 animate-spin text-primary" aria-hidden="true" />
+            aguardando pagamento...
           </p>
 
           {/* QR Code */}
