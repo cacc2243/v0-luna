@@ -782,8 +782,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // (z-110) até o PIX estar 100% pronto, evitando lacunas e duplo loading.
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="relative flex max-h-[96dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:rounded-3xl sm:zoom-in-95">
+    <div className="fixed inset-0 z-[100] flex items-stretch justify-center bg-black/80 backdrop-blur-sm">
+      <div className="relative flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {toastEl}
 
         {/* Imagem de fundo (mesma do /convite) */}
@@ -796,14 +796,14 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         <button
           onClick={onClose}
           aria-label="Fechar"
-          className="absolute right-4 top-4 z-20 rounded-full bg-background/60 p-2 text-muted-foreground backdrop-blur-sm transition hover:bg-muted hover:text-foreground"
+          className="absolute right-4 top-4 z-20 rounded-full border border-border bg-background/90 p-2.5 text-foreground shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition hover:bg-muted hover:scale-105 active:scale-95"
         >
           <X className="size-5" />
         </button>
 
         {/* Conteúdo */}
-        <div className="relative z-10 overflow-y-auto overscroll-contain px-5 pb-6 pt-7 sm:px-7">
-          {content}
+        <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-14 sm:px-7">
+          <div className="mx-auto w-full max-w-md">{content}</div>
         </div>
       </div>
     </div>,
