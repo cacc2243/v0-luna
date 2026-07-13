@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Lock, ShieldCheck, Zap, Mail } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
@@ -722,18 +722,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
           {/* Rodapé de segurança */}
           <div className={`${compact ? 'mt-3' : 'mt-4'} border-t border-border/50 pt-3`}>
-            <div className="flex items-center justify-center gap-2 text-[0.7rem] font-medium text-foreground">
-              <span className="flex items-center gap-1.5">
-                <Lock className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
-                Pagamento seguro
-              </span>
-              <span className="h-3 w-px bg-border" aria-hidden="true" />
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
-                Dados protegidos
-              </span>
-            </div>
-            <div className="mt-3 flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
+            <div className="flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
               <p className="whitespace-nowrap">
                 <span className="font-medium text-foreground/80">Luna Privé</span>
               </p>
