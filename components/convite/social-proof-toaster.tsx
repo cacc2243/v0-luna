@@ -17,8 +17,14 @@ type ToastData = {
 }
 
 const DISPLAY_MS = 4200
-const GAP_MS = 2600
-const FIRST_DELAY_MS = 1200
+// Intervalo aleatório entre uma notificação e outra (mais espaçado e imprevisível).
+const GAP_MIN_MS = 9000
+const GAP_MAX_MS = 22000
+const FIRST_DELAY_MS = 4000
+
+function randomGap() {
+  return Math.round(Math.random() * (GAP_MAX_MS - GAP_MIN_MS) + GAP_MIN_MS)
+}
 
 // Nomes de usuária no estilo @arroba para dar realismo.
 const USERNAMES = [
@@ -87,7 +93,7 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
         setLeaving(true)
         const next = setTimeout(() => {
           setCurrent(null)
-          const again = setTimeout(showOne, GAP_MS)
+          const again = setTimeout(showOne, randomGap())
           timers.current.push(again)
         }, 360)
         timers.current.push(next)
@@ -105,21 +111,21 @@ export function SocialProofToaster({ active }: SocialProofToasterProps) {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex flex-col items-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
+      className="pointer-events-none fixed inset-x-0 top-0 z-[130] flex flex-col items-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]"
       role="region"
       aria-live="polite"
       aria-label="Atividade recente"
     >
       <div
-        className={`pointer-events-auto flex w-full max-w-xs items-center gap-2.5 rounded-2xl border border-primary/15 bg-card/95 px-3 py-2.5 shadow-lg shadow-primary/10 backdrop-blur-md ${
+        className={`pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border border-primary/15 bg-card/95 px-4 py-3.5 shadow-lg shadow-primary/10 backdrop-blur-md ${
           leaving ? 'animate-toast-leave' : 'animate-toast-enter'
         }`}
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30">
           <img
             src="/images/luna-icon.png"
             alt="Luna Privé"
-            className="size-5 object-contain"
+            className="size-6 object-contain"
           />
         </span>
 

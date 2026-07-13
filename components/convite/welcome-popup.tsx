@@ -38,7 +38,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-5 py-6"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="invite-modal-title"
@@ -47,7 +47,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
       <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" aria-hidden="true" />
 
       {/* Card */}
-      <div className="animate-pop relative w-full max-w-[20rem] overflow-hidden rounded-3xl border border-primary/25 bg-card p-6 text-center shadow-2xl shadow-primary/20">
+      <div className="animate-pop relative w-full max-w-[22.5rem] overflow-hidden rounded-3xl border border-primary/25 bg-card p-6 text-center shadow-2xl shadow-primary/20">
         {/* Brilho superior */}
         <div
           className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl"

@@ -34,6 +34,7 @@ export interface ProfileRow {
   total_earned?: number | null
   banned?: boolean | null
   ban_reason?: string | null
+  age?: number | null
 }
 
 export interface PixVerificationRow {
@@ -222,6 +223,9 @@ export function formatDateTime(dateStr: string | null): string {
 export const GATEWAY_META: Record<string, { label: string }> = {
   bynet: { label: 'Bynet' },
   sigilopay: { label: 'SigiloPay' },
+  horsepay: { label: 'HorsePay' },
+  pixup: { label: 'PixUp' },
+  diretopay: { label: 'DiretoPay' },
 }
 
 export function gatewayLabel(id: string | null): string {
@@ -566,6 +570,128 @@ export function buildTimeSeries(
       signups,
     }
   })
+}
+
+/* ===================== Idades (perfil de quem está no funil) ===================== */
+
+// Faixas etárias usadas para agrupar os cadastros.
+export const AGE_BUCKETS: { key: string; label: string; min: number; max: number }[] = [
+  { key: '18-24', label: '18 a 24', min: 18, max: 24 },
+  { key: '25-34', label: '25 a 34', min: 25, max: 34 },
+  { key: '35-44', label: '35 a 44', min: 35, max: 44 },
+  { key: '45-54', label: '45 a 54', min: 45, max: 54 },
+  { key: '55+', label: '55 ou mais', min: 55, max: 200 },
+]
+
+export interface AgeGroupStat {
+  key: string
+  label: string
+  people: number // cadastros nesta faixa
+  pixGenerated: number // PIX gerados por pessoas desta faixa
+  pixCopied: number // PIX copiados
+  paidCount: number // vendas pagas
+  revenue: number // receita confirmada
+  conversionRate: number // % pessoas da faixa que pagaram
+}
+
+export interface AgeStats {
+  totalWithAge: number // cadastros com idade informada
+  totalWithoutAge: number // cadastros sem idade
+  averageAge: number | null // idade média dos cadastros
+  groups: AgeGroupStat[] // estatísticas por faixa etária
+  topByPeople: AgeGroupStat | null // faixa com mais cadastros
+  topByRevenue: AgeGroupStat | null // faixa que mais paga (receita)
+  topByPix: AgeGroupStat | null // faixa que mais gera PIX
+}
+
+// Calcula o perfil etário do funil cruzando profiles (idade) com invites (por user_id).
+// Considera apenas cadastros criados dentro do período informado.
+export function computeAgeStats(
+  invites: InviteRow[],
+  profiles: ProfileRow[],
+  range: [Date | null, Date | null],
+): AgeStats {
+  const inRange = (d: string | null) => isInRange(d, range)
+
+  // Perfis do período com idade válida
+  const scoped = profiles.filter((p) => inRange(p.created_at))
+  const withAge = scoped.filter((p) => typeof p.age === 'number' && (p.age as number) >= 18)
+  const totalWithAge = withAge.length
+  const totalWithoutAge = scoped.length - totalWithAge
+  const averageAge =
+    totalWithAge > 0
+      ? Math.round(withAge.reduce((s, p) => s + (p.age as number), 0) / totalWithAge)
+      : null
+
+  // Indexa invites por user_id para agregar por pessoa
+  const invitesByUser = new Map<string, InviteRow[]>()
+  for (const inv of invites) {
+    if (!inv.user_id) continue
+    const list = invitesByUser.get(inv.user_id)
+    if (list) list.push(inv)
+    else invitesByUser.set(inv.user_id, [inv])
+  }
+
+  const bucketFor = (age: number) =>
+    AGE_BUCKETS.find((b) => age >= b.min && age <= b.max) ?? null
+
+  const groupMap = new Map<string, AgeGroupStat>()
+  for (const b of AGE_BUCKETS) {
+    groupMap.set(b.key, {
+      key: b.key,
+      label: b.label,
+      people: 0,
+      pixGenerated: 0,
+      pixCopied: 0,
+      paidCount: 0,
+      revenue: 0,
+      conversionRate: 0,
+    })
+  }
+
+  for (const p of withAge) {
+    const bucket = bucketFor(p.age as number)
+    if (!bucket) continue
+    const g = groupMap.get(bucket.key)!
+    g.people += 1
+    const userInvites = invitesByUser.get(p.id) || []
+    let paid = false
+    for (const inv of userInvites) {
+      if (inv.pix_code) g.pixGenerated += 1
+      if (inv.pix_copied_at) g.pixCopied += 1
+      if (isPaid(inv.status)) {
+        g.paidCount += 1
+        g.revenue += Number(inv.amount) || 0
+        paid = true
+      }
+    }
+    if (paid) g.conversionRate += 1 // acumula pagantes; vira % abaixo
+  }
+
+  const groups = AGE_BUCKETS.map((b) => {
+    const g = groupMap.get(b.key)!
+    const payers = g.conversionRate
+    g.conversionRate = g.people > 0 ? (payers / g.people) * 100 : 0
+    return g
+  })
+
+  const withData = groups.filter((g) => g.people > 0)
+  const topByPeople =
+    withData.length > 0 ? [...withData].sort((a, b) => b.people - a.people)[0] : null
+  const topByRevenue =
+    withData.length > 0 ? [...withData].sort((a, b) => b.revenue - a.revenue)[0] : null
+  const topByPix =
+    withData.length > 0 ? [...withData].sort((a, b) => b.pixGenerated - a.pixGenerated)[0] : null
+
+  return {
+    totalWithAge,
+    totalWithoutAge,
+    averageAge,
+    groups,
+    topByPeople,
+    topByRevenue,
+    topByPix,
+  }
 }
 
 /* ===================== Atribuição / UTMs ===================== */

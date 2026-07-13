@@ -22,6 +22,10 @@ export async function POST(request: NextRequest) {
     //   `body.data.external_id`. O evento vem em dot notation (cashin.confirmed,
     //   cashin.refunded, cashin.expired) e o status em `body.data.status`
     //   ("confirmed", "refunded", "expired").
+    // - DiretoPay: dados em `body.data` com `data.id` (mesmo id retornado na
+    //   criacao, salvo como transaction_id), `data.status` ("pending",
+    //   "approved", "cancelled", "refund", "chargeback", "expired") e a data
+    //   de pagamento em `data.paidAt`. O envelope traz `type: "transaction"`.
     const tx = body.transaction || {}
     const data = body.data || {}
     const event = String(body.event || '').toUpperCase()
@@ -60,6 +64,7 @@ export async function POST(request: NextRequest) {
       body.paidAt ||
       data.confirmed_at ||
       data.paid_at ||
+      data.paidAt ||
       body.payment_date ||
       null
 
@@ -137,7 +142,10 @@ export async function POST(request: NextRequest) {
       )
     ) {
       newStatus = 'paid'
-    } else if (refundedEvent || rawStatus === 'REFUNDED') {
+    } else if (
+      refundedEvent ||
+      ['REFUNDED', 'REFUND', 'CHARGEBACK'].includes(rawStatus)
+    ) {
       newStatus = 'refunded'
     } else if (
       canceledEvent ||

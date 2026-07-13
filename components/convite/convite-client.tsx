@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Users } from 'lucide-react'
+import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
+import { getAttributionForCheckout } from '@/lib/fb/attribution'
+import { Mail } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
-import { InstagramCard } from '@/components/convite/instagram-card'
 import { PlatformFees } from '@/components/convite/platform-fees'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
@@ -148,9 +149,61 @@ export function ConviteClient({
     return () => window.removeEventListener('pageshow', onPageShow)
   }, [])
 
-  // Observação: o evento InitiateCheckout NÃO é mais disparado ao entrar na
-  // página. Ele passou a ser disparado apenas quando o cliente copia o código
-  // PIX gerado (intenção real de pagar) — ver components/convite/pix-modal.tsx.
+  // InitiateCheckout: disparado quando o cliente chega na tela do /convite e
+  // fecha os modais iniciais (WelcomePopup). Enviado apenas uma vez por sessão.
+  // Pixel (browser) + Conversions API (servidor) com o MESMO event_id para
+  // deduplicação. Nunca quebra o fluxo.
+  const initiateCheckoutFiredRef = useRef(false)
+
+  function fireInitiateCheckout() {
+    if (initiateCheckoutFiredRef.current) return
+    initiateCheckoutFiredRef.current = true
+    try {
+      const value = inviteCents / 100 || 0
+      const icEventId = newEventId('ic')
+      fbTrackWhenReady(
+        'InitiateCheckout',
+        {
+          value,
+          currency: 'BRL',
+          content_name: 'Convite Luna Privé',
+          content_type: 'product',
+        },
+        icEventId,
+      )
+
+      const trimmedName = (data.username || '').trim()
+      const parts = trimmedName ? trimmedName.split(/\s+/) : []
+      const firstName = parts.length > 0 ? parts[0] : null
+      const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null
+      const normalizedPixType = (data.pixType || '').toLowerCase()
+      const phone =
+        normalizedPixType.includes('tele') || normalizedPixType.includes('phone')
+          ? data.pixKey || null
+          : null
+
+      const attribution = getAttributionForCheckout()
+      fetch('/api/fb/initiate-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: icEventId,
+          eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
+          fbp: readCookie('_fbp'),
+          fbc: readCookie('_fbc'),
+          email: data.email || null,
+          name: trimmedName || null,
+          firstName,
+          lastName,
+          phone,
+          value,
+          attribution,
+        }),
+      }).catch(() => {})
+    } catch {
+      // o tracking nunca bloqueia o fluxo
+    }
+  }
 
   function updateField(field: keyof SignupData, value: string) {
     setData((prev) => {
@@ -250,14 +303,6 @@ export function ConviteClient({
         </section>
 
         <div className="mt-8 flex flex-col gap-7">
-        {/* Escassez: convites restantes hoje */}
-        <div className="flex items-center justify-center gap-2.5 rounded-xl border border-border/40 bg-card/60 px-4 py-3 backdrop-blur-sm">
-          <Users className="size-4 shrink-0 text-primary" aria-hidden="true" />
-          <p className="text-sm text-foreground">
-            Restam apenas <span className="font-bold text-primary">9</span> convites hoje
-          </p>
-        </div>
-
         {/* Dados da conta.
             IMPORTANTE: renderizado SOMENTE apos a montagem no cliente.
             Motivo: o texto de placeholder do e-mail ("seu@email.com") e o
@@ -304,9 +349,6 @@ export function ConviteClient({
         {/* Preço + garantia */}
         <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady />
 
-        {/* Card do Instagram (privado, só para convites ativos) */}
-        <InstagramCard />
-
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
 
@@ -336,6 +378,7 @@ export function ConviteClient({
           setShowPixModal(false)
           setPixReady(false)
         }}
+        scrollToTopOnClose
         email={data.email}
         amount={inviteCents / 100}
         userName={data.username}
@@ -346,10 +389,17 @@ export function ConviteClient({
       />
 
       {/* Modal de código de convite (abre ao entrar na tela) */}
-      <WelcomePopup onClose={() => setSocialProofActive(true)} />
+      <WelcomePopup
+        onClose={() => {
+          fireInitiateCheckout()
+          setSocialProofActive(true)
+        }}
+      />
 
-      {/* Notificações de prova social no topo (após fechar o modal) */}
-      <SocialProofToaster active={socialProofActive} />
+      {/* Notificações de prova social no topo (após fechar o modal).
+          Ficam pausadas enquanto o pré-checkout ou o PIX gerado estão abertos,
+          para não aparecerem na frente do modal. */}
+      <SocialProofToaster active={socialProofActive && !showPixModal && !showPreCheckout} />
     </main>
   )
 }

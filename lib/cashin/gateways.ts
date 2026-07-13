@@ -1,6 +1,7 @@
 import { createSigilopayPixCharge } from '@/lib/sigilopay/client'
 import { createHorsepayPixCharge } from '@/lib/horsepay/client'
 import { createPixupPixCharge } from '@/lib/pixup/client'
+import { createDiretopayPixCharge } from '@/lib/diretopay/client'
 
 const BYNET_API_URL = 'https://api-gateway.techbynet.com'
 
@@ -414,11 +415,77 @@ const pixupGateway: CashinGateway = {
 }
 
 /**
+ * Gateway DiretoPay. Autenticacao por Bearer (sk-api-...). Exige dados
+ * completos do pagador (nome, e-mail, telefone e CPF valido). Trabalha com
+ * valores em reais decimais.
+ */
+const diretopayGateway: CashinGateway = {
+  id: 'diretopay',
+  label: 'DiretoPay',
+  description: 'Geração de PIX (cash-in) via DiretoPay.',
+  isConfigured: () => Boolean(process.env.DIRETOPAY_API_KEY),
+  create: async (input) => {
+    const cleanDoc = (input.client.document || '').replace(/\D/g, '')
+    const cleanPhone = (input.client.phone || '').replace(/\D/g, '')
+    const safeName =
+      input.client.name && input.client.name.trim().length >= 3
+        ? input.client.name.trim()
+        : FALLBACK_NAMES[0]
+
+    // A DiretoPay exige documento valido; usa CPF gerado quando o recebido for invalido.
+    const document = isValidCPF(cleanDoc) ? cleanDoc : generateValidCPF()
+    const phone = cleanPhone.length >= 10 ? cleanPhone : '11999999999'
+
+    try {
+      const result = await createDiretopayPixCharge({
+        identifier: input.identifier,
+        amount: input.amount,
+        itemTitle: input.itemTitle,
+        client: {
+          name: safeName,
+          email: input.client.email,
+          phone,
+          document,
+          documentType: 'cpf',
+        },
+        callbackUrl: input.callbackUrl,
+      })
+
+      return {
+        ok: result.ok,
+        status: result.status,
+        transactionId: result.transactionId,
+        pixCode: result.pixCode,
+        errorMessage: result.errorMessage,
+        raw: result.raw,
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao contatar a DiretoPay'
+      console.error('[v0] Erro no gateway DiretoPay:', msg)
+      return {
+        ok: false,
+        status: 502,
+        transactionId: null,
+        pixCode: null,
+        errorMessage: msg,
+        raw: null,
+      }
+    }
+  },
+}
+
+/**
  * Registro central de gateways de cash-in. Para adicionar um novo gateway,
  * implemente CashinGateway e registre-o aqui — ele aparece automaticamente
  * no painel de configuracoes.
  */
-const GATEWAYS: CashinGateway[] = [bynetGateway, sigilopayGateway, horsepayGateway, pixupGateway]
+const GATEWAYS: CashinGateway[] = [
+  bynetGateway,
+  sigilopayGateway,
+  horsepayGateway,
+  pixupGateway,
+  diretopayGateway,
+]
 
 export function listCashinGateways(): CashinGateway[] {
   return GATEWAYS

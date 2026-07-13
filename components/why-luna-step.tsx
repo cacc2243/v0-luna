@@ -16,7 +16,7 @@ const pros = [
 ]
 
 const stats = [
-  { icon: Users, value: '12.847+', label: 'Compradores ativos hoje' },
+  { icon: Users, value: '120 mil', label: 'Compradores ativos hoje' },
   { icon: DollarSign, value: 'R$ 89,90', label: 'Ticket médio por pack' },
   { icon: Zap, value: '< 30min', label: 'Tempo médio para 1ª venda' },
   { icon: ShieldCheck, value: '100%', label: 'Anônimo e seguro' },

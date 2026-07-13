@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Lock, ShieldCheck } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
-import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
+import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 
 const PIX_CONTENT_NAME: Record<string, string> = {
@@ -125,9 +125,14 @@ interface PixModalProps {
    * para ser embutido diretamente dentro de outro card (ex.: fluxo de convite).
    */
   embedded?: boolean
+  /**
+   * Quando true, ao fechar o modal a página volta para o topo (scroll 0) em vez
+   * de restaurar a posição de rolagem que havia antes de abrir.
+   */
+  scrollToTopOnClose?: boolean
 }
 
-export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, pixType, pixKey, compact = false, discountPercent, embedded = false }: PixModalProps) {
+export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, pixType, pixKey, compact = false, discountPercent, embedded = false, scrollToTopOnClose = false }: PixModalProps) {
   const [loading, setLoading] = useState(true)
   // Portal: garante que o modal seja montado no body (evita que um ancestral
   // com `transform` — ex.: card com animate-pop — prenda/corte o position:fixed).
@@ -142,14 +147,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   const [checkingPayment, setCheckingPayment] = useState(false)
   const [inviteId, setInviteId] = useState<string | null>(null)
   const [verifying, setVerifying] = useState(false)
+  // Reserva do convite: contagem regressiva de 10 minutos.
+  const [reserveSeconds, setReserveSeconds] = useState(600)
   // Toast interno do modal (cópia do código / resultado da verificação de pagamento).
   const [toast, setToast] = useState<{ variant: 'success' | 'error' | 'info'; message: string } | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Garante que onReady dispare apenas uma vez por geração de PIX.
   const readyFiredRef = useRef(false)
-  // Garante que o InitiateCheckout (disparado ao copiar o código PIX do convite)
-  // seja enviado apenas uma vez por abertura do modal.
-  const initiateCheckoutFiredRef = useRef(false)
 
   // Sinaliza ao componente pai que a geração do PIX finalizou e o modal já tem
   // algo para exibir imediatamente: o PIX pronto (código + QR) ou o estado de
@@ -166,7 +170,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   useEffect(() => {
     if (!isOpen) {
       readyFiredRef.current = false
-      initiateCheckoutFiredRef.current = false
     }
   }, [isOpen])
 
@@ -199,12 +202,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       body.style.right = prev.right
       body.style.width = prev.width
       body.style.overflow = prev.overflow
-      window.scrollTo(0, scrollY)
+      // Restaura a posição anterior, ou volta ao topo se solicitado.
+      window.scrollTo(0, scrollToTopOnClose ? 0 : scrollY)
     }
-  }, [isOpen, embedded])
+  }, [isOpen, embedded, scrollToTopOnClose])
 
-  // Preço "de" (âncora) fixo em R$ 169,90, igual ao PriceCard.
-  const originalAmount = 169.9
+  // Preço "de" (âncora) fixo em R$ 69,90, igual ao PriceCard.
+  const originalAmount = 69.9
 
   // Exibe um toast temporário dentro do modal.
   function showToast(variant: 'success' | 'error' | 'info', message: string) {
@@ -231,7 +235,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         showToast('success', 'Pagamento confirmado! Liberando seu acesso...')
         onPaymentConfirmed?.()
       } else {
-        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por l�� assim que for confirmado.')
+        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por lá assim que for confirmado.')
       }
     } catch (err) {
       console.error('[v0] Erro ao verificar pagamento:', err)
@@ -270,6 +274,20 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
     return () => clearInterval(interval)
   }, [expiresAt])
+
+  // Reserva do convite: reinicia em 10:00 quando o PIX fica pronto e conta ate 00:00.
+  useEffect(() => {
+    if (loading || error || !pixCode) return
+    setReserveSeconds(600)
+    const interval = setInterval(() => {
+      setReserveSeconds((s) => (s <= 1 ? 0 : s - 1))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [loading, error, pixCode])
+
+  const reserveLabel = `${Math.floor(reserveSeconds / 60)
+    .toString()
+    .padStart(2, '0')}:${(reserveSeconds % 60).toString().padStart(2, '0')}`
 
   // Verificar pagamento a cada 5 segundos
   useEffect(() => {
@@ -349,7 +367,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           const qrDataUrl = await QRCode.toDataURL(data.pixCode, {
             // Resolucao alta para renderizacao nitida em telas retina.
             width: 512,
-            margin: 1,
+            // Sem quiet zone para eliminar a borda branca ao redor do QR.
+            margin: 0,
             // 'H' (recuperacao de ate 30%) garante a leitura mesmo com a logo no centro.
             errorCorrectionLevel: 'H',
             color: {
@@ -406,58 +425,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         }).catch(() => {
           // Silencioso: a cópia local já funcionou para o usuário.
         })
-      }
-      // InitiateCheckout: disparado SOMENTE quando o cliente copia o código PIX
-      // do convite (intenção real de pagar), e não mais na entrada da página.
-      // Pixel (browser) + Conversions API (servidor) com o MESMO event_id para
-      // deduplicação. Nunca quebra o fluxo de cópia.
-      if (type === 'invite' && !initiateCheckoutFiredRef.current) {
-        initiateCheckoutFiredRef.current = true
-        try {
-          const value = Number(amount) || 0
-          const icEventId = newEventId('ic')
-          fbTrackWhenReady(
-            'InitiateCheckout',
-            {
-              value,
-              currency: 'BRL',
-              content_name: 'Convite Luna Privé',
-              content_type: 'product',
-            },
-            icEventId,
-          )
-
-          const trimmedName = (userName || '').trim()
-          const parts = trimmedName ? trimmedName.split(/\s+/) : []
-          const firstName = parts.length > 0 ? parts[0] : null
-          const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null
-          const normalizedPixType = (pixType || '').toLowerCase()
-          const phone =
-            normalizedPixType.includes('tele') || normalizedPixType.includes('phone')
-              ? pixKey || null
-              : null
-
-          const attribution = getAttributionForCheckout()
-          fetch('/api/fb/initiate-checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              eventId: icEventId,
-              eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
-              fbp: readCookie('_fbp'),
-              fbc: readCookie('_fbc'),
-              email: email || null,
-              name: trimmedName || null,
-              firstName,
-              lastName,
-              phone,
-              value,
-              attribution,
-            }),
-          }).catch(() => {})
-        } catch {
-          // o tracking nunca bloqueia a cópia do PIX
-        }
       }
     }
 
@@ -539,15 +506,29 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             className="h-9 w-auto"
           />
         )}
-        {!embedded && (
-          <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-            {title || 'Pagamento via PIX'}
-          </h2>
-        )}
-        {!embedded && (
-          <p className="mt-1 text-sm text-muted-foreground">
-            {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
-          </p>
+        {!embedded && type === 'invite' && !title ? (
+          <div className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-background/40 px-4 py-3 text-left">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
+              <Lock className="size-4 text-primary" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground">Seu convite está reservado</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                Finalize o pagamento para ativar sua conta.
+              </p>
+            </div>
+          </div>
+        ) : (
+          !embedded && (
+            <>
+              <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+                {title || 'Pagamento via PIX'}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
+              </p>
+            </>
+          )
         )}
       </div>
 
@@ -591,36 +572,82 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
+          {!embedded && type === 'invite' ? (
+            <>
+              {/* Stepper: Cadastro → Pagamento → Acesso */}
+              <div className="mx-auto mt-4 w-full max-w-[260px]">
+                <div className="flex items-center">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="size-3" aria-hidden="true" />
+                  </span>
+                  <span className="h-0.5 flex-1 bg-primary" aria-hidden="true" />
+                  <span className="relative flex size-5 shrink-0 items-center justify-center" aria-hidden="true">
+                    <span className="absolute inline-flex size-5 animate-ping rounded-full bg-primary/60" />
+                    <span className="relative size-5 rounded-full bg-primary ring-4 ring-primary/20" />
+                  </span>
+                  <span className="h-0.5 flex-1 bg-border" aria-hidden="true" />
+                  <span className="size-5 shrink-0 rounded-full border-2 border-border bg-transparent" aria-hidden="true" />
+                </div>
+                <div className="mt-1 flex justify-between text-[0.65rem]">
+                  <span className="text-muted-foreground">Cadastro</span>
+                  <span className="font-bold text-foreground">Pagamento</span>
+                  <span className="text-muted-foreground">Acesso</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Reserva do convite: contagem regressiva discreta */}
+              <div className={`flex justify-center ${compact ? 'mt-1' : 'mt-2'}`}>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1">
+                  <Clock className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                  <span className="text-[0.7rem] font-medium text-foreground">
+                    Convite reservado por{' '}
+                    <span className="font-mono font-semibold tabular-nums text-primary">
+                      {reserveLabel}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Status: aguardando pagamento */}
+              <p className={`flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground ${compact ? 'mt-2' : 'mt-3'}`}>
+                <RefreshCw className="size-3.5 animate-spin text-primary" aria-hidden="true" />
+                aguardando pagamento...
+              </p>
+            </>
+          )}
+
           {/* QR Code */}
           {pixQrCode && (
-            <div className={compact ? 'relative mt-4 flex justify-center' : 'relative mt-6 flex justify-center'}>
+            <div className={compact ? 'relative mt-2 flex justify-center' : 'relative mt-3 flex justify-center'}>
               {/* Brilho suave da marca por tras do QR */}
               <span
                 className="pointer-events-none absolute left-1/2 top-1/2 size-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/25 blur-3xl"
                 aria-hidden="true"
               />
-              <div className="relative rounded-3xl bg-white p-3.5 shadow-xl shadow-primary/20 ring-1 ring-black/5">
-                {/* Cantos decorativos na cor da marca */}
-                <span className="pointer-events-none absolute left-2 top-2 size-4 rounded-tl-lg border-l-2 border-t-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute right-2 top-2 size-4 rounded-tr-lg border-r-2 border-t-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute bottom-2 left-2 size-4 rounded-bl-lg border-b-2 border-l-2 border-primary/70" aria-hidden="true" />
-                <span className="pointer-events-none absolute bottom-2 right-2 size-4 rounded-br-lg border-b-2 border-r-2 border-primary/70" aria-hidden="true" />
+              <div className="relative rounded-2xl bg-white p-1 shadow-xl shadow-primary/20 ring-1 ring-black/5">
+                {/* Cantos decorativos cinza escuro */}
+                <span className="pointer-events-none absolute -left-1 -top-1 size-5 rounded-tl-2xl border-l-2 border-t-2 border-zinc-600/80" aria-hidden="true" />
+                <span className="pointer-events-none absolute -right-1 -top-1 size-5 rounded-tr-2xl border-r-2 border-t-2 border-zinc-600/80" aria-hidden="true" />
+                <span className="pointer-events-none absolute -bottom-1 -left-1 size-5 rounded-bl-2xl border-b-2 border-l-2 border-zinc-600/80" aria-hidden="true" />
+                <span className="pointer-events-none absolute -bottom-1 -right-1 size-5 rounded-br-2xl border-b-2 border-r-2 border-zinc-600/80" aria-hidden="true" />
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
                   width={180}
                   height={180}
-                  className={compact ? 'size-[124px] rounded-lg' : 'size-[164px] rounded-lg sm:size-[184px]'}
+                  className={compact ? 'size-[124px] rounded-xl' : 'size-[164px] rounded-xl sm:size-[184px]'}
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
-                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-white p-1.5 shadow-md ring-1 ring-black/5">
+                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-1 shadow-md ring-1 ring-black/5">
                   <Image
                     src="/images/luna-icon.png"
                     alt=""
                     width={44}
                     height={44}
-                    className={compact ? 'size-6' : 'size-8'}
+                    className={compact ? 'size-4' : 'size-6'}
                     unoptimized
                   />
                 </span>
@@ -628,26 +655,14 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
           )}
 
-          {/* Nome do adquirente que processa o PIX (extraído do BR Code) */}
-          {extractPixMerchantName(pixCode) && (
-            <p className="mt-2.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground">
-              Processado por{' '}
-              <span className="font-semibold text-foreground/90">
-                {extractPixMerchantName(pixCode)}
-              </span>
-            </p>
-          )}
 
           {/* Valor */}
-          <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Valor único
-            </p>
-            <div className="mt-1 flex items-center justify-center gap-2.5">
-              <span className="font-serif text-base font-semibold text-muted-foreground line-through decoration-primary/70">
+          <div className={compact ? 'mt-2 text-center' : 'mt-3 text-center'}>
+            <div className="flex items-center justify-center gap-2.5">
+              <span className="font-serif text-sm font-semibold text-muted-foreground line-through decoration-primary/70">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
-              <span className={`${compact ? 'text-2xl' : 'text-3xl'} font-serif font-extrabold tracking-tight text-foreground`}>
+              <span className={`${compact ? 'text-xl' : 'text-2xl'} font-serif font-extrabold tracking-tight text-foreground`}>
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
             </div>
@@ -658,17 +673,22 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             <p className="mb-2 text-center text-xs font-medium text-muted-foreground">
               Código PIX (copia e cola)
             </p>
-            <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-2.5">
-              <p className="line-clamp-2 break-all font-mono text-xs leading-relaxed text-muted-foreground">
+            <button
+              type="button"
+              onClick={copyPixCode}
+              aria-label="Copiar código PIX"
+              className="w-full rounded-xl border border-border/70 bg-background/60 px-4 py-2.5 text-left transition hover:bg-background/80 active:scale-[0.99]"
+            >
+              <p className="break-all font-mono text-[0.65rem] leading-relaxed text-foreground/80">
                 {pixCode || ''}
               </p>
-            </div>
+            </button>
           </div>
 
           {/* Botão copiar */}
           <button
             onClick={copyPixCode}
-            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'cta-gradient animate-cta-breathe ring-white/20 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'bg-primary ring-white/20 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
               <>
@@ -704,28 +724,23 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </button>
           )}
 
-          {/* Rodapé de segurança */}
-          <div className={`${compact ? 'mt-3' : 'mt-4'} border-t border-border/50 pt-3`}>
-            <div className="flex items-center justify-center gap-2 text-[0.7rem] font-medium text-foreground">
-              <span className="flex items-center gap-1.5">
-                <Lock className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
-                Pagamento seguro
-              </span>
-              <span className="h-3 w-px bg-border" aria-hidden="true" />
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
-                Dados protegidos
-              </span>
+          {/* Informe sobre a liberação do acesso */}
+          {!embedded && (
+            <div className="mt-3 rounded-2xl border border-border bg-card/95 p-3.5 shadow-sm backdrop-blur-sm">
+              <div className="flex items-start gap-2.5">
+                <Zap className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <p className="text-xs leading-relaxed text-foreground">
+                  Assim que o pagamento for confirmado, seu acesso é{' '}
+                  <span className="font-semibold text-primary">liberado aqui na hora</span>. Você
+                  também recebe um e-mail com seus dados de acesso.
+                </p>
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 pl-[1.625rem] text-[0.7rem] font-medium text-muted-foreground">
+                <Mail className="size-3.5 shrink-0" aria-hidden="true" />
+                Confira também a caixa de spam.
+              </div>
             </div>
-            <div className="mt-3 flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
-              <p className="whitespace-nowrap">
-                <span className="font-medium text-foreground/80">Luna Privé</span> · CNPJ 57.066.280/0001-97
-              </p>
-              <p className="mt-0.5 text-pretty">
-                Transação processada por gateway autorizado pelo Banco Central
-              </p>
-            </div>
-          </div>
+          )}
 
         </>
       )}
@@ -751,28 +766,39 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // (z-110) até o PIX estar 100% pronto, evitando lacunas e duplo loading.
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="relative flex max-h-[96dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 sm:rounded-3xl sm:zoom-in-95">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 pt-10">
+      <div className="relative flex h-[calc(100%-2.5rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {toastEl}
 
-        {/* Imagem de fundo (mesma do /convite) */}
-        <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
-          <img src="/images/background.png" alt="" className="size-full object-cover grayscale" />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/68 via-background/78 to-background/88" />
+        {/* Imagem de fundo bem discreta */}
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+          <img
+            src="/images/background-pix.png"
+            alt=""
+            className="size-full object-cover opacity-[0.08]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-card/75 via-card/85 to-card/95" />
         </div>
+
+        {/* Fundo: mesmo tratamento dos modais de entrada do /convite
+            (base bg-card + brilho rosado no topo central) */}
+        <div
+          className="pointer-events-none absolute -top-24 left-1/2 z-0 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl"
+          aria-hidden="true"
+        />
 
         {/* Botão fechar */}
         <button
           onClick={onClose}
           aria-label="Fechar"
-          className="absolute right-4 top-4 z-20 rounded-full bg-background/60 p-2 text-muted-foreground backdrop-blur-sm transition hover:bg-muted hover:text-foreground"
+          className="absolute right-4 top-4 z-20 rounded-full border border-border bg-background/90 p-2.5 text-foreground shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition hover:bg-muted hover:scale-105 active:scale-95"
         >
           <X className="size-5" />
         </button>
 
         {/* Conteúdo */}
-        <div className="relative z-10 overflow-y-auto overscroll-contain px-5 pb-6 pt-7 sm:px-7">
-          {content}
+        <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-14 sm:px-7">
+          <div className="mx-auto w-full max-w-md">{content}</div>
         </div>
       </div>
     </div>,

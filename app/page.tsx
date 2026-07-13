@@ -18,7 +18,6 @@ import { HowItWorksStep } from '@/components/how-it-works-step'
 import { TestimonialCarousel } from '@/components/testimonial-carousel'
 import { MythCard } from '@/components/myth-card'
 import { PrivacyStep } from '@/components/privacy-step'
-import { CommunityStep } from '@/components/community-step'
 import { WhyLunaStep } from '@/components/why-luna-step'
 import { MentorQuiz } from '@/components/mentor-quiz'
 import { GuidedAppDemo } from '@/components/guided-app-demo'
@@ -118,7 +117,7 @@ const myths = [
   },
 ]
 
-const TOTAL_STEPS = 9
+const TOTAL_STEPS = 8
 
 export default function Page() {
   const [step, setStep] = useState(0)
@@ -250,16 +249,9 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 3 — Comunidade e garantias */}
+        {/* STEP 3 — Resultados / prova social */}
         {step === 2 && (
           <div key="step-2" className="animate-screen flex flex-col">
-            <CommunityStep onContinue={next} />
-          </div>
-        )}
-
-        {/* STEP 4 — Resultados / prova social */}
-        {step === 3 && (
-          <div key="step-3" className="animate-screen flex flex-col">
             <section
               className="animate-item mt-7 text-center"
               style={{ animationDelay: '60ms' }}
@@ -303,9 +295,9 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 5 — Quebra de objeções / mitos */}
-        {step === 4 && (
-          <div key="step-4" className="animate-screen flex flex-col">
+        {/* STEP 4 — Quebra de objeções / mitos */}
+        {step === 3 && (
+          <div key="step-3" className="animate-screen flex flex-col">
             <section
               className="animate-item mt-7 text-center"
               style={{ animationDelay: '60ms' }}
@@ -343,23 +335,23 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 6 — Privacidade total */}
-        {step === 5 && (
-          <div key="step-5" className="animate-screen flex flex-col">
+        {/* STEP 5 — Privacidade total */}
+        {step === 4 && (
+          <div key="step-4" className="animate-screen flex flex-col">
             <PrivacyStep onContinue={next} />
           </div>
         )}
 
-        {/* STEP 7 — Por que a Luna Privé (comparação) */}
-        {step === 6 && (
-          <div key="step-6" className="animate-screen flex flex-col">
+        {/* STEP 6 — Por que a Luna Privé (comparação) */}
+        {step === 5 && (
+          <div key="step-5" className="animate-screen flex flex-col">
             <WhyLunaStep onContinue={next} />
           </div>
         )}
 
-        {/* STEP 8 — Jornada gamificada dentro da plataforma */}
-        {step === 7 && (
-          <div key="step-7" className="animate-screen flex flex-col">
+        {/* STEP 7 — Jornada gamificada dentro da plataforma */}
+        {step === 6 && (
+          <div key="step-6" className="animate-screen flex flex-col">
             <MentorQuiz
               finalLabel="Quero meu convite de acesso"
               onComplete={next}
@@ -367,8 +359,8 @@ export default function Page() {
           </div>
         )}
 
-        {/* STEP 9 — Demonstração guiada do app (tela cheia) */}
-        {step === 8 && <GuidedAppDemo key="step-8" onComplete={next} />}
+        {/* STEP 8 — Demonstração guiada do app (tela cheia) */}
+        {step === 7 && <GuidedAppDemo key="step-7" onComplete={next} />}
       </div>
     </main>
   )

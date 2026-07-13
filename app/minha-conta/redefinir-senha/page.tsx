@@ -24,39 +24,44 @@ export default function RedefinirSenhaPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
-  // Verifica se chegamos aqui com uma sessão de recuperação válida. O
-  // /auth/callback troca o code do e-mail por uma sessão antes de nos
-  // redirecionar; também escutamos o evento PASSWORD_RECOVERY por segurança.
+  // A sessão de recuperação é estabelecida NO SERVIDOR pela rota /auth/confirm
+  // (para onde o link do e-mail aponta) ANTES de chegarmos aqui. Portanto só
+  // precisamos confirmar que a sessão existe. Também tratamos o ?error=invalid
+  // (token expirado/usado) e ouvimos PASSWORD_RECOVERY como fallback.
   useEffect(() => {
     const supabase = createClient()
     let settled = false
 
-    async function check() {
-      const { data } = await supabase.auth.getSession()
+    const finish = (next: Status) => {
       if (settled) return
-      if (data.session) {
-        settled = true
-        setStatus('ready')
+      settled = true
+      setStatus(next)
+    }
+
+    async function establish() {
+      // Sinalizado pela rota de confirmação quando o token é inválido/expirado.
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('error') === 'invalid') {
+        window.history.replaceState(null, '', window.location.pathname)
+        finish('invalid')
+        return
       }
+
+      // Sessão de recuperação já estabelecida pelo servidor.
+      const { data } = await supabase.auth.getSession()
+      if (data.session) finish('ready')
     }
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (settled) return
       if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
-        settled = true
-        setStatus('ready')
+        finish('ready')
       }
     })
 
-    check()
+    establish()
 
     // Se após um tempo não houver sessão, o link é inválido/expirado.
-    const timer = setTimeout(() => {
-      if (!settled) {
-        settled = true
-        setStatus('invalid')
-      }
-    }, 3500)
+    const timer = setTimeout(() => finish('invalid'), 4000)
 
     return () => {
       sub.subscription.unsubscribe()
