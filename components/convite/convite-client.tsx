@@ -348,8 +348,10 @@ export function ConviteClient({
       {/* Modal de código de convite (abre ao entrar na tela) */}
       <WelcomePopup onClose={() => setSocialProofActive(true)} />
 
-      {/* Notificações de prova social no topo (após fechar o modal) */}
-      <SocialProofToaster active={socialProofActive} />
+      {/* Notificações de prova social no topo (após fechar o modal).
+          Ficam pausadas enquanto o pré-checkout ou o PIX gerado estão abertos,
+          para não aparecerem na frente do modal. */}
+      <SocialProofToaster active={socialProofActive && !showPixModal && !showPreCheckout} />
     </main>
   )
 }
