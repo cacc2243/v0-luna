@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Lock, ShieldCheck, Zap, Mail } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
@@ -142,6 +142,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   const [checkingPayment, setCheckingPayment] = useState(false)
   const [inviteId, setInviteId] = useState<string | null>(null)
   const [verifying, setVerifying] = useState(false)
+  // Reserva do convite: contagem regressiva de 10 minutos.
+  const [reserveSeconds, setReserveSeconds] = useState(600)
   // Toast interno do modal (cópia do código / resultado da verificação de pagamento).
   const [toast, setToast] = useState<{ variant: 'success' | 'error' | 'info'; message: string } | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -231,7 +233,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         showToast('success', 'Pagamento confirmado! Liberando seu acesso...')
         onPaymentConfirmed?.()
       } else {
-        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por l�� assim que for confirmado.')
+        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por lá assim que for confirmado.')
       }
     } catch (err) {
       console.error('[v0] Erro ao verificar pagamento:', err)
@@ -270,6 +272,20 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
     return () => clearInterval(interval)
   }, [expiresAt])
+
+  // Reserva do convite: reinicia em 10:00 quando o PIX fica pronto e conta ate 00:00.
+  useEffect(() => {
+    if (loading || error || !pixCode) return
+    setReserveSeconds(600)
+    const interval = setInterval(() => {
+      setReserveSeconds((s) => (s <= 1 ? 0 : s - 1))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [loading, error, pixCode])
+
+  const reserveLabel = `${Math.floor(reserveSeconds / 60)
+    .toString()
+    .padStart(2, '0')}:${(reserveSeconds % 60).toString().padStart(2, '0')}`
 
   // Verificar pagamento a cada 5 segundos
   useEffect(() => {
@@ -592,8 +608,21 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
+          {/* Reserva do convite: contagem regressiva discreta */}
+          <div className={`flex justify-center ${compact ? 'mt-1' : 'mt-2'}`}>
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1">
+              <Clock className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+              <span className="text-[0.7rem] font-medium text-foreground">
+                Convite reservado por{' '}
+                <span className="font-mono font-semibold tabular-nums text-primary">
+                  {reserveLabel}
+                </span>
+              </span>
+            </div>
+          </div>
+
           {/* Status: aguardando pagamento */}
-          <p className={`flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground ${compact ? 'mt-3' : 'mt-4'}`}>
+          <p className={`flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground ${compact ? 'mt-2' : 'mt-3'}`}>
             <RefreshCw className="size-3.5 animate-spin text-primary" aria-hidden="true" />
             aguardando pagamento...
           </p>
@@ -637,11 +666,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
 
           {/* Valor */}
-          <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Valor único
-            </p>
-            <div className="mt-1 flex items-center justify-center gap-2.5">
+          <div className={compact ? 'mt-2 text-center' : 'mt-3 text-center'}>
+            <div className="flex items-center justify-center gap-2.5">
               <span className="font-serif text-sm font-semibold text-muted-foreground line-through decoration-primary/70">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
@@ -657,7 +683,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               Código PIX (copia e cola)
             </p>
             <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-2.5">
-              <p className="line-clamp-2 break-all font-mono text-xs leading-relaxed text-muted-foreground">
+              <p className="line-clamp-2 break-all font-mono text-xs leading-relaxed text-foreground/80">
                 {pixCode || ''}
               </p>
             </div>
@@ -722,18 +748,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
           {/* Rodapé de segurança */}
           <div className={`${compact ? 'mt-3' : 'mt-4'} border-t border-border/50 pt-3`}>
-            <div className="flex items-center justify-center gap-2 text-[0.7rem] font-medium text-foreground">
-              <span className="flex items-center gap-1.5">
-                <Lock className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
-                Pagamento seguro
-              </span>
-              <span className="h-3 w-px bg-border" aria-hidden="true" />
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="size-3.5 shrink-0 text-positive" aria-hidden="true" />
-                Dados protegidos
-              </span>
-            </div>
-            <div className="mt-3 flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
+            <div className="flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
               <p className="whitespace-nowrap">
                 <span className="font-medium text-foreground/80">Luna Privé</span>
               </p>
