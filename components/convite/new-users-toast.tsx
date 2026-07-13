@@ -1,36 +1,65 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Toast sutil de prova social na base da tela /convite.
+// Toast sutil de prova social na base ESQUERDA da tela /convite.
 // Fica em UMA linha, discreto e leve: "+246 usuárias entraram hoje!".
-// Aparece após um pequeno atraso e some sozinho depois de alguns segundos.
+// So aparece depois que os modais de entrada fecham (prop `active`).
+// O numero e dinamico: comeca em 246 e sobe aos poucos, ate no maximo 311.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SHOW_DELAY_MS = 2400
-const VISIBLE_MS = 6000
+const START_COUNT = 246
+const MAX_COUNT = 311
+const SHOW_DELAY_MS = 1800 // atraso apos os modais fecharem
+const VISIBLE_MS = 5200 // tempo visivel em cada aparicao
+const HIDDEN_MS = 9000 // intervalo entre uma aparicao e a proxima
 
-export function NewUsersToast() {
+export function NewUsersToast({ active }: { active?: boolean }) {
+  const [count, setCount] = useState(START_COUNT)
   const [visible, setVisible] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
-    const enter = setTimeout(() => setVisible(true), SHOW_DELAY_MS)
-    const startLeave = setTimeout(() => setLeaving(true), SHOW_DELAY_MS + VISIBLE_MS)
-    const remove = setTimeout(() => setVisible(false), SHOW_DELAY_MS + VISIBLE_MS + 400)
-    return () => {
-      clearTimeout(enter)
-      clearTimeout(startLeave)
-      clearTimeout(remove)
-    }
-  }, [])
+    if (!active) return
 
-  if (!visible) return null
+    const clearTimers = () => {
+      timers.current.forEach(clearTimeout)
+      timers.current = []
+    }
+
+    // Mostra o toast, mantem visivel, sai suavemente e agenda a proxima aparicao
+    // com o contador incrementado (1 a 3 usuarias por ciclo, ate o maximo).
+    const cycle = (delay: number) => {
+      timers.current.push(
+        setTimeout(() => {
+          setLeaving(false)
+          setVisible(true)
+
+          timers.current.push(
+            setTimeout(() => setLeaving(true), VISIBLE_MS),
+          )
+          timers.current.push(
+            setTimeout(() => {
+              setVisible(false)
+              setCount((c) => Math.min(MAX_COUNT, c + 1 + Math.floor(Math.random() * 3)))
+              cycle(HIDDEN_MS)
+            }, VISIBLE_MS + 400),
+          )
+        }, delay),
+      )
+    }
+
+    cycle(SHOW_DELAY_MS)
+    return clearTimers
+  }, [active])
+
+  if (!active || !visible) return null
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[90] flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[90] flex justify-start px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
       role="status"
       aria-live="polite"
     >
@@ -44,7 +73,7 @@ export function NewUsersToast() {
           <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
         </span>
         <p className="text-xs font-medium leading-none text-foreground">
-          <span className="font-bold text-primary">+246 usuárias</span> entraram hoje!
+          <span className="font-bold text-primary">+{count} usuárias</span> entraram hoje!
         </p>
       </div>
     </div>

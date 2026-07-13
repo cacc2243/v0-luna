@@ -352,8 +352,8 @@ export function ConviteClient({
       {/* Notificações de prova social no topo (após fechar o modal) */}
       <SocialProofToaster active={socialProofActive} />
 
-      {/* Toast sutil de novas usuárias na base */}
-      <NewUsersToast />
+      {/* Toast sutil de novas usuárias na base (após fechar os modais de entrada) */}
+      <NewUsersToast active={socialProofActive} />
     </main>
   )
 }
