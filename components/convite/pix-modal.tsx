@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -500,15 +500,29 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             className="h-9 w-auto"
           />
         )}
-        {!embedded && (
-          <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-            {title || 'Pagamento via PIX'}
-          </h2>
-        )}
-        {!embedded && (
-          <p className="mt-1 text-sm text-muted-foreground">
-            {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
-          </p>
+        {!embedded && type === 'invite' && !title ? (
+          <div className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-background/40 px-4 py-3 text-left">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
+              <Lock className="size-4 text-primary" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground">Seu convite está reservado</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                Finalize o pagamento para ativar sua conta.
+              </p>
+            </div>
+          </div>
+        ) : (
+          !embedded && (
+            <>
+              <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+                {title || 'Pagamento via PIX'}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
+              </p>
+            </>
+          )
         )}
       </div>
 
@@ -552,24 +566,58 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
-          {/* Reserva do convite: contagem regressiva discreta */}
-          <div className={`flex justify-center ${compact ? 'mt-1' : 'mt-2'}`}>
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1">
-              <Clock className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
-              <span className="text-[0.7rem] font-medium text-foreground">
-                Convite reservado por{' '}
-                <span className="font-mono font-semibold tabular-nums text-primary">
-                  {reserveLabel}
-                </span>
-              </span>
-            </div>
-          </div>
+          {!embedded && type === 'invite' ? (
+            <>
+              {/* Cronômetro da reserva */}
+              <div className="mt-4 flex justify-center">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/5 px-5 py-1.5">
+                  <Clock className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                  <span className="font-mono text-base font-semibold tabular-nums text-primary">
+                    {reserveLabel}
+                  </span>
+                </div>
+              </div>
 
-          {/* Status: aguardando pagamento */}
-          <p className={`flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground ${compact ? 'mt-2' : 'mt-3'}`}>
-            <RefreshCw className="size-3.5 animate-spin text-primary" aria-hidden="true" />
-            aguardando pagamento...
-          </p>
+              {/* Stepper: Cadastro → Pagamento → Acesso */}
+              <div className="mx-auto mt-5 w-full max-w-[280px]">
+                <div className="flex items-center">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="size-3.5" aria-hidden="true" />
+                  </span>
+                  <span className="h-0.5 flex-1 bg-primary" aria-hidden="true" />
+                  <span className="size-6 shrink-0 rounded-full bg-primary ring-4 ring-primary/20" aria-hidden="true" />
+                  <span className="h-0.5 flex-1 bg-border" aria-hidden="true" />
+                  <span className="size-6 shrink-0 rounded-full border-2 border-border bg-transparent" aria-hidden="true" />
+                </div>
+                <div className="mt-1.5 flex justify-between text-[0.7rem]">
+                  <span className="text-muted-foreground">Cadastro</span>
+                  <span className="font-bold text-foreground">Pagamento</span>
+                  <span className="text-muted-foreground">Acesso</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Reserva do convite: contagem regressiva discreta */}
+              <div className={`flex justify-center ${compact ? 'mt-1' : 'mt-2'}`}>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1">
+                  <Clock className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                  <span className="text-[0.7rem] font-medium text-foreground">
+                    Convite reservado por{' '}
+                    <span className="font-mono font-semibold tabular-nums text-primary">
+                      {reserveLabel}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Status: aguardando pagamento */}
+              <p className={`flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground ${compact ? 'mt-2' : 'mt-3'}`}>
+                <RefreshCw className="size-3.5 animate-spin text-primary" aria-hidden="true" />
+                aguardando pagamento...
+              </p>
+            </>
+          )}
 
           {/* QR Code */}
           {pixQrCode && (
