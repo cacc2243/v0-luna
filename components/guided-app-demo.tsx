@@ -992,9 +992,21 @@ const walletCoachSteps: {
 function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boolean }) {
   const [coachStep, setCoachStep] = useState(0)
   const [activeTab, setActiveTab] = useState<'resumo' | 'extrato' | 'saques'>('resumo')
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const tabsRef = useRef<HTMLDivElement>(null)
   const available = 18541.67
   const maxValue = Math.max(...monthlyChart.map((d) => d.value), 1)
   const isLastCoach = coachStep >= walletCoachSteps.length - 1
+
+  // Durante o tour da carteira, rola até as abas para destacar a seção
+  // que a mentora está explicando (Resumo, Extrato, Saques).
+  useEffect(() => {
+    if (hideHint) return
+    const t = setTimeout(() => {
+      tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 120)
+    return () => clearTimeout(t)
+  }, [coachStep, hideHint])
 
   function advanceCoach() {
     if (isLastCoach) {
@@ -1008,7 +1020,7 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div ref={scrollAreaRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {/* Header */}
         <header className="shrink-0 px-4 pt-6">
           <div className="flex items-center justify-between gap-3">
@@ -1057,8 +1069,12 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
         </div>
 
         {/* Tabs */}
-        <div className="mt-5 shrink-0 px-4">
-          <div className="flex rounded-2xl bg-card/60 p-1 ring-1 ring-border">
+        <div ref={tabsRef} className="scroll-mt-4 mt-5 shrink-0 px-4">
+          <div
+            className={`flex rounded-2xl bg-card/60 p-1 ring-1 transition-all duration-300 ${
+              hideHint ? 'ring-border' : 'animate-highlight ring-2 ring-primary/50'
+            }`}
+          >
             {(['resumo', 'extrato', 'saques'] as const).map((tab) => (
               <button
                 key={tab}
@@ -1076,8 +1092,8 @@ function WalletScreen({ onDone, hideHint }: { onDone: () => void; hideHint?: boo
           </div>
         </div>
 
-        {/* Conteúdo scrollável */}
-        <div className="flex-1 overflow-y-auto px-4 pb-24 pt-5">
+        {/* Conteúdo — flui na rolagem da página inteira */}
+        <div className="px-4 pb-72 pt-5">
           {activeTab === 'resumo' && (
             <>
               {/* Stats rápidos */}
