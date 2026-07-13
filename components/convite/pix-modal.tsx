@@ -759,10 +759,20 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       <div className="relative flex h-[calc(100%-2.5rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {toastEl}
 
+        {/* Imagem de fundo bem discreta */}
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+          <img
+            src="/images/background-pix.png"
+            alt=""
+            className="size-full object-cover opacity-[0.06]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-card/70 via-card/85 to-card" />
+        </div>
+
         {/* Fundo: mesmo tratamento dos modais de entrada do /convite
             (base bg-card + brilho rosado no topo central) */}
         <div
-          className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl"
+          className="pointer-events-none absolute -top-24 left-1/2 z-0 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl"
           aria-hidden="true"
         />
 
