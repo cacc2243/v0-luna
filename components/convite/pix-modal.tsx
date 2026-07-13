@@ -568,18 +568,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         <>
           {!embedded && type === 'invite' ? (
             <>
-              {/* Cronômetro da reserva */}
-              <div className="mt-2.5 flex justify-center">
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-0.5">
-                  <Clock className="size-3 shrink-0 text-primary" aria-hidden="true" />
-                  <span className="font-mono text-xs font-semibold tabular-nums text-primary">
-                    {reserveLabel}
-                  </span>
-                </div>
-              </div>
-
               {/* Stepper: Cadastro → Pagamento → Acesso */}
-              <div className="mx-auto mt-3 w-full max-w-[260px]">
+              <div className="mx-auto mt-4 w-full max-w-[260px]">
                 <div className="flex items-center">
                   <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <Check className="size-3" aria-hidden="true" />
