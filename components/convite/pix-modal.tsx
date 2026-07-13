@@ -125,9 +125,14 @@ interface PixModalProps {
    * para ser embutido diretamente dentro de outro card (ex.: fluxo de convite).
    */
   embedded?: boolean
+  /**
+   * Quando true, ao fechar o modal a página volta para o topo (scroll 0) em vez
+   * de restaurar a posição de rolagem que havia antes de abrir.
+   */
+  scrollToTopOnClose?: boolean
 }
 
-export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, pixType, pixKey, compact = false, discountPercent, embedded = false }: PixModalProps) {
+export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, pixType, pixKey, compact = false, discountPercent, embedded = false, scrollToTopOnClose = false }: PixModalProps) {
   const [loading, setLoading] = useState(true)
   // Portal: garante que o modal seja montado no body (evita que um ancestral
   // com `transform` — ex.: card com animate-pop — prenda/corte o position:fixed).
@@ -197,9 +202,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       body.style.right = prev.right
       body.style.width = prev.width
       body.style.overflow = prev.overflow
-      window.scrollTo(0, scrollY)
+      // Restaura a posição anterior, ou volta ao topo se solicitado.
+      window.scrollTo(0, scrollToTopOnClose ? 0 : scrollY)
     }
-  }, [isOpen, embedded])
+  }, [isOpen, embedded, scrollToTopOnClose])
 
   // Preço "de" (âncora) fixo em R$ 69,90, igual ao PriceCard.
   const originalAmount = 69.9
