@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
@@ -520,16 +520,14 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     <div
       role="status"
       aria-live="polite"
-      className={`absolute inset-x-3 top-3 z-30 flex items-start gap-2.5 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-200 ${!embedded ? 'bg-white' : 'bg-background/95'}`}
+      className="absolute inset-x-3 top-3 z-30 flex items-start gap-2.5 rounded-2xl border bg-background/95 px-4 py-3 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-200"
       style={{
         borderColor:
           toast.variant === 'success'
             ? 'rgb(34 197 94 / 0.5)'
             : toast.variant === 'error'
               ? 'rgb(239 68 68 / 0.5)'
-              : !embedded
-                ? 'rgb(228 228 231)'
-                : 'var(--border)',
+              : 'var(--border)',
       }}
     >
       {toast.variant === 'success' ? (
@@ -539,15 +537,11 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       ) : (
         <Info className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
       )}
-      <p className={`text-pretty text-sm font-medium leading-relaxed ${!embedded ? 'text-zinc-800' : 'text-foreground'}`}>
+      <p className="text-pretty text-sm font-medium leading-relaxed text-foreground">
         {toast.message}
       </p>
     </div>
   )
-
-  // Modal cheio usa tema claro (fundo branco). O modo embutido (signup) permanece
-  // no tema escuro do card pai.
-  const isLight = !embedded
 
   // Conteúdo do PIX (header + estados loading/erro/sucesso). Reutilizado tanto no
   // modal cheio quanto embutido em outro card (fluxo de convite).
@@ -556,24 +550,19 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       {/* Header (logo só no modal cheio; no embutido o card pai já mostra a logo) */}
       <div className="flex flex-col items-center text-center">
         {!embedded && (
-          <div className="flex items-center gap-1.5" aria-label="Luna Privé">
-            <img src="/images/luna-icon.png" alt="" className="size-4" />
-            <span className="text-sm font-semibold tracking-[0.18em] text-zinc-900">
-              LUNA<span className="text-primary">.PRIVE</span>
-            </span>
-          </div>
+          <img
+            src="/images/luna-prive-logo.png"
+            alt="Luna Privé"
+            className="h-9 w-auto"
+          />
         )}
         {!embedded && (
-          <h2 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900">
-            {title ? title : (
-              <>
-                Pagamento via <span className="text-primary">PIX</span>
-              </>
-            )}
+          <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+            {title || 'Pagamento via PIX'}
           </h2>
         )}
         {!embedded && (
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
           </p>
         )}
@@ -600,15 +589,15 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             {/* icone QR pulsando no centro */}
             <QrCode className="size-6 animate-pulse text-primary" aria-hidden="true" />
           </div>
-          <p className={`mt-5 text-sm font-medium ${isLight ? 'text-zinc-900' : 'text-foreground'}`}>Gerando seu PIX</p>
-          <p className={`mt-1 text-xs ${isLight ? 'text-zinc-500' : 'text-muted-foreground'}`}>Isso leva só um instante...</p>
+          <p className="mt-5 text-sm font-medium text-foreground">Gerando seu PIX</p>
+          <p className="mt-1 text-xs text-muted-foreground">Isso leva só um instante...</p>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-14 text-center">
           <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10">
             <AlertCircle className="size-8 text-destructive" />
           </div>
-          <p className={`mt-4 text-sm font-medium ${isLight ? 'text-zinc-900' : 'text-foreground'}`}>{error}</p>
+          <p className="mt-4 text-sm font-medium text-foreground">{error}</p>
           <button
             onClick={generatePix}
             className="mt-4 flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
@@ -617,133 +606,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             Tentar novamente
           </button>
         </div>
-      ) : isLight ? (
-        <>
-          {/* Convite reservado (tema claro) */}
-          <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-primary/15 bg-primary/[0.07] px-4 py-3 backdrop-blur-sm">
-            <Clock className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            <span className="text-sm font-medium text-zinc-700">
-              Convite reservado por{' '}
-              <span className="font-semibold tabular-nums text-primary">{reserveLabel}</span>
-            </span>
-          </div>
-
-          {/* Aguardando pagamento */}
-          <div className="mt-3 flex items-center justify-center gap-2">
-            <RefreshCw className="size-4 shrink-0 animate-spin text-primary" aria-hidden="true" />
-            <span className="text-sm font-medium text-zinc-400">Aguardando pagamento...</span>
-          </div>
-
-          {/* QR Code (topo) + valor (abaixo) */}
-          <div className="mt-4 flex flex-col items-center">
-            {pixQrCode ? (
-              <div className="relative rounded-2xl bg-white p-2 ring-1 ring-zinc-200">
-                <Image
-                  src={pixQrCode}
-                  alt="QR Code PIX"
-                  width={220}
-                  height={220}
-                  className="size-[168px] rounded-lg"
-                  unoptimized
-                />
-                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-1 shadow-md ring-1 ring-zinc-200">
-                  <Image
-                    src="/images/luna-icon.png"
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="size-5"
-                    unoptimized
-                  />
-                </span>
-              </div>
-            ) : (
-              <div className="flex size-[168px] items-center justify-center rounded-2xl bg-zinc-100">
-                <QrCode className="size-8 text-zinc-400" aria-hidden="true" />
-              </div>
-            )}
-
-            <div className="mt-3.5 flex items-baseline justify-center gap-2">
-              <span className="font-serif text-sm font-semibold text-zinc-400 line-through">
-                R${originalAmount.toFixed(2).replace('.', ',')}
-              </span>
-              <span className="font-serif text-3xl font-extrabold leading-none tracking-tight text-primary">
-                R${amount.toFixed(2).replace('.', ',')}
-              </span>
-            </div>
-          </div>
-
-          {/* Código copia e cola */}
-          <div className="mt-5">
-            <p className="text-center text-sm font-semibold text-zinc-700">
-              Código PIX (copia e cola)
-            </p>
-            <div className="mt-2.5 flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white/80 px-3.5 py-3 shadow-sm backdrop-blur-sm">
-              <p className="line-clamp-2 min-w-0 flex-1 break-all font-mono text-xs leading-relaxed text-zinc-500">
-                {pixCode || ''}
-              </p>
-              <button
-                onClick={copyPixCode}
-                aria-label="Copiar código PIX"
-                className="shrink-0 rounded-lg p-1.5 text-primary transition hover:bg-primary/10 active:scale-95"
-              >
-                <Copy className="size-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Botão copiar */}
-          <button
-            onClick={copyPixCode}
-            className={`${copied ? 'bg-emerald-600' : 'cta-gradient hover:brightness-110'} mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 active:scale-[0.98]`}
-          >
-            {copied ? (
-              <>
-                <Check className="size-5 animate-in zoom-in-50 duration-300" />
-                Código copiado!
-              </>
-            ) : (
-              <>
-                <Copy className="size-5" />
-                Copiar código PIX
-              </>
-            )}
-          </button>
-
-          {/* Já fiz o pagamento */}
-          <button
-            onClick={handleAlreadyPaid}
-            disabled={verifying}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-white py-3.5 text-sm font-semibold text-primary transition hover:bg-primary/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {verifying ? (
-              <>
-                <RefreshCw className="size-4 animate-spin" />
-                Verificando...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="size-4" />
-                Já fiz o pagamento
-              </>
-            )}
-          </button>
-
-          {/* Informe sobre a liberação do acesso */}
-          <div className="mt-4 flex items-center gap-2.5 rounded-2xl bg-primary/5 px-4 py-3">
-            <Lock className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            <p className="text-xs leading-relaxed text-zinc-600">
-              Assim que o pagamento for confirmado, o acesso é liberado automaticamente. Você também
-              recebe um e-mail com seus dados de acesso.
-            </p>
-          </div>
-
-          {/* Rodapé */}
-          <p className="mt-4 text-pretty text-center text-[0.65rem] leading-snug text-zinc-400">
-            <span className="font-medium text-zinc-500">Luna Privé</span> · Transação processada por
-            gateway autorizado pelo Banco Central
-          </p>
-        </>
       ) : (
         <>
           {/* Reserva do convite: contagem regressiva discreta */}
@@ -920,31 +782,27 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // (z-110) até o PIX estar 100% pronto, evitando lacunas e duplo loading.
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-stretch justify-center bg-black/40">
-      <div className="relative flex h-full w-full flex-col overflow-hidden bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
-        {/* Degradê decorativo de fundo (rosa suave no topo → branco) */}
-        <div
-          className="pointer-events-none absolute inset-0 z-0"
-          aria-hidden="true"
-          style={{
-            background:
-              'radial-gradient(120% 60% at 50% -10%, color-mix(in oklch, var(--primary) 16%, transparent) 0%, color-mix(in oklch, var(--primary) 5%, transparent) 34%, transparent 68%), linear-gradient(to bottom, #fff 0%, #fdf2f6 100%)',
-          }}
-        />
-
+    <div className="fixed inset-0 z-[100] flex items-stretch justify-center bg-black/80 backdrop-blur-sm">
+      <div className="relative flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {toastEl}
+
+        {/* Imagem de fundo (mesma do /convite) */}
+        <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+          <img src="/images/background-pix.png" alt="" className="size-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/58 via-background/66 to-background/75" />
+        </div>
 
         {/* Botão fechar */}
         <button
           onClick={onClose}
           aria-label="Fechar"
-          className="absolute right-5 top-5 z-20 rounded-full border border-zinc-200 bg-white p-2.5 text-zinc-600 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-900 active:scale-95"
+          className="absolute right-4 top-4 z-20 rounded-full border border-border bg-background/90 p-2.5 text-foreground shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition hover:bg-muted hover:scale-105 active:scale-95"
         >
           <X className="size-5" />
         </button>
 
         {/* Conteúdo */}
-        <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-14">
+        <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-14 sm:px-7">
           <div className="mx-auto w-full max-w-md">{content}</div>
         </div>
       </div>
