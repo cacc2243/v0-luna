@@ -223,6 +223,9 @@ export function formatDateTime(dateStr: string | null): string {
 export const GATEWAY_META: Record<string, { label: string }> = {
   bynet: { label: 'Bynet' },
   sigilopay: { label: 'SigiloPay' },
+  horsepay: { label: 'HorsePay' },
+  pixup: { label: 'PixUp' },
+  diretopay: { label: 'DiretoPay' },
 }
 
 export function gatewayLabel(id: string | null): string {
