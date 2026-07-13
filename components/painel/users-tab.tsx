@@ -28,13 +28,15 @@ function formatBRL(value: number | null) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function formatDate(value: string | null) {
+function formatDateTime(value: string | null) {
   if (!value) return '—'
   try {
-    return new Date(value).toLocaleDateString('pt-BR', {
+    return new Date(value).toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     })
   } catch {
     return '—'
@@ -192,7 +194,7 @@ export function UsersTab() {
                       <p className="mt-0.5 flex items-center gap-2 text-[0.7rem] text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                           <Clock className="size-3" />
-                          {formatDate(u.createdAt)}
+                          {formatDateTime(u.createdAt)}
                         </span>
                         <span>Saldo {formatBRL(u.balance)}</span>
                       </p>
