@@ -201,8 +201,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     }
   }, [isOpen, embedded])
 
-  // Preço "de" (âncora) fixo em R$ 169,90, igual ao PriceCard.
-  const originalAmount = 169.9
+  // Preço "de" (âncora) fixo em R$ 69,90, igual ao PriceCard.
+  const originalAmount = 69.9
 
   // Exibe um toast temporário dentro do modal.
   function showToast(variant: 'success' | 'error' | 'info', message: string) {
