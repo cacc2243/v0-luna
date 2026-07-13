@@ -24,39 +24,53 @@ export default function RedefinirSenhaPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
-  // Verifica se chegamos aqui com uma sessão de recuperação válida. O
-  // /auth/callback troca o code do e-mail por uma sessão antes de nos
-  // redirecionar; também escutamos o evento PASSWORD_RECOVERY por segurança.
+  // Estabelece a sessão de recuperação. O nosso e-mail envia um link no
+  // próprio domínio (lunaprive.live) com ?token_hash=...&type=recovery, que
+  // trocamos por uma sessão aqui via verifyOtp. Como fallback, também
+  // aceitamos uma sessão já existente (fluxo antigo via /auth/callback) e o
+  // evento PASSWORD_RECOVERY.
   useEffect(() => {
     const supabase = createClient()
     let settled = false
 
-    async function check() {
-      const { data } = await supabase.auth.getSession()
+    const finish = (next: Status) => {
       if (settled) return
-      if (data.session) {
-        settled = true
-        setStatus('ready')
+      settled = true
+      setStatus(next)
+    }
+
+    async function establish() {
+      // 1) Novo fluxo: token_hash na URL -> verifyOtp.
+      const params = new URLSearchParams(window.location.search)
+      const tokenHash = params.get('token_hash')
+      const type = params.get('type')
+
+      if (tokenHash && type === 'recovery') {
+        const { error: otpErr } = await supabase.auth.verifyOtp({
+          type: 'recovery',
+          token_hash: tokenHash,
+        })
+        // Limpa o token da URL por segurança/estética.
+        window.history.replaceState(null, '', window.location.pathname)
+        finish(otpErr ? 'invalid' : 'ready')
+        return
       }
+
+      // 2) Fallback: sessão já estabelecida (fluxo antigo).
+      const { data } = await supabase.auth.getSession()
+      if (data.session) finish('ready')
     }
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (settled) return
       if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
-        settled = true
-        setStatus('ready')
+        finish('ready')
       }
     })
 
-    check()
+    establish()
 
     // Se após um tempo não houver sessão, o link é inválido/expirado.
-    const timer = setTimeout(() => {
-      if (!settled) {
-        settled = true
-        setStatus('invalid')
-      }
-    }, 3500)
+    const timer = setTimeout(() => finish('invalid'), 4000)
 
     return () => {
       sub.subscription.unsubscribe()
