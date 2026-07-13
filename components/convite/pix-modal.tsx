@@ -704,12 +704,12 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
           {/* Informe sobre a liberação do acesso */}
           {!embedded && (
-            <div className="mt-3 rounded-2xl border border-positive/25 bg-positive/10 p-3.5">
+            <div className="mt-3 rounded-2xl border border-border bg-card/95 p-3.5 shadow-sm backdrop-blur-sm">
               <div className="flex items-start gap-2.5">
-                <Zap className="mt-0.5 size-4 shrink-0 text-positive" aria-hidden="true" />
+                <Zap className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                 <p className="text-xs leading-relaxed text-foreground">
                   Assim que o pagamento for confirmado, seu acesso é{' '}
-                  <span className="font-semibold text-positive">liberado aqui na hora</span>. Você
+                  <span className="font-semibold text-primary">liberado aqui na hora</span>. Você
                   também recebe um e-mail com seus dados de acesso.
                 </p>
               </div>
