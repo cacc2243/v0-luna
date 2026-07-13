@@ -726,8 +726,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // (z-110) até o PIX estar 100% pronto, evitando lacunas e duplo loading.
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-stretch justify-center bg-black/80 backdrop-blur-sm">
-      <div className="relative flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm">
+      <div className="relative my-auto flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
         {toastEl}
 
         {/* Fundo: mesmo tratamento dos modais de entrada do /convite
@@ -747,7 +747,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </button>
 
         {/* Conteúdo */}
-        <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-14 sm:px-7">
+        <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-8 pt-12 sm:px-7">
           <div className="mx-auto w-full max-w-md">{content}</div>
         </div>
       </div>
