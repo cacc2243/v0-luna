@@ -765,8 +765,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // (z-110) até o PIX estar 100% pronto, evitando lacunas e duplo loading.
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-stretch justify-center bg-black/80">
-      <div className="relative flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 pt-10">
+      <div className="relative flex h-[calc(100%-2.5rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {toastEl}
 
         {/* Fundo: mesmo tratamento dos modais de entrada do /convite
