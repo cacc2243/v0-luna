@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
@@ -142,6 +142,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   const [checkingPayment, setCheckingPayment] = useState(false)
   const [inviteId, setInviteId] = useState<string | null>(null)
   const [verifying, setVerifying] = useState(false)
+  // Reserva do convite: contagem regressiva de 10 minutos.
+  const [reserveSeconds, setReserveSeconds] = useState(600)
   // Toast interno do modal (cópia do código / resultado da verificação de pagamento).
   const [toast, setToast] = useState<{ variant: 'success' | 'error' | 'info'; message: string } | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -270,6 +272,20 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
     return () => clearInterval(interval)
   }, [expiresAt])
+
+  // Reserva do convite: reinicia em 10:00 quando o PIX fica pronto e conta ate 00:00.
+  useEffect(() => {
+    if (loading || error || !pixCode) return
+    setReserveSeconds(600)
+    const interval = setInterval(() => {
+      setReserveSeconds((s) => (s <= 1 ? 0 : s - 1))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [loading, error, pixCode])
+
+  const reserveLabel = `${Math.floor(reserveSeconds / 60)
+    .toString()
+    .padStart(2, '0')}:${(reserveSeconds % 60).toString().padStart(2, '0')}`
 
   // Verificar pagamento a cada 5 segundos
   useEffect(() => {
@@ -592,8 +608,21 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
+          {/* Reserva do convite: contagem regressiva discreta */}
+          <div className={`flex justify-center ${compact ? 'mt-1' : 'mt-2'}`}>
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1">
+              <Clock className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+              <span className="text-[0.7rem] font-medium text-foreground">
+                Convite reservado por{' '}
+                <span className="font-mono font-semibold tabular-nums text-primary">
+                  {reserveLabel}
+                </span>
+              </span>
+            </div>
+          </div>
+
           {/* Status: aguardando pagamento */}
-          <p className={`flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground ${compact ? 'mt-3' : 'mt-4'}`}>
+          <p className={`flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground ${compact ? 'mt-2' : 'mt-3'}`}>
             <RefreshCw className="size-3.5 animate-spin text-primary" aria-hidden="true" />
             aguardando pagamento...
           </p>
