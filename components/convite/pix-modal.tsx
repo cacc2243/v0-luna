@@ -231,7 +231,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         showToast('success', 'Pagamento confirmado! Liberando seu acesso...')
         onPaymentConfirmed?.()
       } else {
-        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por l�� assim que for confirmado.')
+        showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por lá assim que for confirmado.')
       }
     } catch (err) {
       console.error('[v0] Erro ao verificar pagamento:', err)
