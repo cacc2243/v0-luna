@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, ShieldCheck, Lock } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
@@ -620,7 +620,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       ) : isLight ? (
         <>
           {/* Convite reservado (tema claro) */}
-          <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
+          <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-primary/15 bg-primary/[0.07] px-4 py-3 backdrop-blur-sm">
             <Clock className="size-4 shrink-0 text-primary" aria-hidden="true" />
             <span className="text-sm font-medium text-zinc-700">
               Convite reservado por{' '}
@@ -629,66 +629,56 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           </div>
 
           {/* Aguardando pagamento */}
-          <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+          <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-zinc-200/80 bg-white/60 px-4 py-3 backdrop-blur-sm">
             <RefreshCw className="size-4 shrink-0 animate-spin text-primary" aria-hidden="true" />
             <span className="text-sm font-medium text-zinc-400">Aguardando pagamento...</span>
           </div>
 
-          {/* Card: QR Code + valor */}
-          <div className="mt-4 flex items-stretch gap-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex shrink-0 items-center justify-center">
-              {pixQrCode ? (
-                <div className="relative rounded-2xl bg-white p-1.5 ring-1 ring-zinc-200">
+          {/* Card: QR Code (topo) + valor (abaixo) */}
+          <div className="mt-4 flex flex-col items-center rounded-3xl border border-zinc-200 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
+            {pixQrCode ? (
+              <div className="relative rounded-2xl bg-white p-2 ring-1 ring-zinc-200">
+                <Image
+                  src={pixQrCode}
+                  alt="QR Code PIX"
+                  width={280}
+                  height={280}
+                  className="size-[220px] rounded-lg"
+                  unoptimized
+                />
+                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-white p-1.5 shadow-md ring-1 ring-zinc-200">
                   <Image
-                    src={pixQrCode}
-                    alt="QR Code PIX"
-                    width={180}
-                    height={180}
-                    className="size-[128px] rounded-lg"
+                    src="/images/luna-icon.png"
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="size-8"
                     unoptimized
                   />
-                  <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-1 shadow-md ring-1 ring-zinc-200">
-                    <Image
-                      src="/images/luna-icon.png"
-                      alt=""
-                      width={44}
-                      height={44}
-                      className="size-5"
-                      unoptimized
-                    />
-                  </span>
-                </div>
-              ) : (
-                <div className="flex size-[128px] items-center justify-center rounded-2xl bg-zinc-100">
-                  <QrCode className="size-8 text-zinc-400" aria-hidden="true" />
-                </div>
-              )}
-            </div>
+                </span>
+              </div>
+            ) : (
+              <div className="flex size-[220px] items-center justify-center rounded-2xl bg-zinc-100">
+                <QrCode className="size-10 text-zinc-400" aria-hidden="true" />
+              </div>
+            )}
 
-            <div className="flex min-w-0 flex-1 flex-col justify-center border-l border-zinc-100 pl-4">
-              <span className="font-serif text-sm font-semibold text-zinc-400 line-through">
+            <div className="mt-4 flex items-baseline justify-center gap-2.5">
+              <span className="font-serif text-lg font-semibold text-zinc-400 line-through">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
-              <span className="font-serif text-3xl font-extrabold leading-none tracking-tight text-primary">
+              <span className="font-serif text-4xl font-extrabold leading-none tracking-tight text-primary">
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
-              <div className="mt-3 flex items-center gap-2 rounded-xl bg-primary/5 px-2.5 py-2">
-                <ShieldCheck className="size-5 shrink-0 text-primary" aria-hidden="true" />
-                <div className="min-w-0 leading-tight">
-                  <p className="truncate text-xs font-semibold text-primary">Ambiente 100% seguro</p>
-                  <p className="truncate text-[0.7rem] text-zinc-500">Seus dados protegidos</p>
-                </div>
-              </div>
             </div>
           </div>
 
           {/* Código copia e cola */}
-          <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2">
-              <Copy className="size-4 shrink-0 text-primary" aria-hidden="true" />
-              <span className="text-sm font-semibold text-zinc-800">Código PIX (copia e cola)</span>
-            </div>
-            <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+          <div className="mt-5">
+            <p className="text-center text-sm font-semibold text-zinc-700">
+              Código PIX (copia e cola)
+            </p>
+            <div className="mt-2.5 flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white/80 px-3.5 py-3 shadow-sm backdrop-blur-sm">
               <p className="line-clamp-2 min-w-0 flex-1 break-all font-mono text-xs leading-relaxed text-zinc-500">
                 {pixCode || ''}
               </p>
@@ -940,6 +930,16 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-stretch justify-center bg-black/40">
       <div className="relative flex h-full w-full flex-col overflow-hidden bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+        {/* Degradê decorativo de fundo (rosa suave no topo → branco) */}
+        <div
+          className="pointer-events-none absolute inset-0 z-0"
+          aria-hidden="true"
+          style={{
+            background:
+              'radial-gradient(120% 60% at 50% -10%, color-mix(in oklch, var(--primary) 16%, transparent) 0%, color-mix(in oklch, var(--primary) 5%, transparent) 34%, transparent 68%), linear-gradient(to bottom, #fff 0%, #fdf2f6 100%)',
+          }}
+        />
+
         {toastEl}
 
         {/* Botão fechar */}
