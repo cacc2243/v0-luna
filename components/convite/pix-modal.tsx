@@ -569,27 +569,30 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {!embedded && type === 'invite' ? (
             <>
               {/* Cronômetro da reserva */}
-              <div className="mt-4 flex justify-center">
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/5 px-5 py-1.5">
-                  <Clock className="size-4 shrink-0 text-primary" aria-hidden="true" />
-                  <span className="font-mono text-base font-semibold tabular-nums text-primary">
+              <div className="mt-2.5 flex justify-center">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-0.5">
+                  <Clock className="size-3 shrink-0 text-primary" aria-hidden="true" />
+                  <span className="font-mono text-xs font-semibold tabular-nums text-primary">
                     {reserveLabel}
                   </span>
                 </div>
               </div>
 
               {/* Stepper: Cadastro → Pagamento → Acesso */}
-              <div className="mx-auto mt-5 w-full max-w-[280px]">
+              <div className="mx-auto mt-3 w-full max-w-[260px]">
                 <div className="flex items-center">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <Check className="size-3.5" aria-hidden="true" />
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="size-3" aria-hidden="true" />
                   </span>
                   <span className="h-0.5 flex-1 bg-primary" aria-hidden="true" />
-                  <span className="size-6 shrink-0 rounded-full bg-primary ring-4 ring-primary/20" aria-hidden="true" />
+                  <span className="relative flex size-5 shrink-0 items-center justify-center" aria-hidden="true">
+                    <span className="absolute inline-flex size-5 animate-ping rounded-full bg-primary/60" />
+                    <span className="relative size-5 rounded-full bg-primary ring-4 ring-primary/20" />
+                  </span>
                   <span className="h-0.5 flex-1 bg-border" aria-hidden="true" />
-                  <span className="size-6 shrink-0 rounded-full border-2 border-border bg-transparent" aria-hidden="true" />
+                  <span className="size-5 shrink-0 rounded-full border-2 border-border bg-transparent" aria-hidden="true" />
                 </div>
-                <div className="mt-1.5 flex justify-between text-[0.7rem]">
+                <div className="mt-1 flex justify-between text-[0.65rem]">
                   <span className="text-muted-foreground">Cadastro</span>
                   <span className="font-bold text-foreground">Pagamento</span>
                   <span className="text-muted-foreground">Acesso</span>
