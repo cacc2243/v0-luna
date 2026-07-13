@@ -629,13 +629,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           </div>
 
           {/* Aguardando pagamento */}
-          <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-zinc-200/80 bg-white/60 px-4 py-3 backdrop-blur-sm">
+          <div className="mt-3 flex items-center justify-center gap-2">
             <RefreshCw className="size-4 shrink-0 animate-spin text-primary" aria-hidden="true" />
             <span className="text-sm font-medium text-zinc-400">Aguardando pagamento...</span>
           </div>
 
-          {/* Card: QR Code (topo) + valor (abaixo) */}
-          <div className="mt-4 flex flex-col items-center rounded-3xl border border-zinc-200 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
+          {/* QR Code (topo) + valor (abaixo) */}
+          <div className="mt-4 flex flex-col items-center">
             {pixQrCode ? (
               <div className="relative rounded-2xl bg-white p-2 ring-1 ring-zinc-200">
                 <Image
