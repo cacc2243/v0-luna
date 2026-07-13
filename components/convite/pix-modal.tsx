@@ -725,7 +725,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
             <div className="mt-3 flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
               <p className="whitespace-nowrap">
-                <span className="font-medium text-foreground/80">Luna Privé</span> · CNPJ 57.066.280/0001-97
+                <span className="font-medium text-foreground/80">Luna Privé</span>
               </p>
               <p className="mt-0.5 text-pretty">
                 Transação processada por gateway autorizado pelo Banco Central
