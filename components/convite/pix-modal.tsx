@@ -556,15 +556,15 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       {/* Header (logo só no modal cheio; no embutido o card pai já mostra a logo) */}
       <div className="flex flex-col items-center text-center">
         {!embedded && (
-          <div className="flex items-center gap-2" aria-label="Luna Privé">
-            <img src="/images/luna-icon.png" alt="" className="size-6" />
-            <span className="text-lg font-semibold tracking-[0.18em] text-zinc-900">
+          <div className="flex items-center gap-1.5" aria-label="Luna Privé">
+            <img src="/images/luna-icon.png" alt="" className="size-4" />
+            <span className="text-sm font-semibold tracking-[0.18em] text-zinc-900">
               LUNA<span className="text-primary">.PRIVE</span>
             </span>
           </div>
         )}
         {!embedded && (
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-zinc-900">
+          <h2 className="mt-3 text-2xl font-bold tracking-tight text-zinc-900">
             {title ? title : (
               <>
                 Pagamento via <span className="text-primary">PIX</span>
@@ -573,7 +573,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           </h2>
         )}
         {!embedded && (
-          <p className="mt-1.5 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-500">
             {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
           </p>
         )}
@@ -635,39 +635,39 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           </div>
 
           {/* Card: QR Code (topo) + valor (abaixo) */}
-          <div className="mt-4 flex flex-col items-center rounded-3xl border border-zinc-200 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
+          <div className="mt-4 flex flex-col items-center rounded-3xl border border-zinc-200 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
             {pixQrCode ? (
               <div className="relative rounded-2xl bg-white p-2 ring-1 ring-zinc-200">
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
-                  width={280}
-                  height={280}
-                  className="size-[220px] rounded-lg"
+                  width={220}
+                  height={220}
+                  className="size-[168px] rounded-lg"
                   unoptimized
                 />
-                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-white p-1.5 shadow-md ring-1 ring-zinc-200">
+                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-1 shadow-md ring-1 ring-zinc-200">
                   <Image
                     src="/images/luna-icon.png"
                     alt=""
-                    width={48}
-                    height={48}
-                    className="size-8"
+                    width={32}
+                    height={32}
+                    className="size-5"
                     unoptimized
                   />
                 </span>
               </div>
             ) : (
-              <div className="flex size-[220px] items-center justify-center rounded-2xl bg-zinc-100">
-                <QrCode className="size-10 text-zinc-400" aria-hidden="true" />
+              <div className="flex size-[168px] items-center justify-center rounded-2xl bg-zinc-100">
+                <QrCode className="size-8 text-zinc-400" aria-hidden="true" />
               </div>
             )}
 
-            <div className="mt-4 flex items-baseline justify-center gap-2.5">
-              <span className="font-serif text-lg font-semibold text-zinc-400 line-through">
+            <div className="mt-3.5 flex items-baseline justify-center gap-2">
+              <span className="font-serif text-sm font-semibold text-zinc-400 line-through">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
-              <span className="font-serif text-4xl font-extrabold leading-none tracking-tight text-primary">
+              <span className="font-serif text-3xl font-extrabold leading-none tracking-tight text-primary">
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
             </div>
