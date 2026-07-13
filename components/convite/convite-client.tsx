@@ -377,6 +377,8 @@ export function ConviteClient({
         onClose={() => {
           setShowPixModal(false)
           setPixReady(false)
+          // Sempre volta ao topo da página ao fechar o PIX gerado.
+          window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
         }}
         email={data.email}
         amount={inviteCents / 100}
