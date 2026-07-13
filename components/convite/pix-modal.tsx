@@ -690,18 +690,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
           )}
 
-          {/* Rodapé de segurança */}
-          <div className={`${compact ? 'mt-3' : 'mt-4'} border-t border-border/50 pt-3`}>
-            <div className="flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
-              <p className="whitespace-nowrap">
-                <span className="font-medium text-foreground/80">Luna Privé</span>
-              </p>
-              <p className="mt-0.5 text-pretty">
-                Transação processada por gateway autorizado pelo Banco Central
-              </p>
-            </div>
-          </div>
-
         </>
       )}
     </>
