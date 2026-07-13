@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Lock, ShieldCheck } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Lock, ShieldCheck, Zap, Mail } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom, fbTrackWhenReady } from '@/lib/fb/track'
@@ -592,9 +592,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
-          {/* Prova social discreta acima do QR */}
-          <p className={compact ? 'mt-3 text-center text-xs font-medium text-muted-foreground' : 'mt-4 text-center text-xs font-medium text-muted-foreground'}>
-            {'🔥 99.8% dizem que valeu a pena!'}
+          {/* Status: aguardando pagamento */}
+          <p className={`flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground ${compact ? 'mt-3' : 'mt-4'}`}>
+            <RefreshCw className="size-3.5 animate-spin text-primary" aria-hidden="true" />
+            aguardando pagamento...
           </p>
 
           {/* QR Code */}
@@ -634,15 +635,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
           )}
 
-          {/* Nome do adquirente que processa o PIX (extraído do BR Code) */}
-          {extractPixMerchantName(pixCode) && (
-            <p className="mt-2.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground">
-              Processado por{' '}
-              <span className="font-semibold text-foreground/90">
-                {extractPixMerchantName(pixCode)}
-              </span>
-            </p>
-          )}
 
           {/* Valor */}
           <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
@@ -674,7 +666,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Botão copiar */}
           <button
             onClick={copyPixCode}
-            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'cta-gradient animate-cta-breathe ring-white/20 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'cta-gradient ring-white/20 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
               <>
@@ -710,6 +702,24 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </button>
           )}
 
+          {/* Informe sobre a liberação do acesso */}
+          {!embedded && (
+            <div className="mt-3 rounded-2xl border border-border bg-card/95 p-3.5 shadow-sm backdrop-blur-sm">
+              <div className="flex items-start gap-2.5">
+                <Zap className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <p className="text-xs leading-relaxed text-foreground">
+                  Assim que o pagamento for confirmado, seu acesso é{' '}
+                  <span className="font-semibold text-primary">liberado aqui na hora</span>. Você
+                  também recebe um e-mail com seus dados de acesso.
+                </p>
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 pl-[1.625rem] text-[0.7rem] font-medium text-muted-foreground">
+                <Mail className="size-3.5 shrink-0" aria-hidden="true" />
+                Confira também a caixa de spam.
+              </div>
+            </div>
+          )}
+
           {/* Rodapé de segurança */}
           <div className={`${compact ? 'mt-3' : 'mt-4'} border-t border-border/50 pt-3`}>
             <div className="flex items-center justify-center gap-2 text-[0.7rem] font-medium text-foreground">
@@ -725,7 +735,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
             <div className="mt-3 flex flex-col items-center gap-0.5 text-center text-[0.65rem] leading-snug text-muted-foreground">
               <p className="whitespace-nowrap">
-                <span className="font-medium text-foreground/80">Luna Privé</span> · CNPJ 57.066.280/0001-97
+                <span className="font-medium text-foreground/80">Luna Privé</span>
               </p>
               <p className="mt-0.5 text-pretty">
                 Transação processada por gateway autorizado pelo Banco Central
@@ -763,8 +773,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
         {/* Imagem de fundo (mesma do /convite) */}
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
-          <img src="/images/background.png" alt="" className="size-full object-cover grayscale" />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/68 via-background/78 to-background/88" />
+          <img src="/images/background.png" alt="" className="size-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/58 via-background/66 to-background/75" />
         </div>
 
         {/* Botão fechar */}

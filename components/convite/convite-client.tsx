@@ -15,7 +15,6 @@ import { PreCheckoutModal } from '@/components/convite/pre-checkout-modal'
 
 import { WelcomePopup } from '@/components/convite/welcome-popup'
 import { SocialProofToaster } from '@/components/convite/social-proof-toaster'
-import { NewUsersToast } from '@/components/convite/new-users-toast'
 
 interface SignupData {
   username: string
@@ -351,9 +350,6 @@ export function ConviteClient({
 
       {/* Notificações de prova social no topo (após fechar o modal) */}
       <SocialProofToaster active={socialProofActive} />
-
-      {/* Toast sutil de novas usuárias na base (após fechar os modais de entrada) */}
-      <NewUsersToast active={socialProofActive} />
     </main>
   )
 }
