@@ -634,15 +634,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
           )}
 
-          {/* Nome do adquirente que processa o PIX (extraído do BR Code) */}
-          {extractPixMerchantName(pixCode) && (
-            <p className="mt-2.5 text-center text-[10px] font-medium tracking-wide text-muted-foreground">
-              Processado por{' '}
-              <span className="font-semibold text-foreground/90">
-                {extractPixMerchantName(pixCode)}
-              </span>
-            </p>
-          )}
 
           {/* Valor */}
           <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
