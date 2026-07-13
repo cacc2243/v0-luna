@@ -8,7 +8,6 @@ import { Mail, Users } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
 import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
-import { InstagramCard } from '@/components/convite/instagram-card'
 import { PlatformFees } from '@/components/convite/platform-fees'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { CompanyInfo } from '@/components/convite/company-info'
@@ -357,9 +356,6 @@ export function ConviteClient({
 
         {/* Preço + garantia */}
         <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady />
-
-        {/* Card do Instagram (privado, só para convites ativos) */}
-        <InstagramCard />
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
