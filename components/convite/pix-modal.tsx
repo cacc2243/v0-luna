@@ -668,7 +668,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               Código PIX (copia e cola)
             </p>
             <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-2.5">
-              <p className="line-clamp-2 break-all font-mono text-xs leading-relaxed text-foreground/80">
+              <p className="break-all font-mono text-[0.65rem] leading-relaxed text-foreground/80">
                 {pixCode || ''}
               </p>
             </div>
