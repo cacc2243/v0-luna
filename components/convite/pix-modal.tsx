@@ -667,11 +667,16 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             <p className="mb-2 text-center text-xs font-medium text-muted-foreground">
               Código PIX (copia e cola)
             </p>
-            <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-2.5">
+            <button
+              type="button"
+              onClick={copyPixCode}
+              aria-label="Copiar código PIX"
+              className="w-full rounded-xl border border-border/70 bg-background/60 px-4 py-2.5 text-left transition hover:bg-background/80 active:scale-[0.99]"
+            >
               <p className="break-all font-mono text-[0.65rem] leading-relaxed text-foreground/80">
                 {pixCode || ''}
               </p>
-            </div>
+            </button>
           </div>
 
           {/* Botão copiar */}
