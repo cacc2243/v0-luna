@@ -637,11 +637,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
 
           {/* Valor */}
-          <div className={compact ? 'mt-4 text-center' : 'mt-6 text-center'}>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Valor único
-            </p>
-            <div className="mt-1 flex items-center justify-center gap-2.5">
+          <div className={compact ? 'mt-2 text-center' : 'mt-3 text-center'}>
+            <div className="flex items-center justify-center gap-2.5">
               <span className="font-serif text-sm font-semibold text-muted-foreground line-through decoration-primary/70">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
@@ -657,7 +654,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               Código PIX (copia e cola)
             </p>
             <div className="rounded-xl border border-border/70 bg-background/60 px-4 py-2.5">
-              <p className="line-clamp-2 break-all font-mono text-xs leading-relaxed text-muted-foreground">
+              <p className="line-clamp-2 break-all font-mono text-xs leading-relaxed text-foreground/80">
                 {pixCode || ''}
               </p>
             </div>
