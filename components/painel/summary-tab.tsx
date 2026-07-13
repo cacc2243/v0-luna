@@ -384,7 +384,7 @@ export function SummaryTab({
       </section>
 
       {/* Transacoes */}
-      <TransactionsList invites={filteredInvites} />
+      <TransactionsList invites={filteredInvites} profiles={profiles} />
     </div>
   )
 }
