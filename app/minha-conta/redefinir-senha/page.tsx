@@ -24,11 +24,10 @@ export default function RedefinirSenhaPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
-  // Estabelece a sessão de recuperação. O nosso e-mail envia um link no
-  // próprio domínio (lunaprive.live) com ?token_hash=...&type=recovery, que
-  // trocamos por uma sessão aqui via verifyOtp. Como fallback, também
-  // aceitamos uma sessão já existente (fluxo antigo via /auth/callback) e o
-  // evento PASSWORD_RECOVERY.
+  // A sessão de recuperação é estabelecida NO SERVIDOR pela rota /auth/confirm
+  // (para onde o link do e-mail aponta) ANTES de chegarmos aqui. Portanto só
+  // precisamos confirmar que a sessão existe. Também tratamos o ?error=invalid
+  // (token expirado/usado) e ouvimos PASSWORD_RECOVERY como fallback.
   useEffect(() => {
     const supabase = createClient()
     let settled = false
@@ -40,23 +39,15 @@ export default function RedefinirSenhaPage() {
     }
 
     async function establish() {
-      // 1) Novo fluxo: token_hash na URL -> verifyOtp.
+      // Sinalizado pela rota de confirmação quando o token é inválido/expirado.
       const params = new URLSearchParams(window.location.search)
-      const tokenHash = params.get('token_hash')
-      const type = params.get('type')
-
-      if (tokenHash && type === 'recovery') {
-        const { error: otpErr } = await supabase.auth.verifyOtp({
-          type: 'recovery',
-          token_hash: tokenHash,
-        })
-        // Limpa o token da URL por segurança/estética.
+      if (params.get('error') === 'invalid') {
         window.history.replaceState(null, '', window.location.pathname)
-        finish(otpErr ? 'invalid' : 'ready')
+        finish('invalid')
         return
       }
 
-      // 2) Fallback: sessão já estabelecida (fluxo antigo).
+      // Sessão de recuperação já estabelecida pelo servidor.
       const { data } = await supabase.auth.getSession()
       if (data.session) finish('ready')
     }

@@ -64,8 +64,9 @@ export async function POST(request: NextRequest) {
     //    `redirect_to` sobrescrito pela "Site URL" do painel da Supabase
     //    (que hoje aponta para o domínio *.vercel.app). Em vez disso, montamos
     //    nosso PRÓPRIO link 100% no domínio lunaprive.live usando o
-    //    `hashed_token`. A verificação do OTP acontece na nossa página de
-    //    redefinição (verifyOtp), estabelecendo a sessão de recuperação ali.
+    //    `hashed_token`. A verificação do OTP acontece no servidor, na rota
+    //    /auth/confirm, que estabelece a sessão e redireciona para a página
+    //    de nova senha.
     const redirectTo = `${getSiteUrl()}/minha-conta/redefinir-senha`
     const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
       type: 'recovery',
@@ -86,10 +87,15 @@ export async function POST(request: NextRequest) {
       return ok()
     }
 
-    // Link próprio, inteiramente no nosso domínio.
-    const actionLink = `${getSiteUrl()}/minha-conta/redefinir-senha?token_hash=${encodeURIComponent(
-      tokenHash,
-    )}&type=recovery`
+    // Link próprio, inteiramente no nosso domínio, apontando para a rota de
+    // verificação no servidor (/auth/confirm), que estabelece a sessão e leva
+    // à página de nova senha.
+    const nextPath = '/minha-conta/redefinir-senha'
+    const actionLink =
+      `${getSiteUrl()}/auth/confirm` +
+      `?token_hash=${encodeURIComponent(tokenHash)}` +
+      `&type=recovery` +
+      `&next=${encodeURIComponent(nextPath)}`
 
     // Nome amigável (se houver) para personalizar o e-mail.
     const meta = (linkData?.user?.user_metadata ?? {}) as Record<string, unknown>
