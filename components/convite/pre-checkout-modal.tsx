@@ -173,7 +173,7 @@ export function PreCheckoutModal({
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
                       <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                     </span>
-                    <span className="text-sm font-medium text-foreground">{step.label}</span>
+                    <span className="flex-1 text-left text-xs font-medium text-foreground">{step.label}</span>
                   </div>
                 )
               })()}
