@@ -291,7 +291,7 @@ export function ConviteClient({
           irmãos fora deste container. */}
       <div
         className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-8"
-        style={{ zoom: 1.07 }}
+        style={{ zoom: 1.02 }}
       >
         {/* Logo centralizada, igual às demais telas do fluxo */}
         <header className="flex flex-col items-center gap-4">
