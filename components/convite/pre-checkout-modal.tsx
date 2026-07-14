@@ -228,7 +228,7 @@ export function PreCheckoutModal({
                 setCpf(maskCpf(e.target.value))
                 if (error) setError('')
               }}
-              className={`mt-6 w-full rounded-2xl border bg-background/60 px-4 py-4 text-center font-montserrat text-xl font-bold tracking-wider text-foreground outline-none transition focus:ring-2 ${
+              className={`mt-6 w-full rounded-2xl border bg-background/60 px-4 py-4 text-center font-montserrat text-xl font-medium tracking-wider text-foreground outline-none transition focus:ring-2 ${
                 error
                   ? 'border-destructive/70 focus:ring-destructive/30'
                   : 'border-border focus:border-primary/60 focus:ring-primary/30'
@@ -249,7 +249,7 @@ export function PreCheckoutModal({
 
             <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
               <Lock className="size-3.5" aria-hidden="true" />
-              Seus dados são protegidos e 100% anônimos.
+              Seus dados são 100% anônimos.
             </p>
           </form>
         )}
