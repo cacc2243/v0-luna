@@ -30,6 +30,7 @@ export default async function ConvitePage({
     <ConviteClient
       initialInviteCents={settings.inviteAmountCents}
       initialFromUrl={initialFromUrl}
+      requireCpf={settings.requireCpfOnInvite}
     />
   )
 }

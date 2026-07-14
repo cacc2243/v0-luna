@@ -73,9 +73,12 @@ function resolveSignupData(initialFromUrl?: SignupData): SignupData {
 export function ConviteClient({
   initialInviteCents,
   initialFromUrl,
+  requireCpf = false,
 }: {
   initialInviteCents: number
   initialFromUrl?: SignupData
+  /** Config do admin: quando true, pede o CPF antes de gerar o PIX. */
+  requireCpf?: boolean
 }) {
   const router = useRouter()
   // Estado inicial SEMPRE VAZIO — deterministico. O servidor e o primeiro
@@ -379,6 +382,7 @@ export function ConviteClient({
         email={data.email}
         amountCents={inviteCents}
         ready={pixReady}
+        requireCpf={requireCpf}
       />
 
       {/* Modal de PIX */}

@@ -18,6 +18,7 @@ import {
   Rocket,
   BarChart3,
   Banknote,
+  IdCard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -43,6 +44,7 @@ interface SettingsPayload {
     boostAmountCents: Record<string, number>
     directOrderEveryN: number
     utmifyApiToken: string
+    requireCpfOnInvite: boolean
   }
   gateways: GatewayMeta[]
   cashinGateways: GatewayMeta[]
@@ -77,6 +79,7 @@ export function SettingsTab() {
   const [boostReais, setBoostReais] = useState<Record<string, string>>({})
   const [directEveryN, setDirectEveryN] = useState('13')
   const [utmifyToken, setUtmifyToken] = useState('')
+  const [requireCpf, setRequireCpf] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -114,6 +117,7 @@ export function SettingsTab() {
       setBoostReais(boost)
       setDirectEveryN(String(data.settings.directOrderEveryN || 13))
       setUtmifyToken(data.settings.utmifyApiToken || '')
+      setRequireCpf(Boolean(data.settings.requireCpfOnInvite))
     }
   }, [data])
 
@@ -147,6 +151,7 @@ export function SettingsTab() {
       parseAmountCents(giftReais) !== data.settings.giftUnlockAmountCents ||
       (Number(directEveryN) || 0) !== data.settings.directOrderEveryN ||
       utmifyToken.trim() !== (data.settings.utmifyApiToken || '') ||
+      requireCpf !== Boolean(data.settings.requireCpfOnInvite) ||
       boostDirty)
 
   const save = async () => {
@@ -208,6 +213,7 @@ export function SettingsTab() {
           boostAmountCents: boostPayload,
           directOrderEveryN: directN,
           utmifyApiToken: utmifyToken.trim(),
+          requireCpfOnInvite: requireCpf,
         }),
       })
       const json = await res.json()
@@ -328,6 +334,55 @@ export function SettingsTab() {
               onChange={(e) => setAmountReais(e.target.value)}
               className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-sm font-semibold text-foreground outline-none focus:border-primary"
             />
+          </div>
+        </div>
+      </section>
+
+      {/* Exigir CPF no fluxo do convite (/convite) */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              'flex size-10 shrink-0 items-center justify-center rounded-xl',
+              requireCpf ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground',
+            )}
+          >
+            <IdCard className="size-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-bold text-foreground">CPF no convite</h2>
+            <p className="mt-1 text-pretty text-sm leading-relaxed text-muted-foreground">
+              Quando ativa, a usuária precisa informar o CPF antes de gerar o PIX em{' '}
+              <span className="font-medium">/convite</span>. Quando desativada, o PIX é gerado
+              direto, sem pedir o CPF.
+            </p>
+
+            <button
+              onClick={() => setRequireCpf((v) => !v)}
+              role="switch"
+              aria-checked={requireCpf}
+              className={cn(
+                'mt-4 flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition',
+                requireCpf ? 'border-primary/40 bg-primary/5' : 'border-border bg-secondary/40',
+              )}
+            >
+              <span
+                className={cn(
+                  'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition',
+                  requireCpf ? 'bg-primary' : 'bg-muted-foreground/40',
+                )}
+              >
+                <span
+                  className={cn(
+                    'inline-block size-5 transform rounded-full bg-white shadow transition',
+                    requireCpf ? 'translate-x-[1.4rem]' : 'translate-x-0.5',
+                  )}
+                />
+              </span>
+              <span className="text-sm font-semibold text-foreground">
+                {requireCpf ? 'Pedir CPF antes de gerar o PIX' : 'CPF desativado (gera direto)'}
+              </span>
+            </button>
           </div>
         </div>
       </section>

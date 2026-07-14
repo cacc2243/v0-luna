@@ -15,6 +15,8 @@ interface PreCheckoutModalProps {
   amountCents: number
   /** PIX 100% gerado e pronto para exibir. Enquanto false, mantém o "finalizando". */
   ready?: boolean
+  /** Config do admin: quando true, exibe a etapa de CPF antes de gerar o PIX. */
+  requireCpf?: boolean
 }
 
 function formatCents(cents: number): string {
@@ -63,6 +65,7 @@ export function PreCheckoutModal({
   onDone,
   amountCents,
   ready,
+  requireCpf = false,
 }: PreCheckoutModalProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -82,7 +85,11 @@ export function PreCheckoutModal({
     }
   }, [isOpen])
 
-  // Fase "loading": avança os passos em sequência e depois vai para o CPF.
+  // Fase "loading": avança os passos em sequência. Ao terminar, vai para a
+  // etapa de CPF (se exigida) ou dispara a geração do PIX direto e segue para
+  // "finalizing".
+  const onSubmitCpfRef = useRef(onSubmitCpf)
+  onSubmitCpfRef.current = onSubmitCpf
   useEffect(() => {
     if (!isOpen || phase !== 'loading') return
     const stepMs = 700
@@ -90,9 +97,19 @@ export function PreCheckoutModal({
     STEPS.forEach((_, i) => {
       timers.push(setTimeout(() => setActiveStep(i + 1), stepMs * (i + 1)))
     })
-    timers.push(setTimeout(() => setPhase('cpf'), stepMs * STEPS.length + 450))
+    timers.push(
+      setTimeout(() => {
+        if (requireCpf) {
+          setPhase('cpf')
+        } else {
+          // Sem CPF: gera o PIX sem documento e mostra o "finalizando".
+          onSubmitCpfRef.current('')
+          setPhase('finalizing')
+        }
+      }, stepMs * STEPS.length + 450),
+    )
     return () => timers.forEach(clearTimeout)
-  }, [isOpen, phase])
+  }, [isOpen, phase, requireCpf])
 
   // Fase "finalizing": quando o PIX fica pronto, encerra a etapa.
   const onDoneRef = useRef(onDone)
