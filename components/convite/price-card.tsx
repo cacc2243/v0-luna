@@ -4,7 +4,7 @@ import { Check, ChevronRight, Gift, Lightbulb } from 'lucide-react'
 
 const benefits = [
   'Código de Convite Luna Privé',
-  'Comece a Vender Imediatamente',
+  'Venda imediatamente',
   'Suporte Anônimo 24h',
   '100% Anonimato',
 ]
