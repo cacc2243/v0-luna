@@ -119,16 +119,31 @@ export function PreCheckoutModal({
   const priceLabel = `R$ ${formatCents(amountCents)}`
 
   return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="relative flex w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        {/* Cabeçalho com logo (compacto) */}
-        <div className="flex justify-center px-6 pt-4 pb-1">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
-        </div>
+    <div
+      className="fixed inset-0 z-[110] flex items-center justify-center px-4 py-6"
+      role="dialog"
+      aria-modal="true"
+    >
+      {/* Backdrop — igual aos modais de entrada */}
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" aria-hidden="true" />
+
+      {/* Card — mesmo layout dos modais de entrada */}
+      <div className="animate-pop relative w-full max-w-[22.5rem] overflow-hidden rounded-3xl border border-primary/25 bg-card p-6 text-center shadow-2xl shadow-primary/20">
+        {/* Brilho superior */}
+        <div
+          className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl"
+          aria-hidden="true"
+        />
+
+        <img
+          src="/images/luna-prive-logo.png"
+          alt="Luna Privé"
+          className="relative mx-auto mt-1 h-6 w-auto"
+        />
 
         {/* ── Fase: gerando convite (animação de etapas) ── */}
         {(phase === 'loading' || phase === 'finalizing') && (
-          <div className="flex flex-col items-center px-6 py-7 text-center">
+          <div className="relative flex flex-col items-center pt-5">
             <span className="relative flex size-16 items-center justify-center">
               <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
               <span className="relative flex size-16 items-center justify-center rounded-full bg-primary/12 ring-1 ring-primary/30">
@@ -185,7 +200,7 @@ export function PreCheckoutModal({
         {phase === 'cpf' && (
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col px-6 py-7 animate-in fade-in slide-in-from-bottom-2 duration-300"
+            className="relative flex flex-col pt-5 animate-in fade-in slide-in-from-bottom-2 duration-300"
           >
             <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/12 ring-1 ring-primary/30">
               <ShieldCheck className="size-6 text-primary" aria-hidden="true" />
