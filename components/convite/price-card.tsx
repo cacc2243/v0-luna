@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, ChevronRight, Gift, Lightbulb } from 'lucide-react'
+import { Check, Gift, Lightbulb } from 'lucide-react'
 
 const benefits = [
   'Código de Convite Luna Privé',
@@ -113,9 +113,10 @@ export function PriceCard({
           disabled={!priceReady}
           className="animate-cta-breathe relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-emerald-600 py-4 text-base font-bold text-white transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:animate-none disabled:opacity-60 disabled:active:scale-100"
         >
-          {priceReady && <Gift className="size-5" aria-hidden="true" />}
-          {priceReady ? 'Adquirir Meu Convite' : 'Carregando valor...'}
-          {priceReady && <ChevronRight className="size-5" aria-hidden="true" />}
+          {priceReady && <Gift className="size-5 shrink-0" aria-hidden="true" />}
+          <span className="whitespace-nowrap">
+            {priceReady ? 'Adquirir Meu Convite' : 'Carregando valor...'}
+          </span>
         </button>
       </div>
 
