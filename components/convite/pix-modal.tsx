@@ -659,10 +659,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Valor */}
           <div className={compact ? 'mt-2 text-center' : 'mt-3 text-center'}>
             <div className="flex items-center justify-center gap-2.5">
-              <span className="font-serif text-sm font-semibold text-muted-foreground line-through decoration-primary/70">
+              <span className="font-montserrat text-sm font-semibold text-muted-foreground line-through decoration-primary/70">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
-              <span className={`${compact ? 'text-xl' : 'text-2xl'} font-serif font-extrabold tracking-tight text-foreground`}>
+              <span className={`${compact ? 'text-xl' : 'text-2xl'} font-montserrat font-extrabold tracking-tight text-foreground`}>
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
             </div>

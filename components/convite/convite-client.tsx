@@ -282,7 +282,13 @@ export function ConviteClient({
       <PageBackground grayscale darken />
 
       {/* Barra fixa de destaque no topo (aparece após rolar um pouco) */}
-      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-8">
+      {/* zoom sutil: aumenta proporcionalmente todo o conteúdo desta tela
+          (textos, imagens e espaçamentos) sem afetar os modais, que são
+          irmãos fora deste container. */}
+      <div
+        className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-12 pt-8"
+        style={{ zoom: 1.07 }}
+      >
         {/* Logo centralizada, igual às demais telas do fluxo */}
         <header className="flex flex-col items-center gap-4">
           <img

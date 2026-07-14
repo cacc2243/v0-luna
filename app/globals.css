@@ -81,6 +81,7 @@
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-montserrat: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
   --color-positive: var(--positive);
   --color-background: var(--background);
   --color-foreground: var(--foreground);

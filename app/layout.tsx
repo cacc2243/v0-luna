@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Manrope, Space_Grotesk } from 'next/font/google'
+import { Manrope, Space_Grotesk, Montserrat } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import Script from 'next/script'
 import { Suspense } from 'react'
@@ -18,6 +18,12 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-space-grotesk',
+})
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-montserrat',
 })
 
 export const viewport: Viewport = {
@@ -85,7 +91,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={`dark bg-background ${manrope.variable} ${spaceGrotesk.variable}`}>
+    <html lang="pt-BR" className={`dark bg-background ${manrope.variable} ${spaceGrotesk.variable} ${montserrat.variable}`}>
       <body className="font-sans antialiased">
         <Suspense fallback={null}>
           <FbPixel />
