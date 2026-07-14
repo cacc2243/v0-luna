@@ -503,7 +503,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
-            className="h-9 w-auto"
+            className="h-12 w-auto"
           />
         )}
         {!embedded && type === 'invite' && !title ? (
@@ -688,7 +688,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Botão copiar */}
           <button
             onClick={copyPixCode}
-            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'bg-primary ring-white/20 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'bg-emerald-600 ring-emerald-300/40 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-white ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
               <>
