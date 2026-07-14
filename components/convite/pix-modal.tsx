@@ -621,9 +621,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </>
           )}
 
-          {/* QR Code */}
+          {/* QR Code (zoom neutralizado para manter tamanho original) */}
           {pixQrCode && (
-            <div className={compact ? 'relative mt-2 flex justify-center' : 'relative mt-3 flex justify-center'}>
+            <div className={compact ? 'relative mt-2 flex justify-center' : 'relative mt-3 flex justify-center'} style={{ zoom: 0.909 }}>
               {/* Brilho suave da marca por tras do QR */}
               <span
                 className="pointer-events-none absolute left-1/2 top-1/2 size-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/25 blur-3xl"
@@ -671,8 +671,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </div>
           </div>
 
-          {/* Código copia e cola */}
-          <div className={compact ? 'mt-4' : 'mt-6'}>
+          {/* Código copia e cola (zoom neutralizado para manter tamanho original) */}
+          <div className={compact ? 'mt-4' : 'mt-6'} style={{ zoom: 0.909 }}>
             <p className="mb-2 text-center text-xs font-medium text-muted-foreground">
               Código PIX (copia e cola)
             </p>
@@ -688,9 +688,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </button>
           </div>
 
-          {/* Botão copiar */}
+          {/* Botão copiar (zoom neutralizado para manter tamanho original) */}
           <button
             onClick={copyPixCode}
+            style={{ zoom: 0.909 }}
             className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'bg-emerald-600 ring-emerald-300/40 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-white ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
@@ -799,9 +800,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <X className="size-5" />
         </button>
 
-        {/* Conteúdo */}
+        {/* Conteúdo — 10% maior no geral. Botão, código PIX e QR code têm
+            zoom neutralizado (0.909) para manter o tamanho original. */}
         <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-14 sm:px-7">
-          <div className="mx-auto w-full max-w-md">{content}</div>
+          <div className="mx-auto w-full max-w-md" style={{ zoom: 1.1 }}>{content}</div>
         </div>
       </div>
     </div>,
