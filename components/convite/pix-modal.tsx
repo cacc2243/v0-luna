@@ -640,7 +640,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   alt="QR Code PIX"
                   width={180}
                   height={180}
-                  className={compact ? 'size-[124px] rounded-xl' : 'size-[164px] rounded-xl sm:size-[184px]'}
+                  className={compact ? 'size-[124px] rounded-xl' : 'size-[184px] rounded-xl sm:size-[204px]'}
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
@@ -662,10 +662,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Valor */}
           <div className={compact ? 'mt-2 text-center' : 'mt-3 text-center'}>
             <div className="flex items-center justify-center gap-2.5">
-              <span className="font-montserrat text-sm font-semibold text-muted-foreground line-through decoration-primary/70">
+              <span className="font-montserrat text-base font-semibold text-muted-foreground line-through decoration-primary/70">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
-              <span className={`${compact ? 'text-xl' : 'text-2xl'} font-montserrat font-extrabold tracking-tight text-foreground`}>
+              <span className={`${compact ? 'text-[1.375rem]' : 'text-[1.65rem]'} font-montserrat font-extrabold tracking-tight text-foreground`}>
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
             </div>
@@ -692,7 +692,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <button
             onClick={copyPixCode}
             style={{ zoom: 0.909 }}
-            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'bg-emerald-600 ring-emerald-300/40 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-white ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'bg-emerald-600 ring-emerald-300/40 hover:brightness-110'} ${compact ? 'mt-4 py-4 text-sm' : 'mt-4 py-5 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-white ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
               <>
