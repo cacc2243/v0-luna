@@ -738,9 +738,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 <p className="shrink-0 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
                   Resumo do pedido
                 </p>
-                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[0.7rem] font-semibold text-amber-500">
-                  <RefreshCw className="size-3 animate-spin" aria-hidden="true" />
-                  Aguardando pagamento
+                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[0.65rem] font-semibold leading-tight text-amber-500">
+                  <RefreshCw className="size-3 shrink-0 animate-spin" aria-hidden="true" />
+                  <span className="text-right">Aguardando pagamento</span>
                 </span>
               </div>
 
