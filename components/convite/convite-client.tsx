@@ -108,6 +108,8 @@ export function ConviteClient({
   // Controla a exibição da barra fixa de topo: só aparece após rolar um pouco.
   const [showPreCheckout, setShowPreCheckout] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)
+  // CPF informado na etapa de pré-checkout, repassado ao gateway na geração do PIX.
+  const [cpf, setCpf] = useState('')
   // Sinaliza que o PIX já foi 100% gerado e está pronto para exibir. Enquanto
   // false, a animação de pré-checkout permanece na tela (sem lacunas).
   const [pixReady, setPixReady] = useState(false)
@@ -249,24 +251,26 @@ export function ConviteClient({
       })
     }
 
-    // Gera o PIX direto, sem popup de confirmação intermediário.
-    handleConfirmAcquire()
+    // Abre a etapa de pré-checkout: animação "Gerando seu convite..." seguida
+    // do campo de CPF. O PIX só é gerado depois que a usuária informa o CPF.
+    setPixReady(false)
+    setShowPreCheckout(true)
   }
 
-  // Confirmação do popup: aqui sim iniciamos a geração do PIX (modal montado
-  // por baixo) e mostramos a animação de pré-checkout por cima. O fetch
-  // acontece em paralelo à animação, que só sai de cena quando o PIX estiver
+  // Chamado quando a usuária envia um CPF válido na etapa de pré-checkout.
+  // Aqui sim iniciamos a geração do PIX (modal montado por baixo) com o CPF
+  // informado. A animação de "finalizando" permanece na tela até o PIX ficar
   // 100% pronto.
-  function handleConfirmAcquire() {
+  function handleCpfSubmit(document: string) {
+    setCpf(document)
     setPixReady(false)
     // Nova sessão => o PixModal remonta limpo e gera um PIX novo do zero.
     setPixSession((n) => n + 1)
     setShowPixModal(true)
-    setShowPreCheckout(true)
   }
 
   // Encerra a animação de pré-checkout (o PIX já está pronto e montado por baixo).
-  function handlePreCheckoutConfirm() {
+  function handlePreCheckoutDone() {
     setShowPreCheckout(false)
   }
 
@@ -370,7 +374,8 @@ export function ConviteClient({
       <PreCheckoutModal
         isOpen={showPreCheckout}
         onClose={() => setShowPreCheckout(false)}
-        onConfirm={handlePreCheckoutConfirm}
+        onSubmitCpf={handleCpfSubmit}
+        onDone={handlePreCheckoutDone}
         email={data.email}
         amountCents={inviteCents}
         ready={pixReady}
@@ -390,6 +395,7 @@ export function ConviteClient({
         userName={data.username}
         pixType={data.pixType}
         pixKey={data.pixKey}
+        document={cpf}
         onReady={() => setPixReady(true)}
         onPaymentConfirmed={handlePaymentConfirmed}
       />

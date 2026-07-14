@@ -116,6 +116,8 @@ interface PixModalProps {
   pixType?: string
   /** Valor da chave PIX informada pelo usuario */
   pixKey?: string
+  /** CPF (apenas dígitos) do pagador, usado para gerar a cobrança no gateway. */
+  document?: string
   /** Layout reduzido (QR menor, espacamentos compactos) para uso em fluxos curtos. */
   compact?: boolean
   /** Percentual de desconto usado para calcular o valor "de" (riscado). Padrao 40%. */
@@ -132,7 +134,7 @@ interface PixModalProps {
   scrollToTopOnClose?: boolean
 }
 
-export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, pixType, pixKey, compact = false, discountPercent, embedded = false, scrollToTopOnClose = false }: PixModalProps) {
+export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, pixType, pixKey, document: payerDocument, compact = false, discountPercent, embedded = false, scrollToTopOnClose = false }: PixModalProps) {
   const [loading, setLoading] = useState(true)
   // Portal: garante que o modal seja montado no body (evita que um ancestral
   // com `transform` — ex.: card com animate-pop — prenda/corte o position:fixed).
@@ -323,6 +325,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           username: userName || undefined,
           pixType,
           pixKey,
+          document: payerDocument || undefined,
           type,
           boostDays,
           fbp,
