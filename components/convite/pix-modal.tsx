@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, Ticket } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, Ticket, IdCard } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -785,6 +785,24 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   </span>
                   <span className="min-w-0 truncate text-sm font-medium text-foreground">{email}</span>
                 </div>
+
+                {/* CPF informado pela compradora */}
+                {payerDocument && (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <IdCard className="size-3.5 shrink-0" aria-hidden="true" />
+                      CPF
+                    </span>
+                    <span className="font-montserrat text-sm font-medium text-foreground">
+                      {payerDocument
+                        .replace(/\D/g, '')
+                        .slice(0, 11)
+                        .replace(/(\d{3})(\d)/, '$1.$2')
+                        .replace(/(\d{3})(\d)/, '$1.$2')
+                        .replace(/(\d{3})(\d{1,2})$/, '$1-$2')}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <p className="mt-2 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
