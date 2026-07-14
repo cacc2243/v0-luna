@@ -4,7 +4,6 @@ import { Check, ChevronRight, Gift, Lightbulb } from 'lucide-react'
 
 const benefits = [
   'Código de Convite Luna Privé',
-  'Acesso Completo à Plataforma',
   'Comece a Vender Imediatamente',
   'Suporte Anônimo 24h',
   '100% Anonimato',
@@ -56,7 +55,7 @@ export function PriceCard({
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
-            className="h-11 w-auto"
+            className="h-14 w-auto"
           />
         </div>
 
@@ -86,8 +85,8 @@ export function PriceCard({
             }`}
             aria-hidden={!priceReady}
           >
-            <span className="font-serif text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">R$</span>
-            <span className="font-serif text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">
+            <span className="font-serif text-5xl font-extrabold leading-none tracking-tight text-foreground sm:text-6xl">R$</span>
+            <span className="font-serif text-5xl font-extrabold leading-none tracking-tight text-foreground sm:text-6xl">
               {formatCents(amountCents)}
             </span>
           </div>
@@ -96,9 +95,9 @@ export function PriceCard({
         </div>
 
         {/* Benefícios — lista única */}
-        <ul className="relative mt-5 flex flex-col gap-3.5">
+        <ul className="relative mt-5 flex flex-col items-center gap-3.5">
           {benefits.map((b) => (
-            <li key={b} className="flex items-center gap-3">
+            <li key={b} className="flex items-center justify-center gap-3">
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Check className="size-3.5" aria-hidden="true" />
               </span>
