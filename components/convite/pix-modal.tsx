@@ -734,11 +734,11 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               {/* Linha sutil separadora */}
               <div className="h-px w-full bg-border/60" aria-hidden="true" />
 
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="mt-4 flex items-center justify-between gap-2">
+                <p className="shrink-0 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
                   Resumo do pedido
                 </p>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[0.7rem] font-semibold text-amber-500">
+                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[0.7rem] font-semibold text-amber-500">
                   <RefreshCw className="size-3 animate-spin" aria-hidden="true" />
                   Aguardando pagamento
                 </span>
@@ -763,7 +763,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
                 <div className="h-px w-full bg-border/50" aria-hidden="true" />
 
-                {/* Código de convite (borrado até a confirmação do pagamento) */}
+                {/* Código de convite (borrado at�� a confirmação do pagamento) */}
                 <div className="flex items-center justify-between gap-3">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Lock className="size-3.5 shrink-0" aria-hidden="true" />
