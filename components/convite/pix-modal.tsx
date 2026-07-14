@@ -578,7 +578,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {!embedded && type === 'invite' ? (
             <>
               {/* Stepper: Cadastro → Pagamento → Acesso */}
-              <div className="mx-auto mt-4 w-full max-w-[260px]">
+              <div className="mx-auto mt-4 w-full max-w-[190px]">
                 <div className="flex items-center">
                   <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <Check className="size-3" aria-hidden="true" />
