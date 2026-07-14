@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, Ticket } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -726,6 +726,71 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 </>
               )}
             </button>
+          )}
+
+          {/* Resumo do pedido (apenas no modal cheio) */}
+          {!embedded && (
+            <div className="mt-5">
+              {/* Linha sutil separadora */}
+              <div className="h-px w-full bg-border/60" aria-hidden="true" />
+
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Resumo do pedido
+                </p>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[0.7rem] font-semibold text-amber-500">
+                  <RefreshCw className="size-3 animate-spin" aria-hidden="true" />
+                  Aguardando pagamento
+                </span>
+              </div>
+
+              <div className="mt-3 space-y-3 rounded-2xl border border-border/70 bg-background/40 p-3.5">
+                {/* Item comprado */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+                      <Ticket className="size-4 text-primary" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 text-left">
+                      <p className="truncate text-sm font-semibold text-foreground">Convite Luna Privé</p>
+                      <p className="text-[0.7rem] text-muted-foreground">Acesso vitalício</p>
+                    </div>
+                  </div>
+                  <span className="font-montserrat text-sm font-bold text-foreground">
+                    R${amount.toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+
+                <div className="h-px w-full bg-border/50" aria-hidden="true" />
+
+                {/* Código de convite (borrado até a confirmação do pagamento) */}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Lock className="size-3.5 shrink-0" aria-hidden="true" />
+                    Código de convite
+                  </span>
+                  <span
+                    className="select-none font-montserrat text-sm font-semibold tracking-widest text-foreground blur-[5px]"
+                    aria-hidden="true"
+                  >
+                    LUNA-7F3A-9K2Q
+                  </span>
+                </div>
+
+                {/* E-mail da compradora */}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Mail className="size-3.5 shrink-0" aria-hidden="true" />
+                    E-mail
+                  </span>
+                  <span className="min-w-0 truncate text-sm font-medium text-foreground">{email}</span>
+                </div>
+              </div>
+
+              <p className="mt-2 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
+                Seu código será revelado assim que o pagamento for confirmado.
+              </p>
+            </div>
           )}
 
           {/* Informe sobre a liberação do acesso */}
