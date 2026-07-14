@@ -517,7 +517,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             <div className="min-w-0">
               <p className="text-xs font-bold text-foreground">Seu convite está reservado</p>
               <p className="mt-0.5 text-[0.7rem] leading-relaxed text-muted-foreground">
-                Finalize o pagamento para ativar sua conta.
+                Finalize o pagamento e receba seu convite!
               </p>
             </div>
           </div>
