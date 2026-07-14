@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { Loader2, Check, ShieldCheck, Ticket, Lock } from 'lucide-react'
+import { Loader2, ShieldCheck, Ticket, Lock } from 'lucide-react'
 
 interface PreCheckoutModalProps {
   isOpen: boolean
@@ -121,9 +121,9 @@ export function PreCheckoutModal({
   return createPortal(
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
       <div className="relative flex w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        {/* Cabeçalho com logo */}
-        <div className="flex justify-center border-b border-border/50 px-6 pt-6 pb-5">
-          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-9 w-auto" />
+        {/* Cabeçalho com logo (compacto) */}
+        <div className="flex justify-center px-6 pt-4 pb-1">
+          <img src="/images/luna-prive-logo.png" alt="Luna Privé" className="h-7 w-auto" />
         </div>
 
         {/* ── Fase: gerando convite (animação de etapas) ── */}
@@ -145,51 +145,39 @@ export function PreCheckoutModal({
                 : 'Gerando seu convite Luna Privé!'}
             </h2>
 
-            {/* Etapas */}
-            <ul className="mt-6 flex w-full flex-col gap-3">
-              {STEPS.map((step, i) => {
-                const done = phase === 'finalizing' || i < activeStep
-                const active = phase === 'loading' && i === activeStep
-                const Icon = step.icon
+            {/* Etapa atual (uma por vez, substituindo conforme avança) */}
+            <div className="mt-6 flex h-14 w-full items-center justify-center">
+              {(() => {
+                const idx = phase === 'finalizing' ? STEPS.length - 1 : Math.min(activeStep, STEPS.length - 1)
+                const step = STEPS[idx]
                 return (
-                  <li
+                  <div
                     key={step.label}
-                    className={`flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all duration-300 ${
-                      done
-                        ? 'border-emerald-500/30 bg-emerald-500/10'
-                        : active
-                          ? 'border-primary/30 bg-primary/10'
-                          : 'border-border/50 bg-background/40'
-                    }`}
+                    className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 animate-in fade-in slide-in-from-bottom-1 duration-300"
                   >
-                    <span
-                      className={`flex size-8 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
-                        done
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : active
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-muted/40 text-muted-foreground'
-                      }`}
-                    >
-                      {done ? (
-                        <Check className="size-4" aria-hidden="true" />
-                      ) : active ? (
-                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                      ) : (
-                        <Icon className="size-4" aria-hidden="true" />
-                      )}
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                     </span>
-                    <span
-                      className={`text-sm font-medium transition-colors duration-300 ${
-                        done || active ? 'text-foreground' : 'text-muted-foreground'
-                      }`}
-                    >
-                      {step.label}
-                    </span>
-                  </li>
+                    <span className="text-sm font-medium text-foreground">{step.label}</span>
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* Progresso das etapas (pontos) */}
+            <div className="mt-4 flex items-center justify-center gap-1.5">
+              {STEPS.map((step, i) => {
+                const idx = phase === 'finalizing' ? STEPS.length - 1 : Math.min(activeStep, STEPS.length - 1)
+                return (
+                  <span
+                    key={step.label}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i === idx ? 'w-5 bg-primary' : i < idx ? 'w-1.5 bg-emerald-400' : 'w-1.5 bg-muted/50'
+                    }`}
+                  />
                 )
               })}
-            </ul>
+            </div>
           </div>
         )}
 
