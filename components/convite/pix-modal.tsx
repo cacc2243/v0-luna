@@ -510,13 +510,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           />
         )}
         {!embedded && type === 'invite' && !title ? (
-          <div className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-background/40 px-4 py-3 text-left">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
-              <Lock className="size-4 text-primary" aria-hidden="true" />
+          <div className="mt-5 flex w-full items-center gap-2.5 rounded-2xl border border-border/70 bg-background/40 px-3.5 py-2.5 text-left">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+              <Lock className="size-3.5 text-primary" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-foreground">Seu convite está reservado</p>
-              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+              <p className="text-xs font-bold text-foreground">Seu convite está reservado</p>
+              <p className="mt-0.5 text-[0.7rem] leading-relaxed text-muted-foreground">
                 Finalize o pagamento para ativar sua conta.
               </p>
             </div>
