@@ -853,8 +853,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // (z-110) até o PIX estar 100% pronto, evitando lacunas e duplo loading.
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 pt-10">
-      <div className="relative flex h-[calc(100%-2.5rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 pt-4">
+      <div className="relative flex h-[calc(100%-1rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {toastEl}
 
         {/* Imagem de fundo bem discreta */}
@@ -885,7 +885,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
         {/* Conteúdo — 10% maior no geral. Botão, código PIX e QR code têm
             zoom neutralizado (0.909) para manter o tamanho original. */}
-        <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-14 sm:px-7">
+        <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-8 sm:px-7">
           <div className="mx-auto w-full max-w-md" style={{ zoom: 1.1 }}>{content}</div>
         </div>
       </div>
