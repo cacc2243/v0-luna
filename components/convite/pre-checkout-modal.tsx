@@ -177,38 +177,20 @@ export function PreCheckoutModal({
                 : 'Gerando seu convite Luna Privé!'}
             </h2>
 
-            {/* Etapa atual (uma por vez, substituindo conforme avança) */}
-            <div className="mt-6 flex h-14 w-full items-center justify-center">
-              {(() => {
-                const idx = phase === 'finalizing' ? STEPS.length - 1 : Math.min(activeStep, STEPS.length - 1)
-                const step = STEPS[idx]
-                return (
-                  <div
-                    key={step.label}
-                    className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 animate-in fade-in slide-in-from-bottom-1 duration-300"
-                  >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
-                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                    </span>
-                    <span className="flex-1 text-left text-xs font-medium text-foreground">{step.label}</span>
-                  </div>
-                )
-              })()}
-            </div>
-
-            {/* Progresso das etapas (pontos) */}
-            <div className="mt-4 flex items-center justify-center gap-1.5">
-              {STEPS.map((step, i) => {
-                const idx = phase === 'finalizing' ? STEPS.length - 1 : Math.min(activeStep, STEPS.length - 1)
-                return (
-                  <span
-                    key={step.label}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      i === idx ? 'w-5 bg-primary' : i < idx ? 'w-1.5 bg-emerald-400' : 'w-1.5 bg-muted/50'
-                    }`}
-                  />
-                )
-              })}
+            {/* Barra de progresso */}
+            <div className="mt-7 w-full">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted/40">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+                  style={{
+                    width: `${
+                      phase === 'finalizing'
+                        ? 100
+                        : Math.round((Math.min(activeStep, STEPS.length) / STEPS.length) * 100)
+                    }%`,
+                  }}
+                />
+              </div>
             </div>
           </div>
         )}
