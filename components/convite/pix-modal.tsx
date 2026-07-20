@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, Ticket, IdCard } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, Ticket, IdCard, Gift } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -509,29 +509,15 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             className="h-12 w-auto"
           />
         )}
-        {!embedded && type === 'invite' && !title ? (
-          <div className="mt-5 flex w-full items-center gap-2.5 rounded-2xl border border-border/70 bg-background/40 px-3.5 py-2.5 text-left">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
-              <Lock className="size-3.5 text-primary" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-foreground">Seu convite está reservado</p>
-              <p className="mt-0.5 text-[0.7rem] leading-relaxed text-muted-foreground">
-                Finalize o pagamento e receba seu convite!
-              </p>
-            </div>
-          </div>
-        ) : (
-          !embedded && (
-            <>
-              <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-                {title || 'Pagamento via PIX'}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
-              </p>
-            </>
-          )
+        {!embedded && (
+          <>
+            <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+              {title || 'Pagamento via PIX'}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
+            </p>
+          </>
         )}
       </div>
 
@@ -577,25 +563,29 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         <>
           {!embedded && type === 'invite' ? (
             <>
-              {/* Stepper: Cadastro → Pagamento → Acesso */}
-              <div className="mx-auto mt-4 w-full max-w-[215px]">
-                <div className="flex items-center">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <Check className="size-3" aria-hidden="true" />
+              {/* Card: código reservado com contagem regressiva */}
+              <div className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
+                <Clock className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                <span className="text-sm font-semibold text-foreground">
+                  Código reservado por{' '}
+                  <span className="font-mono tabular-nums text-primary">{reserveLabel}</span>
+                </span>
+              </div>
+
+              {/* Card: código de convite (borrado até a confirmação) */}
+              <div className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/40 px-4 py-3">
+                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+                    <Gift className="size-3.5 text-primary" aria-hidden="true" />
                   </span>
-                  <span className="h-0.5 flex-1 bg-primary" aria-hidden="true" />
-                  <span className="relative flex size-5 shrink-0 items-center justify-center" aria-hidden="true">
-                    <span className="absolute inline-flex size-5 animate-ping rounded-full bg-primary/60" />
-                    <span className="relative size-5 rounded-full bg-primary ring-4 ring-primary/20" />
-                  </span>
-                  <span className="h-0.5 flex-1 bg-border" aria-hidden="true" />
-                  <span className="size-5 shrink-0 rounded-full border-2 border-border bg-transparent" aria-hidden="true" />
-                </div>
-                <div className="mt-1 flex justify-between text-[0.65rem]">
-                  <span className="text-muted-foreground">Cadastro</span>
-                  <span className="font-bold text-foreground">Pagamento</span>
-                  <span className="text-muted-foreground">Acesso</span>
-                </div>
+                  Código de convite
+                </span>
+                <span
+                  className="select-none font-montserrat text-sm font-semibold tracking-widest text-foreground blur-[5px]"
+                  aria-hidden="true"
+                >
+                  LUNA-7F3A-9K2Q
+                </span>
               </div>
             </>
           ) : (
