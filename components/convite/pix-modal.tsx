@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, Ticket, IdCard, Gift } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, Ticket, IdCard } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -569,22 +569,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 <span className="text-sm font-semibold text-foreground">
                   Código reservado por{' '}
                   <span className="font-mono tabular-nums text-primary">{reserveLabel}</span>
-                </span>
-              </div>
-
-              {/* Card: código de convite (borrado até a confirmação) */}
-              <div className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/40 px-4 py-3">
-                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
-                    <Gift className="size-3.5 text-primary" aria-hidden="true" />
-                  </span>
-                  Código de convite
-                </span>
-                <span
-                  className="select-none font-montserrat text-sm font-semibold tracking-widest text-foreground blur-[5px]"
-                  aria-hidden="true"
-                >
-                  LUNA-7F3A-9K2Q
                 </span>
               </div>
             </>
