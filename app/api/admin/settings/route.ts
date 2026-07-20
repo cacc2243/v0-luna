@@ -50,10 +50,15 @@ export async function POST(req: NextRequest) {
     boostAmountCents?: BoostAmounts
     directOrderEveryN?: number
     utmifyApiToken?: string
+    requireCpfOnInvite?: boolean
   } = {}
 
   if (typeof body.verificationEnabled === 'boolean') {
     patch.verificationEnabled = body.verificationEnabled
+  }
+
+  if (typeof body.requireCpfOnInvite === 'boolean') {
+    patch.requireCpfOnInvite = body.requireCpfOnInvite
   }
 
   if (typeof body.activeCashoutGateway === 'string') {

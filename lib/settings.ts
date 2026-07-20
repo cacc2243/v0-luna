@@ -28,6 +28,8 @@ export interface AppSettings {
   directOrderEveryN: number
   /** Token de API da Utmify (x-api-token). Vazio = integração desligada. */
   utmifyApiToken: string
+  /** Quando true, o fluxo do convite exige o CPF antes de gerar o PIX. */
+  requireCpfOnInvite: boolean
 }
 
 const DEFAULT_BOOST: BoostAmounts = {
@@ -50,6 +52,7 @@ const DEFAULTS: AppSettings = {
   boostAmountCents: { ...DEFAULT_BOOST },
   directOrderEveryN: 13,
   utmifyApiToken: '',
+  requireCpfOnInvite: false,
 }
 
 const KEY_MAP = {
@@ -64,6 +67,7 @@ const KEY_MAP = {
   boostAmountCents: 'boost_amount_cents',
   directOrderEveryN: 'direct_order_every_n',
   utmifyApiToken: 'utmify_api_token',
+  requireCpfOnInvite: 'require_cpf_on_invite',
 } as const
 
 /** Normaliza um objeto de precos de boost garantindo todos os planos. */
@@ -158,6 +162,10 @@ async function readAppSettings(): Promise<AppSettings> {
       ? (map.get(KEY_MAP.utmifyApiToken) as string)
       : DEFAULTS.utmifyApiToken
 
+  const requireCpfOnInvite = map.has(KEY_MAP.requireCpfOnInvite)
+    ? Boolean(map.get(KEY_MAP.requireCpfOnInvite))
+    : DEFAULTS.requireCpfOnInvite
+
   return {
     verificationEnabled,
     activeCashoutGateway,
@@ -170,6 +178,7 @@ async function readAppSettings(): Promise<AppSettings> {
     boostAmountCents,
     directOrderEveryN,
     utmifyApiToken,
+    requireCpfOnInvite,
   }
 }
 
@@ -279,6 +288,14 @@ export async function updateAppSettings(
     rows.push({
       key: KEY_MAP.utmifyApiToken,
       value: patch.utmifyApiToken.trim(),
+      updated_at: now,
+      updated_by: updatedBy,
+    })
+  }
+  if (typeof patch.requireCpfOnInvite === 'boolean') {
+    rows.push({
+      key: KEY_MAP.requireCpfOnInvite,
+      value: patch.requireCpfOnInvite,
       updated_at: now,
       updated_by: updatedBy,
     })

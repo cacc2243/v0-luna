@@ -1,11 +1,10 @@
 'use client'
 
-import { Check, ChevronRight, Gift, Lightbulb } from 'lucide-react'
+import { Check, Gift, Lightbulb } from 'lucide-react'
 
 const benefits = [
-  'Código de Convite Luna Privé',
-  'Acesso Completo à Plataforma',
-  'Comece a Vender Imediatamente',
+  'Código de Convite Luna',
+  'Venda imediatamente',
   'Suporte Anônimo 24h',
   '100% Anonimato',
 ]
@@ -56,7 +55,7 @@ export function PriceCard({
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
-            className="h-11 w-auto"
+            className="h-14 w-auto"
           />
         </div>
 
@@ -72,7 +71,7 @@ export function PriceCard({
             }`}
             aria-hidden={!priceReady}
           >
-            <span className="font-serif text-base font-semibold text-muted-foreground line-through decoration-primary/70">
+            <span className="font-montserrat text-base font-semibold text-muted-foreground line-through decoration-primary/70">
               R${formatCents(originalCents)}
             </span>
             <span className="rounded-full bg-positive/15 px-2.5 py-0.5 text-xs font-bold text-positive">
@@ -86,8 +85,8 @@ export function PriceCard({
             }`}
             aria-hidden={!priceReady}
           >
-            <span className="font-serif text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">R$</span>
-            <span className="font-serif text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">
+            <span className="font-montserrat text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">R$</span>
+            <span className="font-montserrat text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">
               {formatCents(amountCents)}
             </span>
           </div>
@@ -96,9 +95,9 @@ export function PriceCard({
         </div>
 
         {/* Benefícios — lista única */}
-        <ul className="relative mt-5 flex flex-col gap-3.5">
+        <ul className="relative mt-5 flex flex-col items-center gap-3.5">
           {benefits.map((b) => (
-            <li key={b} className="flex items-center gap-3">
+            <li key={b} className="flex items-center justify-center gap-3">
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Check className="size-3.5" aria-hidden="true" />
               </span>
@@ -112,11 +111,12 @@ export function PriceCard({
           type="button"
           onClick={onAcquire}
           disabled={!priceReady}
-          className="cta-gradient animate-cta-breathe relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-primary-foreground transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:animate-none disabled:opacity-60 disabled:active:scale-100"
+          className="animate-cta-breathe relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-emerald-600 py-4 text-base font-bold text-white transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:animate-none disabled:opacity-60 disabled:active:scale-100"
         >
-          {priceReady && <Gift className="size-5" aria-hidden="true" />}
-          {priceReady ? 'Adquirir Meu Convite' : 'Carregando valor...'}
-          {priceReady && <ChevronRight className="size-5" aria-hidden="true" />}
+          {priceReady && <Gift className="size-5 shrink-0" aria-hidden="true" />}
+          <span className="whitespace-nowrap">
+            {priceReady ? `Gerar PIX R$${formatCents(amountCents)}` : 'Carregando valor...'}
+          </span>
         </button>
       </div>
 

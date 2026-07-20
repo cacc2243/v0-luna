@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, Ticket, IdCard } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -116,6 +116,8 @@ interface PixModalProps {
   pixType?: string
   /** Valor da chave PIX informada pelo usuario */
   pixKey?: string
+  /** CPF (apenas dígitos) do pagador, usado para gerar a cobrança no gateway. */
+  document?: string
   /** Layout reduzido (QR menor, espacamentos compactos) para uso em fluxos curtos. */
   compact?: boolean
   /** Percentual de desconto usado para calcular o valor "de" (riscado). Padrao 40%. */
@@ -132,7 +134,7 @@ interface PixModalProps {
   scrollToTopOnClose?: boolean
 }
 
-export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, pixType, pixKey, compact = false, discountPercent, embedded = false, scrollToTopOnClose = false }: PixModalProps) {
+export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, pixType, pixKey, document: payerDocument, compact = false, discountPercent, embedded = false, scrollToTopOnClose = false }: PixModalProps) {
   const [loading, setLoading] = useState(true)
   // Portal: garante que o modal seja montado no body (evita que um ancestral
   // com `transform` — ex.: card com animate-pop — prenda/corte o position:fixed).
@@ -323,6 +325,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           username: userName || undefined,
           pixType,
           pixKey,
+          document: payerDocument || undefined,
           type,
           boostDays,
           fbp,
@@ -503,32 +506,18 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <img
             src="/images/luna-prive-logo.png"
             alt="Luna Privé"
-            className="h-9 w-auto"
+            className="h-12 w-auto"
           />
         )}
-        {!embedded && type === 'invite' && !title ? (
-          <div className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-background/40 px-4 py-3 text-left">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
-              <Lock className="size-4 text-primary" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-foreground">Seu convite está reservado</p>
-              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                Finalize o pagamento para ativar sua conta.
-              </p>
-            </div>
-          </div>
-        ) : (
-          !embedded && (
-            <>
-              <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-                {title || 'Pagamento via PIX'}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
-              </p>
-            </>
-          )
+        {!embedded && (
+          <>
+            <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+              {title || 'Pagamento via PIX'}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
+            </p>
+          </>
         )}
       </div>
 
@@ -574,25 +563,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         <>
           {!embedded && type === 'invite' ? (
             <>
-              {/* Stepper: Cadastro → Pagamento → Acesso */}
-              <div className="mx-auto mt-4 w-full max-w-[260px]">
-                <div className="flex items-center">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <Check className="size-3" aria-hidden="true" />
-                  </span>
-                  <span className="h-0.5 flex-1 bg-primary" aria-hidden="true" />
-                  <span className="relative flex size-5 shrink-0 items-center justify-center" aria-hidden="true">
-                    <span className="absolute inline-flex size-5 animate-ping rounded-full bg-primary/60" />
-                    <span className="relative size-5 rounded-full bg-primary ring-4 ring-primary/20" />
-                  </span>
-                  <span className="h-0.5 flex-1 bg-border" aria-hidden="true" />
-                  <span className="size-5 shrink-0 rounded-full border-2 border-border bg-transparent" aria-hidden="true" />
-                </div>
-                <div className="mt-1 flex justify-between text-[0.65rem]">
-                  <span className="text-muted-foreground">Cadastro</span>
-                  <span className="font-bold text-foreground">Pagamento</span>
-                  <span className="text-muted-foreground">Acesso</span>
-                </div>
+              {/* Card: código reservado com contagem regressiva */}
+              <div className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
+                <Clock className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                <span className="text-sm font-semibold text-foreground">
+                  Código reservado por{' '}
+                  <span className="font-mono tabular-nums text-primary">{reserveLabel}</span>
+                </span>
               </div>
             </>
           ) : (
@@ -618,9 +595,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             </>
           )}
 
-          {/* QR Code */}
+          {/* QR Code (zoom neutralizado para manter tamanho original) */}
           {pixQrCode && (
-            <div className={compact ? 'relative mt-2 flex justify-center' : 'relative mt-3 flex justify-center'}>
+            <div className={compact ? 'relative mt-2 flex justify-center' : 'relative mt-3 flex justify-center'} style={{ zoom: 0.909 }}>
               {/* Brilho suave da marca por tras do QR */}
               <span
                 className="pointer-events-none absolute left-1/2 top-1/2 size-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/25 blur-3xl"
@@ -637,7 +614,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   alt="QR Code PIX"
                   width={180}
                   height={180}
-                  className={compact ? 'size-[124px] rounded-xl' : 'size-[164px] rounded-xl sm:size-[184px]'}
+                  className={compact ? 'size-[124px] rounded-xl' : 'size-[184px] rounded-xl sm:size-[204px]'}
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
@@ -659,17 +636,17 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           {/* Valor */}
           <div className={compact ? 'mt-2 text-center' : 'mt-3 text-center'}>
             <div className="flex items-center justify-center gap-2.5">
-              <span className="font-serif text-sm font-semibold text-muted-foreground line-through decoration-primary/70">
+              <span className="font-montserrat text-base font-semibold text-muted-foreground line-through decoration-primary/70">
                 R${originalAmount.toFixed(2).replace('.', ',')}
               </span>
-              <span className={`${compact ? 'text-xl' : 'text-2xl'} font-serif font-extrabold tracking-tight text-foreground`}>
+              <span className={`${compact ? 'text-[1.375rem]' : 'text-[1.65rem]'} font-montserrat font-extrabold tracking-tight text-foreground`}>
                 R${amount.toFixed(2).replace('.', ',')}
               </span>
             </div>
           </div>
 
-          {/* Código copia e cola */}
-          <div className={compact ? 'mt-4' : 'mt-6'}>
+          {/* Código copia e cola (zoom neutralizado para manter tamanho original) */}
+          <div className={compact ? 'mt-4' : 'mt-6'} style={{ zoom: 0.909 }}>
             <p className="mb-2 text-center text-xs font-medium text-muted-foreground">
               Código PIX (copia e cola)
             </p>
@@ -679,16 +656,17 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               aria-label="Copiar código PIX"
               className="w-full rounded-xl border border-border/70 bg-background/60 px-4 py-2.5 text-left transition hover:bg-background/80 active:scale-[0.99]"
             >
-              <p className="break-all font-mono text-[0.65rem] leading-relaxed text-foreground/80">
+              <p className="line-clamp-2 break-all font-mono text-[0.65rem] leading-relaxed text-foreground/80">
                 {pixCode || ''}
               </p>
             </button>
           </div>
 
-          {/* Botão copiar */}
+          {/* Botão copiar (zoom neutralizado para manter tamanho original) */}
           <button
             onClick={copyPixCode}
-            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'bg-primary ring-white/20 hover:brightness-110'} ${compact ? 'mt-4 py-3.5 text-sm' : 'mt-4 py-4 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-primary-foreground ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
+            style={{ zoom: 0.909 }}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40 text-white' : 'bg-gradient-to-b from-primary to-primary/80 ring-primary/40 text-primary-foreground hover:brightness-110'} ${compact ? 'mt-4 py-4 text-sm' : 'mt-4 py-5 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
               <>
@@ -722,6 +700,89 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 </>
               )}
             </button>
+          )}
+
+          {/* Resumo do pedido (apenas no modal cheio) */}
+          {!embedded && (
+            <div className="mt-5">
+              {/* Linha sutil separadora */}
+              <div className="h-px w-full bg-border/60" aria-hidden="true" />
+
+              <div className="mt-4 flex items-center justify-between gap-2">
+                <p className="shrink-0 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Resumo do pedido
+                </p>
+                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[0.65rem] font-semibold leading-tight text-amber-500">
+                  <RefreshCw className="size-3 shrink-0 animate-spin" aria-hidden="true" />
+                  <span className="text-right">Aguardando pagamento</span>
+                </span>
+              </div>
+
+              <div className="mt-3 space-y-2.5 rounded-2xl border border-border/70 bg-background/40 p-3">
+                {/* Item comprado */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+                      <Ticket className="size-3.5 text-primary" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 text-left">
+                      <p className="truncate text-xs font-semibold text-foreground">Convite Luna Privé</p>
+                      <p className="text-[0.65rem] text-muted-foreground">Acesso vitalício</p>
+                    </div>
+                  </div>
+                  <span className="font-montserrat text-xs font-bold text-foreground">
+                    R${amount.toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+
+                <div className="h-px w-full bg-border/50" aria-hidden="true" />
+
+                {/* Código de convite (borrado at�� a confirmação do pagamento) */}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
+                    <Lock className="size-3 shrink-0" aria-hidden="true" />
+                    Código de convite
+                  </span>
+                  <span
+                    className="select-none font-montserrat text-xs font-semibold tracking-widest text-foreground blur-[5px]"
+                    aria-hidden="true"
+                  >
+                    LUNA-7F3A-9K2Q
+                  </span>
+                </div>
+
+                {/* E-mail da compradora */}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
+                    <Mail className="size-3 shrink-0" aria-hidden="true" />
+                    E-mail
+                  </span>
+                  <span className="min-w-0 truncate text-xs font-medium text-foreground">{email}</span>
+                </div>
+
+                {/* CPF informado pela compradora */}
+                {payerDocument && (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
+                      <IdCard className="size-3 shrink-0" aria-hidden="true" />
+                      CPF
+                    </span>
+                    <span className="font-montserrat text-xs font-medium text-foreground">
+                      {payerDocument
+                        .replace(/\D/g, '')
+                        .slice(0, 11)
+                        .replace(/(\d{3})(\d)/, '$1.$2')
+                        .replace(/(\d{3})(\d)/, '$1.$2')
+                        .replace(/(\d{3})(\d{1,2})$/, '$1-$2')}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <p className="mt-2 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
+                Seu código será revelado assim que o pagamento for confirmado.
+              </p>
+            </div>
           )}
 
           {/* Informe sobre a liberação do acesso */}
@@ -766,8 +827,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // (z-110) até o PIX estar 100% pronto, evitando lacunas e duplo loading.
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 pt-10">
-      <div className="relative flex h-[calc(100%-2.5rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 pt-4">
+      <div className="relative flex h-[calc(100%-1rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {toastEl}
 
         {/* Imagem de fundo bem discreta */}
@@ -775,9 +836,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <img
             src="/images/background-pix.png"
             alt=""
-            className="size-full object-cover opacity-[0.08]"
+            className="size-full object-cover opacity-[0.14]"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-card/75 via-card/85 to-card/95" />
+          <div className="absolute inset-0 bg-gradient-to-b from-card/65 via-card/80 to-card/90" />
         </div>
 
         {/* Fundo: mesmo tratamento dos modais de entrada do /convite
@@ -796,9 +857,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <X className="size-5" />
         </button>
 
-        {/* Conteúdo */}
-        <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-14 sm:px-7">
-          <div className="mx-auto w-full max-w-md">{content}</div>
+        {/* Conteúdo — 10% maior no geral. Botão, código PIX e QR code têm
+            zoom neutralizado (0.909) para manter o tamanho original. */}
+        <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-8 sm:px-7">
+          <div className="mx-auto w-full max-w-md" style={{ zoom: 1.1 }}>{content}</div>
         </div>
       </div>
     </div>,
