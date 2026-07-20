@@ -682,7 +682,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               aria-label="Copiar código PIX"
               className="w-full rounded-xl border border-border/70 bg-background/60 px-4 py-2.5 text-left transition hover:bg-background/80 active:scale-[0.99]"
             >
-              <p className="break-all font-mono text-[0.65rem] leading-relaxed text-foreground/80">
+              <p className="line-clamp-2 break-all font-mono text-[0.65rem] leading-relaxed text-foreground/80">
                 {pixCode || ''}
               </p>
             </button>
@@ -692,7 +692,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <button
             onClick={copyPixCode}
             style={{ zoom: 0.909 }}
-            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40' : 'bg-emerald-600 ring-emerald-300/40 hover:brightness-110'} ${compact ? 'mt-4 py-4 text-sm' : 'mt-4 py-5 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold text-white ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40 text-white' : 'bg-gradient-to-b from-primary to-primary/80 ring-primary/40 text-primary-foreground hover:brightness-110'} ${compact ? 'mt-4 py-4 text-sm' : 'mt-4 py-5 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
               <>
@@ -744,19 +744,19 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 </span>
               </div>
 
-              <div className="mt-3 space-y-3 rounded-2xl border border-border/70 bg-background/40 p-3.5">
+              <div className="mt-3 space-y-2.5 rounded-2xl border border-border/70 bg-background/40 p-3">
                 {/* Item comprado */}
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
-                      <Ticket className="size-4 text-primary" aria-hidden="true" />
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+                      <Ticket className="size-3.5 text-primary" aria-hidden="true" />
                     </span>
                     <div className="min-w-0 text-left">
-                      <p className="truncate text-sm font-semibold text-foreground">Convite Luna Privé</p>
-                      <p className="text-[0.7rem] text-muted-foreground">Acesso vitalício</p>
+                      <p className="truncate text-xs font-semibold text-foreground">Convite Luna Privé</p>
+                      <p className="text-[0.65rem] text-muted-foreground">Acesso vitalício</p>
                     </div>
                   </div>
-                  <span className="font-montserrat text-sm font-bold text-foreground">
+                  <span className="font-montserrat text-xs font-bold text-foreground">
                     R${amount.toFixed(2).replace('.', ',')}
                   </span>
                 </div>
@@ -765,12 +765,12 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
                 {/* Código de convite (borrado at�� a confirmação do pagamento) */}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Lock className="size-3.5 shrink-0" aria-hidden="true" />
+                  <span className="flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
+                    <Lock className="size-3 shrink-0" aria-hidden="true" />
                     Código de convite
                   </span>
                   <span
-                    className="select-none font-montserrat text-sm font-semibold tracking-widest text-foreground blur-[5px]"
+                    className="select-none font-montserrat text-xs font-semibold tracking-widest text-foreground blur-[5px]"
                     aria-hidden="true"
                   >
                     LUNA-7F3A-9K2Q
@@ -779,21 +779,21 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
 
                 {/* E-mail da compradora */}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Mail className="size-3.5 shrink-0" aria-hidden="true" />
+                  <span className="flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
+                    <Mail className="size-3 shrink-0" aria-hidden="true" />
                     E-mail
                   </span>
-                  <span className="min-w-0 truncate text-sm font-medium text-foreground">{email}</span>
+                  <span className="min-w-0 truncate text-xs font-medium text-foreground">{email}</span>
                 </div>
 
                 {/* CPF informado pela compradora */}
                 {payerDocument && (
                   <div className="flex items-center justify-between gap-3">
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <IdCard className="size-3.5 shrink-0" aria-hidden="true" />
+                    <span className="flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
+                      <IdCard className="size-3 shrink-0" aria-hidden="true" />
                       CPF
                     </span>
-                    <span className="font-montserrat text-sm font-medium text-foreground">
+                    <span className="font-montserrat text-xs font-medium text-foreground">
                       {payerDocument
                         .replace(/\D/g, '')
                         .slice(0, 11)
