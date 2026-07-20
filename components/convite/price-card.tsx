@@ -115,7 +115,7 @@ export function PriceCard({
         >
           {priceReady && <Gift className="size-5 shrink-0" aria-hidden="true" />}
           <span className="whitespace-nowrap">
-            {priceReady ? 'Adquirir Meu Convite' : 'Carregando valor...'}
+            {priceReady ? `Gerar PIX R$${formatCents(amountCents)}` : 'Carregando valor...'}
           </span>
         </button>
       </div>
