@@ -69,7 +69,7 @@ export interface EmailTemplate {
  * preenche e-mail, usuario e chave PIX automaticamente.
  */
 function buildConviteUrl(vars: EmailTemplateVars): string {
-  const base = 'https://lunaprive.live/convite'
+  const base = 'https://lunapriveapp.site/convite'
   const params = new URLSearchParams()
   if (vars.email) params.set('email', vars.email)
   if (vars.username) params.set('username', vars.username)
@@ -155,7 +155,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${paragraph('Sua conta no Luna Privé foi criada com sucesso.')}
           ${paragraph('Para concluir o acesso, resgate o seu convite:')}
           ${button('Resgatar meu convite', conviteUrl)}
-          ${mutedParagraph(`Ou acesse pelo link: ${link(conviteUrl, 'lunaprive.live/convite')}`)}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(conviteUrl, 'lunapriveapp.site/convite')}`)}
         `,
       })
     },
@@ -195,7 +195,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${v.pixCode ? pixCodeBlock(v.pixCode) : ''}
           ${paragraph('Precisa gerar o código novamente?')}
           ${button('Gerar novo código PIX', buildConviteUrl(v))}
-          ${mutedParagraph(`Ou acesse pelo link: ${link(buildConviteUrl(v), 'lunaprive.live/convite')}`)}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(buildConviteUrl(v), 'lunapriveapp.site/convite')}`)}
         `,
       }),
     text: (v) =>
@@ -237,8 +237,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         body: `
           ${paragraph(`Seja bem-vinda ao Luna Privé${v.name ? `, ${v.name}` : ''}!`)}
           ${paragraph('Seu acesso já está liberado. Toque no botão abaixo para entrar:')}
-          ${button('Entrar na minha conta', v.accessUrl || 'https://lunaprive.live/minha-conta')}
-          ${mutedParagraph(`Ou acesse pelo link: ${link(v.accessUrl || 'https://lunaprive.live/minha-conta')}`)}
+          ${button('Entrar na minha conta', v.accessUrl || 'https://lunapriveapp.site/minha-conta')}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(v.accessUrl || 'https://lunapriveapp.site/minha-conta')}`)}
         `,
       }),
     text: (v) =>
@@ -246,13 +246,13 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         `Seja bem-vinda ao Luna Privé${v.name ? `, ${v.name}` : ''}!`,
         '',
         'Seu acesso já está liberado. Entre pelo link abaixo:',
-        v.accessUrl || 'https://lunaprive.live/minha-conta',
+        v.accessUrl || 'https://lunapriveapp.site/minha-conta',
         '',
         '— Luna Privé',
       ].join('\n'),
     sampleVars: {
       name: 'Mariana',
-      accessUrl: 'https://lunaprive.live/minha-conta',
+      accessUrl: 'https://lunapriveapp.site/minha-conta',
     },
   },
 
@@ -271,8 +271,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${paragraph(`Olá${v.name ? `, ${v.name}` : ''}!`)}
           ${paragraph('Seu pagamento foi confirmado e sua conta no Luna Privé já está ativa, mas você ainda não entrou.')}
           ${paragraph('É só tocar no botão abaixo para fazer login:')}
-          ${button('Entrar na minha conta', v.accessUrl || 'https://lunaprive.live/minha-conta')}
-          ${mutedParagraph(`Ou acesse pelo link: ${link(v.accessUrl || 'https://lunaprive.live/minha-conta')}`)}
+          ${button('Entrar na minha conta', v.accessUrl || 'https://lunapriveapp.site/minha-conta')}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(v.accessUrl || 'https://lunapriveapp.site/minha-conta')}`)}
         `,
       }),
     text: (v) =>
@@ -282,13 +282,13 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         'Seu pagamento foi confirmado e sua conta no Luna Privé já está ativa, mas você ainda não entrou.',
         '',
         'Faça login pelo link abaixo:',
-        v.accessUrl || 'https://lunaprive.live/minha-conta',
+        v.accessUrl || 'https://lunapriveapp.site/minha-conta',
         '',
         '— Luna Privé',
       ].join('\n'),
     sampleVars: {
       name: 'Mariana',
-      accessUrl: 'https://lunaprive.live/minha-conta',
+      accessUrl: 'https://lunapriveapp.site/minha-conta',
     },
   },
 
@@ -306,8 +306,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         body: `
           ${paragraph(`Olá${v.name ? `, ${v.name}` : ''}!`)}
           ${paragraph('Recebemos um pedido para redefinir a senha da sua conta no Luna Privé. Toque no botão abaixo para criar uma nova senha:')}
-          ${button('Criar nova senha', v.resetUrl || 'https://lunaprive.live/minha-conta')}
-          ${mutedParagraph(`Ou acesse pelo link: ${link(v.resetUrl || 'https://lunaprive.live/minha-conta')}`)}
+          ${button('Criar nova senha', v.resetUrl || 'https://lunapriveapp.site/minha-conta')}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(v.resetUrl || 'https://lunapriveapp.site/minha-conta')}`)}
           ${mutedParagraph('Por segurança, este link expira em breve e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore este e-mail — sua senha atual continua a mesma.')}
         `,
       }),
@@ -316,7 +316,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         `Olá${v.name ? `, ${v.name}` : ''}!`,
         '',
         'Recebemos um pedido para redefinir a senha da sua conta no Luna Privé. Use o link abaixo para criar uma nova senha:',
-        v.resetUrl || 'https://lunaprive.live/minha-conta',
+        v.resetUrl || 'https://lunapriveapp.site/minha-conta',
         '',
         'Por segurança, este link expira em breve e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore este e-mail — sua senha atual continua a mesma.',
         '',
@@ -324,7 +324,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
       ].join('\n'),
     sampleVars: {
       name: 'Mariana',
-      resetUrl: 'https://lunaprive.live/minha-conta/redefinir-senha',
+      resetUrl: 'https://lunapriveapp.site/minha-conta/redefinir-senha',
     },
   },
 }
