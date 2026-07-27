@@ -308,7 +308,7 @@ export function ConviteClient({
         {/* Hero centralizado no mesmo padrão do fluxo */}
         <section className="mt-7 text-center">
           <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
-            Resgate seu <span className="text-primary">Convite Luna</span>
+            Conquiste seu <span className="text-primary">Convite</span>
           </h1>
           <p className="mx-auto mt-3 max-w-md text-pretty text-sm leading-relaxed text-foreground">
             Confirme seus dados abaixo e garanta seu código de convite exclusivo.
