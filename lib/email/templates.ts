@@ -186,8 +186,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${paragraph('O PIX do seu convite foi gerado. Use o código abaixo no aplicativo do seu banco para pagar:')}
           ${v.pixCode ? pixCodeBlock(v.pixCode) : ''}
           ${paragraph('Precisa gerar o código novamente?')}
-          ${button('Gerar novo código PIX', buildConviteUrl(v))}
-          ${mutedParagraph(`Ou acesse pelo link: ${link(buildConviteUrl(v), 'lunapriveapp.site')}`)}
+          ${button('Gerar novo código PIX', 'https://lunapriveapp.site/convite')}
+          ${mutedParagraph(`Ou acesse pelo link: ${link('https://lunapriveapp.site/convite', 'lunapriveapp.site/convite')}`)}
         `,
       }),
     text: (v) =>
@@ -200,7 +200,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         v.pixCode || '',
         '',
         'Precisa gerar o código novamente? Acesse:',
-        buildConviteUrl(v),
+        'https://lunapriveapp.site/convite',
         '',
         '— Luna Privé',
       ].join('\n'),
@@ -229,8 +229,8 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         body: `
           ${paragraph(`Seja bem-vinda ao Luna Privé${v.name ? `, ${v.name}` : ''}!`)}
           ${paragraph('Seu acesso já está liberado. Toque no botão abaixo para entrar:')}
-          ${button('Entrar na minha conta', v.accessUrl || 'https://lunapriveapp.site/minha-conta')}
-          ${mutedParagraph(`Ou acesse pelo link: ${link(v.accessUrl || 'https://lunapriveapp.site/minha-conta')}`)}
+          ${button('Entrar na minha conta', 'https://lunapriveapp.site/minha-conta')}
+          ${mutedParagraph(`Ou acesse pelo link: ${link('https://lunapriveapp.site/minha-conta', 'lunapriveapp.site/minha-conta')}`)}
         `,
       }),
     text: (v) =>
@@ -238,7 +238,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
         `Seja bem-vinda ao Luna Privé${v.name ? `, ${v.name}` : ''}!`,
         '',
         'Seu acesso já está liberado. Entre pelo link abaixo:',
-        v.accessUrl || 'https://lunapriveapp.site/minha-conta',
+        'https://lunapriveapp.site/minha-conta',
         '',
         '— Luna Privé',
       ].join('\n'),
