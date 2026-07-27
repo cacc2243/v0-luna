@@ -135,6 +135,27 @@ export function PreCheckoutModal({
 
   const priceLabel = `R$ ${formatCents(amountCents)}`
 
+  // Fases de carregamento: overlay discreto, apenas escurece a tela e mostra
+  // spinner + texto (sem card/fundo), num visual mais leve e menor.
+  if (phase === 'loading' || phase === 'finalizing') {
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[110] flex flex-col items-center justify-center gap-4 bg-black/80 px-6 backdrop-blur-sm animate-in fade-in duration-300"
+        role="status"
+        aria-live="polite"
+      >
+        <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
+        <p className="text-[0.7rem] font-semibold uppercase tracking-widest text-primary">Aguarde</p>
+        <p className="text-balance text-center text-base font-bold leading-snug text-white">
+          {phase === 'finalizing'
+            ? 'Gerando seu PIX Luna Privé!'
+            : 'Gerando seu convite Luna Privé!'}
+        </p>
+      </div>,
+      document.body,
+    )
+  }
+
   return createPortal(
     <div
       className="fixed inset-0 z-[110] flex items-center justify-center px-4 py-6"
@@ -157,43 +178,6 @@ export function PreCheckoutModal({
           alt="Luna Privé"
           className="relative mx-auto mt-1 h-6 w-auto"
         />
-
-        {/* ── Fase: gerando convite (animação de etapas) ── */}
-        {(phase === 'loading' || phase === 'finalizing') && (
-          <div className="relative flex flex-col items-center pt-5">
-            <span className="relative flex size-16 items-center justify-center">
-              <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
-              <span className="relative flex size-16 items-center justify-center rounded-full bg-primary/12 ring-1 ring-primary/30">
-                <Loader2 className="size-7 animate-spin text-primary" aria-hidden="true" />
-              </span>
-            </span>
-
-            <p className="mt-5 text-xs font-semibold uppercase tracking-widest text-primary">
-              Aguarde
-            </p>
-            <h2 className="mt-1.5 text-balance text-lg font-bold leading-snug text-foreground">
-              {phase === 'finalizing'
-                ? 'Gerando seu PIX Luna Privé!'
-                : 'Gerando seu convite Luna Privé!'}
-            </h2>
-
-            {/* Barra de progresso */}
-            <div className="mt-7 w-full">
-              <div className="h-2 w-full overflow-hidden rounded-full bg-muted/40">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-                  style={{
-                    width: `${
-                      phase === 'finalizing'
-                        ? 100
-                        : Math.round((Math.min(activeStep, STEPS.length) / STEPS.length) * 100)
-                    }%`,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* ── Fase: CPF ── */}
         {phase === 'cpf' && (
