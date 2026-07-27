@@ -679,9 +679,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               type="button"
               onClick={copyPixCode}
               aria-label="Copiar código PIX"
-              className="w-full rounded-xl border border-zinc-500/50 bg-zinc-600 px-4 py-2.5 text-left transition hover:bg-zinc-500 active:scale-[0.99]"
+              className="w-full rounded-xl border border-border/70 bg-foreground/[0.06] px-4 py-2.5 text-left transition hover:bg-foreground/[0.1] active:scale-[0.99]"
             >
-              <p className="line-clamp-2 break-all font-mono text-[0.65rem] leading-relaxed text-zinc-100">
+              <p className="line-clamp-2 break-all font-mono text-[0.65rem] leading-relaxed text-foreground/80">
                 {pixCode || ''}
               </p>
             </button>
