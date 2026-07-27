@@ -664,7 +664,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   alt="QR Code PIX"
                   width={180}
                   height={180}
-                  className={compact ? 'size-[124px] rounded-xl' : 'size-[184px] rounded-xl sm:size-[204px]'}
+                  className={compact ? 'size-[124px] rounded-xl' : 'size-[156px] rounded-xl sm:size-[172px]'}
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
