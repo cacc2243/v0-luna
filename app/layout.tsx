@@ -92,6 +92,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`dark bg-background ${manrope.variable} ${spaceGrotesk.variable} ${montserrat.variable}`}>
+      <head>
+        {/*
+          Frame-buster: quando o link e aberto dentro do navegador embutido
+          (in-app browser) de um app de e-mail/rede social, a pagina costuma
+          carregar dentro de um <iframe> "sandbox", o que pode travar toques e
+          animacoes. Este script roda o mais cedo possivel e, se detectar que
+          estamos dentro de um iframe NA PRODUCAO, reabre a URL no contexto de
+          topo (navegador real). O guard de hostname garante que NADA acontece
+          no preview do v0 (vusercontent.net) nem em localhost.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(window.top===window.self)return;if(!/lunapriveapp\\.site$/.test(location.hostname))return;var url=window.location.href;try{window.top.location.replace(url);}catch(e){try{window.open(url,'_blank');}catch(e2){}}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="font-sans antialiased">
         <Suspense fallback={null}>
           <FbPixel />
