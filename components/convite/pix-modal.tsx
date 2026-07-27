@@ -592,7 +592,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 </div>
                 <div className="mt-1 flex justify-between text-[0.65rem]">
                   <span className="text-muted-foreground">Cadastro</span>
-                  <span className="font-bold text-foreground">Pagamento</span>
+                  <span className="font-bold text-foreground">Convite</span>
                   <span className="text-muted-foreground">Acesso</span>
                 </div>
               </div>
