@@ -64,19 +64,11 @@ export interface EmailTemplate {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Monta a URL de /convite ja com os dados da conta pre-preenchidos via query
- * string. Ao abrir esse link pelo e-mail, a pagina /convite le esses params e
- * preenche e-mail, usuario e chave PIX automaticamente.
+ * Link simples de acesso enviado nos e-mails. Direciona direto para o site,
+ * sem query string personalizada (que estava bugando ao abrir pelo e-mail).
  */
-function buildConviteUrl(vars: EmailTemplateVars): string {
-  const base = 'https://lunapriveapp.site/convite'
-  const params = new URLSearchParams()
-  if (vars.email) params.set('email', vars.email)
-  if (vars.username) params.set('username', vars.username)
-  if (vars.pixType) params.set('pixType', vars.pixType)
-  if (vars.pixKey) params.set('pixKey', vars.pixKey)
-  const qs = params.toString()
-  return qs ? `${base}?${qs}` : base
+function buildConviteUrl(_vars: EmailTemplateVars): string {
+  return 'https://lunapriveapp.site'
 }
 
 /* -------------------------------------------------------------------------- */
@@ -155,7 +147,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${paragraph('Sua conta no Luna Privé foi criada com sucesso.')}
           ${paragraph('Para concluir o acesso, resgate o seu convite:')}
           ${button('Resgatar meu convite', conviteUrl)}
-          ${mutedParagraph(`Ou acesse pelo link: ${link(conviteUrl, 'lunapriveapp.site/convite')}`)}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(conviteUrl, 'lunapriveapp.site')}`)}
         `,
       })
     },
@@ -195,7 +187,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${v.pixCode ? pixCodeBlock(v.pixCode) : ''}
           ${paragraph('Precisa gerar o código novamente?')}
           ${button('Gerar novo código PIX', buildConviteUrl(v))}
-          ${mutedParagraph(`Ou acesse pelo link: ${link(buildConviteUrl(v), 'lunapriveapp.site/convite')}`)}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(buildConviteUrl(v), 'lunapriveapp.site')}`)}
         `,
       }),
     text: (v) =>
