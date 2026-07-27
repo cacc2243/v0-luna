@@ -565,7 +565,12 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           </>
         )}
         {!embedded && type === 'invite' && !title && (
-          <p className="mt-3 text-lg font-bold text-foreground">Pagamento via PIX</p>
+          <>
+            <p className="mt-3 text-lg font-bold text-foreground">Pagamento via PIX</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Leia o QR code ou copie o código abaixo:
+            </p>
+          </>
         )}
       </div>
 
