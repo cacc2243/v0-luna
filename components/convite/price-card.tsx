@@ -35,7 +35,7 @@ export function PriceCard({
     <section aria-labelledby="investimento" className="relative isolate">
       {/* Glow rosa suave atras do card */}
       <div
-        className="pointer-events-none absolute -inset-1 rounded-[2.5rem] bg-primary/35 blur-2xl"
+        className="pointer-events-none absolute -inset-1 rounded-[2.5rem] bg-primary/15 blur-xl"
         aria-hidden="true"
       />
       <div className="luna-border-top relative z-10 overflow-hidden rounded-3xl border border-border/50 bg-card px-6 py-7 shadow-2xl shadow-black/40">
