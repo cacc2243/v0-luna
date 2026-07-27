@@ -6,7 +6,6 @@ const benefits = [
   'Código de Convite Luna',
   'Venda imediatamente',
   'Suporte Anônimo 24h',
-  '100% Anonimato',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
