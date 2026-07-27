@@ -530,7 +530,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           </>
         )}
         {!embedded && type === 'invite' && !title && (
-          <p className="mt-3 text-sm font-medium text-muted-foreground">Pagamento via PIX</p>
+          <p className="mt-3 text-lg font-bold text-foreground">Pagamento via PIX</p>
         )}
       </div>
 
