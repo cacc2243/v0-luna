@@ -614,7 +614,15 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         </div>
       ) : (
         <>
-          {!embedded && type === 'invite' ? null : (
+          {!embedded && type === 'invite' ? (
+            <div className={`flex justify-center ${compact ? 'mt-1' : 'mt-2'}`}>
+              <span className="inline-flex items-center gap-1.5 text-[0.72rem] font-medium text-muted-foreground">
+                <Clock className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                Código reservado por{' '}
+                <span className="font-mono font-semibold tabular-nums text-primary">{reserveLabel}</span>
+              </span>
+            </div>
+          ) : (
             <>
               {/* Reserva do convite: contagem regressiva discreta */}
               <div className={`flex justify-center ${compact ? 'mt-1' : 'mt-2'}`}>
