@@ -81,9 +81,6 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
               privacidade e segurança, é necessário ter um{' '}
               <span className="font-semibold text-primary">convite válido</span> para entrar aqui.
             </p>
-            <p className="relative mt-2.5 text-pretty text-[0.8rem] leading-relaxed text-muted-foreground">
-              Os convites gratuitos não estão mais disponíveis no momento.
-            </p>
 
             <div className="relative mt-5">
               <CtaButton onClick={() => setPhase('loading')}>Resgatar Convite Luna</CtaButton>
