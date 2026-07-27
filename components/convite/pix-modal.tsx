@@ -515,6 +515,17 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           >
             <RefreshCw className="size-12 animate-spin text-primary" aria-hidden="true" />
             <p className="text-lg font-bold text-white">Aguardando pagamento...</p>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                copyPixCode()
+              }}
+              className="mt-2 inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20 active:scale-[0.98]"
+            >
+              <Copy className="size-4" aria-hidden="true" />
+              Copiar código novamente
+            </button>
           </div>,
           document.body,
         )
