@@ -14,25 +14,13 @@ const nextConfig = {
       allowedOrigins: ['*.vusercontent.net', '*.vercel.run'],
     },
   },
-  // Impede que o site seja carregado dentro de um <iframe> de terceiros.
-  // Alguns apps de e-mail/webviews abrem o link em um iframe "sandbox" sem a
-  // permissao 'allow-scripts', o que BLOQUEIA todo o JavaScript da pagina — por
-  // isso o modal do /convite ficava totalmente travado (nada de toque, nada de
-  // animacao) quando aberto pelo link do e-mail, mas funcionava ao copiar o
-  // link para uma aba normal. Com estes cabecalhos o navegador se recusa a
-  // renderizar a pagina dentro do iframe e o app abre o link no navegador real,
-  // onde o JS roda normalmente.
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Content-Security-Policy', value: "frame-ancestors 'none';" },
-        ],
-      },
-    ]
-  },
+  // NAO usamos X-Frame-Options/frame-ancestors para "recusar" o iframe.
+  // Motivo: quando um app de e-mail/webview abre o link dentro de um iframe,
+  // recusar o framing faz o navegador NAO renderizar a pagina (tela em branco /
+  // travada) e ainda impede que qualquer script de "fuga" rode. A abordagem
+  // correta é PERMITIR o carregamento no iframe e escapar dele via JavaScript
+  // (frame-buster no layout), reabrindo o link no contexto de topo (navegador
+  // real), onde o app funciona normalmente.
 }
 
 export default nextConfig
