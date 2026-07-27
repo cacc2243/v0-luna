@@ -154,8 +154,8 @@ export function ConviteClient({
     return () => window.removeEventListener('pageshow', onPageShow)
   }, [])
 
-  // InitiateCheckout: disparado quando o cliente chega na tela do /convite e
-  // fecha os modais iniciais (WelcomePopup). Enviado apenas uma vez por sessão.
+  // InitiateCheckout: disparado somente quando o PIX é efetivamente gerado
+  // (callback onReady do PixModal). Enviado apenas uma vez por sessão.
   // Pixel (browser) + Conversions API (servidor) com o MESMO event_id para
   // deduplicação. Nunca quebra o fluxo.
   const initiateCheckoutFiredRef = useRef(false)
@@ -400,17 +400,20 @@ export function ConviteClient({
         pixType={data.pixType}
         pixKey={data.pixKey}
         document={cpf}
-        onReady={() => setPixReady(true)}
+        onReady={() => {
+          setPixReady(true)
+          // InitiateCheckout só dispara agora, quando o PIX foi realmente gerado.
+          fireInitiateCheckout()
+        }}
         onPaymentConfirmed={handlePaymentConfirmed}
       />
 
       {/* Modal de código de convite (abre ao entrar na tela) */}
-      <WelcomePopup
-        onClose={() => {
-          fireInitiateCheckout()
-          setSocialProofActive(true)
-        }}
-      />
+        <WelcomePopup
+          onClose={() => {
+            setSocialProofActive(true)
+          }}
+        />
 
       {/* Notificações de prova social no topo (após fechar o modal).
           Ficam pausadas enquanto o pré-checkout ou o PIX gerado estão abertos,
