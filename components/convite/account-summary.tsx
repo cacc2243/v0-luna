@@ -146,7 +146,7 @@ export function AccountSummary({
 
   return (
     <section aria-label="Sua conta">
-      <div className="luna-border divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
+      <div className="luna-border-soft divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
         {rows.map((row) => {
           const isEditing = editing === row.key
           return (
