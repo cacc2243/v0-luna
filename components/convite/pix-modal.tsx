@@ -708,7 +708,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <button
             onClick={copyPixCode}
             style={{ zoom: 0.909 }}
-            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40 text-white' : 'bg-gradient-to-b from-primary to-primary/80 ring-primary/40 text-primary-foreground hover:brightness-110'} ${compact ? 'mt-4 py-4 text-sm' : 'mt-4 py-5 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40 text-white' : 'cta-gradient text-white hover:brightness-110'} ${compact ? 'mt-4 py-4 text-sm' : 'mt-4 py-5 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold ring-1 ring-inset ring-transparent transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
               <>
@@ -728,7 +728,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             <button
               onClick={handleAlreadyPaid}
               disabled={verifying}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 py-3.5 text-sm font-semibold text-foreground transition hover:bg-muted/60 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border/70 bg-muted/70 py-3.5 text-sm font-semibold text-foreground transition hover:bg-muted active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {verifying ? (
                 <>
