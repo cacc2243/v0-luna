@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, Ticket, IdCard } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -509,29 +509,25 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             className="h-12 w-auto"
           />
         )}
-        {!embedded && type === 'invite' && !title ? (
-          <div className="mt-5 flex w-full items-center gap-2.5 rounded-2xl border border-border/70 bg-background/40 px-3.5 py-2.5 text-left">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
-              <Lock className="size-3.5 text-primary" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-foreground">Seu convite está reservado</p>
-              <p className="mt-0.5 text-[0.7rem] leading-relaxed text-muted-foreground">
-                Finalize o pagamento e receba seu convite!
-              </p>
-            </div>
-          </div>
-        ) : (
-          !embedded && (
-            <>
-              <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-                {title || 'Pagamento via PIX'}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
-              </p>
-            </>
-          )
+        {!embedded && type !== 'invite' && (
+          <>
+            <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+              {title || 'Pagamento via PIX'}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
+            </p>
+          </>
+        )}
+        {!embedded && type === 'invite' && title && (
+          <>
+            <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+              {title}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {subtitle || 'Escaneie o QR Code ou copie o código abaixo'}
+            </p>
+          </>
         )}
       </div>
 
@@ -726,89 +722,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 </>
               )}
             </button>
-          )}
-
-          {/* Resumo do pedido (apenas no modal cheio) */}
-          {!embedded && (
-            <div className="mt-5">
-              {/* Linha sutil separadora */}
-              <div className="h-px w-full bg-border/60" aria-hidden="true" />
-
-              <div className="mt-4 flex items-center justify-between gap-2">
-                <p className="shrink-0 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Resumo do pedido
-                </p>
-                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[0.65rem] font-semibold leading-tight text-amber-500">
-                  <RefreshCw className="size-3 shrink-0 animate-spin" aria-hidden="true" />
-                  <span className="text-right">Aguardando pagamento</span>
-                </span>
-              </div>
-
-              <div className="mt-3 space-y-2.5 rounded-2xl border border-border/70 bg-background/40 p-3">
-                {/* Item comprado */}
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
-                      <Ticket className="size-3.5 text-primary" aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0 text-left">
-                      <p className="truncate text-xs font-semibold text-foreground">Convite Luna Privé</p>
-                      <p className="text-[0.65rem] text-muted-foreground">Acesso vitalício</p>
-                    </div>
-                  </div>
-                  <span className="font-montserrat text-xs font-bold text-foreground">
-                    R${amount.toFixed(2).replace('.', ',')}
-                  </span>
-                </div>
-
-                <div className="h-px w-full bg-border/50" aria-hidden="true" />
-
-                {/* Código de convite (borrado at�� a confirmação do pagamento) */}
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
-                    <Lock className="size-3 shrink-0" aria-hidden="true" />
-                    Código de convite
-                  </span>
-                  <span
-                    className="select-none font-montserrat text-xs font-semibold tracking-widest text-foreground blur-[5px]"
-                    aria-hidden="true"
-                  >
-                    LUNA-7F3A-9K2Q
-                  </span>
-                </div>
-
-                {/* E-mail da compradora */}
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
-                    <Mail className="size-3 shrink-0" aria-hidden="true" />
-                    E-mail
-                  </span>
-                  <span className="min-w-0 truncate text-xs font-medium text-foreground">{email}</span>
-                </div>
-
-                {/* CPF informado pela compradora */}
-                {payerDocument && (
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
-                      <IdCard className="size-3 shrink-0" aria-hidden="true" />
-                      CPF
-                    </span>
-                    <span className="font-montserrat text-xs font-medium text-foreground">
-                      {payerDocument
-                        .replace(/\D/g, '')
-                        .slice(0, 11)
-                        .replace(/(\d{3})(\d)/, '$1.$2')
-                        .replace(/(\d{3})(\d)/, '$1.$2')
-                        .replace(/(\d{3})(\d{1,2})$/, '$1-$2')}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <p className="mt-2 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
-                Seu código será revelado assim que o pagamento for confirmado.
-              </p>
-            </div>
           )}
 
           {/* Informe sobre a liberação do acesso */}
