@@ -565,7 +565,12 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           </>
         )}
         {!embedded && type === 'invite' && !title && (
-          <p className="mt-3 text-lg font-bold text-foreground">Pagamento via PIX</p>
+          <>
+            <p className="mt-3 text-lg font-bold text-foreground">Pagamento via PIX</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Leia o QR code ou copie o código abaixo:
+            </p>
+          </>
         )}
       </div>
 
@@ -610,28 +615,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       ) : (
         <>
           {!embedded && type === 'invite' ? (
-            <>
-              {/* Stepper: Cadastro → Convite → Acesso */}
-              <div className="mx-auto mt-4 w-full max-w-[215px]">
-                <div className="flex items-center">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <Check className="size-3" aria-hidden="true" />
-                  </span>
-                  <span className="h-0.5 flex-1 bg-primary" aria-hidden="true" />
-                  <span className="relative flex size-5 shrink-0 items-center justify-center" aria-hidden="true">
-                    <span className="absolute inline-flex size-5 animate-ping rounded-full bg-primary/60" />
-                    <span className="relative size-5 rounded-full bg-primary ring-4 ring-primary/20" />
-                  </span>
-                  <span className="h-0.5 flex-1 bg-border" aria-hidden="true" />
-                  <span className="size-5 shrink-0 rounded-full border-2 border-border bg-transparent" aria-hidden="true" />
-                </div>
-                <div className="mt-1 flex justify-between text-[0.65rem]">
-                  <span className="text-muted-foreground">Cadastro</span>
-                  <span className="font-bold text-foreground">Convite</span>
-                  <span className="text-muted-foreground">Acesso</span>
-                </div>
-              </div>
-            </>
+            <div className={`flex justify-center ${compact ? 'mt-1' : 'mt-2'}`}>
+              <span className="inline-flex items-center gap-1.5 text-[0.72rem] font-medium text-muted-foreground">
+                <Clock className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                Código reservado por{' '}
+                <span className="font-mono font-semibold tabular-nums text-primary">{reserveLabel}</span>
+              </span>
+            </div>
           ) : (
             <>
               {/* Reserva do convite: contagem regressiva discreta */}
@@ -674,7 +664,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   alt="QR Code PIX"
                   width={180}
                   height={180}
-                  className={compact ? 'size-[124px] rounded-xl' : 'size-[184px] rounded-xl sm:size-[204px]'}
+                  className={compact ? 'size-[124px] rounded-xl' : 'size-[156px] rounded-xl sm:size-[172px]'}
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
@@ -726,7 +716,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <button
             onClick={copyPixCode}
             style={{ zoom: 0.909 }}
-            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40 text-white' : 'bg-gradient-to-b from-primary to-primary/80 ring-primary/40 text-primary-foreground hover:brightness-110'} ${compact ? 'mt-4 py-4 text-sm' : 'mt-4 py-5 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold ring-1 ring-inset transition-all duration-300 ease-out active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40 text-white' : 'cta-gradient text-white hover:brightness-110'} ${compact ? 'mt-4 py-4 text-sm' : 'mt-4 py-5 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold ring-1 ring-inset ring-transparent transition-all duration-300 ease-out active:scale-[0.98]`}
           >
             {copied ? (
               <>
@@ -746,7 +736,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             <button
               onClick={handleAlreadyPaid}
               disabled={verifying}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border/70 bg-background/50 py-3.5 text-sm font-semibold text-foreground transition hover:bg-muted/60 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border/70 bg-muted/70 py-3.5 text-sm font-semibold text-foreground transition hover:bg-muted active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {verifying ? (
                 <>
@@ -814,9 +804,10 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <img
             src="/images/background-pix.png"
             alt=""
-            className="size-full object-cover opacity-[0.14]"
+            className="size-full object-cover opacity-[0.6] grayscale"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-card/65 via-card/80 to-card/90" />
+          <div className="absolute inset-0 bg-gradient-to-b from-card/30 via-card/45 to-card/65" />
+          <div className="absolute inset-0 bg-black/45" />
         </div>
 
         {/* Fundo: mesmo tratamento dos modais de entrada do /convite

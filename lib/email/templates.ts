@@ -72,15 +72,20 @@ function buildConviteUrl(_vars: EmailTemplateVars): string {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Layout simples                                                             */
-/*  Sem cartao, sem cores de fundo, sem badges. Apenas texto, um botao e um    */
-/*  link — um e-mail "normal", que tambem ajuda na entrega (menos cara de      */
-/*  marketing).                                                                */
+/*  Layout                                                                     */
+/*  E-mail claro e elegante, baseado em tabelas (compatível com a maioria dos  */
+/*  clientes de e-mail): fundo cinza-claro, cartão branco arredondado, faixa   */
+/*  de topo escura com a logo (a logo tem texto branco), corpo claro e botão   */
+/*  de ação em destaque. Rodapé discreto.                                      */
 /* -------------------------------------------------------------------------- */
 
-const TEXT = '#111111'
-const MUTED = '#555555'
-const LINK = '#c23a64'
+const LOGO_URL = 'https://lunapriveapp.site/images/luna-prive-logo.png'
+const INK = '#1a1a1c'
+const MUTED = '#6b7280'
+const PINK = '#d6336c'
+const BORDER = '#ececf0'
+const PAGE_BG = '#f4f4f6'
+const HEADER_BG = '#0f0f12'
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif"
 
 function layout(opts: { previewText: string; body: string }): string {
@@ -89,41 +94,66 @@ function layout(opts: { previewText: string; body: string }): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light only" />
+    <meta name="supported-color-schemes" content="light" />
     <title>Luna Privé</title>
   </head>
-  <body style="margin:0;padding:0;background-color:#ffffff;">
+  <body style="margin:0;padding:0;background-color:${PAGE_BG};">
     <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">${opts.previewText}</span>
-    <div style="max-width:520px;margin:0 auto;padding:32px 24px;font-family:${FONT};color:${TEXT};font-size:16px;line-height:1.6;">
-      ${opts.body}
-      <p style="margin:32px 0 0;font-size:13px;line-height:1.5;color:#999999;">— Luna Privé</p>
-    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${PAGE_BG};">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="480" cellpadding="0" cellspacing="0" border="0" style="width:480px;max-width:480px;background-color:#ffffff;border:1px solid ${BORDER};border-radius:16px;overflow:hidden;">
+            <tr>
+              <td align="center" style="background-color:${HEADER_BG};padding:26px 24px;">
+                <img src="${LOGO_URL}" alt="Luna Privé" width="148" style="display:block;width:148px;max-width:148px;height:auto;border:0;outline:none;text-decoration:none;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 32px 12px;font-family:${FONT};color:${INK};font-size:16px;line-height:1.6;">
+                ${opts.body}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 32px 26px;border-top:1px solid ${BORDER};">
+                <p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.5;color:#9aa0a6;">Luna Privé · <a href="https://lunapriveapp.site" target="_blank" style="color:#9aa0a6;text-decoration:underline;">lunapriveapp.site</a></p>
+                <p style="margin:6px 0 0;font-family:${FONT};font-size:12px;line-height:1.5;color:#9aa0a6;">Você recebeu este e-mail porque tem uma conta no Luna Privé.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>`
 }
 
 function paragraph(html: string): string {
-  return `<p style="margin:0 0 16px;font-family:${FONT};font-size:16px;line-height:1.6;color:${TEXT};">${html}</p>`
+  return `<p style="margin:0 0 16px;font-family:${FONT};font-size:16px;line-height:1.6;color:${INK};">${html}</p>`
 }
 
 function mutedParagraph(html: string): string {
-  return `<p style="margin:0 0 16px;font-family:${FONT};font-size:14px;line-height:1.6;color:${MUTED};">${html}</p>`
+  return `<p style="margin:0 0 14px;font-family:${FONT};font-size:14px;line-height:1.6;color:${MUTED};">${html}</p>`
 }
 
 function button(label: string, href: string): string {
-  return `<p style="margin:0 0 16px;">
-    <a href="${href}" target="_blank" style="display:inline-block;padding:12px 28px;background-color:${LINK};color:#ffffff;font-family:${FONT};font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;">${label}</a>
-  </p>`
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 20px;">
+    <tr>
+      <td align="center" style="border-radius:10px;background-color:${PINK};">
+        <a href="${href}" target="_blank" style="display:inline-block;padding:14px 34px;font-family:${FONT};font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">${label}</a>
+      </td>
+    </tr>
+  </table>`
 }
 
 function link(href: string, label?: string): string {
-  return `<a href="${href}" target="_blank" style="color:${LINK};text-decoration:underline;word-break:break-all;">${label || href}</a>`
+  return `<a href="${href}" target="_blank" style="color:${PINK};text-decoration:underline;word-break:break-all;">${label || href}</a>`
 }
 
-/** Codigo PIX em bloco pequeno e legivel, copia e cola. */
+/** Codigo PIX em bloco legivel, copia e cola. */
 function pixCodeBlock(code: string): string {
-  return `<p style="margin:0 0 8px;font-family:${FONT};font-size:13px;font-weight:700;color:${MUTED};">Código PIX (copia e cola):</p>
-  <p style="margin:0 0 16px;padding:12px 14px;background-color:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;font-family:'Courier New',monospace;font-size:12px;line-height:1.5;word-break:break-all;color:${TEXT};">${code}</p>`
+  return `<p style="margin:0 0 8px;font-family:${FONT};font-size:13px;font-weight:700;color:${MUTED};">Código PIX (copia e cola)</p>
+  <p style="margin:0 0 20px;padding:14px 16px;background-color:#f7f7f9;border:1px solid ${BORDER};border-radius:10px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;word-break:break-all;color:${INK};">${code}</p>`
 }
 
 /* -------------------------------------------------------------------------- */
