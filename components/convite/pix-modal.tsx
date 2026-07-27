@@ -145,6 +145,8 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   const [pixQrCode, setPixQrCode] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // Overlay "Aguardando pagamento..." exibido logo após copiar o código PIX.
+  const [awaitingPayment, setAwaitingPayment] = useState(false)
   const [timeLeft, setTimeLeft] = useState<string>('')
   const [checkingPayment, setCheckingPayment] = useState(false)
   const [inviteId, setInviteId] = useState<string | null>(null)
@@ -172,6 +174,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   useEffect(() => {
     if (!isOpen) {
       readyFiredRef.current = false
+      setAwaitingPayment(false)
     }
   }, [isOpen])
 
@@ -418,6 +421,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     const markCopied = () => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+      setAwaitingPayment(true)
       showToast('success', 'Código PIX copiado com sucesso!')
       // Registra no servidor que o cliente de fato copiou o código PIX.
       if (inviteId) {
@@ -495,6 +499,26 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       </p>
     </div>
   )
+
+  // Overlay em tela cheia exibido logo após copiar o código PIX: escurece a
+  // tela (sem card/fundo) e mostra um spinner com "Aguardando pagamento...".
+  // Renderizado via portal para cobrir toda a viewport, inclusive no modo
+  // embutido (fluxo de convite). Toque em qualquer lugar para dispensar.
+  const awaitingOverlay =
+    mounted && awaitingPayment
+      ? createPortal(
+          <div
+            role="status"
+            aria-live="polite"
+            onClick={() => setAwaitingPayment(false)}
+            className="fixed inset-0 z-[120] flex flex-col items-center justify-center gap-5 bg-black/80 backdrop-blur-sm animate-in fade-in duration-500"
+          >
+            <RefreshCw className="size-12 animate-spin text-primary" aria-hidden="true" />
+            <p className="text-lg font-bold text-white">Aguardando pagamento...</p>
+          </div>,
+          document.body,
+        )
+      : null
 
   // Conteúdo do PIX (header + estados loading/erro/sucesso). Reutilizado tanto no
   // modal cheio quanto embutido em outro card (fluxo de convite).
@@ -756,6 +780,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       <div className="relative">
         {toastEl}
         {content}
+        {awaitingOverlay}
       </div>
     )
   }
@@ -805,6 +830,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <div className="mx-auto w-full max-w-md" style={{ zoom: 1.1 }}>{content}</div>
         </div>
       </div>
+      {awaitingOverlay}
     </div>,
     document.body,
   )
