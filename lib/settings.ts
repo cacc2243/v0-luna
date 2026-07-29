@@ -30,7 +30,16 @@ export interface AppSettings {
   utmifyApiToken: string
   /** Quando true, o fluxo do convite exige o CPF antes de gerar o PIX. */
   requireCpfOnInvite: boolean
+  /**
+   * Momento em que o evento InitiateCheckout (Facebook) é disparado em /convite:
+   * - 'pageview': assim que a usuária entra na página /convite.
+   * - 'pix': somente quando o PIX é efetivamente gerado (padrão).
+   */
+  initiateCheckoutTrigger: 'pageview' | 'pix'
 }
+
+/** Valores válidos para o gatilho do InitiateCheckout. */
+export const INITIATE_CHECKOUT_TRIGGERS = ['pageview', 'pix'] as const
 
 const DEFAULT_BOOST: BoostAmounts = {
   '2': 2800,
@@ -53,6 +62,7 @@ const DEFAULTS: AppSettings = {
   directOrderEveryN: 13,
   utmifyApiToken: '',
   requireCpfOnInvite: false,
+  initiateCheckoutTrigger: 'pix',
 }
 
 const KEY_MAP = {
@@ -68,6 +78,7 @@ const KEY_MAP = {
   directOrderEveryN: 'direct_order_every_n',
   utmifyApiToken: 'utmify_api_token',
   requireCpfOnInvite: 'require_cpf_on_invite',
+  initiateCheckoutTrigger: 'initiate_checkout_trigger',
 } as const
 
 /** Normaliza um objeto de precos de boost garantindo todos os planos. */
@@ -166,6 +177,12 @@ async function readAppSettings(): Promise<AppSettings> {
     ? Boolean(map.get(KEY_MAP.requireCpfOnInvite))
     : DEFAULTS.requireCpfOnInvite
 
+  const rawTrigger = map.get(KEY_MAP.initiateCheckoutTrigger)
+  const initiateCheckoutTrigger: 'pageview' | 'pix' =
+    rawTrigger === 'pageview' || rawTrigger === 'pix'
+      ? rawTrigger
+      : DEFAULTS.initiateCheckoutTrigger
+
   return {
     verificationEnabled,
     activeCashoutGateway,
@@ -179,6 +196,7 @@ async function readAppSettings(): Promise<AppSettings> {
     directOrderEveryN,
     utmifyApiToken,
     requireCpfOnInvite,
+    initiateCheckoutTrigger,
   }
 }
 
@@ -296,6 +314,14 @@ export async function updateAppSettings(
     rows.push({
       key: KEY_MAP.requireCpfOnInvite,
       value: patch.requireCpfOnInvite,
+      updated_at: now,
+      updated_by: updatedBy,
+    })
+  }
+  if (patch.initiateCheckoutTrigger === 'pageview' || patch.initiateCheckoutTrigger === 'pix') {
+    rows.push({
+      key: KEY_MAP.initiateCheckoutTrigger,
+      value: patch.initiateCheckoutTrigger,
       updated_at: now,
       updated_by: updatedBy,
     })
