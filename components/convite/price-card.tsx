@@ -139,7 +139,7 @@ export function PriceCard({
           type="button"
           onClick={() => setShowConfirm(true)}
           disabled={!priceReady}
-          className="cta-gradient cta-3d animate-cta-breathe relative mt-7 flex w-full items-center justify-center gap-2 rounded-2xl px-3 py-4 text-[0.95rem] font-bold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:animate-none disabled:opacity-60 sm:gap-2.5 sm:text-base"
+          className="cta-gradient cta-3d animate-cta-breathe relative mt-7 flex w-full items-center justify-center gap-2 rounded-2xl px-3 py-4 text-[0.95rem] font-extrabold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:animate-none disabled:opacity-60 sm:gap-2.5 sm:text-base"
         >
           {priceReady && <Gift className="size-5 shrink-0" aria-hidden="true" />}
           <span className="whitespace-nowrap">
