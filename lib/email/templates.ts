@@ -68,7 +68,7 @@ export interface EmailTemplate {
  * sem query string personalizada (que estava bugando ao abrir pelo e-mail).
  */
 function buildConviteUrl(_vars: EmailTemplateVars): string {
-  return 'https://lunapriveapp.site'
+  return 'https://lunapriveapp.site/convite'
 }
 
 /* -------------------------------------------------------------------------- */
@@ -177,7 +177,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, EmailTemplate> = {
           ${paragraph('Sua conta no Luna Privé foi criada com sucesso.')}
           ${paragraph('Para concluir o acesso, resgate o seu convite:')}
           ${button('Resgatar meu convite', conviteUrl)}
-          ${mutedParagraph(`Ou acesse pelo link: ${link(conviteUrl, 'lunapriveapp.site')}`)}
+          ${mutedParagraph(`Ou acesse pelo link: ${link(conviteUrl, 'lunapriveapp.site/convite')}`)}
         `,
       })
     },
