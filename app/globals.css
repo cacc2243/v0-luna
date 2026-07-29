@@ -197,6 +197,25 @@
   box-shadow: 0 10px 40px -8px oklch(0.55 0.22 9 / 0.7);
 }
 
+/* Efeito 3D leve para os CTAs de PIX: borda inferior solida simulando
+   espessura + brilho no topo, e "afunda" no toque. So usa box-shadow e
+   transform, entao e barato de renderizar. */
+.cta-3d {
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.28),
+    0 4px 0 oklch(0.4 0.19 8),
+    0 12px 26px -8px oklch(0.55 0.22 9 / 0.6);
+  transform: translateY(0);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.2s ease;
+}
+.cta-3d:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.2),
+    0 1px 0 oklch(0.4 0.19 8),
+    0 5px 14px -8px oklch(0.55 0.22 9 / 0.5);
+}
+
 .luna-gradient-soft {
   background-image: linear-gradient(
     90deg,

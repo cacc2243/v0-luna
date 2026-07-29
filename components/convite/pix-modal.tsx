@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, ShieldCheck } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -566,12 +566,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         )}
         {!embedded && type === 'invite' && !title && (
           <>
-            <p className="mt-3 text-pretty text-base font-bold leading-snug text-foreground">
-              Para acessar o <span className="text-primary">Luna Privé</span> você precisa de um{' '}
-              <span className="text-primary">Convite</span>
-            </p>
-            <p className="mt-1.5 text-pretty text-[0.82rem] leading-relaxed text-muted-foreground">
-              Finalize o pagamento PIX abaixo e receba seu Convite agora
+            <p className="mt-3 text-lg font-bold text-foreground">Pagamento via PIX</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Copie o código abaixo ou escaneie o QR Code
             </p>
           </>
         )}
@@ -721,7 +718,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <button
             onClick={copyPixCode}
             style={{ zoom: 0.909 }}
-            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40 text-white' : 'cta-gradient text-white hover:brightness-110'} ${compact ? 'mt-4 py-4 text-sm' : 'mt-4 py-5 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold ring-1 ring-inset ring-transparent transition-all duration-300 ease-out active:scale-[0.98]`}
+            className={`${copied ? 'bg-emerald-600 ring-emerald-300/40 text-white active:scale-[0.98]' : 'cta-gradient cta-3d text-white hover:brightness-110'} ${compact ? 'mt-4 py-4 text-sm' : 'mt-4 py-5 text-base'} flex w-full items-center justify-center gap-2 rounded-2xl font-bold ring-1 ring-inset ring-transparent ease-out`}
           >
             {copied ? (
               <>
@@ -736,23 +733,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             )}
           </button>
 
-          {/* Reforço de confiança logo abaixo do botão copiar */}
-          {!embedded && (
-            <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground">
-              <Zap className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
-              Acesso liberado automaticamente após o pagamento
-            </p>
-          )}
-
-          {/* Badge de garantia de 7 dias */}
-          {!embedded && (
-            <div className="mt-2.5 flex justify-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[0.7rem] font-semibold text-emerald-500">
-                <ShieldCheck className="size-3.5 shrink-0" aria-hidden="true" />
-                Garantia de 7 dias
-              </span>
-            </div>
-          )}
 
           {/* Passo a passo: como pagar com PIX copia e cola */}
           {!embedded && (

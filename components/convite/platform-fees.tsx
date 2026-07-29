@@ -29,7 +29,7 @@ export function PlatformFees() {
   return (
     <section
       aria-labelledby="taxas"
-      className="overflow-hidden rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm"
+      className="overflow-hidden rounded-2xl border border-border/80 bg-card/40 backdrop-blur-sm"
     >
       <div className="border-b border-border/40 px-4 py-3">
         <h2
