@@ -194,7 +194,7 @@ export function PriceCard({
 
               {/* Conteúdo em destaque */}
               <p className="mt-4 text-pretty text-base font-semibold leading-relaxed text-foreground">
-                Seu desconto de{' '}
+                O desconto de{' '}
                 <span className="font-bold text-muted-foreground line-through decoration-primary/70 decoration-2">
                   R${formatCents(originalCents)}
                 </span>{' '}
@@ -202,16 +202,14 @@ export function PriceCard({
                 <span className="text-lg font-extrabold text-primary">
                   R${formatCents(amountCents)}
                 </span>{' '}
-                está garantido!
+                do seu convite é válido apenas agora!
               </p>
 
-              {/* Contador regressivo — foco da tela */}
-              <div className="mt-5 flex flex-col items-center gap-2 rounded-2xl border border-primary/25 bg-primary/10 py-4">
-                <span className="flex items-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-widest text-primary">
-                  <Clock className="size-3.5 shrink-0 animate-pulse" aria-hidden="true" />
-                  A oferta expira em
-                </span>
-                <span className="font-mono text-4xl font-extrabold leading-none tabular-nums text-foreground">
+              {/* Contador regressivo — compacto */}
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5">
+                <Clock className="size-3.5 shrink-0 animate-pulse text-primary" aria-hidden="true" />
+                <span className="text-xs font-semibold text-muted-foreground">Expira em</span>
+                <span className="font-mono text-sm font-bold tabular-nums text-foreground">
                   {mm}:{ss}
                 </span>
               </div>
