@@ -743,11 +743,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 aria-hidden="true"
               />
               <div className="relative rounded-2xl bg-white p-1 shadow-xl shadow-primary/20 ring-1 ring-black/5">
-                {/* Cantos decorativos cinza escuro */}
-                <span className="pointer-events-none absolute -left-1 -top-1 size-5 rounded-tl-2xl border-l-2 border-t-2 border-zinc-600/80" aria-hidden="true" />
-                <span className="pointer-events-none absolute -right-1 -top-1 size-5 rounded-tr-2xl border-r-2 border-t-2 border-zinc-600/80" aria-hidden="true" />
-                <span className="pointer-events-none absolute -bottom-1 -left-1 size-5 rounded-bl-2xl border-b-2 border-l-2 border-zinc-600/80" aria-hidden="true" />
-                <span className="pointer-events-none absolute -bottom-1 -right-1 size-5 rounded-br-2xl border-b-2 border-r-2 border-zinc-600/80" aria-hidden="true" />
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
@@ -756,17 +751,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   className={compact ? 'size-[110px] rounded-xl' : 'size-[124px] rounded-xl sm:size-[136px]'}
                   unoptimized
                 />
-                {/* Logo Luna Prive no centro do QR */}
-                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-1 shadow-md ring-1 ring-black/5">
-                  <Image
-                    src="/images/luna-icon.png"
-                    alt=""
-                    width={44}
-                    height={44}
-                    className={compact ? 'size-4' : 'size-6'}
-                    unoptimized
-                  />
-                </span>
               </div>
             </div>
           )}
