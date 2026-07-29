@@ -10,6 +10,7 @@ import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
 import { PlatformFees } from '@/components/convite/platform-fees'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
+import { SupportCommunity } from '@/components/convite/support-community'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PreCheckoutModal } from '@/components/convite/pre-checkout-modal'
@@ -364,6 +365,9 @@ export function ConviteClient({
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
+
+        {/* Suporte anônimo + comunidade exclusiva no Instagram */}
+        <SupportCommunity />
 
         {/* Taxas da plataforma */}
         <PlatformFees />
