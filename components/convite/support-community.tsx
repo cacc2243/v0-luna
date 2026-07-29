@@ -43,7 +43,7 @@ export function SupportCommunity() {
       {/* Suporte 100% anônimo */}
       <section
         aria-labelledby="suporte-anonimo"
-        className="luna-border overflow-hidden rounded-2xl bg-card px-4 py-4"
+        className="overflow-hidden rounded-2xl border border-border/40 bg-card/40 px-4 py-4 backdrop-blur-sm"
       >
         <div className="flex items-center gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/25">
@@ -66,12 +66,14 @@ export function SupportCommunity() {
           {CHANNELS.map(({ icon: Icon, label }) => (
             <li
               key={label}
-              className="flex items-center gap-2.5 rounded-xl border border-border/40 bg-background/40 px-3 py-2.5"
+              className="flex min-w-0 items-center gap-2 rounded-xl border border-border/40 bg-background/40 px-2.5 py-2.5"
             >
               <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
                 <Icon className="size-4" />
               </span>
-              <span className="truncate text-sm font-medium text-foreground">{label}</span>
+              <span className="text-[0.82rem] font-medium leading-none text-foreground">
+                {label}
+              </span>
             </li>
           ))}
         </ul>
@@ -80,55 +82,50 @@ export function SupportCommunity() {
       {/* Comunidade exclusiva no Instagram */}
       <section
         aria-labelledby="comunidade-instagram"
-        className="luna-border overflow-hidden rounded-2xl bg-card px-4 py-4"
+        className="overflow-hidden rounded-2xl border border-border/40 bg-card/40 px-4 py-4 backdrop-blur-sm"
       >
-        <div className="flex items-stretch gap-3.5">
-          {/* Texto explicativo */}
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="mb-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-primary/12 px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-primary">
+        {/* Texto explicativo em largura total */}
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-primary/12 px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-primary">
+          <InstagramGlyph className="size-3" />
+          Rede exclusiva
+        </span>
+        <h2
+          id="comunidade-instagram"
+          className="mt-2 text-balance text-sm font-bold leading-tight text-foreground"
+        >
+          Comunidade 100% privada no Instagram
+        </h2>
+        <p className="mt-1.5 text-pretty text-xs leading-relaxed text-muted-foreground">
+          Liberada apenas para quem tem um convite ativo. Novidades, atualizações
+          e conteúdos exclusivos direto pra você.
+        </p>
+
+        {/* Mockup de perfil do Instagram — faixa horizontal */}
+        <div className="mt-4 flex items-center gap-3.5 rounded-2xl border border-border/50 bg-background/60 px-3.5 py-3">
+          <span className="relative shrink-0">
+            <span className="block size-14 overflow-hidden rounded-full p-[2px] ring-2 ring-primary/40">
+              <img
+                src="/images/luna-prive-logo.png"
+                alt=""
+                aria-hidden="true"
+                className="size-full rounded-full bg-background object-contain p-1"
+              />
+            </span>
+            <span className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-card text-primary ring-2 ring-background">
               <InstagramGlyph className="size-3" />
-              Rede exclusiva
             </span>
-            <h2
-              id="comunidade-instagram"
-              className="text-balance text-sm font-bold leading-tight text-foreground"
-            >
-              Comunidade 100% privada no Instagram
-            </h2>
-            <p className="mt-1.5 text-pretty text-xs leading-relaxed text-muted-foreground">
-              Liberada apenas para quem tem um convite ativo. Novidades,
-              atualizações e conteúdos exclusivos direto pra você.
-            </p>
-          </div>
+          </span>
 
-          {/* Mockup de perfil do Instagram */}
-          <div className="flex w-[124px] shrink-0 flex-col items-center rounded-2xl border border-border/50 bg-background/60 px-3 py-3.5 text-center">
-            <span className="relative">
-              <span className="block size-12 overflow-hidden rounded-full p-[2px] ring-2 ring-primary/40">
-                <img
-                  src="/images/luna-prive-logo.png"
-                  alt=""
-                  aria-hidden="true"
-                  className="size-full rounded-full bg-background object-contain p-1"
-                />
-              </span>
-              <span className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-card text-primary ring-2 ring-background">
-                <InstagramGlyph className="size-3.5" />
-              </span>
-            </span>
-
-            <p className="mt-2 flex items-center justify-center gap-1 text-[0.72rem] font-semibold leading-none text-foreground">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <p className="flex items-center gap-1 text-sm font-semibold leading-none text-foreground">
               @luna.prive
-              <BadgeCheck className="size-3 text-primary" aria-hidden="true" />
+              <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
             </p>
-
-            <p className="mt-2 text-base font-bold leading-none text-foreground">8.024</p>
-            <p className="mt-0.5 text-[0.62rem] uppercase tracking-wide text-muted-foreground">
-              seguidores
+            <p className="mt-1.5 text-[0.7rem] leading-none text-muted-foreground">
+              <span className="text-base font-bold text-foreground">8.024</span> seguidores
             </p>
-
-            <p className="mt-2.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[0.6rem] font-semibold text-primary">
-              <Lock className="size-2.5" aria-hidden="true" />
+            <p className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[0.62rem] font-semibold text-primary">
+              <Lock className="size-2.5 shrink-0" aria-hidden="true" />
               Conta privada
             </p>
           </div>
