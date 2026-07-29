@@ -177,17 +177,22 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     onReady?.()
   }, [loading, error, pixCode, onReady])
 
-  // Exibe o popup informativo assim que o PIX fica pronto (uma vez por geração)
-  // e o agenda para fechar sozinho após PIX_INFO_MS.
+  // Exibe o popup informativo assim que o PIX fica pronto (uma vez por geração).
   useEffect(() => {
     if (loading || error || !pixCode || pixInfoFiredRef.current) return
     pixInfoFiredRef.current = true
     setShowPixInfo(true)
-    pixInfoTimerRef.current = setTimeout(() => setShowPixInfo(false), PIX_INFO_MS)
-    return () => {
-      if (pixInfoTimerRef.current) clearTimeout(pixInfoTimerRef.current)
-    }
   }, [loading, error, pixCode])
+
+  // Fechamento automático: sempre que o popup estiver visível, agenda o fecho
+  // após PIX_INFO_MS. Isolar em um efeito próprio (dependente só de showPixInfo)
+  // evita que re-renders do polling de pagamento cancelem o timer.
+  useEffect(() => {
+    if (!showPixInfo) return
+    const id = setTimeout(() => setShowPixInfo(false), PIX_INFO_MS)
+    pixInfoTimerRef.current = id
+    return () => clearTimeout(id)
+  }, [showPixInfo])
 
   // Reseta o controle de "ready" ao reabrir o modal.
   useEffect(() => {
@@ -529,38 +534,58 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     setShowPixInfo(false)
   }
 
-  const pixInfoEl = showPixInfo && (
-    <div
-      role="status"
-      aria-live="polite"
-      className="absolute inset-x-3 top-3 z-40 overflow-hidden rounded-2xl border border-primary/40 bg-background/95 shadow-lg shadow-black/20 backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-300"
-    >
-      <div className="flex items-start gap-2.5 px-4 py-3">
-        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
-          <CheckCircle2 className="size-4" aria-hidden="true" />
-        </span>
-        <p className="text-pretty text-[0.8rem] font-medium leading-relaxed text-foreground">
-          <span className="font-bold">Seu PIX foi gerado!</span> Após o pagamento, seu acesso
-          será enviado por e-mail. Confira o status aqui!
-        </p>
-        <button
-          type="button"
-          aria-label="Fechar aviso"
-          onClick={closePixInfo}
-          className="-mr-1 -mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
-        >
-          <X className="size-3.5" aria-hidden="true" />
-        </button>
-      </div>
-      {/* Barra de progresso regressiva (3.5s) */}
-      <div className="h-1 w-full bg-primary/10">
-        <div
-          className="animate-pix-info-bar h-full bg-primary"
-          style={{ animationDuration: `${PIX_INFO_MS}ms` }}
-        />
-      </div>
-    </div>
-  )
+  const pixInfoEl =
+    mounted && showPixInfo
+      ? createPortal(
+          <div
+            role="status"
+            aria-live="polite"
+            className="fixed inset-0 z-[999] flex items-center justify-center p-4"
+          >
+            {/* Fundo escuro (fecha ao tocar fora) */}
+            <button
+              type="button"
+              aria-label="Fechar aviso"
+              onClick={closePixInfo}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+            />
+
+            {/* Card central */}
+            <div className="relative z-10 w-full max-w-xs overflow-hidden rounded-3xl border border-border/70 bg-card text-center shadow-2xl shadow-black/60 animate-in fade-in zoom-in-95 duration-300">
+              <button
+                type="button"
+                aria-label="Fechar aviso"
+                onClick={closePixInfo}
+                className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
+
+              <div className="px-6 pb-6 pt-7">
+                <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/25">
+                  <CheckCircle2 className="size-6" aria-hidden="true" />
+                </span>
+
+                <h3 className="mt-4 text-base font-bold text-foreground">
+                  Seu PIX foi gerado!
+                </h3>
+                <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                  Após o pagamento, seu acesso será enviado por e-mail. Confira o status aqui!
+                </p>
+              </div>
+
+              {/* Barra de progresso regressiva (3.5s) */}
+              <div className="h-1 w-full bg-primary/10">
+                <div
+                  className="animate-pix-info-bar h-full bg-primary"
+                  style={{ animationDuration: `${PIX_INFO_MS}ms` }}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null
 
   // Overlay em tela cheia exibido logo após copiar o código PIX: escurece a
   // tela (sem card/fundo) e mostra um spinner com "Aguardando pagamento...".
