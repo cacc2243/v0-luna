@@ -751,6 +751,21 @@
   animation: cta-breathe 2.8s ease-in-out infinite;
 }
 
+/* Barra de progresso regressiva (ex.: popup informativo do PIX que fecha
+   sozinho). Encolhe de 100% para 0% da largura ao longo da duração definida. */
+@keyframes pix-info-bar {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.animate-pix-info-bar {
+  transform-origin: left;
+  animation: pix-info-bar linear forwards;
+}
+
 /* Pulso mais forte: escala + halo rosa para destacar o CTA da conversa */
 @keyframes cta-pulse {
   0%,
