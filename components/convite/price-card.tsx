@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, Gift, Clock, X, AlertTriangle } from 'lucide-react'
+import { Check, Gift, Clock, X, AlertTriangle, Flame } from 'lucide-react'
 
 const benefits = [
   'Código de Convite Luna Prive',
@@ -213,6 +213,12 @@ export function PriceCard({
                   {mm}:{ss}
                 </span>
               </div>
+
+              {/* Escassez — reforça urgência */}
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-[0.72rem] font-semibold text-muted-foreground">
+                <Flame className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                Restam apenas <span className="font-bold text-primary">4 convites</span> disponíveis
+              </p>
 
               <button
                 type="button"
