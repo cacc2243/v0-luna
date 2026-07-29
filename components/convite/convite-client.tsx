@@ -353,7 +353,7 @@ export function ConviteClient({
         )}
 
         {/* Aviso: acesso enviado por e-mail */}
-        <div className="-mt-3 flex items-center gap-2.5 rounded-2xl border border-border/60 bg-card/60 px-4 py-3 backdrop-blur-sm">
+        <div className="-mt-3 flex items-center gap-2.5 rounded-2xl border border-border/80 bg-card/60 px-4 py-3 backdrop-blur-sm">
           <Mail className="size-4 shrink-0 text-primary" aria-hidden="true" />
           <p className="min-w-0 flex-1 text-pretty text-xs leading-relaxed text-muted-foreground">
             Você receberá em seu <span className="font-semibold text-primary">E-mail</span> o acesso
