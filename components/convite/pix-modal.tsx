@@ -821,32 +821,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           </button>
 
 
-          {/* Passo a passo: como pagar com PIX copia e cola */}
-          {!embedded && (
-            <div className="mt-4 rounded-2xl border border-border/60 bg-muted/40 p-4">
-              <p className="mb-3 text-center text-xs font-bold uppercase tracking-wider text-foreground">
-                Como pagar em 4 passos
-              </p>
-              <ol className="flex flex-col gap-2.5">
-                {[
-                  'Toque em "Copiar código PIX" acima',
-                  'Abra o app do seu banco',
-                  'Escolha PIX › Pagar com PIX Copia e Cola',
-                  'Cole o código e confirme o pagamento',
-                ].map((step, i) => (
-                  <li key={i} className="flex items-start gap-2.5">
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[0.7rem] font-bold text-primary-foreground">
-                      {i + 1}
-                    </span>
-                    <span className="text-pretty text-[0.8rem] leading-relaxed text-muted-foreground">
-                      {step}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-
           {/* Selo de segurança */}
           {!embedded && (
             <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[0.7rem] text-muted-foreground">
