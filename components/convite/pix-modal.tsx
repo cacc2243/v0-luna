@@ -159,6 +159,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // Garante que onReady dispare apenas uma vez por geração de PIX.
   const readyFiredRef = useRef(false)
 
+  // Popup informativo exibido assim que o PIX fica pronto. Fecha sozinho em 3.5s
+  // (com uma pequena barra de progresso). Dispara uma vez por geração.
+  const PIX_INFO_MS = 3500
+  const [showPixInfo, setShowPixInfo] = useState(false)
+  const pixInfoFiredRef = useRef(false)
+  const pixInfoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // Sinaliza ao componente pai que a geração do PIX finalizou e o modal já tem
   // algo para exibir imediatamente: o PIX pronto (código + QR) ou o estado de
   // erro (com "Tentar novamente"). Isso mantém a animação de "gerando PIX" no ar
@@ -170,10 +177,25 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     onReady?.()
   }, [loading, error, pixCode, onReady])
 
+  // Exibe o popup informativo assim que o PIX fica pronto (uma vez por geração)
+  // e o agenda para fechar sozinho após PIX_INFO_MS.
+  useEffect(() => {
+    if (loading || error || !pixCode || pixInfoFiredRef.current) return
+    pixInfoFiredRef.current = true
+    setShowPixInfo(true)
+    pixInfoTimerRef.current = setTimeout(() => setShowPixInfo(false), PIX_INFO_MS)
+    return () => {
+      if (pixInfoTimerRef.current) clearTimeout(pixInfoTimerRef.current)
+    }
+  }, [loading, error, pixCode])
+
   // Reseta o controle de "ready" ao reabrir o modal.
   useEffect(() => {
     if (!isOpen) {
       readyFiredRef.current = false
+      pixInfoFiredRef.current = false
+      setShowPixInfo(false)
+      if (pixInfoTimerRef.current) clearTimeout(pixInfoTimerRef.current)
       setAwaitingPayment(false)
     }
   }, [isOpen])
@@ -500,6 +522,46 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     </div>
   )
 
+  // Popup informativo exibido ao abrir o PIX gerado. Fecha sozinho em 3.5s,
+  // com uma barra de progresso regressiva. Pode ser fechado manualmente no X.
+  function closePixInfo() {
+    if (pixInfoTimerRef.current) clearTimeout(pixInfoTimerRef.current)
+    setShowPixInfo(false)
+  }
+
+  const pixInfoEl = showPixInfo && (
+    <div
+      role="status"
+      aria-live="polite"
+      className="absolute inset-x-3 top-3 z-40 overflow-hidden rounded-2xl border border-primary/40 bg-background/95 shadow-lg shadow-black/20 backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-300"
+    >
+      <div className="flex items-start gap-2.5 px-4 py-3">
+        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+          <CheckCircle2 className="size-4" aria-hidden="true" />
+        </span>
+        <p className="text-pretty text-[0.8rem] font-medium leading-relaxed text-foreground">
+          <span className="font-bold">Seu PIX foi gerado!</span> Após o pagamento, seu acesso
+          será enviado por e-mail. Confira o status aqui!
+        </p>
+        <button
+          type="button"
+          aria-label="Fechar aviso"
+          onClick={closePixInfo}
+          className="-mr-1 -mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-3.5" aria-hidden="true" />
+        </button>
+      </div>
+      {/* Barra de progresso regressiva (3.5s) */}
+      <div className="h-1 w-full bg-primary/10">
+        <div
+          className="animate-pix-info-bar h-full bg-primary"
+          style={{ animationDuration: `${PIX_INFO_MS}ms` }}
+        />
+      </div>
+    </div>
+  )
+
   // Overlay em tela cheia exibido logo após copiar o código PIX: escurece a
   // tela (sem card/fundo) e mostra um spinner com "Aguardando pagamento...".
   // Renderizado via portal para cobrir toda a viewport, inclusive no modo
@@ -817,6 +879,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     return (
       <div className="relative">
         {toastEl}
+        {pixInfoEl}
         {content}
         {awaitingOverlay}
       </div>
@@ -835,6 +898,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 pt-4">
       <div className="relative flex h-[calc(100%-1rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {toastEl}
+        {pixInfoEl}
 
         {/* Imagem de fundo bem discreta */}
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
