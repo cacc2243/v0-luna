@@ -568,7 +568,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           <>
             <p className="mt-3 text-lg font-bold text-foreground">Pagamento via PIX</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Leia o QR code ou copie o código abaixo:
+              Copie o código abaixo ou escaneie o QR Code
             </p>
           </>
         )}
@@ -615,12 +615,14 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       ) : (
         <>
           {!embedded && type === 'invite' ? (
-            <div className={`flex justify-center ${compact ? 'mt-1' : 'mt-2'}`}>
-              <span className="inline-flex items-center gap-1.5 text-[0.72rem] font-medium text-muted-foreground">
-                <Clock className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
-                Código reservado por{' '}
-                <span className="font-mono font-semibold tabular-nums text-primary">{reserveLabel}</span>
-              </span>
+            <div className={`flex justify-center ${compact ? 'mt-2' : 'mt-3'}`}>
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5">
+                <Clock className="size-4 shrink-0 animate-pulse text-primary" aria-hidden="true" />
+                <span className="text-sm font-semibold text-foreground">
+                  Código reservado por{' '}
+                  <span className="font-mono font-bold tabular-nums text-primary">{reserveLabel}</span>
+                </span>
+              </div>
             </div>
           ) : (
             <>
@@ -664,7 +666,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   alt="QR Code PIX"
                   width={180}
                   height={180}
-                  className={compact ? 'size-[124px] rounded-xl' : 'size-[156px] rounded-xl sm:size-[172px]'}
+                  className={compact ? 'size-[110px] rounded-xl' : 'size-[124px] rounded-xl sm:size-[136px]'}
                   unoptimized
                 />
                 {/* Logo Luna Prive no centro do QR */}
@@ -730,6 +732,48 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               </>
             )}
           </button>
+
+          {/* Reforço de confiança logo abaixo do botão copiar */}
+          {!embedded && (
+            <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-muted-foreground">
+              <Zap className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+              Acesso liberado automaticamente após o pagamento
+            </p>
+          )}
+
+          {/* Passo a passo: como pagar com PIX copia e cola */}
+          {!embedded && (
+            <div className="mt-4 rounded-2xl border border-border/60 bg-muted/40 p-4">
+              <p className="mb-3 text-center text-xs font-bold uppercase tracking-wider text-foreground">
+                Como pagar em 4 passos
+              </p>
+              <ol className="flex flex-col gap-2.5">
+                {[
+                  'Toque em "Copiar código PIX" acima',
+                  'Abra o app do seu banco',
+                  'Escolha PIX › Pagar com PIX Copia e Cola',
+                  'Cole o código e confirme o pagamento',
+                ].map((step, i) => (
+                  <li key={i} className="flex items-start gap-2.5">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[0.7rem] font-bold text-primary-foreground">
+                      {i + 1}
+                    </span>
+                    <span className="text-pretty text-[0.8rem] leading-relaxed text-muted-foreground">
+                      {step}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {/* Selo de segurança */}
+          {!embedded && (
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[0.7rem] text-muted-foreground">
+              <Lock className="size-3 shrink-0" aria-hidden="true" />
+              Pagamento processado com segurança via PIX
+            </p>
+          )}
 
           {/* Já fiz o pagamento (apenas no modal cheio) */}
           {!embedded && (
