@@ -43,7 +43,7 @@ export function SupportCommunity() {
       {/* Suporte 100% anônimo */}
       <section
         aria-labelledby="suporte-anonimo"
-        className="overflow-hidden rounded-2xl border border-border/60 bg-card/40 px-4 py-4 backdrop-blur-sm"
+        className="overflow-hidden rounded-2xl border border-border/80 bg-card/40 px-4 py-4 backdrop-blur-sm"
       >
         <div className="flex items-center gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/25">
@@ -82,7 +82,7 @@ export function SupportCommunity() {
       {/* Comunidade exclusiva no Instagram */}
       <section
         aria-labelledby="comunidade-instagram"
-        className="overflow-hidden rounded-2xl border border-border/60 bg-card/40 px-4 py-4 backdrop-blur-sm"
+        className="overflow-hidden rounded-2xl border border-border/80 bg-card/40 px-4 py-4 backdrop-blur-sm"
       >
         {/* Texto explicativo em largura total */}
         <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-primary/12 px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-primary">
