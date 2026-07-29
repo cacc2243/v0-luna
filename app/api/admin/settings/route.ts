@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
     directOrderEveryN?: number
     utmifyApiToken?: string
     requireCpfOnInvite?: boolean
+    initiateCheckoutTrigger?: 'pageview' | 'pix'
   } = {}
 
   if (typeof body.verificationEnabled === 'boolean') {
@@ -59,6 +60,16 @@ export async function POST(req: NextRequest) {
 
   if (typeof body.requireCpfOnInvite === 'boolean') {
     patch.requireCpfOnInvite = body.requireCpfOnInvite
+  }
+
+  if (body.initiateCheckoutTrigger !== undefined) {
+    if (body.initiateCheckoutTrigger !== 'pageview' && body.initiateCheckoutTrigger !== 'pix') {
+      return NextResponse.json(
+        { error: 'Gatilho do InitiateCheckout inválido. Use "pageview" ou "pix".' },
+        { status: 400 },
+      )
+    }
+    patch.initiateCheckoutTrigger = body.initiateCheckoutTrigger
   }
 
   if (typeof body.activeCashoutGateway === 'string') {

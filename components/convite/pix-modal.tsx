@@ -159,6 +159,13 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
   // Garante que onReady dispare apenas uma vez por geração de PIX.
   const readyFiredRef = useRef(false)
 
+  // Popup informativo exibido assim que o PIX fica pronto. Fecha sozinho em 3.5s
+  // (com uma pequena barra de progresso). Dispara uma vez por geração.
+  const PIX_INFO_MS = 3500
+  const [showPixInfo, setShowPixInfo] = useState(false)
+  const pixInfoFiredRef = useRef(false)
+  const pixInfoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // Sinaliza ao componente pai que a geração do PIX finalizou e o modal já tem
   // algo para exibir imediatamente: o PIX pronto (código + QR) ou o estado de
   // erro (com "Tentar novamente"). Isso mantém a animação de "gerando PIX" no ar
@@ -170,10 +177,30 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     onReady?.()
   }, [loading, error, pixCode, onReady])
 
+  // Exibe o popup informativo assim que o PIX fica pronto (uma vez por geração).
+  useEffect(() => {
+    if (loading || error || !pixCode || pixInfoFiredRef.current) return
+    pixInfoFiredRef.current = true
+    setShowPixInfo(true)
+  }, [loading, error, pixCode])
+
+  // Fechamento automático: sempre que o popup estiver visível, agenda o fecho
+  // após PIX_INFO_MS. Isolar em um efeito próprio (dependente só de showPixInfo)
+  // evita que re-renders do polling de pagamento cancelem o timer.
+  useEffect(() => {
+    if (!showPixInfo) return
+    const id = setTimeout(() => setShowPixInfo(false), PIX_INFO_MS)
+    pixInfoTimerRef.current = id
+    return () => clearTimeout(id)
+  }, [showPixInfo])
+
   // Reseta o controle de "ready" ao reabrir o modal.
   useEffect(() => {
     if (!isOpen) {
       readyFiredRef.current = false
+      pixInfoFiredRef.current = false
+      setShowPixInfo(false)
+      if (pixInfoTimerRef.current) clearTimeout(pixInfoTimerRef.current)
       setAwaitingPayment(false)
     }
   }, [isOpen])
@@ -500,6 +527,66 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     </div>
   )
 
+  // Popup informativo exibido ao abrir o PIX gerado. Fecha sozinho em 3.5s,
+  // com uma barra de progresso regressiva. Pode ser fechado manualmente no X.
+  function closePixInfo() {
+    if (pixInfoTimerRef.current) clearTimeout(pixInfoTimerRef.current)
+    setShowPixInfo(false)
+  }
+
+  const pixInfoEl =
+    mounted && showPixInfo
+      ? createPortal(
+          <div
+            role="status"
+            aria-live="polite"
+            className="fixed inset-0 z-[999] flex items-center justify-center p-4"
+          >
+            {/* Fundo escuro (fecha ao tocar fora) */}
+            <button
+              type="button"
+              aria-label="Fechar aviso"
+              onClick={closePixInfo}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+            />
+
+            {/* Card central */}
+            <div className="relative z-10 w-full max-w-xs overflow-hidden rounded-3xl border border-border/70 bg-card text-center shadow-2xl shadow-black/60 animate-in fade-in zoom-in-95 duration-300">
+              <button
+                type="button"
+                aria-label="Fechar aviso"
+                onClick={closePixInfo}
+                className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
+
+              <div className="px-6 pb-6 pt-7">
+                <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/25">
+                  <CheckCircle2 className="size-6" aria-hidden="true" />
+                </span>
+
+                <h3 className="mt-4 text-base font-bold text-foreground">
+                  Seu PIX foi gerado!
+                </h3>
+                <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                  Após o pagamento, seu acesso será enviado por e-mail. Confira o status aqui!
+                </p>
+              </div>
+
+              {/* Barra de progresso regressiva (3.5s) */}
+              <div className="h-1 w-full bg-primary/10">
+                <div
+                  className="animate-pix-info-bar h-full bg-primary"
+                  style={{ animationDuration: `${PIX_INFO_MS}ms` }}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null
+
   // Overlay em tela cheia exibido logo após copiar o código PIX: escurece a
   // tela (sem card/fundo) e mostra um spinner com "Aguardando pagamento...".
   // Renderizado via portal para cobrir toda a viewport, inclusive no modo
@@ -566,7 +653,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         )}
         {!embedded && type === 'invite' && !title && (
           <>
-            <p className="mt-3 text-lg font-bold text-foreground">Pagamento via PIX</p>
+            <p className="mt-3 text-lg font-bold text-foreground">Convite Luna Prive</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Copie o código abaixo ou escaneie o QR Code
             </p>
@@ -616,11 +703,11 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         <>
           {!embedded && type === 'invite' ? (
             <div className={`flex justify-center ${compact ? 'mt-2' : 'mt-3'}`}>
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5">
-                <Clock className="size-4 shrink-0 animate-pulse text-primary" aria-hidden="true" />
-                <span className="text-sm font-semibold text-foreground">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1">
+                <Clock className="size-3.5 shrink-0 animate-pulse text-primary" aria-hidden="true" />
+                <span className="text-[0.72rem] font-medium text-foreground">
                   Código reservado por{' '}
-                  <span className="font-mono font-bold tabular-nums text-primary">{reserveLabel}</span>
+                  <span className="font-mono font-semibold tabular-nums text-primary">{reserveLabel}</span>
                 </span>
               </div>
             </div>
@@ -656,11 +743,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                 aria-hidden="true"
               />
               <div className="relative rounded-2xl bg-white p-1 shadow-xl shadow-primary/20 ring-1 ring-black/5">
-                {/* Cantos decorativos cinza escuro */}
-                <span className="pointer-events-none absolute -left-1 -top-1 size-5 rounded-tl-2xl border-l-2 border-t-2 border-zinc-600/80" aria-hidden="true" />
-                <span className="pointer-events-none absolute -right-1 -top-1 size-5 rounded-tr-2xl border-r-2 border-t-2 border-zinc-600/80" aria-hidden="true" />
-                <span className="pointer-events-none absolute -bottom-1 -left-1 size-5 rounded-bl-2xl border-b-2 border-l-2 border-zinc-600/80" aria-hidden="true" />
-                <span className="pointer-events-none absolute -bottom-1 -right-1 size-5 rounded-br-2xl border-b-2 border-r-2 border-zinc-600/80" aria-hidden="true" />
                 <Image
                   src={pixQrCode}
                   alt="QR Code PIX"
@@ -669,17 +751,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
                   className={compact ? 'size-[110px] rounded-xl' : 'size-[124px] rounded-xl sm:size-[136px]'}
                   unoptimized
                 />
-                {/* Logo Luna Prive no centro do QR */}
-                <span className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-1 shadow-md ring-1 ring-black/5">
-                  <Image
-                    src="/images/luna-icon.png"
-                    alt=""
-                    width={44}
-                    height={44}
-                    className={compact ? 'size-4' : 'size-6'}
-                    unoptimized
-                  />
-                </span>
               </div>
             </div>
           )}
@@ -733,32 +804,6 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
             )}
           </button>
 
-
-          {/* Passo a passo: como pagar com PIX copia e cola */}
-          {!embedded && (
-            <div className="mt-4 rounded-2xl border border-border/60 bg-muted/40 p-4">
-              <p className="mb-3 text-center text-xs font-bold uppercase tracking-wider text-foreground">
-                Como pagar em 4 passos
-              </p>
-              <ol className="flex flex-col gap-2.5">
-                {[
-                  'Toque em "Copiar código PIX" acima',
-                  'Abra o app do seu banco',
-                  'Escolha PIX › Pagar com PIX Copia e Cola',
-                  'Cole o código e confirme o pagamento',
-                ].map((step, i) => (
-                  <li key={i} className="flex items-start gap-2.5">
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[0.7rem] font-bold text-primary-foreground">
-                      {i + 1}
-                    </span>
-                    <span className="text-pretty text-[0.8rem] leading-relaxed text-muted-foreground">
-                      {step}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
 
           {/* Selo de segurança */}
           {!embedded && (
@@ -817,6 +862,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     return (
       <div className="relative">
         {toastEl}
+        {pixInfoEl}
         {content}
         {awaitingOverlay}
       </div>
@@ -835,6 +881,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 pt-4">
       <div className="relative flex h-[calc(100%-1rem)] w-full flex-col overflow-hidden rounded-t-3xl bg-card shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {toastEl}
+        {pixInfoEl}
 
         {/* Imagem de fundo bem discreta */}
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">

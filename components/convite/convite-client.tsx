@@ -76,11 +76,14 @@ export function ConviteClient({
   initialInviteCents,
   initialFromUrl,
   requireCpf = false,
+  initiateCheckoutTrigger = 'pix',
 }: {
   initialInviteCents: number
   initialFromUrl?: SignupData
   /** Config do admin: quando true, pede o CPF antes de gerar o PIX. */
   requireCpf?: boolean
+  /** Config do admin: quando dispara o InitiateCheckout ('pageview' ou 'pix'). */
+  initiateCheckoutTrigger?: 'pageview' | 'pix'
 }) {
   const router = useRouter()
   // Estado inicial SEMPRE VAZIO — deterministico. O servidor e o primeiro
@@ -211,6 +214,16 @@ export function ConviteClient({
       // o tracking nunca bloqueia o fluxo
     }
   }
+
+  // Quando o admin configura o gatilho como 'pageview', o InitiateCheckout é
+  // disparado assim que a usuária entra em /convite (uma vez por sessão). No
+  // modo 'pix' (padrão) o disparo acontece apenas no onReady do PixModal.
+  useEffect(() => {
+    if (initiateCheckoutTrigger === 'pageview') {
+      fireInitiateCheckout()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initiateCheckoutTrigger])
 
   function updateField(field: keyof SignupData, value: string) {
     setData((prev) => {
@@ -410,8 +423,11 @@ export function ConviteClient({
         document={cpf}
         onReady={() => {
           setPixReady(true)
-          // InitiateCheckout só dispara agora, quando o PIX foi realmente gerado.
-          fireInitiateCheckout()
+          // No modo 'pix' (padrão), o InitiateCheckout dispara agora, quando o
+          // PIX foi realmente gerado. No modo 'pageview' já disparou na entrada.
+          if (initiateCheckoutTrigger === 'pix') {
+            fireInitiateCheckout()
+          }
         }}
         onPaymentConfirmed={handlePaymentConfirmed}
       />
