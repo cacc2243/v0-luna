@@ -110,7 +110,7 @@ export function PriceCard({
           type="button"
           onClick={onAcquire}
           disabled={!priceReady}
-          className="cta-gradient animate-cta-breathe relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-white transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:animate-none disabled:opacity-60 disabled:active:scale-100"
+          className="cta-gradient cta-3d animate-cta-breathe relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-bold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:animate-none disabled:opacity-60"
         >
           {priceReady && <Gift className="size-5 shrink-0" aria-hidden="true" />}
           <span className="whitespace-nowrap">
