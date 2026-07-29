@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { Check, Gift, Clock, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Check, Gift, Clock, X, AlertTriangle } from 'lucide-react'
 
 const benefits = [
   'Código de Convite Luna Prive',
@@ -34,6 +35,24 @@ export function PriceCard({
 
   // Popup de confirmacao com aviso de urgencia (10 min) antes de gerar o PIX.
   const [showConfirm, setShowConfirm] = useState(false)
+  const [secondsLeft, setSecondsLeft] = useState(600)
+
+  // Portal so pode renderizar apos montar no cliente (evita erro de SSR).
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  // Contador regressivo de 10 minutos, reiniciado sempre que o popup abre.
+  useEffect(() => {
+    if (!showConfirm) return
+    setSecondsLeft(600)
+    const id = setInterval(() => {
+      setSecondsLeft((s) => (s <= 1 ? 0 : s - 1))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [showConfirm])
+
+  const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0')
+  const ss = String(secondsLeft % 60).padStart(2, '0')
 
   function handleConfirm() {
     setShowConfirm(false)
@@ -129,62 +148,85 @@ export function PriceCard({
         </button>
       </div>
 
-      {/* Popup de confirmação com aviso de urgência (10 min) */}
-      {showConfirm && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirm-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          {/* Fundo escuro */}
-          <button
-            type="button"
-            aria-label="Fechar"
-            onClick={() => setShowConfirm(false)}
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-          />
-
-          {/* Card do popup */}
-          <div className="luna-border-top relative z-10 w-full max-w-sm overflow-hidden rounded-3xl border border-border/60 bg-card px-6 py-7 text-center shadow-2xl shadow-black/50">
+      {/* Popup de confirmação com aviso de urgência (renderizado via portal no
+          body para não ficar preso ao stacking context do card e ser coberto
+          por outros elementos ao rolar a página). */}
+      {mounted &&
+        showConfirm &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-title"
+            className="fixed inset-0 z-[999] flex items-center justify-center overflow-y-auto p-4"
+          >
+            {/* Fundo escuro */}
             <button
               type="button"
               aria-label="Fechar"
               onClick={() => setShowConfirm(false)}
-              className="absolute right-3.5 top-3.5 flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            >
-              <X className="size-4" aria-hidden="true" />
-            </button>
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            />
 
-            <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/25">
-              <Clock className="size-7" aria-hidden="true" />
-            </span>
+            {/* Card do popup */}
+            <div className="relative z-10 my-auto w-full max-w-sm overflow-hidden rounded-3xl border border-border/70 bg-card px-6 py-6 text-center shadow-2xl shadow-black/60">
+              <button
+                type="button"
+                aria-label="Fechar"
+                onClick={() => setShowConfirm(false)}
+                className="absolute right-3.5 top-3.5 flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
 
-            <h3 id="confirm-title" className="mt-4 text-lg font-bold text-foreground">
-              Atenção
-            </h3>
+              {/* Cabeçalho com ícone pequeno + título em destaque */}
+              <div className="flex items-center justify-center gap-2">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                  <AlertTriangle className="size-4" aria-hidden="true" />
+                </span>
+                <h3
+                  id="confirm-title"
+                  className="text-xl font-bold uppercase tracking-wide text-foreground"
+                >
+                  Atenção
+                </h3>
+              </div>
 
-            <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-              O desconto de{' '}
-              <span className="font-semibold text-muted-foreground line-through decoration-primary/70">
-                R${formatCents(originalCents)}
-              </span>{' '}
-              por{' '}
-              <span className="font-bold text-foreground">R${formatCents(amountCents)}</span> é
-              válido por{' '}
-              <span className="font-bold text-primary">10 minutos</span> a partir de agora!
-            </p>
+              {/* Conteúdo em destaque */}
+              <p className="mt-4 text-pretty text-base font-semibold leading-relaxed text-foreground">
+                Seu desconto de{' '}
+                <span className="font-bold text-muted-foreground line-through decoration-primary/70 decoration-2">
+                  R${formatCents(originalCents)}
+                </span>{' '}
+                por{' '}
+                <span className="text-lg font-extrabold text-primary">
+                  R${formatCents(amountCents)}
+                </span>{' '}
+                está garantido!
+              </p>
 
-            <button
-              type="button"
-              onClick={handleConfirm}
-              className="cta-gradient cta-3d relative mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-3 py-4 text-[0.95rem] font-bold text-white hover:brightness-110 sm:text-base"
-            >
-              <span className="whitespace-nowrap">Confirmar e continuar</span>
-            </button>
-          </div>
-        </div>
-      )}
+              {/* Contador regressivo — foco da tela */}
+              <div className="mt-5 flex flex-col items-center gap-2 rounded-2xl border border-primary/25 bg-primary/10 py-4">
+                <span className="flex items-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-widest text-primary">
+                  <Clock className="size-3.5 shrink-0 animate-pulse" aria-hidden="true" />
+                  A oferta expira em
+                </span>
+                <span className="font-mono text-4xl font-extrabold leading-none tabular-nums text-foreground">
+                  {mm}:{ss}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleConfirm}
+                className="cta-gradient cta-3d relative mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-3 py-4 text-[0.95rem] font-bold text-white hover:brightness-110 sm:text-base"
+              >
+                <span className="whitespace-nowrap">Confirmar e continuar</span>
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </section>
   )
 }
