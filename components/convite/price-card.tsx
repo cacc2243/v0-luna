@@ -3,9 +3,10 @@
 import { Check, Gift } from 'lucide-react'
 
 const benefits = [
-  'Código de Convite Luna',
-  'Venda imediatamente',
-  'Suporte Anônimo 24h',
+  'Código de Convite Luna Prive',
+  'Comece a vender agora mesmo',
+  'Suporte 100% sigiloso',
+  'Acesso imediato por E-mail',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
