@@ -703,11 +703,11 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         <>
           {!embedded && type === 'invite' ? (
             <div className={`flex justify-center ${compact ? 'mt-2' : 'mt-3'}`}>
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5">
-                <Clock className="size-4 shrink-0 animate-pulse text-primary" aria-hidden="true" />
-                <span className="text-sm font-semibold text-foreground">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1">
+                <Clock className="size-3.5 shrink-0 animate-pulse text-primary" aria-hidden="true" />
+                <span className="text-[0.72rem] font-medium text-foreground">
                   Código reservado por{' '}
-                  <span className="font-mono font-bold tabular-nums text-primary">{reserveLabel}</span>
+                  <span className="font-mono font-semibold tabular-nums text-primary">{reserveLabel}</span>
                 </span>
               </div>
             </div>
