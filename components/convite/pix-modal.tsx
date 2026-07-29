@@ -566,12 +566,9 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
         )}
         {!embedded && type === 'invite' && !title && (
           <>
-            <p className="mt-3 text-pretty text-base font-bold leading-snug text-foreground">
-              Para acessar o <span className="text-primary">Luna Privé</span> você precisa de um{' '}
-              <span className="text-primary">Convite</span>
-            </p>
-            <p className="mt-1.5 text-pretty text-[0.82rem] leading-relaxed text-muted-foreground">
-              Finalize o pagamento PIX abaixo e receba seu Convite agora
+            <p className="mt-3 text-lg font-bold text-foreground">Pagamento via PIX</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Copie o código abaixo ou escaneie o QR Code
             </p>
           </>
         )}
