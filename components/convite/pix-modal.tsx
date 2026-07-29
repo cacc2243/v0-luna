@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock } from 'lucide-react'
+import { X, Copy, Check, AlertCircle, RefreshCw, CheckCircle2, Info, QrCode, Zap, Mail, Clock, Lock, ShieldCheck } from 'lucide-react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { readCookie, newEventId, fbTrackCustom } from '@/lib/fb/track'
@@ -739,6 +739,16 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
               <Zap className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
               Acesso liberado automaticamente após o pagamento
             </p>
+          )}
+
+          {/* Badge de garantia de 7 dias */}
+          {!embedded && (
+            <div className="mt-2.5 flex justify-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[0.7rem] font-semibold text-emerald-500">
+                <ShieldCheck className="size-3.5 shrink-0" aria-hidden="true" />
+                Garantia de 7 dias
+              </span>
+            </div>
           )}
 
           {/* Passo a passo: como pagar com PIX copia e cola */}
