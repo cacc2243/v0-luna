@@ -26,9 +26,9 @@ export function PriceCard({
   amountCents?: number
   priceReady?: boolean
 }) {
-  // Preco "de" (ancora) fixo em R$ 69,90. O desconto e calculado a partir do
+  // Preco "de" (ancora) fixo em R$ 109,00. O desconto e calculado a partir do
   // preco atual em relacao a esse valor ancora.
-  const originalCents = 6990
+  const originalCents = 10900
   const discountPercent = Math.max(0, Math.round((1 - amountCents / originalCents) * 100))
 
   return (
