@@ -11,6 +11,7 @@ import { PriceCard } from '@/components/convite/price-card'
 import { PlatformFees } from '@/components/convite/platform-fees'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
 import { SupportCommunity } from '@/components/convite/support-community'
+import { RefundGuarantee } from '@/components/convite/refund-guarantee'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PreCheckoutModal } from '@/components/convite/pre-checkout-modal'
@@ -362,6 +363,9 @@ export function ConviteClient({
 
         {/* Preço + garantia */}
         <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady />
+
+        {/* Garantia de reembolso — reduz objeção de compra */}
+        <RefundGuarantee />
 
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
