@@ -17,7 +17,7 @@ export function RefundGuarantee() {
   return (
     <section
       aria-labelledby="garantia-reembolso"
-      className="overflow-hidden rounded-2xl border border-border/40 bg-card/40 px-4 py-4 backdrop-blur-sm"
+      className="overflow-hidden rounded-2xl border border-border/60 bg-card/40 px-4 py-4 backdrop-blur-sm"
     >
       <div className="flex items-center gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/25">
