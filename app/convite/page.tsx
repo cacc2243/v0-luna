@@ -31,6 +31,7 @@ export default async function ConvitePage({
       initialInviteCents={settings.inviteAmountCents}
       initialFromUrl={initialFromUrl}
       requireCpf={settings.requireCpfOnInvite}
+      initiateCheckoutTrigger={settings.initiateCheckoutTrigger}
     />
   )
 }
