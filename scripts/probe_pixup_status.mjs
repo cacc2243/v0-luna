@@ -43,18 +43,11 @@ async function main() {
 
   const t = await token()
   const candidates = [
-    `/transaction/${txId}`,
-    `/transactions/${txId}`,
-    `/v2/transaction/${txId}`,
-    `/v2/transactions/detail/${txId}`,
-    `/v2/transactions/cashin?transactionId=${txId}`,
-    `/v2/transactions/cashin?external_id=${txId}`,
-    `/v2/cashin/status/${txId}`,
-    `/v2/transactions/status/${txId}`,
-    `/v2/pix/${txId}`,
-    `/v2/pix/cashin/${txId}`,
-    `/v2/qrcode/${txId}`,
-    `/v2/transactions/receivepix?transactionId=${txId}`,
+    `/v2/transactions/${txId}`,
+    `/v2/transactions/cashin/${txId}`,
+    `/v2/transactions?external_id=${txId}`,
+    `/v2/transactions?transaction_id=${txId}`,
+    `/v2/transactions/${txId}/status`,
   ]
 
   for (const path of candidates) {
