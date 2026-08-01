@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
     // considera falha, retenta 6x e desiste — deixando a venda paga presa em
     // "pending". Com `after()`, a PixUp sempre recebe o 200 rapido.
     after(async () => {
-     try {
+      try {
     // Facebook Purchase (server-side / Conversions API) quando o pagamento e
     // confirmado. Idempotente via flag fb_purchase_sent. A verificacao de saque
     // nao envia Purchase (tratado dentro do helper).
@@ -398,11 +398,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[v0] Convite atualizado:', invite.id, 'Status:', newStatus)
-     } catch (sideEffectError) {
-       // Efeitos colaterais nunca devem afetar a resposta ja enviada a PixUp.
-       console.error('[v0] Erro nos efeitos colaterais do webhook:', sideEffectError)
-     }
+      console.log('[v0] Convite atualizado:', invite.id, 'Status:', newStatus)
+      } catch (sideEffectError) {
+        // Efeitos colaterais nunca devem afetar a resposta ja enviada a PixUp.
+        console.error('[v0] Erro nos efeitos colaterais do webhook:', sideEffectError)
+      }
     })
 
     // Resposta rapida (parte critica ja persistida). Efeitos colaterais rodam
@@ -412,7 +412,6 @@ export async function POST(request: NextRequest) {
       inviteId: invite.id,
       status: newStatus,
     })
-
   } catch (error) {
     console.error('[v0] Erro no webhook PIX:', error)
     return NextResponse.json(
