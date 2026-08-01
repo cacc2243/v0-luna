@@ -28,6 +28,13 @@ export async function POST(request: NextRequest) {
     //   de pagamento em `data.paidAt`. O envelope traz `type: "transaction"`.
     const tx = body.transaction || {}
     const data = body.data || {}
+    // PixUp (formato REAL de producao): o postback vem embrulhado em
+    // `body.requestBody`, com `transactionType` ("RECEIVEPIX"), `transactionId`,
+    // `external_id` (nosso identifier), `amount`, `status` ("PAID"/"CANCELLED"/
+    // "REFUNDED") e `dateApproval`. Sem ler esse envelope, os campos ficavam
+    // vazios, `candidateIds` zerava e o webhook tratava a venda paga como um
+    // "ping de teste" — deixando a venda presa em "pending".
+    const req = body.requestBody || {}
     const event = String(body.event || '').toUpperCase()
 
     // Detecta callbacks de infracao da HorsePay (contem infraction_status).
@@ -51,12 +58,18 @@ export async function POST(request: NextRequest) {
       data.transaction_id,
       data.external_id,
       data.id,
+      // PixUp (formato real: body.requestBody)
+      req.transactionId,
+      req.transaction_id,
+      req.external_id,
+      req.externalId,
+      req.id,
     ]
       .filter((v) => v !== undefined && v !== null && String(v).length > 0)
       .map((v) => String(v))
 
     const rawStatus = String(
-      tx.status || body.status || data.status || body.payment_status || ''
+      tx.status || body.status || data.status || req.status || body.payment_status || ''
     ).toUpperCase()
     const paidAt =
       tx.payedAt ||
@@ -65,6 +78,8 @@ export async function POST(request: NextRequest) {
       data.confirmed_at ||
       data.paid_at ||
       data.paidAt ||
+      req.dateApproval ||
+      req.date_approval ||
       body.payment_date ||
       null
 
