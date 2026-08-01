@@ -399,7 +399,14 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[v0] Convite atualizado:', invite.id, 'Status:', newStatus)
+     } catch (sideEffectError) {
+       // Efeitos colaterais nunca devem afetar a resposta ja enviada a PixUp.
+       console.error('[v0] Erro nos efeitos colaterais do webhook:', sideEffectError)
+     }
+    })
 
+    // Resposta rapida (parte critica ja persistida). Efeitos colaterais rodam
+    // em `after()`, sem bloquear este 200.
     return NextResponse.json({
       success: true,
       inviteId: invite.id,
