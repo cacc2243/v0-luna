@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { maybeSendPurchase } from '@/lib/fb/purchase'
 import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
 import { sendUtmifyOrder } from '@/lib/utmify/orders'
@@ -28,13 +28,6 @@ export async function POST(request: NextRequest) {
     //   de pagamento em `data.paidAt`. O envelope traz `type: "transaction"`.
     const tx = body.transaction || {}
     const data = body.data || {}
-    // PixUp (formato REAL de producao): o postback vem embrulhado em
-    // `body.requestBody`, com `transactionType` ("RECEIVEPIX"), `transactionId`,
-    // `external_id` (nosso identifier), `amount`, `status` ("PAID"/"CANCELLED"/
-    // "REFUNDED") e `dateApproval`. Sem ler esse envelope, os campos ficavam
-    // vazios, `candidateIds` zerava e o webhook tratava a venda paga como um
-    // "ping de teste" — deixando a venda presa em "pending".
-    const req = body.requestBody || {}
     const event = String(body.event || '').toUpperCase()
 
     // Detecta callbacks de infracao da HorsePay (contem infraction_status).
@@ -54,22 +47,17 @@ export async function POST(request: NextRequest) {
       body.externalId,
       body.client_reference_id,
       tx.client_reference_id,
-      // PixUp (Envelope V2)
+      // PixUp (Envelope V2): dados em body.data, com transaction_id espelhado
+      // na raiz e o nosso identifier em data.external_id.
       data.transaction_id,
       data.external_id,
       data.id,
-      // PixUp (formato real: body.requestBody)
-      req.transactionId,
-      req.transaction_id,
-      req.external_id,
-      req.externalId,
-      req.id,
     ]
       .filter((v) => v !== undefined && v !== null && String(v).length > 0)
       .map((v) => String(v))
 
     const rawStatus = String(
-      tx.status || body.status || data.status || req.status || body.payment_status || ''
+      tx.status || body.status || data.status || body.payment_status || ''
     ).toUpperCase()
     const paidAt =
       tx.payedAt ||
@@ -78,8 +66,6 @@ export async function POST(request: NextRequest) {
       data.confirmed_at ||
       data.paid_at ||
       data.paidAt ||
-      req.dateApproval ||
-      req.date_approval ||
       body.payment_date ||
       null
 
@@ -194,6 +180,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // A partir daqui, o status ja foi gravado (parte critica concluida). Todos
+    // os efeitos colaterais pesados rodam em `after()` — DEPOIS de a resposta
+    // 200 ser enviada. Isso e obrigatorio: a PixUp exige resposta em <2s (com
+    // timeout de 10s); se o webhook demora (ex.: Facebook Conversions API,
+    // Utmify, envio de e-mail ou auth.admin.listUsers() lentos), a PixUp
+    // considera falha, retenta 6x e desiste — deixando a venda paga presa em
+    // "pending". Com `after()`, a PixUp sempre recebe o 200 rapido.
+    after(async () => {
+     try {
     // Facebook Purchase (server-side / Conversions API) quando o pagamento e
     // confirmado. Idempotente via flag fb_purchase_sent. A verificacao de saque
     // nao envia Purchase (tratado dentro do helper).
