@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { maybeSendPurchase } from '@/lib/fb/purchase'
 import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
 import { sendUtmifyOrder } from '@/lib/utmify/orders'
@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
       body.externalId,
       body.client_reference_id,
       tx.client_reference_id,
-      // PixUp (Envelope V2)
+      // PixUp (Envelope V2): dados em body.data, com transaction_id espelhado
+      // na raiz e o nosso identifier em data.external_id.
       data.transaction_id,
       data.external_id,
       data.id,
@@ -178,6 +179,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // A partir daqui, o status ja foi gravado (parte critica concluida). Todos
+    // os efeitos colaterais pesados rodam em `after()` — DEPOIS de a resposta
+    // 200 ser enviada. Isso e obrigatorio: a PixUp exige resposta em <2s (com
+    // timeout de 10s); se o webhook demora (ex.: Facebook Conversions API,
+    // Utmify, envio de e-mail ou auth.admin.listUsers() lentos), a PixUp
+    // considera falha, retenta 6x e desiste — deixando a venda paga presa em
+    // "pending". Com `after()`, a PixUp sempre recebe o 200 rapido.
+    after(async () => {
+     try {
     // Facebook Purchase (server-side / Conversions API) quando o pagamento e
     // confirmado. Idempotente via flag fb_purchase_sent. A verificacao de saque
     // nao envia Purchase (tratado dentro do helper).
