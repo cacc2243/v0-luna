@@ -61,6 +61,17 @@ export function ImagesTab() {
   const [deleting, setDeleting] = useState(false)
   const [banTarget, setBanTarget] = useState<PackGroup | null>(null)
 
+  // Limpeza em massa por período (exclui packs mais antigos que N dias)
+  const [cleanupOpen, setCleanupOpen] = useState(false)
+  const [cleanupDays, setCleanupDays] = useState<number>(30)
+  const [cleanupRunning, setCleanupRunning] = useState(false)
+  const [cleanupError, setCleanupError] = useState<string | null>(null)
+  const [cleanupResult, setCleanupResult] = useState<{
+    deletedPacks: number
+    deletedImages: number
+    removedFiles: number
+  } | null>(null)
+
   const { data, error, isLoading, mutate } = useSWR<{
     images: AdminImage[]
     fetchedAt: string
@@ -174,6 +185,31 @@ export function ImagesTab() {
     }
   }
 
+  async function runCleanup() {
+    setCleanupRunning(true)
+    setCleanupError(null)
+    setCleanupResult(null)
+    try {
+      const res = await fetch('/api/admin/images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ olderThanDays: cleanupDays }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json?.error || 'cleanup_failed')
+      setCleanupResult({
+        deletedPacks: json.deletedPacks ?? 0,
+        deletedImages: json.deletedImages ?? 0,
+        removedFiles: json.removedFiles ?? 0,
+      })
+      mutate() // recarrega a lista real do servidor
+    } catch (e) {
+      setCleanupError(e instanceof Error ? e.message : 'Falha ao executar limpeza')
+    } finally {
+      setCleanupRunning(false)
+    }
+  }
+
   const sessionExpired = (error as (Error & { status?: number }) | undefined)?.status === 401
 
   return (
@@ -189,30 +225,44 @@ export function ImagesTab() {
         />
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={cn(
-              'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition',
-              filter === f.key
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-card text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {f.label}
-            <span
+      {/* Filtros + limpeza por período */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
               className={cn(
-                'rounded-full px-1.5 text-xs tabular-nums',
-                filter === f.key ? 'bg-primary-foreground/20' : 'bg-secondary',
+                'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition',
+                filter === f.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card text-muted-foreground hover:text-foreground',
               )}
             >
-              {f.count}
-            </span>
-          </button>
-        ))}
+              {f.label}
+              <span
+                className={cn(
+                  'rounded-full px-1.5 text-xs tabular-nums',
+                  filter === f.key ? 'bg-primary-foreground/20' : 'bg-secondary',
+                )}
+              >
+                {f.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => {
+            setCleanupResult(null)
+            setCleanupError(null)
+            setCleanupOpen(true)
+          }}
+          className="flex items-center gap-2 rounded-full border border-destructive/40 bg-destructive/10 px-3.5 py-1.5 text-sm font-semibold text-destructive transition hover:bg-destructive/20"
+        >
+          <Trash2 className="size-4" />
+          Limpar por período
+        </button>
       </div>
 
       {/* Conteudo */}
@@ -360,6 +410,125 @@ export function ImagesTab() {
           onClose={() => setBanTarget(null)}
           onDone={() => mutate()}
         />
+      )}
+
+      {/* Modal de limpeza por período */}
+      {cleanupOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Fechar"
+            disabled={cleanupRunning}
+            onClick={() => setCleanupOpen(false)}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          />
+          <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+            <div className="flex items-start gap-3 border-b border-border px-5 py-4">
+              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-destructive/12 text-destructive">
+                <Trash2 className="size-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Limpar fotos por período</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Exclui <span className="font-semibold text-foreground">completamente</span> todos
+                  os packs criados há mais tempo que o período escolhido — packs, imagens e arquivos
+                  do armazenamento. Esta ação é irreversível.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-5 py-4">
+              {cleanupResult ? (
+                <div className="rounded-xl border border-positive/40 bg-positive/10 px-4 py-3 text-sm text-foreground">
+                  <p className="font-semibold text-positive">Limpeza concluída!</p>
+                  <ul className="mt-2 space-y-1 text-muted-foreground">
+                    <li>
+                      Packs excluídos:{' '}
+                      <span className="font-bold tabular-nums text-foreground">
+                        {cleanupResult.deletedPacks}
+                      </span>
+                    </li>
+                    <li>
+                      Imagens removidas:{' '}
+                      <span className="font-bold tabular-nums text-foreground">
+                        {cleanupResult.deletedImages}
+                      </span>
+                    </li>
+                    <li>
+                      Arquivos apagados do storage:{' '}
+                      <span className="font-bold tabular-nums text-foreground">
+                        {cleanupResult.removedFiles}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              ) : (
+                <>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Excluir packs com mais de
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[5, 7, 14, 30, 60, 90].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        disabled={cleanupRunning}
+                        onClick={() => setCleanupDays(d)}
+                        className={cn(
+                          'flex items-center justify-center gap-1 rounded-xl border px-2 py-2.5 text-sm font-semibold transition',
+                          cleanupDays === d
+                            ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary'
+                            : 'border-border bg-background text-muted-foreground hover:border-primary/50',
+                        )}
+                      >
+                        <Clock className="size-3.5" />
+                        {d} dias
+                      </button>
+                    ))}
+                  </div>
+
+                  {cleanupError && (
+                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                      <ShieldAlert className="size-4 shrink-0" />
+                      {cleanupError}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-border px-5 py-4">
+              <button
+                type="button"
+                disabled={cleanupRunning}
+                onClick={() => setCleanupOpen(false)}
+                className="rounded-xl px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:opacity-50"
+              >
+                {cleanupResult ? 'Fechar' : 'Cancelar'}
+              </button>
+              {!cleanupResult && (
+                <button
+                  type="button"
+                  disabled={cleanupRunning}
+                  onClick={runCleanup}
+                  className="flex items-center gap-2 rounded-xl bg-destructive px-4 py-2 text-sm font-bold text-destructive-foreground transition hover:opacity-90 disabled:opacity-60"
+                >
+                  {cleanupRunning ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Excluindo...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="size-4" />
+                      Excluir packs com +{cleanupDays} dias
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
