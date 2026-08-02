@@ -249,3 +249,122 @@ export async function DELETE(req: Request) {
 
   return NextResponse.json({ success: true })
 }
+
+// Dias permitidos para a limpeza em massa (evita valores arbitrarios).
+const ALLOWED_CLEANUP_DAYS = [5, 7, 14, 30, 60, 90] as const
+
+// POST: limpeza em massa. Exclui COMPLETAMENTE todos os packs criados ha mais
+// de `olderThanDays` dias — registro do pack, todas as pack_images e os
+// arquivos correspondentes no Storage. Acao destrutiva e irreversivel.
+export async function POST(req: Request) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
+
+  let body: { olderThanDays?: number }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Corpo inválido' }, { status: 400 })
+  }
+
+  const days = Number(body.olderThanDays)
+  if (!ALLOWED_CLEANUP_DAYS.includes(days as (typeof ALLOWED_CLEANUP_DAYS)[number])) {
+    return NextResponse.json(
+      { error: `Período inválido. Use um de: ${ALLOWED_CLEANUP_DAYS.join(', ')} dias.` },
+      { status: 400 },
+    )
+  }
+
+  const supabase = createAdminClient()
+  const cutoffIso = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+
+  // 1) Packs alvo (mais antigos que o corte)
+  const { data: packs, error: packsError } = await supabase
+    .from('packs')
+    .select('id, cover_image_url')
+    .lt('created_at', cutoffIso)
+
+  if (packsError) {
+    console.error('[v0] Erro ao buscar packs para limpeza:', packsError)
+    return NextResponse.json({ error: 'Falha ao buscar packs' }, { status: 500 })
+  }
+
+  const packIds = (packs ?? []).map((p) => p.id)
+  if (packIds.length === 0) {
+    return NextResponse.json({
+      success: true,
+      deletedPacks: 0,
+      deletedImages: 0,
+      removedFiles: 0,
+      cutoff: cutoffIso,
+    })
+  }
+
+  // 2) Imagens desses packs
+  const { data: images, error: imagesError } = await supabase
+    .from('pack_images')
+    .select('id, image_url')
+    .in('pack_id', packIds)
+
+  if (imagesError) {
+    console.error('[v0] Erro ao buscar pack_images para limpeza:', imagesError)
+    return NextResponse.json({ error: 'Falha ao buscar imagens' }, { status: 500 })
+  }
+
+  // 3) Remove arquivos do Storage (best-effort), agrupados por bucket
+  const urls: string[] = []
+  for (const p of packs ?? []) if (p.cover_image_url) urls.push(p.cover_image_url)
+  for (const img of images ?? []) if (img.image_url) urls.push(img.image_url)
+
+  const byBucket = new Map<string, string[]>()
+  for (const url of urls) {
+    const parsed = parseStorageUrl(url)
+    if (!parsed) continue
+    const list = byBucket.get(parsed.bucket) ?? []
+    list.push(parsed.path)
+    byBucket.set(parsed.bucket, list)
+  }
+
+  let removedFiles = 0
+  for (const [bucket, paths] of byBucket) {
+    // Remove em lotes de 100 para nao exceder limites da API de storage
+    for (let i = 0; i < paths.length; i += 100) {
+      const chunk = paths.slice(i, i + 100)
+      const { error: storageError } = await supabase.storage.from(bucket).remove(chunk)
+      if (storageError) {
+        console.error('[v0] Aviso: falha ao remover arquivos do storage:', storageError)
+      } else {
+        removedFiles += chunk.length
+      }
+    }
+  }
+
+  // 4) Remove os registros do banco (imagens primeiro, depois os packs)
+  const { error: delImagesError } = await supabase
+    .from('pack_images')
+    .delete()
+    .in('pack_id', packIds)
+  if (delImagesError) {
+    console.error('[v0] Erro ao excluir pack_images:', delImagesError)
+    return NextResponse.json({ error: 'Falha ao excluir imagens do banco' }, { status: 500 })
+  }
+
+  const { error: delPacksError } = await supabase.from('packs').delete().in('id', packIds)
+  if (delPacksError) {
+    console.error('[v0] Erro ao excluir packs:', delPacksError)
+    return NextResponse.json({ error: 'Falha ao excluir packs do banco' }, { status: 500 })
+  }
+
+  console.log(
+    `[v0] Limpeza concluída: ${packIds.length} packs, ${images?.length ?? 0} imagens, ${removedFiles} arquivos (corte: ${cutoffIso})`,
+  )
+
+  return NextResponse.json({
+    success: true,
+    deletedPacks: packIds.length,
+    deletedImages: images?.length ?? 0,
+    removedFiles,
+    cutoff: cutoffIso,
+  })
+}

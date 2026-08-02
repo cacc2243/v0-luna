@@ -151,8 +151,8 @@ export default function Page() {
               style={{ animationDelay: '60ms' }}
             >
               <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
-                Aqui, você pode ganhar mais de{' '}
-                <span className="text-primary">R$15 mil</span> com seus Pés
+                Aqui, seus Pés podem te dar uma{' '}
+                <span className="text-primary">vida de Rainha!</span>
               </h1>
               <p className="mt-2.5 text-pretty text-sm leading-relaxed text-muted-foreground">
                 Aqui seus Pés te fazem Rainha. Você posta, vende na hora e

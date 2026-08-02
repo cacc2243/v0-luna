@@ -1,12 +1,14 @@
 'use client'
 
-import { Check, Gift, Lightbulb } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Check, Gift, Clock, X, AlertTriangle, Flame } from 'lucide-react'
 
 const benefits = [
-  'Código de Convite Luna',
-  'Venda imediatamente',
-  'Suporte Anônimo 24h',
-  '100% Anonimato',
+  'Código de Convite Luna Prive',
+  'Comece a vender agora mesmo',
+  'Suporte 100% sigiloso',
+  'Acesso imediato por E-mail',
 ]
 
 // Formata centavos como moeda BRL: 2480 -> "24,80"
@@ -26,16 +28,42 @@ export function PriceCard({
   amountCents?: number
   priceReady?: boolean
 }) {
-  // Preco "de" (ancora) fixo em R$ 69,90. O desconto e calculado a partir do
+  // Preco "de" (ancora) fixo em R$ 109,00. O desconto e calculado a partir do
   // preco atual em relacao a esse valor ancora.
-  const originalCents = 6990
+  const originalCents = 10900
   const discountPercent = Math.max(0, Math.round((1 - amountCents / originalCents) * 100))
+
+  // Popup de confirmacao com aviso de urgencia (10 min) antes de gerar o PIX.
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [secondsLeft, setSecondsLeft] = useState(600)
+
+  // Portal so pode renderizar apos montar no cliente (evita erro de SSR).
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  // Contador regressivo de 10 minutos, reiniciado sempre que o popup abre.
+  useEffect(() => {
+    if (!showConfirm) return
+    setSecondsLeft(600)
+    const id = setInterval(() => {
+      setSecondsLeft((s) => (s <= 1 ? 0 : s - 1))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [showConfirm])
+
+  const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0')
+  const ss = String(secondsLeft % 60).padStart(2, '0')
+
+  function handleConfirm() {
+    setShowConfirm(false)
+    onAcquire?.()
+  }
 
   return (
     <section aria-labelledby="investimento" className="relative isolate">
       {/* Glow rosa suave atras do card */}
       <div
-        className="pointer-events-none absolute -inset-1 rounded-[2.5rem] bg-primary/35 blur-2xl"
+        className="pointer-events-none absolute -inset-1 rounded-[2.5rem] bg-primary/15 blur-xl"
         aria-hidden="true"
       />
       <div className="luna-border-top relative z-10 overflow-hidden rounded-3xl border border-border/50 bg-card px-6 py-7 shadow-2xl shadow-black/40">
@@ -85,8 +113,8 @@ export function PriceCard({
             }`}
             aria-hidden={!priceReady}
           >
-            <span className="font-montserrat text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">R$</span>
-            <span className="font-montserrat text-4xl font-extrabold leading-none tracking-tight text-foreground sm:text-5xl">
+            <span className="font-montserrat text-4xl font-bold leading-none tracking-tight text-foreground sm:text-5xl">R$</span>
+            <span className="font-montserrat text-4xl font-bold leading-none tracking-tight text-foreground sm:text-5xl">
               {formatCents(amountCents)}
             </span>
           </div>
@@ -109,28 +137,100 @@ export function PriceCard({
         {/* CTA */}
         <button
           type="button"
-          onClick={onAcquire}
+          onClick={() => setShowConfirm(true)}
           disabled={!priceReady}
-          className="animate-cta-breathe relative mt-7 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-emerald-600 py-4 text-base font-bold text-white transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:animate-none disabled:opacity-60 disabled:active:scale-100"
+          className="cta-gradient cta-3d animate-cta-breathe relative mt-7 flex w-full items-center justify-center gap-2 rounded-2xl px-3 py-4 text-[0.95rem] font-extrabold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:animate-none disabled:opacity-60 sm:gap-2.5 sm:text-base"
         >
           {priceReady && <Gift className="size-5 shrink-0" aria-hidden="true" />}
           <span className="whitespace-nowrap">
-            {priceReady ? `Gerar PIX R$${formatCents(amountCents)}` : 'Carregando valor...'}
+            {priceReady ? 'GERAR PIX DO CONVITE!' : 'Carregando valor...'}
           </span>
         </button>
       </div>
 
-      {/* Card pequeno e discreto de garantia (abaixo do card de preço) */}
-      <div className="relative z-10 mt-3 flex items-start gap-2.5 rounded-2xl border border-border/40 bg-card/40 px-4 py-3 backdrop-blur-sm">
-        <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-        <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-          Você tem <span className="font-semibold text-foreground">7 dias</span> para postar seu
-          pack/foto. Se não vender e sacar em até{' '}
-          <span className="font-semibold text-foreground">7 dias</span>, poderá solicitar{' '}
-          <span className="font-semibold text-foreground">reembolso completo com 1 clique</span>{' '}
-          dentro do nosso site.
-        </p>
-      </div>
+      {/* Popup de confirmação com aviso de urgência (renderizado via portal no
+          body para não ficar preso ao stacking context do card e ser coberto
+          por outros elementos ao rolar a página). */}
+      {mounted &&
+        showConfirm &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-title"
+            className="fixed inset-0 z-[999] flex items-center justify-center overflow-y-auto p-4"
+          >
+            {/* Fundo escuro */}
+            <button
+              type="button"
+              aria-label="Fechar"
+              onClick={() => setShowConfirm(false)}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            />
+
+            {/* Card do popup */}
+            <div className="relative z-10 my-auto w-full max-w-sm overflow-hidden rounded-3xl border border-border/70 bg-card px-6 py-6 text-center shadow-2xl shadow-black/60">
+              <button
+                type="button"
+                aria-label="Fechar"
+                onClick={() => setShowConfirm(false)}
+                className="absolute right-3.5 top-3.5 flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
+
+              {/* Cabeçalho com ícone pequeno + título em destaque */}
+              <div className="flex items-center justify-center gap-2">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                  <AlertTriangle className="size-4" aria-hidden="true" />
+                </span>
+                <h3
+                  id="confirm-title"
+                  className="text-xl font-bold uppercase tracking-wide text-foreground"
+                >
+                  Atenção
+                </h3>
+              </div>
+
+              {/* Conteúdo em destaque */}
+              <p className="mt-4 text-pretty text-base font-semibold leading-relaxed text-foreground">
+                O desconto de{' '}
+                <span className="font-bold text-muted-foreground line-through decoration-primary/70 decoration-2">
+                  R${formatCents(originalCents)}
+                </span>{' '}
+                por{' '}
+                <span className="text-lg font-extrabold text-primary">
+                  R${formatCents(amountCents)}
+                </span>{' '}
+                do seu convite é válido apenas agora!
+              </p>
+
+              {/* Contador regressivo — compacto */}
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5">
+                <Clock className="size-3.5 shrink-0 animate-pulse text-primary" aria-hidden="true" />
+                <span className="text-xs font-semibold text-muted-foreground">Expira em</span>
+                <span className="font-mono text-sm font-bold tabular-nums text-foreground">
+                  {mm}:{ss}
+                </span>
+              </div>
+
+              {/* Escassez — reforça urgência */}
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-[0.72rem] font-semibold text-muted-foreground">
+                <Flame className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                Restam apenas <span className="font-bold text-primary">4 convites</span> disponíveis
+              </p>
+
+              <button
+                type="button"
+                onClick={handleConfirm}
+                className="cta-gradient cta-3d relative mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-3 py-4 text-[0.95rem] font-bold text-white hover:brightness-110 sm:text-base"
+              >
+                <span className="whitespace-nowrap">Confirmar e continuar</span>
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </section>
   )
 }

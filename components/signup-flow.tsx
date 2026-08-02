@@ -19,7 +19,6 @@ import {
   Check,
   Loader2,
   AlertCircle,
-  CalendarDays,
   Gift,
   ChevronRight,
   MessageCircle,
@@ -32,15 +31,9 @@ interface SignupFlowProps {
   onComplete: () => void
 }
 
-  const TOTAL = 7
+  const TOTAL = 6
 
 const pixOptions = ['CPF', 'CNPJ', 'Telefone', 'Email', 'Chave Aleatoria']
-
-// Idades disponiveis para selecao (18 a 65+).
-const ageOptions = [
-  ...Array.from({ length: 47 }, (_, i) => String(i + 18)),
-  '65+',
-]
 
 // Sugerimos algo mais criativo (opcional) sempre que o usuario digita apenas
 // um nome simples: so letras, sem nenhum diferencial (numero, ponto, sufixo).
@@ -70,7 +63,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 
   // Campos
   const [username, setUsername] = useState('')
-  const [age, setAge] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -202,7 +194,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             phone: phone.replace(/\D/g, ''),
             pix_type: pixType,
             pix_key: pixKey.trim(),
-            age: age,
             is_creator: true,
           },
         },
@@ -302,21 +293,19 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       case 0:
         return username.trim().length >= 3
       case 1:
-        return age.length > 0
-      case 2:
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-      case 3:
+      case 2:
         return password.length >= 6
-      case 4:
+      case 3:
         return confirm.length >= 6 && confirm === password
-      case 5:
+      case 4:
         return phone.replace(/\D/g, '').length >= 10
-      case 6:
+      case 5:
         return pixKey.trim().length >= 3
       default:
         return false
     }
-  }, [step, username, age, email, password, confirm, phone, pixKey])
+  }, [step, username, email, password, confirm, phone, pixKey])
 
   return (
     <div className="absolute inset-0 z-[60] flex flex-col">
@@ -418,26 +407,8 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
               </StepShell>
             )}
 
-            {/* IDADE */}
-            {step === 1 && (
-              <StepShell
-                icon={CalendarDays}
-                eyebrow="Sua idade"
-                title="Quantos anos você tem?"
-                description="Você precisa ter no mínimo 18 anos para criar uma conta."
-              >
-                <NativeSelect
-                  value={age}
-                  options={ageOptions}
-                  placeholder="Selecione sua idade"
-                  onChange={setAge}
-                />
-                <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
-              </StepShell>
-            )}
-
             {/* SEU EMAIL */}
-            {step === 2 && (
+            {step === 1 && (
               <StepShell
                 icon={Mail}
                 eyebrow="Seu email"
@@ -458,7 +429,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CRIE UMA SENHA */}
-            {step === 3 && (
+            {step === 2 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Segurança"
@@ -478,7 +449,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CONFIRME SUA SENHA */}
-            {step === 4 && (
+            {step === 3 && (
               <StepShell
                 icon={Lock}
                 eyebrow="Segurança"
@@ -502,7 +473,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   type="button"
                   onClick={() => {
                     setConfirm('')
-                    setStep(3)
+                    setStep(2)
                   }}
                   className="mt-2.5 text-xs font-medium text-primary transition-opacity hover:opacity-80"
                 >
@@ -513,7 +484,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* SEU TELEFONE / VERIFICAÇÃO WHATSAPP */}
-            {step === 5 && (
+            {step === 4 && (
               <StepShell
                 icon={Phone}
                 eyebrow="Seu telefone"
@@ -553,7 +524,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
             )}
 
             {/* CHAVE PIX */}
-            {step === 6 && (
+            {step === 5 && (
               <StepShell
                 icon={KeyRound}
                 eyebrow="Chave PIX"
@@ -643,45 +614,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
 }
 
 /* ---------- Subcomponentes ---------- */
-
-function NativeSelect({
-  value,
-  options,
-  placeholder,
-  onChange,
-}: {
-  value: string
-  options: string[]
-  placeholder: string
-  onChange: (v: string) => void
-}) {
-  return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          'h-[58px] w-full appearance-none rounded-2xl border-2 border-border bg-background px-4 pr-11 text-[1.05rem] font-medium shadow-sm outline-none transition-all',
-          'focus:border-primary focus:ring-4 focus:ring-primary/15',
-          value ? 'text-foreground' : 'text-muted-foreground/60',
-        )}
-      >
-        <option value="" disabled>
-          {placeholder}
-        </option>
-        {options.map((opt) => (
-          <option key={opt} value={opt} className="bg-popover text-foreground">
-            {opt}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-        aria-hidden="true"
-      />
-    </div>
-  )
-}
 
 function StepShell({
   icon: Icon,
@@ -1345,7 +1277,7 @@ function InviteCodeFlow({
           <>
             <img
               src="/images/luna-prive-logo.png"
-              alt="Luna Privé"
+              alt="Luna Priv��"
               className="mx-auto h-11 w-auto"
             />
             <div className="mt-4">

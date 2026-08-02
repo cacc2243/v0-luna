@@ -48,7 +48,7 @@ export function BonusAndReviews({ middleSlot }: { middleSlot?: React.ReactNode }
           className="mb-3 flex items-center gap-2 px-1 text-sm font-bold text-foreground"
         >
           <Star className="size-4 text-primary" aria-hidden="true" />
-          Resultados reais de usuárias:
+          Depoimentos de usuárias:
         </h2>
 
         <div className="group -mx-5 overflow-hidden px-5 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">

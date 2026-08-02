@@ -10,6 +10,8 @@ import { AccountSummary } from '@/components/convite/account-summary'
 import { PriceCard } from '@/components/convite/price-card'
 import { PlatformFees } from '@/components/convite/platform-fees'
 import { BonusAndReviews } from '@/components/convite/bonus-and-reviews'
+import { SupportCommunity } from '@/components/convite/support-community'
+import { RefundGuarantee } from '@/components/convite/refund-guarantee'
 import { CompanyInfo } from '@/components/convite/company-info'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PreCheckoutModal } from '@/components/convite/pre-checkout-modal'
@@ -74,11 +76,14 @@ export function ConviteClient({
   initialInviteCents,
   initialFromUrl,
   requireCpf = false,
+  initiateCheckoutTrigger = 'pix',
 }: {
   initialInviteCents: number
   initialFromUrl?: SignupData
   /** Config do admin: quando true, pede o CPF antes de gerar o PIX. */
   requireCpf?: boolean
+  /** Config do admin: quando dispara o InitiateCheckout ('pageview' ou 'pix'). */
+  initiateCheckoutTrigger?: 'pageview' | 'pix'
 }) {
   const router = useRouter()
   // Estado inicial SEMPRE VAZIO — deterministico. O servidor e o primeiro
@@ -154,8 +159,8 @@ export function ConviteClient({
     return () => window.removeEventListener('pageshow', onPageShow)
   }, [])
 
-  // InitiateCheckout: disparado quando o cliente chega na tela do /convite e
-  // fecha os modais iniciais (WelcomePopup). Enviado apenas uma vez por sessão.
+  // InitiateCheckout: disparado somente quando o PIX é efetivamente gerado
+  // (callback onReady do PixModal). Enviado apenas uma vez por sessão.
   // Pixel (browser) + Conversions API (servidor) com o MESMO event_id para
   // deduplicação. Nunca quebra o fluxo.
   const initiateCheckoutFiredRef = useRef(false)
@@ -209,6 +214,16 @@ export function ConviteClient({
       // o tracking nunca bloqueia o fluxo
     }
   }
+
+  // Quando o admin configura o gatilho como 'pageview', o InitiateCheckout é
+  // disparado assim que a usuária entra em /convite (uma vez por sessão). No
+  // modo 'pix' (padrão) o disparo acontece apenas no onReady do PixModal.
+  useEffect(() => {
+    if (initiateCheckoutTrigger === 'pageview') {
+      fireInitiateCheckout()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initiateCheckoutTrigger])
 
   function updateField(field: keyof SignupData, value: string) {
     setData((prev) => {
@@ -308,7 +323,7 @@ export function ConviteClient({
         {/* Hero centralizado no mesmo padrão do fluxo */}
         <section className="mt-7 text-center">
           <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
-            Resgate seu <span className="text-primary">Convite Luna</span>
+            Conquiste seu <span className="text-primary">Convite</span>
           </h1>
           <p className="mx-auto mt-3 max-w-md text-pretty text-sm leading-relaxed text-foreground">
             Confirme seus dados abaixo e garanta seu código de convite exclusivo.
@@ -351,7 +366,7 @@ export function ConviteClient({
         )}
 
         {/* Aviso: acesso enviado por e-mail */}
-        <div className="-mt-3 flex items-center gap-2.5 rounded-2xl border border-border/40 bg-card/60 px-4 py-3 backdrop-blur-sm">
+        <div className="-mt-3 flex items-center gap-2.5 rounded-2xl border border-border/80 bg-card/60 px-4 py-3 backdrop-blur-sm">
           <Mail className="size-4 shrink-0 text-primary" aria-hidden="true" />
           <p className="min-w-0 flex-1 text-pretty text-xs leading-relaxed text-muted-foreground">
             Você receberá em seu <span className="font-semibold text-primary">E-mail</span> o acesso
@@ -362,8 +377,14 @@ export function ConviteClient({
         {/* Preço + garantia */}
         <PriceCard onAcquire={handleAcquire} amountCents={inviteCents} priceReady />
 
+        {/* Garantia de reembolso — reduz objeção de compra */}
+        <RefundGuarantee />
+
         {/* Depoimentos + bônus detalhado */}
         <BonusAndReviews />
+
+        {/* Suporte anônimo + comunidade exclusiva no Instagram */}
+        <SupportCommunity />
 
         {/* Taxas da plataforma */}
         <PlatformFees />
@@ -400,17 +421,23 @@ export function ConviteClient({
         pixType={data.pixType}
         pixKey={data.pixKey}
         document={cpf}
-        onReady={() => setPixReady(true)}
+        onReady={() => {
+          setPixReady(true)
+          // No modo 'pix' (padrão), o InitiateCheckout dispara agora, quando o
+          // PIX foi realmente gerado. No modo 'pageview' já disparou na entrada.
+          if (initiateCheckoutTrigger === 'pix') {
+            fireInitiateCheckout()
+          }
+        }}
         onPaymentConfirmed={handlePaymentConfirmed}
       />
 
       {/* Modal de código de convite (abre ao entrar na tela) */}
-      <WelcomePopup
-        onClose={() => {
-          fireInitiateCheckout()
-          setSocialProofActive(true)
-        }}
-      />
+        <WelcomePopup
+          onClose={() => {
+            setSocialProofActive(true)
+          }}
+        />
 
       {/* Notificações de prova social no topo (após fechar o modal).
           Ficam pausadas enquanto o pré-checkout ou o PIX gerado estão abertos,

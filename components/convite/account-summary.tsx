@@ -146,7 +146,7 @@ export function AccountSummary({
 
   return (
     <section aria-label="Sua conta">
-      <div className="luna-border divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
+      <div className="luna-border-soft divide-y divide-border/40 overflow-hidden rounded-2xl bg-card">
         {rows.map((row) => {
           const isEditing = editing === row.key
           return (
@@ -180,7 +180,7 @@ export function AccountSummary({
                         if (e.key === 'Enter') saveEdit(row.key)
                         if (e.key === 'Escape') cancelEdit()
                       }}
-                      className="w-full rounded-lg border border-primary/40 bg-background px-2.5 py-1.5 text-sm font-semibold text-foreground outline-none ring-primary/30 focus:ring-2"
+                      className="w-full rounded-lg border border-primary/40 bg-background px-2.5 py-1.5 text-base font-semibold text-foreground outline-none ring-primary/30 focus:ring-2 md:text-sm"
                       aria-label={`Editar ${row.label}`}
                       aria-invalid={!!fieldError}
                     />
