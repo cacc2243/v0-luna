@@ -54,6 +54,13 @@ interface MedCase {
     emailConfirmed: boolean
     banned: boolean
   }
+  payment: {
+    endToEndId: string | null
+    reference: string | null
+    authentication: string | null
+    payerName: string | null
+    payerDocument: string | null
+  }
   evidenceScore: number
 }
 
@@ -114,12 +121,17 @@ export function MedTab() {
       if (filter === 'complete' && c.evidenceScore < 5) return false
       if (filter === 'incomplete' && c.evidenceScore >= 5) return false
       if (!q) return true
+      const digits = q.replace(/\D/g, '')
       return (
         (c.email || '').toLowerCase().includes(q) ||
         (c.username || '').toLowerCase().includes(q) ||
         (c.displayName || '').toLowerCase().includes(q) ||
         (c.transactionId || '').toLowerCase().includes(q) ||
-        (c.clientIp || '').toLowerCase().includes(q)
+        (c.clientIp || '').toLowerCase().includes(q) ||
+        (c.payment.endToEndId || '').toLowerCase().includes(q) ||
+        (c.payment.payerName || '').toLowerCase().includes(q) ||
+        (digits.length > 0 &&
+          (c.payment.payerDocument || '').replace(/\D/g, '').includes(digits))
       )
     })
   }, [cases, query, filter])
@@ -195,7 +207,7 @@ export function MedTab() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por e-mail, usuário, IP ou transação..."
+          placeholder="Buscar por e-mail, usuário, CPF, E2E, IP ou transação..."
           className="w-full bg-transparent px-2 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
         />
       </div>
@@ -340,6 +352,57 @@ function MedCard({ med }: { med: MedCase }) {
           fallback="E-mail não informado"
         />
       </div>
+
+      {/* Identificação do pagamento (comprovante junto ao adquirente) */}
+      {(med.payment.endToEndId ||
+        med.payment.authentication ||
+        med.payment.reference ||
+        med.payment.payerDocument ||
+        med.payment.payerName) && (
+        <div className="flex flex-col gap-3 border-t border-border p-4">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+            Identificação do pagamento
+          </p>
+          {med.payment.payerName && (
+            <CopyEvidence
+              icon={User}
+              label="Nome do pagador"
+              value={med.payment.payerName}
+              fallback=""
+            />
+          )}
+          <CopyEvidence
+            icon={Fingerprint}
+            label="CPF do pagador"
+            value={med.payment.payerDocument}
+            fallback="CPF não informado pelo adquirente"
+          />
+          {med.payment.endToEndId && (
+            <CopyEvidence
+              icon={Receipt}
+              label="E2E (identificador PIX)"
+              value={med.payment.endToEndId}
+              fallback=""
+            />
+          )}
+          {med.payment.authentication && (
+            <CopyEvidence
+              icon={ShieldCheck}
+              label="Autenticação"
+              value={med.payment.authentication}
+              fallback=""
+            />
+          )}
+          {med.payment.reference && (
+            <CopyEvidence
+              icon={Receipt}
+              label="ID de referência"
+              value={med.payment.reference}
+              fallback=""
+            />
+          )}
+        </div>
+      )}
 
       {/* Rodapé: dados da transação */}
       <div className="flex flex-col gap-2 border-t border-border bg-background/40 p-4">
