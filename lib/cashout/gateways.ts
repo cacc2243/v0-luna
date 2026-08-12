@@ -1,5 +1,10 @@
 import { createPixupCashout, type PixupCashoutInput } from '@/lib/pixup/client'
 import { createHorsepayWithdraw } from '@/lib/horsepay/client'
+import {
+  createMisticpayWithdraw,
+  isMisticpayConfigured,
+  type MisticpayPixKeyType,
+} from '@/lib/misticpay/client'
 
 /**
  * Entrada normalizada de cashout, independente do gateway.
@@ -131,12 +136,57 @@ const horsepayGateway: CashoutGateway = {
   },
 }
 
+function mapPixTypeToMisticpay(type: CashoutInput['pixType']): MisticpayPixKeyType {
+  switch (type) {
+    case 'CPF':
+      return 'CPF'
+    case 'CNPJ':
+      return 'CNPJ'
+    case 'EMAIL':
+      return 'EMAIL'
+    case 'PHONE':
+      return 'TELEFONE'
+    default:
+      return 'CHAVE_ALEATORIA'
+  }
+}
+
+/**
+ * Gateway MisticPay (headers ci/cs). Valores em reais decimais.
+ * O saque entra em fila (QUEUED) e a confirmacao chega via webhook.
+ */
+const misticpayGateway: CashoutGateway = {
+  id: 'misticpay',
+  label: 'MisticPay',
+  description: 'Cash-out PIX via MisticPay.',
+  isConfigured: () => isMisticpayConfigured(),
+  send: async (input) => {
+    const result = await createMisticpayWithdraw({
+      externalId: input.externalId,
+      amount: input.amountCents / 100, // MisticPay usa reais decimais
+      pixKey: input.pixKey,
+      pixKeyType: mapPixTypeToMisticpay(input.pixType),
+      description: input.description,
+      callbackUrl: input.postbackUrl,
+    })
+
+    return {
+      ok: result.ok,
+      status: result.status,
+      transactionId: result.transactionId,
+      endToEndId: result.endToEndId,
+      errorMessage: result.errorMessage,
+      raw: result.raw,
+    }
+  },
+}
+
 /**
  * Registro central de gateways. Para adicionar um novo gateway,
  * implemente CashoutGateway e registre-o aqui — ele aparece
  * automaticamente no painel de configuracoes.
  */
-const GATEWAYS: CashoutGateway[] = [pixupGateway, horsepayGateway]
+const GATEWAYS: CashoutGateway[] = [pixupGateway, horsepayGateway, misticpayGateway]
 
 export function listCashoutGateways(): CashoutGateway[] {
   return GATEWAYS

@@ -143,7 +143,7 @@ export function ConfirmAcquireModal({
                   if (e.key === 'Enter' && !e.nativeEvent.isComposing) saveEmail()
                 }}
                 placeholder="seu@email.com"
-                className={`w-full rounded-xl border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition focus:ring-2 ${
+                className={`w-full rounded-xl border bg-background px-3.5 py-2.5 text-base text-foreground outline-none transition focus:ring-2 md:text-sm ${
                   emailError
                     ? 'border-destructive focus:ring-destructive/30'
                     : 'border-border focus:border-primary focus:ring-primary/25'

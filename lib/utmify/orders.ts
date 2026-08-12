@@ -19,6 +19,8 @@ interface InviteLike {
   utm_medium?: string | null
   utm_content?: string | null
   utm_term?: string | null
+  fbclid?: string | null
+  referrer?: string | null
   utmify_pending_sent?: boolean | null
   utmify_paid_sent?: boolean | null
   refunded_at?: string | null
@@ -114,13 +116,28 @@ export async function sendUtmifyOrder(
     const priceInCents = toCents(invite.amount)
     const productName = PRODUCT_NAME[type] || 'Compra Luna Privé'
 
+    // Fallback de origem: quando o Facebook nao anexa as UTMs mas deixa o
+    // fbclid na URL (acontece com frequencia em anuncios no in-app browser do
+    // Instagram/Facebook), ainda assim marcamos a origem como paga (FB) para a
+    // Utmify conseguir reconhecer a venda em vez de trata-la como "sem origem".
+    const hasAnyUtm = Boolean(
+      invite.utm_source ||
+        invite.utm_campaign ||
+        invite.utm_medium ||
+        invite.utm_content,
+    )
+    const inferredSource =
+      invite.utm_source || (invite.fbclid ? 'FB' : null)
+
     const trackingParameters = {
-      utm_source: invite.utm_source || null,
+      utm_source: inferredSource,
       utm_campaign: invite.utm_campaign || null,
       utm_medium: invite.utm_medium || null,
       utm_content: invite.utm_content || null,
       utm_term: invite.utm_term || null,
-      src: null as string | null,
+      // src auxiliar: repassa o fbclid quando nao houver UTM estruturada,
+      // permitindo a Utmify cruzar o clique com o anuncio de origem.
+      src: !hasAnyUtm && invite.fbclid ? invite.fbclid : null,
       sck: null as string | null,
     }
 

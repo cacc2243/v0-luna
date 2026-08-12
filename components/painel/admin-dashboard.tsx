@@ -23,6 +23,7 @@ import {
   UserCog,
   MessageCircle,
   Headphones,
+  ScrollText,
   Menu,
   X,
 } from 'lucide-react'
@@ -42,6 +43,7 @@ import { EmailsTab } from './emails-tab'
 import { UsersTab } from './users-tab'
 import { WhatsappTab } from './whatsapp-tab'
 import { SupportTab } from './support-tab'
+import { MedTab } from './med-tab'
 import {
   PERIOD_LABELS,
   type InviteRow,
@@ -64,7 +66,7 @@ const fetcher = async (url: string) => {
   return json
 }
 
-type TabKey = 'resumo' | 'clientes' | 'usuarios' | 'saldos' | 'pix' | 'adquirentes' | 'utms' | 'verificacoes' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails' | 'whatsapp' | 'suporte'
+type TabKey = 'resumo' | 'clientes' | 'usuarios' | 'saldos' | 'pix' | 'adquirentes' | 'utms' | 'verificacoes' | 'med' | 'imagens' | 'gateways' | 'config' | 'pixel' | 'emails' | 'whatsapp' | 'suporte'
 
 const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'resumo', label: 'Resumo', icon: LayoutDashboard },
@@ -75,6 +77,7 @@ const NAV: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'adquirentes', label: 'Adquirentes', icon: Landmark },
   { key: 'utms', label: 'UTMs', icon: Megaphone },
   { key: 'verificacoes', label: 'Verificações', icon: ShieldCheck },
+  { key: 'med', label: 'MED', icon: ScrollText },
   { key: 'imagens', label: 'Imagens', icon: ImageIcon },
   { key: 'gateways', label: 'Gateways', icon: FlaskConical },
   { key: 'pixel', label: 'Pixel', icon: Facebook },
@@ -254,7 +257,7 @@ export function AdminDashboard() {
             </div>
           ) : (
             <>
-              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && tab !== 'whatsapp' && tab !== 'saldos' && tab !== 'usuarios' && tab !== 'suporte' && (
+              {tab !== 'gateways' && tab !== 'imagens' && tab !== 'verificacoes' && tab !== 'med' && tab !== 'config' && tab !== 'pixel' && tab !== 'emails' && tab !== 'whatsapp' && tab !== 'saldos' && tab !== 'usuarios' && tab !== 'suporte' && (
                 <div className="mb-5 flex flex-col gap-3">
                   <PeriodSelect period={period} onChange={setPeriod} />
                   {tab !== 'clientes' && tab !== 'utms' && tab !== 'adquirentes' && (
@@ -301,6 +304,7 @@ export function AdminDashboard() {
               )}
               {tab === 'utms' && <UtmsTab invites={invites} period={period} />}
               {tab === 'verificacoes' && <VerificationsTab verifications={verifications} />}
+              {tab === 'med' && <MedTab />}
               {tab === 'imagens' && <ImagesTab />}
               {tab === 'gateways' && <GatewayTestTab />}
               {tab === 'pixel' && <PixelTab />}

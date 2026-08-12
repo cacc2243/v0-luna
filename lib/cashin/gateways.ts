@@ -2,6 +2,7 @@ import { createSigilopayPixCharge } from '@/lib/sigilopay/client'
 import { createHorsepayPixCharge } from '@/lib/horsepay/client'
 import { createPixupPixCharge } from '@/lib/pixup/client'
 import { createDiretopayPixCharge } from '@/lib/diretopay/client'
+import { createMisticpayPixCharge, isMisticpayConfigured } from '@/lib/misticpay/client'
 
 const BYNET_API_URL = 'https://api-gateway.techbynet.com'
 
@@ -475,6 +476,61 @@ const diretopayGateway: CashinGateway = {
 }
 
 /**
+ * Gateway MisticPay. Autenticacao por headers ci/cs (Client ID / Secret).
+ * Exige CPF valido do pagador (payerDocument); gera um CPF valido quando o
+ * recebido for invalido. Trabalha com valores em reais decimais.
+ */
+const misticpayGateway: CashinGateway = {
+  id: 'misticpay',
+  label: 'MisticPay',
+  description: 'Geração de PIX (cash-in) via MisticPay.',
+  isConfigured: () => isMisticpayConfigured(),
+  create: async (input) => {
+    const cleanDoc = (input.client.document || '').replace(/\D/g, '')
+    const safeName =
+      input.client.name && input.client.name.trim().length >= 3
+        ? input.client.name.trim()
+        : FALLBACK_NAMES[0]
+
+    // A MisticPay exige documento valido; usa CPF gerado quando o recebido for invalido.
+    const document = isValidCPF(cleanDoc) ? cleanDoc : generateValidCPF()
+
+    try {
+      const result = await createMisticpayPixCharge({
+        identifier: input.identifier,
+        amount: input.amount,
+        description: input.itemTitle,
+        client: {
+          name: safeName,
+          document,
+        },
+        callbackUrl: input.callbackUrl,
+      })
+
+      return {
+        ok: result.ok,
+        status: result.status,
+        transactionId: result.transactionId,
+        pixCode: result.pixCode,
+        errorMessage: result.errorMessage,
+        raw: result.raw,
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao contatar a MisticPay'
+      console.error('[v0] Erro no gateway MisticPay (cash-in):', msg)
+      return {
+        ok: false,
+        status: 502,
+        transactionId: null,
+        pixCode: null,
+        errorMessage: msg,
+        raw: null,
+      }
+    }
+  },
+}
+
+/**
  * Registro central de gateways de cash-in. Para adicionar um novo gateway,
  * implemente CashinGateway e registre-o aqui — ele aparece automaticamente
  * no painel de configuracoes.
@@ -485,6 +541,7 @@ const GATEWAYS: CashinGateway[] = [
   horsepayGateway,
   pixupGateway,
   diretopayGateway,
+  misticpayGateway,
 ]
 
 export function listCashinGateways(): CashinGateway[] {

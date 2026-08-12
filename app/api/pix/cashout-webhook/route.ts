@@ -106,7 +106,12 @@ export async function POST(request: NextRequest) {
     // Identificadores. HorsePay envia external_id (number) e client_reference_id
     // (nosso externalId, ex.: "luna_verify_<id>") no payload plano.
     const transactionId =
-      data.transaction_id || body.transaction_id || body.external_id || data.external_id || null
+      data.transaction_id ||
+      body.transaction_id ||
+      body.transactionId || // MisticPay (camelCase, na raiz)
+      body.external_id ||
+      data.external_id ||
+      null
     const externalId =
       data.external_id ||
       body.client_reference_id ||
@@ -145,18 +150,31 @@ export async function POST(request: NextRequest) {
     const horsepayBoolStatus =
       isHorsepay && typeof body.status === 'boolean' ? body.status : null
 
-    if (event === 'cashout.confirmed' || horsepayBoolStatus === true) {
+    // MisticPay: payload plano de RETIRADA com status em portugues (string):
+    // COMPLETO (liquidado), FALHA (falhou/estornado), PENDENTE (em processamento).
+    const misticStatus =
+      typeof body.status === 'string' ? body.status.toUpperCase() : ''
+    const misticCompleted = misticStatus === 'COMPLETO'
+    const misticFailed = misticStatus === 'FALHA' || misticStatus === 'CANCELADO'
+
+    if (event === 'cashout.confirmed' || horsepayBoolStatus === true || misticCompleted) {
       newStatus = 'completed'
       lastError = null
       endToEndId =
         data.hash ||
         data.e2e_id ||
+        body.e2e || // MisticPay
         body.endtoendid ||
         body.end_to_end ||
         endToEndId
-    } else if (event === 'cashout.failed') {
+    } else if (event === 'cashout.failed' || misticFailed) {
       newStatus = 'failed'
-      lastError = (data.error_message || data.error_code || 'Cashout falhou na PixUp')
+      lastError = (
+        data.error_message ||
+        data.error_code ||
+        body.message ||
+        (misticFailed ? 'Saque falhou/estornado na MisticPay' : 'Cashout falhou na PixUp')
+      )
         .toString()
         .slice(0, 500)
     } else if (event === 'cashout.refunded' || horsepayBoolStatus === false) {
@@ -165,8 +183,8 @@ export async function POST(request: NextRequest) {
         ? 'Saque estornado/falhou na HorsePay'
         : `Cashout estornado: ${data.reason || 'PROVIDER_REVERSAL'}`
     } else {
-      // Evento nao relacionado a cashout: ignora sem alterar estado.
-      return NextResponse.json({ received: true, ignored: event }, { status: 200 })
+      // Evento nao relacionado a cashout (ex.: PENDENTE): ignora sem alterar estado.
+      return NextResponse.json({ received: true, ignored: event || misticStatus }, { status: 200 })
     }
 
     const { error: updateError } = await supabase

@@ -70,6 +70,7 @@ import {
   DollarSign,
   EyeOff,
   KeyRound,
+  RefreshCcw,
 } from 'lucide-react'
 import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
   import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead } from './actions'
@@ -79,6 +80,7 @@ import { ChatsActive } from '@/components/minha-conta/chats-active'
  import { NotificationToaster } from '@/components/minha-conta/notification-toaster'
 import { OnboardingFlow } from '@/components/minha-conta/onboarding-flow'
  import { SupportModal } from '@/components/minha-conta/support-modal'
+import { RefundModal } from '@/components/minha-conta/refund-modal'
 
 import { InstallAppGuide } from '@/components/confirmation/install-app-guide'
 import { saveCreds, readCreds, clearCreds } from '@/lib/auth/creds'
@@ -690,7 +692,7 @@ function LoginScreen({ onSuccess, onNoInvite }: { onSuccess: () => void; onNoInv
         (signInError as { code?: string }).code === 'user_banned' ||
         /ban/i.test(signInError.message)
       if (looksBanned) {
-        let reason = 'Violação dos termos de uso da plataforma'
+        let reason = 'Viola��ão dos termos de uso da plataforma'
         try {
           const res = await fetch('/api/account/status', {
             method: 'POST',
@@ -1843,7 +1845,6 @@ function AppDashboard() {
                 )}
                 <input
                   type="file"
-                  accept="image/*,video/*,image/heic,image/heif,.heic,.heif,.mov,.mkv,.avi,.webm,.3gp"
                   multiple
                   className="sr-only"
                   disabled={uploadingPhoto}
@@ -3235,7 +3236,6 @@ function PackDetailScreen({
             )}
             <input
               type="file"
-              accept="image/*,video/*,image/heic,image/heif,.heic,.heif,.mov,.mkv,.avi,.webm,.3gp"
               multiple
               className="sr-only"
               disabled={uploading}
@@ -4449,6 +4449,8 @@ function ProfileScreen({
 }) {
   const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help' | 'install'>('main')
   const [supportOpen, setSupportOpen] = useState(false)
+  // Reembolso: apenas demonstrativo — controla somente a abertura do modal.
+  const [refundOpen, setRefundOpen] = useState(false)
   const [localProfile, setLocalProfile] = useState({
     username: userProfile?.username || '@usuario',
     displayName: userProfile?.display_name || 'Usuario',
@@ -5302,6 +5304,18 @@ function ProfileScreen({
           <span className="flex-1 text-sm font-semibold text-foreground">Ajuda e suporte</span>
           <ChevronRight className="size-5 text-muted-foreground" />
         </button>
+
+        <button
+          type="button"
+          onClick={() => setRefundOpen(true)}
+          className="luna-border flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left transition active:scale-[0.99]"
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+            <RefreshCcw className="size-5 text-primary" aria-hidden="true" />
+          </span>
+          <span className="flex-1 text-sm font-semibold text-foreground">Reembolso</span>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </button>
         
         <button
           type="button"
@@ -5321,6 +5335,8 @@ function ProfileScreen({
       </p>
 
       <SupportModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
+
+      <RefundModal isOpen={refundOpen} onClose={() => setRefundOpen(false)} />
     </div>
   )
 }

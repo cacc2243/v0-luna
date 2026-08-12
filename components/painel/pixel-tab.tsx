@@ -12,6 +12,8 @@ import {
   Send,
   Eye,
   EyeOff,
+  MousePointerClick,
+  QrCode,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +28,146 @@ interface PixelRow {
 }
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
+
+type Trigger = 'pageview' | 'pix'
+
+/**
+ * Controle do gatilho do evento InitiateCheckout: define se ele dispara ao
+ * entrar em /convite (PageView) ou quando o PIX é gerado. Lê e salva via
+ * /api/admin/settings.
+ */
+function InitiateCheckoutTrigger() {
+  const { data, mutate } = useSWR<{ settings?: { initiateCheckoutTrigger?: Trigger } }>(
+    '/api/admin/settings',
+    fetcher,
+  )
+  const current: Trigger = data?.settings?.initiateCheckoutTrigger === 'pageview' ? 'pageview' : 'pix'
+
+  const [saving, setSaving] = useState<Trigger | null>(null)
+  const [savedOk, setSavedOk] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const save = async (value: Trigger) => {
+    if (value === current || saving) return
+    setSaving(value)
+    setSavedOk(false)
+    setSaveError(null)
+    // Atualização otimista para resposta imediata na UI.
+    await mutate(
+      async (prev) => {
+        const res = await fetch('/api/admin/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initiateCheckoutTrigger: value }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json?.error || 'Falha ao salvar')
+        return json
+      },
+      {
+        optimisticData: (prev) => ({
+          ...(prev || {}),
+          settings: { ...(prev?.settings || {}), initiateCheckoutTrigger: value },
+        }),
+        rollbackOnError: true,
+        revalidate: false,
+      },
+    )
+      .then(() => {
+        setSavedOk(true)
+        setTimeout(() => setSavedOk(false), 2500)
+      })
+      .catch((e) => setSaveError(e instanceof Error ? e.message : 'Falha ao salvar'))
+      .finally(() => setSaving(null))
+  }
+
+  const options: { value: Trigger; label: string; desc: string; icon: typeof QrCode }[] = [
+    {
+      value: 'pageview',
+      label: 'Ao entrar no /convite',
+      desc: 'Dispara assim que a pessoa acessa a página do convite.',
+      icon: MousePointerClick,
+    },
+    {
+      value: 'pix',
+      label: 'Ao gerar o PIX',
+      desc: 'Dispara somente quando o PIX é efetivamente gerado.',
+      icon: QrCode,
+    },
+  ]
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-bold text-foreground">Gatilho do InitiateCheckout</h3>
+          <p className="mt-1 text-pretty text-sm leading-relaxed text-muted-foreground">
+            Escolha em que momento o evento{' '}
+            <span className="font-semibold text-foreground">InitiateCheckout</span> é enviado aos
+            pixels.
+          </p>
+        </div>
+        {savedOk && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-positive/15 px-2.5 py-1 text-xs font-bold text-positive">
+            <Check className="size-3.5" /> Salvo
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {options.map((opt) => {
+          const active = current === opt.value
+          const isSaving = saving === opt.value
+          const Icon = opt.icon
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => save(opt.value)}
+              disabled={!!saving}
+              aria-pressed={active}
+              className={cn(
+                'flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition disabled:opacity-60',
+                active
+                  ? 'border-primary bg-primary/10 ring-1 ring-primary'
+                  : 'border-border bg-background hover:border-primary/50',
+              )}
+            >
+              <div className="flex w-full items-center justify-between gap-2">
+                <span
+                  className={cn(
+                    'flex size-8 items-center justify-center rounded-lg',
+                    active ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  <Icon className="size-4" />
+                </span>
+                {isSaving ? (
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                ) : active ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[0.7rem] font-bold text-primary-foreground">
+                    <Check className="size-3" /> Ativo
+                  </span>
+                ) : null}
+              </div>
+              <span className="text-sm font-bold text-foreground">{opt.label}</span>
+              <span className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                {opt.desc}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {saveError && (
+        <div className="mt-3 flex items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <AlertTriangle className="size-4 shrink-0" />
+          {saveError}
+        </div>
+      )}
+    </section>
+  )
+}
 
 export function PixelTab() {
   const { data, error, isLoading, mutate } = useSWR<{ pixels: PixelRow[] }>(
@@ -198,6 +340,9 @@ export function PixelTab() {
           </div>
         </div>
       </section>
+
+      {/* Gatilho do InitiateCheckout */}
+      <InitiateCheckoutTrigger />
 
       {/* Lista de pixels */}
       {pixels.length === 0 ? (
