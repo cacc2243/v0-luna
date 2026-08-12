@@ -133,10 +133,11 @@ export async function POST(request: NextRequest) {
       event === 'CASHIN.FAILED'
     const refundedEvent = event === 'TRANSACTION_REFUNDED' || event === 'CASHIN.REFUNDED'
 
+    // MisticPay envia status em portugues: COMPLETO/FALHA/PENDENTE/CANCELADO.
     if (
       paidEvent ||
       horsepayBoolStatus === true ||
-      ['PAID', 'APPROVED', 'COMPLETED', 'CONFIRMED', 'OK'].includes(rawStatus) ||
+      ['PAID', 'APPROVED', 'COMPLETED', 'CONFIRMED', 'OK', 'COMPLETO'].includes(rawStatus) ||
       ['paid', 'approved', 'completed', 'confirmed'].includes(
         String(tx.status || body.status || data.status || ''),
       )
@@ -150,7 +151,7 @@ export async function POST(request: NextRequest) {
     } else if (
       canceledEvent ||
       horsepayBoolStatus === false ||
-      ['EXPIRED', 'CANCELLED', 'CANCELED', 'FAILED'].includes(rawStatus)
+      ['EXPIRED', 'CANCELLED', 'CANCELED', 'FAILED', 'FALHA', 'CANCELADO'].includes(rawStatus)
     ) {
       newStatus = 'expired'
     }
