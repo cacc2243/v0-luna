@@ -58,7 +58,7 @@ export function RefundModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4 bg-black/70 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="refund-title"
@@ -71,7 +71,7 @@ export function RefundModal({
         className="absolute inset-0"
       />
 
-      <div className="luna-border relative z-10 w-full max-w-md rounded-t-3xl bg-card p-6 shadow-2xl sm:rounded-3xl">
+      <div className="luna-border relative z-10 my-auto w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl">
         <button
           type="button"
           onClick={onClose}
