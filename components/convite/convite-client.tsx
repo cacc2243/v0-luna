@@ -196,6 +196,13 @@ export function ConviteClient({
       fetch('/api/fb/initiate-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // keepalive garante que a requisicao seja concluida mesmo que a pagina
+        // seja descarregada ou va para segundo plano logo apos gerar o PIX
+        // (ex.: no celular a usuaria copia o codigo e troca para o app do
+        // banco). Sem isso, o navegador cancela o fetch em andamento e o
+        // evento InitiateCheckout se perde no servidor — exatamente o caso do
+        // gatilho 'pix', em que o disparo acontece no momento da troca de app.
+        keepalive: true,
         body: JSON.stringify({
           eventId: icEventId,
           eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
