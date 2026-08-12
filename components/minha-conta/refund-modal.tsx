@@ -1,59 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { RefreshCcw, Loader2, CheckCircle2, X, ShieldCheck, Clock, ArrowRight } from 'lucide-react'
-import type { RefundRequest } from '@/app/minha-conta/actions'
-import { requestRefund } from '@/app/minha-conta/actions'
 
-function brl(value: number) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
-}
-
-function formatDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    })
-  } catch {
-    return ''
-  }
-}
-
+// Modal de reembolso PURAMENTE DEMONSTRATIVO.
+// Nao grava nada no banco, nao gera transacao, notificacao ou venda.
+// O processamento real do reembolso e feito manualmente no gateway.
 export function RefundModal({
   isOpen,
   onClose,
-  refund,
-  onRefundCreated,
 }: {
   isOpen: boolean
   onClose: () => void
-  refund: RefundRequest | null
-  onRefundCreated: (refund: RefundRequest) => void
 }) {
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
+
+  // Reseta o estado sempre que o modal reabre.
+  useEffect(() => {
+    if (isOpen) {
+      setSubmitting(false)
+      setDone(false)
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
-  const isDone = !!refund
-
-  async function handleConfirm() {
+  function handleConfirm() {
     setSubmitting(true)
-    setError(null)
-    try {
-      const res = await requestRefund()
-      if ('error' in res) {
-        setError('Não foi possível concluir agora. Tente novamente em instantes.')
-        return
-      }
-      onRefundCreated(res.refund)
-    } catch {
-      setError('Não foi possível concluir agora. Tente novamente em instantes.')
-    } finally {
+    // Apenas simula o processamento; nada e persistido.
+    setTimeout(() => {
       setSubmitting(false)
-    }
+      setDone(true)
+    }, 700)
   }
 
   return (
@@ -81,8 +60,8 @@ export function RefundModal({
           <X className="size-5" />
         </button>
 
-        {isDone ? (
-          // ── Estado concluído: informe permanente que fica salvo na conta ──
+        {done ? (
+          // ── Estado concluído: apenas informativo ──
           <div className="pt-2">
             <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-positive/10">
               <CheckCircle2 className="size-9 text-positive" aria-hidden="true" />
@@ -111,23 +90,6 @@ export function RefundModal({
                 </p>
               </div>
             </div>
-
-            {(refund.orders_count > 0 || refund.total_amount > 0) && (
-              <div className="mt-3 flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Pedidos</p>
-                  <p className="text-sm font-semibold text-foreground">{refund.orders_count}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Valor total</p>
-                  <p className="text-sm font-semibold text-foreground">{brl(refund.total_amount)}</p>
-                </div>
-              </div>
-            )}
-
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              Solicitado em {formatDate(refund.requested_at || refund.created_at)}
-            </p>
 
             <button
               type="button"
@@ -168,12 +130,6 @@ export function RefundModal({
                 </p>
               </div>
             </div>
-
-            {error && (
-              <p className="mt-4 rounded-xl bg-destructive/10 px-4 py-3 text-center text-sm text-destructive">
-                {error}
-              </p>
-            )}
 
             <button
               type="button"

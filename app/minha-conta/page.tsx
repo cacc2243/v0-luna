@@ -72,8 +72,8 @@ import {
   KeyRound,
   RefreshCcw,
 } from 'lucide-react'
-import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight, RefundRequest } from './actions'
-  import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead, getRefundRequest } from './actions'
+import type { Profile, Pack, Sale, Transaction, Withdrawal, Conversation, Boost, Notification, Highlight } from './actions'
+  import { generatePackActivity, generateChatActivity, acceptSale, rejectSale, requestWithdrawal, settleExpiredWithdrawals, updateProfile, markNotificationAsRead, markAllNotificationsAsRead } from './actions'
 import { PixModal } from '@/components/convite/pix-modal'
 import { PersonalizedSaleModal, ChatLockedModal, UnlockChatModal, GeneratingPixModal, FansWaitingModal } from '@/components/minha-conta/chat-unlock-modals'
 import { ChatsActive } from '@/components/minha-conta/chats-active'
@@ -4449,18 +4449,8 @@ function ProfileScreen({
 }) {
   const [currentView, setCurrentView] = useState<'main' | 'edit' | 'notifications' | 'settings' | 'help' | 'install'>('main')
   const [supportOpen, setSupportOpen] = useState(false)
-  // Reembolso: carrega a solicitacao existente (se houver) e controla o modal.
+  // Reembolso: apenas demonstrativo — controla somente a abertura do modal.
   const [refundOpen, setRefundOpen] = useState(false)
-  const [refund, setRefund] = useState<RefundRequest | null>(null)
-  useEffect(() => {
-    let active = true
-    getRefundRequest().then((r) => {
-      if (active) setRefund(r)
-    })
-    return () => {
-      active = false
-    }
-  }, [])
   const [localProfile, setLocalProfile] = useState({
     username: userProfile?.username || '@usuario',
     displayName: userProfile?.display_name || 'Usuario',
@@ -5324,13 +5314,7 @@ function ProfileScreen({
             <RefreshCcw className="size-5 text-primary" aria-hidden="true" />
           </span>
           <span className="flex-1 text-sm font-semibold text-foreground">Reembolso</span>
-          {refund ? (
-            <span className="rounded-full bg-positive/15 px-2 py-0.5 text-[0.6rem] font-bold text-positive">
-              Solicitado
-            </span>
-          ) : (
-            <ChevronRight className="size-5 text-muted-foreground" />
-          )}
+          <ChevronRight className="size-5 text-muted-foreground" />
         </button>
         
         <button
@@ -5352,12 +5336,7 @@ function ProfileScreen({
 
       <SupportModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
 
-      <RefundModal
-        isOpen={refundOpen}
-        onClose={() => setRefundOpen(false)}
-        refund={refund}
-        onRefundCreated={(r) => setRefund(r)}
-      />
+      <RefundModal isOpen={refundOpen} onClose={() => setRefundOpen(false)} />
     </div>
   )
 }
