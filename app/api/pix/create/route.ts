@@ -60,6 +60,15 @@ export async function POST(request: NextRequest) {
       landing_url: cleanAttr(att.landing_url),
     }
 
+    // CPF/nome informados pelo comprador (quando o pré-checkout exige CPF).
+    // Ficam salvos como identificação inicial do pagador; o webhook pode
+    // sobrescrever com os dados reais retornados pelo adquirente.
+    const payerDocumentDigits = (document || '').replace(/\D/g, '')
+    const payerIdentity: Record<string, string | null> = {
+      payer_document: payerDocumentDigits || null,
+      payer_name: (name || '').trim() || null,
+    }
+
     // Tipo de pagamento: 'invite', 'chat', 'gift_unlock', 'boost' ou 'verification' (verificação para saque)
     const inviteType =
       type === 'chat'
@@ -219,6 +228,7 @@ export async function POST(request: NextRequest) {
           pix_expiration: pixExpirationDate.toISOString(),
           ...fbAttribution,
           ...marketingAttribution,
+          ...payerIdentity,
         })
         .eq('id', existingInvite.id)
         .select()
@@ -246,6 +256,7 @@ export async function POST(request: NextRequest) {
           pix_expiration: pixExpirationDate.toISOString(),
           ...fbAttribution,
           ...marketingAttribution,
+          ...payerIdentity,
         })
         .select()
         .single()

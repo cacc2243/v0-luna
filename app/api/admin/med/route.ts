@@ -31,6 +31,20 @@ interface InviteRow {
   created_at: string
   paid_at: string | null
   invite_paid_email_sent: boolean | null
+  payer_name: string | null
+  payer_document: string | null
+  end_to_end_id: string | null
+  payment_reference: string | null
+  payment_authentication: string | null
+}
+
+/** Formata um CPF (11 dígitos) como 000.000.000-00; devolve o valor original se não casar. */
+function formatCpf(doc: string | null): string | null {
+  if (!doc) return null
+  const d = doc.replace(/\D/g, '')
+  if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+  if (d.length === 14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
+  return doc
 }
 
 interface EmailLogRow {
@@ -127,7 +141,7 @@ export async function GET() {
     supabase
       .from('invites')
       .select(
-        'id, user_id, email, amount, status, type, transaction_id, gateway, client_ip, client_ua, created_at, paid_at, invite_paid_email_sent',
+        'id, user_id, email, amount, status, type, transaction_id, gateway, client_ip, client_ua, created_at, paid_at, invite_paid_email_sent, payer_name, payer_document, end_to_end_id, payment_reference, payment_authentication',
       )
       .eq('status', 'paid')
       .order('paid_at', { ascending: false })
@@ -209,6 +223,14 @@ export async function GET() {
       gateway: inv.gateway,
       createdAt: inv.created_at,
       paidAt: inv.paid_at,
+      // Identificação do pagamento (varia por adquirente)
+      payment: {
+        endToEndId: inv.end_to_end_id || null,
+        reference: inv.payment_reference || null,
+        authentication: inv.payment_authentication || null,
+        payerName: inv.payer_name || null,
+        payerDocument: formatCpf(inv.payer_document),
+      },
       // Identidade
       email: inv.email || authMeta?.email || null,
       username: profile?.username || null,

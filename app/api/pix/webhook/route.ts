@@ -5,6 +5,75 @@ import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
 import { sendUtmifyOrder } from '@/lib/utmify/orders'
 import { notifyAdminSale } from '@/lib/push/notify-sale'
 
+/** Primeiro valor string não-vazio dentre os candidatos. */
+function pickString(...vals: unknown[]): string | null {
+  for (const v of vals) {
+    if (v === undefined || v === null) continue
+    const s = String(v).trim()
+    if (s) return s
+  }
+  return null
+}
+
+/** Localiza o nó do pagador dentro de qualquer um dos objetos informados. */
+function payerNode(...objs: Array<Record<string, any> | undefined | null>): Record<string, any> {
+  for (const o of objs) {
+    if (!o || typeof o !== 'object') continue
+    const node =
+      o.payer || o.debtor || o.client || o.customer || o.buyer || o.debitParty || o.payerInfo
+    if (node && typeof node === 'object') return node
+  }
+  return {}
+}
+
+/**
+ * Extrai a identificação do pagamento do payload do webhook. Cada adquirente
+ * usa um formato diferente, então tentamos várias chaves e nós aninhados:
+ *  - E2E (end-to-end id do PIX);
+ *  - CPF/nome do pagador (o pagador real, quando o gateway devolve);
+ *  - código de autenticação e ID de referência do adquirente.
+ * Só retorna o que existir — nunca sobrescreve dados salvos com null.
+ */
+function extractPaymentIdentity(
+  body: Record<string, any>,
+  tx: Record<string, any>,
+  data: Record<string, any>,
+) {
+  const p = payerNode(data, tx, body)
+
+  const endToEndId = pickString(
+    data.end_to_end_id, data.endToEndId, data.e2e_id, data.e2e, data.e2eId, data.endToEnd, data.end_to_end,
+    tx.end_to_end_id, tx.endToEndId, tx.e2e, tx.e2eId, tx.end_to_end,
+    body.end_to_end_id, body.endToEndId, body.e2e, body.e2eId, body.end_to_end,
+  )
+
+  const payerDocumentRaw = pickString(
+    body.payerDocument, body.payer_document, tx.payerDocument, tx.payer_document,
+    data.payerDocument, data.payer_document,
+    p.document, p.cpf, p.taxId, p.tax_id, p.documentNumber, p.document_number, p.registration,
+  )
+  const payerDocument = payerDocumentRaw ? payerDocumentRaw.replace(/\D/g, '') || null : null
+
+  const payerName = pickString(
+    body.payerName, tx.payerName, data.payerName,
+    p.name, p.fullName, p.full_name, p.holderName, p.holder_name,
+  )
+
+  const paymentAuthentication = pickString(
+    data.authentication, data.authenticationCode, data.authCode, data.nsu, data.authorizationCode,
+    tx.authentication, tx.authenticationCode, tx.authCode, tx.nsu,
+    body.authentication, body.authenticationCode, body.authCode, body.nsu,
+  )
+
+  const paymentReference = pickString(
+    data.reference, data.referenceId, data.reference_id, data.referenceCode,
+    tx.reference, tx.referenceId, tx.reference_id,
+    body.reference, body.referenceId, body.reference_id,
+  )
+
+  return { endToEndId, payerDocument, payerName, paymentAuthentication, paymentReference }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -165,6 +234,16 @@ export async function POST(request: NextRequest) {
 
     if (newStatus === 'paid') {
       updateData.paid_at = paidAt || new Date().toISOString()
+
+      // Identificação do pagamento (E2E, CPF/nome do pagador, autenticação e
+      // referência do adquirente). Só grava o que o gateway retornar; mantém os
+      // valores já salvos (ex.: CPF informado no checkout) quando ausente.
+      const identity = extractPaymentIdentity(body, tx, data)
+      if (identity.endToEndId) updateData.end_to_end_id = identity.endToEndId
+      if (identity.payerDocument) updateData.payer_document = identity.payerDocument
+      if (identity.payerName) updateData.payer_name = identity.payerName
+      if (identity.paymentAuthentication) updateData.payment_authentication = identity.paymentAuthentication
+      if (identity.paymentReference) updateData.payment_reference = identity.paymentReference
     }
 
     const { error: updateError } = await supabase
