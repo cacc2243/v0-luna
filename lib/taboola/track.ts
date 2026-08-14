@@ -1,5 +1,7 @@
 'use client'
 
+import { getTaboolaUnifiedId } from '@/lib/taboola/identity'
+
 /**
  * Helpers de tracking client-side para o Taboola Pixel (_tfa).
  *
@@ -31,8 +33,15 @@ export function tfaTrack(name: string, params: Record<string, unknown> = {}): vo
     const accounts = Array.isArray(window.__tfaAccounts) ? window.__tfaAccounts : []
     if (accounts.length === 0) return
     window._tfa = window._tfa || []
+
+    // Anexa o unified_id (SHA-256 do e-mail) quando disponivel: e a
+    // correspondencia first-party que substitui o cookie de terceiros e
+    // resolve o aviso de "Cookie ID" do Taboola.
+    const unifiedId = getTaboolaUnifiedId()
+    const withIdentity = unifiedId ? { unified_id: unifiedId, ...params } : params
+
     for (const id of accounts) {
-      window._tfa.push({ notify: 'event', name, id: Number(id), ...params })
+      window._tfa.push({ notify: 'event', name, id: Number(id), ...withIdentity })
     }
   } catch {
     // nunca quebrar o fluxo por causa do pixel

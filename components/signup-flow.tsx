@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { saveCreds } from '@/lib/auth/creds'
+import { setTaboolaEmail } from '@/lib/taboola/identity'
 import {
   User,
   Mail,
@@ -270,6 +271,10 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       // Salvar credenciais no dispositivo para o login automatico apos o
       // pagamento do convite (contas com convite pago entram sem digitar nada).
       saveCreds({ email: email.trim(), password })
+
+      // Gera o unified_id do Taboola (SHA-256 do e-mail) ja no cadastro, para
+      // que o page_view do /convite ja carregue com o identificador first-party.
+      void setTaboolaEmail(email.trim())
 
       // "Configurando sua conta..." por >= 2.5s e leva direto para /convite.
       // O aviso de "conta criada" fica so no /convite (WelcomePopup), sem duplicar aqui.
