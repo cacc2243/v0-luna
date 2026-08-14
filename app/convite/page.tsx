@@ -22,6 +22,7 @@ export default async function ConvitePage({
   const initialFromUrl = {
     username: first(sp.username),
     email: first(sp.email),
+    phone: first(sp.phone),
     pixType: first(sp.pixType),
     pixKey: first(sp.pixKey),
   }

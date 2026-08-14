@@ -112,6 +112,8 @@ interface PixModalProps {
   /** Titulo exibido no header e subtitulo opcional */
   title?: string
   subtitle?: string
+  /** Telefone (apenas dígitos) informado no cadastro, usado como sinal de correspondência avançada. */
+  phone?: string
   /** Tipo da chave PIX informada pelo usuario (CPF, Telefone, E-mail, Aleatória) */
   pixType?: string
   /** Valor da chave PIX informada pelo usuario */
@@ -134,7 +136,7 @@ interface PixModalProps {
   scrollToTopOnClose?: boolean
 }
 
-export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, pixType, pixKey, document: payerDocument, compact = false, discountPercent, embedded = false, scrollToTopOnClose = false }: PixModalProps) {
+export function PixContent({ isOpen, onClose, email, amount, userName, onPaymentConfirmed, onReady, type = 'invite', boostDays, title, subtitle, phone: payerPhone, pixType, pixKey, document: payerDocument, compact = false, discountPercent, embedded = false, scrollToTopOnClose = false }: PixModalProps) {
   const [loading, setLoading] = useState(true)
   // Portal: garante que o modal seja montado no body (evita que um ancestral
   // com `transform` — ex.: card com animate-pop — prenda/corte o position:fixed).
@@ -353,6 +355,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
           amount,
           name: userName || 'Cliente Luna',
           username: userName || undefined,
+          phone: payerPhone || undefined,
           pixType,
           pixKey,
           document: payerDocument || undefined,

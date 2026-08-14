@@ -255,11 +255,13 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         console.error('[v0] Falha ao solicitar e-mail de conta criada:', e),
       )
 
-      // Salvar dados no sessionStorage para a pagina de convite
+      // Salvar dados no sessionStorage para a pagina de convite. O telefone
+      // informado no passo 5 e propagado para virar sinal de correspondencia
+      // avancada nos eventos do pixel (InitiateCheckout e Purchase).
       try {
         sessionStorage.setItem(
           'luna_signup',
-          JSON.stringify({ username, email, pixType, pixKey }),
+          JSON.stringify({ username, email, phone: phone.replace(/\D/g, ''), pixType, pixKey }),
         )
       } catch {
         // ignore storage errors
@@ -434,7 +436,7 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
                   onChange={setPassword}
                   show={showPass}
                   onToggle={() => setShowPass((s) => !s)}
-                  placeholder="••••••"
+                  placeholder="���•••••"
                   autoFocus
                 />
                 <StepFooter onBack={back} disabled={!canContinue} onNext={advance} />
