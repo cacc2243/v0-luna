@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { fbTrack } from '@/lib/fb/track'
 import { saveCreds } from '@/lib/auth/creds'
 import {
   User,
@@ -269,12 +268,6 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       // Salvar credenciais no dispositivo para o login automatico apos o
       // pagamento do convite (contas com convite pago entram sem digitar nada).
       saveCreds({ email: email.trim(), password })
-
-      // Evento padrao do Facebook: cadastro concluido com sucesso.
-      fbTrack('CompleteRegistration', {
-        content_name: 'Cadastro Luna Privé',
-        status: true,
-      })
 
       // "Configurando sua conta..." por >= 2.5s e leva direto para /convite.
       // O aviso de "conta criada" fica so no /convite (WelcomePopup), sem duplicar aqui.
