@@ -8,6 +8,10 @@ interface InviteLike {
   amount?: number | string | null
   email?: string | null
   user_id?: string | null
+  // Identificacao do pagador (para correspondencia avancada no Purchase)
+  payer_name?: string | null
+  payer_phone?: string | null
+  payer_document?: string | null
   fbp?: string | null
   fbc?: string | null
   client_ip?: string | null
@@ -73,6 +77,20 @@ export async function maybeSendPurchase(invite: InviteLike): Promise<void> {
     // taxa de correspondencia da conversao com a campanha de origem.
     const fbc = deriveFbc(invite.fbc, invite.fbclid)
 
+    // Nome/sobrenome derivados do nome do pagador (quando informado no checkout).
+    const fullName = (invite.payer_name || '').trim()
+    const firstName = fullName ? fullName.split(/\s+/)[0] : null
+    const lastName =
+      fullName && fullName.split(/\s+/).length > 1
+        ? fullName.split(/\s+/).slice(1).join(' ')
+        : null
+
+    // external_id: envia o id interno do usuario E o CPF (quando houver). Mais
+    // identificadores estaveis => maior qualidade de correspondencia (EMQ).
+    const externalIds = [invite.user_id, invite.payer_document].filter(
+      (v): v is string => Boolean(v && String(v).trim()),
+    )
+
     // Anexa as UTMs ao custom_data para que a origem do lead (campanha, conjunto
     // e anuncio configurados no Facebook) acompanhe a conversao nos relatorios.
     const attributionData: Record<string, unknown> = {}
@@ -98,7 +116,11 @@ export async function maybeSendPurchase(invite: InviteLike): Promise<void> {
       },
       user: {
         email: invite.email,
-        externalId: invite.user_id,
+        phone: invite.payer_phone,
+        firstName,
+        lastName,
+        externalId: externalIds.length > 0 ? externalIds : null,
+        country: 'br',
         fbp: invite.fbp,
         fbc,
         clientIp: invite.client_ip,

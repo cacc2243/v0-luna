@@ -22,11 +22,13 @@ import { SocialProofToaster } from '@/components/convite/social-proof-toaster'
 interface SignupData {
   username: string
   email: string
+  /** Telefone informado no passo 5 do cadastro (apenas digitos). */
+  phone: string
   pixType: string
   pixKey: string
 }
 
-const EMPTY_SIGNUP: SignupData = { username: '', email: '', pixType: '', pixKey: '' }
+const EMPTY_SIGNUP: SignupData = { username: '', email: '', phone: '', pixType: '', pixKey: '' }
 
 /**
  * Resolve os dados da conta APENAS no cliente (nunca durante o SSR).
@@ -54,10 +56,12 @@ function resolveSignupData(initialFromUrl?: SignupData): SignupData {
     const p = new URLSearchParams(window.location.search)
     const email = p.get('email')
     const username = p.get('username')
+    const phone = p.get('phone')
     const pixType = p.get('pixType')
     const pixKey = p.get('pixKey')
     if (email) url.email = email
     if (username) url.username = username
+    if (phone) url.phone = phone
     if (pixType) url.pixType = pixType
     if (pixKey) url.pixKey = pixKey
   } catch {
@@ -67,6 +71,7 @@ function resolveSignupData(initialFromUrl?: SignupData): SignupData {
   return {
     username: url.username || initialFromUrl?.username || stored.username || '',
     email: url.email || initialFromUrl?.email || stored.email || '',
+    phone: url.phone || initialFromUrl?.phone || stored.phone || '',
     pixType: url.pixType || initialFromUrl?.pixType || stored.pixType || '',
     pixKey: url.pixKey || initialFromUrl?.pixKey || stored.pixKey || '',
   }
@@ -186,11 +191,8 @@ export function ConviteClient({
       const parts = trimmedName ? trimmedName.split(/\s+/) : []
       const firstName = parts.length > 0 ? parts[0] : null
       const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null
-      const normalizedPixType = (data.pixType || '').toLowerCase()
-      const phone =
-        normalizedPixType.includes('tele') || normalizedPixType.includes('phone')
-          ? data.pixKey || null
-          : null
+      // Telefone vem do passo 5 do cadastro (nao mais derivado da chave PIX).
+      const phone = data.phone || null
 
       const attribution = getAttributionForCheckout()
       fetch('/api/fb/initiate-checkout', {
@@ -213,6 +215,7 @@ export function ConviteClient({
           firstName,
           lastName,
           phone,
+          document: cpf || null,
           value,
           attribution,
         }),
@@ -425,6 +428,7 @@ export function ConviteClient({
         email={data.email}
         amount={inviteCents / 100}
         userName={data.username}
+        phone={data.phone}
         pixType={data.pixType}
         pixKey={data.pixKey}
         document={cpf}

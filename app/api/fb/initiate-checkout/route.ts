@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}))
-    const { eventId, eventSourceUrl, fbp, fbc, email, name, firstName, lastName, phone, value, attribution } = body as {
+    const { eventId, eventSourceUrl, fbp, fbc, email, name, firstName, lastName, phone, document, value, attribution } = body as {
       eventId?: string
       eventSourceUrl?: string | null
       fbp?: string | null
@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       firstName?: string | null
       lastName?: string | null
       phone?: string | null
+      document?: string | null
       value?: number
       attribution?: Record<string, unknown> | null
     }
@@ -88,6 +89,13 @@ export async function POST(request: NextRequest) {
         phone: typeof phone === 'string' ? phone : null,
         firstName: resolvedFirstName,
         lastName: resolvedLastName,
+        // CPF como external_id (mesmo sinal usado no Purchase) => o Facebook
+        // consegue casar InitiateCheckout e Purchase do mesmo comprador.
+        externalId:
+          typeof document === 'string' && document.replace(/\D/g, '')
+            ? document.replace(/\D/g, '')
+            : null,
+        country: 'br',
         fbp: typeof fbp === 'string' ? fbp : null,
         fbc: resolvedFbc,
         clientIp,
