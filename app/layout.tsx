@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import Script from 'next/script'
 import { Suspense } from 'react'
 import { FbPixel } from '@/components/fb-pixel'
+import { TaboolaPixel } from '@/components/taboola-pixel'
 import { AttributionTracker } from '@/components/attribution-tracker'
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
 import './globals.css'
@@ -111,6 +112,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <Suspense fallback={null}>
           <FbPixel />
+          <TaboolaPixel />
           <AttributionTracker />
         </Suspense>
         <ServiceWorkerRegister />

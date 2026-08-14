@@ -102,7 +102,7 @@ interface PixModalProps {
   email: string
   amount: number
   userName?: string
-  onPaymentConfirmed?: () => void
+  onPaymentConfirmed?: (payload?: { orderId?: string | null; value?: number }) => void
   /** Disparado uma única vez quando o PIX está 100% gerado e pronto para exibir. */
   onReady?: () => void
   /** Tipo de pagamento: 'invite' (convite), 'chat' (chat exclusivo), 'gift_unlock' (presentes), 'boost' (impulsionamento) ou 'verification' (verificação de conta) */
@@ -267,7 +267,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       const data = await response.json()
       if (data.paidInvite) {
         showToast('success', 'Pagamento confirmado! Liberando seu acesso...')
-        onPaymentConfirmed?.()
+        onPaymentConfirmed?.({ orderId: inviteId, value: Number(amount) || 0 })
       } else {
         showToast('info', 'Ainda não identificamos seu pagamento. Se você acabou de pagar, aguarde alguns instantes e fique de olho no seu e-mail — o Código de Convite chega por lá assim que for confirmado.')
       }
@@ -436,7 +436,7 @@ export function PixContent({ isOpen, onClose, email, amount, userName, onPayment
       const data = await response.json()
 
       if (data.paidInvite) {
-        onPaymentConfirmed?.()
+        onPaymentConfirmed?.({ orderId: inviteId, value: Number(amount) || 0 })
       }
     } catch (err) {
       console.error('[v0] Erro ao verificar pagamento:', err)
