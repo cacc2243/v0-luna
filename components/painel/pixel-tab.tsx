@@ -14,6 +14,7 @@ import {
   EyeOff,
   MousePointerClick,
   QrCode,
+  Newspaper,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -169,7 +170,7 @@ function InitiateCheckoutTrigger() {
   )
 }
 
-export function PixelTab() {
+function FacebookPixels() {
   const { data, error, isLoading, mutate } = useSWR<{ pixels: PixelRow[] }>(
     '/api/admin/pixels',
     fetcher,
@@ -551,6 +552,329 @@ export function PixelTab() {
           <Plus className="size-4" /> Adicionar pixel
         </button>
       )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Taboola
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface TaboolaRow {
+  id: string
+  label: string
+  account_id: string
+  enabled: boolean
+  created_at: string
+}
+
+function TaboolaPixels() {
+  const { data, error, isLoading, mutate } = useSWR<{ pixels: TaboolaRow[] }>(
+    '/api/admin/taboola-pixels',
+    fetcher,
+  )
+
+  const [showForm, setShowForm] = useState(false)
+  const [label, setLabel] = useState('')
+  const [accountId, setAccountId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  const pixels = data?.pixels || []
+
+  const resetForm = () => {
+    setLabel('')
+    setAccountId('')
+    setFormError(null)
+  }
+
+  const addPixel = async () => {
+    setFormError(null)
+    if (!accountId.trim()) {
+      setFormError('Informe o Account ID do Taboola.')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/admin/taboola-pixels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: label.trim(), account_id: accountId.trim() }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setFormError(json?.error || 'Falha ao adicionar o pixel.')
+        return
+      }
+      resetForm()
+      setShowForm(false)
+      await mutate()
+    } catch {
+      setFormError('Erro de conexão ao adicionar o pixel.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const toggleEnabled = async (p: TaboolaRow) => {
+    setBusyId(p.id)
+    try {
+      await fetch('/api/admin/taboola-pixels', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: p.id, enabled: !p.enabled }),
+      })
+      await mutate()
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const removePixel = async (p: TaboolaRow) => {
+    if (!confirm(`Remover o pixel do Taboola ${p.account_id}? Esta ação não pode ser desfeita.`))
+      return
+    setBusyId(p.id)
+    try {
+      await fetch(`/api/admin/taboola-pixels?id=${encodeURIComponent(p.id)}`, { method: 'DELETE' })
+      await mutate()
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  if (isLoading && !data) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <Loader2 className="size-7 animate-spin text-primary" />
+        <p className="mt-3 text-sm text-muted-foreground">Carregando pixels...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+        <AlertTriangle className="size-7 text-destructive" />
+        <p className="text-sm text-muted-foreground">Não foi possível carregar os pixels.</p>
+        <button
+          onClick={() => mutate()}
+          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Cabecalho explicativo */}
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Newspaper className="size-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-bold text-foreground">Pixels do Taboola</h2>
+            <p className="mt-1 text-pretty text-sm leading-relaxed text-muted-foreground">
+              Adicione um ou mais pixels (Account ID). Todos os pixels ativos recebem os eventos:{' '}
+              <span className="font-semibold text-foreground">page_view</span> (em cada página),{' '}
+              <span className="font-semibold text-foreground">start_checkout</span> (início do
+              checkout) e <span className="font-semibold text-foreground">make_purchase</span> (compra
+              confirmada), no formato exigido pelo Taboola (com revenue, currency e orderid).
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Lista de pixels */}
+      {pixels.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Nenhum pixel do Taboola configurado ainda. Adicione o primeiro abaixo.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {pixels.map((p) => (
+            <section key={p.id} className="rounded-2xl border border-border bg-card p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-foreground">
+                      {p.label || 'Pixel sem nome'}
+                    </span>
+                    <span
+                      className={cn(
+                        'rounded-full px-2 py-0.5 text-xs font-bold',
+                        p.enabled
+                          ? 'bg-positive/15 text-positive'
+                          : 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {p.enabled ? 'Ativo' : 'Inativo'}
+                    </span>
+                  </div>
+                  <p className="mt-1 font-mono text-xs text-muted-foreground">
+                    Account ID: {p.account_id}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleEnabled(p)}
+                    disabled={busyId === p.id}
+                    role="switch"
+                    aria-checked={p.enabled}
+                    className={cn(
+                      'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:opacity-50',
+                      p.enabled ? 'bg-positive' : 'bg-muted-foreground/40',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'inline-block size-5 transform rounded-full bg-white shadow transition',
+                        p.enabled ? 'translate-x-[1.4rem]' : 'translate-x-0.5',
+                      )}
+                    />
+                  </button>
+                  <button
+                    onClick={() => removePixel(p)}
+                    disabled={busyId === p.id}
+                    aria-label="Remover pixel"
+                    className="inline-flex items-center justify-center rounded-lg border border-border bg-secondary/40 p-2 text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+
+      {/* Adicionar novo pixel */}
+      {showForm ? (
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <h3 className="text-base font-bold text-foreground">Novo pixel do Taboola</h3>
+
+          <div className="mt-4 flex flex-col gap-4">
+            <div>
+              <label htmlFor="tb-label" className="text-sm font-semibold text-foreground">
+                Nome (opcional)
+              </label>
+              <input
+                id="tb-label"
+                type="text"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="Ex.: Taboola principal"
+                className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="tb-id" className="text-sm font-semibold text-foreground">
+                Account ID
+              </label>
+              <input
+                id="tb-id"
+                type="text"
+                inputMode="numeric"
+                value={accountId}
+                onChange={(e) => setAccountId(e.target.value)}
+                placeholder="Ex.: 2086256"
+                className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 font-mono text-sm text-foreground outline-none focus:border-primary"
+              />
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                É o número que aparece na URL do seu pixel:{' '}
+                <span className="font-mono">cdn.taboola.com/libtrc/unip/&lt;Account ID&gt;/tfa.js</span>
+              </p>
+            </div>
+
+            {formError && (
+              <div className="flex items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                <AlertTriangle className="size-4 shrink-0" />
+                {formError}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={addPixel}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+                Salvar pixel
+              </button>
+              <button
+                onClick={() => {
+                  resetForm()
+                  setShowForm(false)
+                }}
+                disabled={saving}
+                className="rounded-xl border border-border bg-secondary/40 px-5 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <button
+          onClick={() => setShowForm(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/50 bg-primary/5 px-5 py-4 text-sm font-semibold text-primary transition hover:bg-primary/10"
+        >
+          <Plus className="size-4" /> Adicionar pixel
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Wrapper: alterna entre os provedores de pixel (Facebook e Taboola)
+// ─────────────────────────────────────────────────────────────────────────────
+
+type Provider = 'facebook' | 'taboola'
+
+export function PixelTab() {
+  const [provider, setProvider] = useState<Provider>('facebook')
+
+  const tabs: { key: Provider; label: string; icon: typeof Facebook }[] = [
+    { key: 'facebook', label: 'Facebook', icon: Facebook },
+    { key: 'taboola', label: 'Taboola', icon: Newspaper },
+  ]
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Seletor de provedor */}
+      <div className="flex gap-2 rounded-2xl border border-border bg-card p-1.5">
+        {tabs.map((t) => {
+          const Icon = t.icon
+          const active = provider === t.key
+          return (
+            <button
+              key={t.key}
+              onClick={() => setProvider(t.key)}
+              aria-pressed={active}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition',
+                active
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+              )}
+            >
+              <Icon className="size-4" />
+              {t.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {provider === 'facebook' ? <FacebookPixels /> : <TaboolaPixels />}
     </div>
   )
 }

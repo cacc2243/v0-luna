@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
+  import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
+  import { tfaTrackWhenReady } from '@/lib/taboola/track'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { Mail } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
@@ -187,6 +188,10 @@ export function ConviteClient({
         icEventId,
       )
 
+      // Taboola: evento padrao de inicio de checkout (mesmo momento do
+      // InitiateCheckout do Facebook), com receita e moeda.
+      tfaTrackWhenReady('start_checkout', { revenue: value, currency: 'BRL' })
+
       const trimmedName = (data.username || '').trim()
       const parts = trimmedName ? trimmedName.split(/\s+/) : []
       const firstName = parts.length > 0 ? parts[0] : null
@@ -302,11 +307,24 @@ export function ConviteClient({
     setShowPreCheckout(false)
   }
 
-  function handlePaymentConfirmed() {
-    setShowPixModal(false)
-    setPixReady(false)
-    // Redirecionar para a tela de confirmação após o pagamento aprovado
-    router.push('/confirmation')
+  function handlePaymentConfirmed(payload?: { orderId?: string | null; value?: number }) {
+  setShowPixModal(false)
+  setPixReady(false)
+  // Guarda os dados da compra para o evento make_purchase do Taboola disparar
+  // na tela de confirmação (mais confiável do que disparar durante o redirect).
+  try {
+    sessionStorage.setItem(
+      'luna_purchase',
+      JSON.stringify({
+        orderId: payload?.orderId || `luna_${Date.now()}`,
+        value: typeof payload?.value === 'number' ? payload.value : inviteCents / 100 || 0,
+      }),
+    )
+  } catch {
+    // ignore storage errors
+  }
+  // Redirecionar para a tela de confirmação após o pagamento aprovado
+  router.push('/confirmation')
   }
 
   return (

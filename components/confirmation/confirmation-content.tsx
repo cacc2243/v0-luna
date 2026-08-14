@@ -4,12 +4,32 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Check, ArrowRight, Sparkles, ShieldCheck, Mail, AlertTriangle } from 'lucide-react'
 import { InstallAppGuide } from './install-app-guide'
+import { tfaTrackWhenReady } from '@/lib/taboola/track'
 
 export function ConfirmationContent() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Taboola: dispara make_purchase (compra concluída) uma única vez ao chegar
+  // na confirmação. Lê os dados salvos no checkout e usa o orderid para
+  // deduplicação — remove a chave para não refazer o disparo em um refresh.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('luna_purchase')
+      if (!raw) return
+      sessionStorage.removeItem('luna_purchase')
+      const { orderId, value } = JSON.parse(raw) as { orderId?: string; value?: number }
+      tfaTrackWhenReady('make_purchase', {
+        revenue: typeof value === 'number' ? value : 0,
+        currency: 'BRL',
+        orderid: orderId || `luna_${Date.now()}`,
+      })
+    } catch {
+      // nunca quebrar a tela por causa do pixel
+    }
   }, [])
 
   return (
