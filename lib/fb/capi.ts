@@ -6,13 +6,18 @@ const GRAPH_VERSION = 'v21.0'
 interface ServerEventUser {
   email?: string | null
   phone?: string | null
-  externalId?: string | null
+  /** Pode ser um unico id ou varios (ex.: user_id + CPF) para mais matches. */
+  externalId?: string | string[] | null
   fbp?: string | null
   fbc?: string | null
   clientIp?: string | null
   clientUa?: string | null
   firstName?: string | null
   lastName?: string | null
+  city?: string | null
+  state?: string | null
+  zip?: string | null
+  country?: string | null
 }
 
 interface SendServerEventArgs {
@@ -65,9 +70,31 @@ function buildUserData(user: ServerEventUser): Record<string, unknown> {
   const ln = normalizeAndHash(user.lastName)
   if (ln) data.ln = [ln]
 
-  // external_id pode ser hasheado; usamos o id interno do usuario.
-  const externalId = normalizeAndHash(user.externalId, false)
-  if (externalId) data.external_id = [externalId]
+  // Localizacao (hasheada). Cidade/estado sem espacos/acentos; CEP so digitos;
+  // pais em ISO-2 minusculo. Sao sinais extras de correspondencia avancada.
+  const ct = normalizeAndHash(user.city?.replace(/\s+/g, ''))
+  if (ct) data.ct = [ct]
+
+  const st = normalizeAndHash(user.state?.replace(/\s+/g, ''))
+  if (st) data.st = [st]
+
+  const zp = normalizeAndHash(user.zip?.replace(/\D/g, ''))
+  if (zp) data.zp = [zp]
+
+  const country = normalizeAndHash(user.country)
+  if (country) data.country = [country]
+
+  // external_id: aceita um ou varios identificadores estaveis (user_id, CPF).
+  // Cada valor e hasheado; quanto mais sinais, melhor a correspondencia.
+  const rawIds = Array.isArray(user.externalId)
+    ? user.externalId
+    : user.externalId
+      ? [user.externalId]
+      : []
+  const externalIds = rawIds
+    .map((id) => normalizeAndHash(id, false))
+    .filter((v): v is string => Boolean(v))
+  if (externalIds.length > 0) data.external_id = externalIds
 
   // Sinais nao-hasheados.
   if (user.fbp) data.fbp = user.fbp

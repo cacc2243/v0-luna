@@ -63,10 +63,19 @@ export async function POST(request: NextRequest) {
     // CPF/nome informados pelo comprador (quando o pré-checkout exige CPF).
     // Ficam salvos como identificação inicial do pagador; o webhook pode
     // sobrescrever com os dados reais retornados pelo adquirente.
+    // Telefone: usa o enviado explicitamente ou, na falta, a chave PIX quando
+    // ela e do tipo telefone (unica fonte de telefone no fluxo de convite).
+    const normalizedPixType = String(pixType || '').toLowerCase()
+    const pixKeyIsPhone =
+      normalizedPixType.includes('tele') || normalizedPixType.includes('phone')
+    const rawPhone = phone || (pixKeyIsPhone ? pixKey : '') || ''
+
     const payerDocumentDigits = (document || '').replace(/\D/g, '')
+    const payerPhoneDigits = rawPhone.replace(/\D/g, '')
     const payerIdentity: Record<string, string | null> = {
       payer_document: payerDocumentDigits || null,
       payer_name: (name || '').trim() || null,
+      payer_phone: payerPhoneDigits || null,
     }
 
     // Tipo de pagamento: 'invite', 'chat', 'gift_unlock', 'boost' ou 'verification' (verificação para saque)
@@ -171,8 +180,8 @@ export async function POST(request: NextRequest) {
       client: {
         name: (name || '').trim(),
         email,
-        phone: (phone || '').replace(/\D/g, ''),
-        document: (document || '').replace(/\D/g, ''),
+        phone: payerPhoneDigits,
+        document: payerDocumentDigits,
       },
       callbackUrl: getWebhookUrl(),
     }

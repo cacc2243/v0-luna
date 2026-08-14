@@ -213,6 +213,7 @@ export function ConviteClient({
           firstName,
           lastName,
           phone,
+          document: cpf || null,
           value,
           attribution,
         }),
