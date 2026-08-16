@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { saveCreds } from '@/lib/auth/creds'
 import { setTaboolaEmail } from '@/lib/taboola/identity'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
-import { readCookie } from '@/lib/fb/track'
+import { readCookie, fbTrack } from '@/lib/fb/track'
 import {
   User,
   Mail,
@@ -301,6 +301,12 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       // Gera o unified_id do Taboola (SHA-256 do e-mail) ja no cadastro, para
       // que o page_view do /convite ja carregue com o identificador first-party.
       void setTaboolaEmail(email.trim())
+
+      // Evento padrao do Facebook: cadastro concluido com sucesso.
+      fbTrack('CompleteRegistration', {
+        content_name: 'Cadastro Luna Privé',
+        status: true,
+      })
 
       // "Configurando sua conta..." por >= 2.5s e leva direto para /convite.
       // O aviso de "conta criada" fica so no /convite (WelcomePopup), sem duplicar aqui.
