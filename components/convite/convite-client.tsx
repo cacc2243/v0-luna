@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
   import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
   import { tfaTrackWhenReady } from '@/lib/taboola/track'
+  import { setTaboolaEmail } from '@/lib/taboola/identity'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { Mail } from 'lucide-react'
 import { PageBackground } from '@/components/page-background'
@@ -119,6 +120,14 @@ export function ConviteClient({
     // Executa uma unica vez na montagem.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Alimenta o unified_id do Taboola (SHA-256 do e-mail) sempre que o e-mail
+  // muda. E o identificador first-party que substitui o cookie de terceiros —
+  // os eventos seguintes (page_view, start_checkout, make_purchase) passam a
+  // enviar unified_id automaticamente, elevando o match rate.
+  useEffect(() => {
+    if (data.email) void setTaboolaEmail(data.email)
+  }, [data.email])
   // Controla a exibição da barra fixa de topo: só aparece após rolar um pouco.
   const [showPreCheckout, setShowPreCheckout] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)

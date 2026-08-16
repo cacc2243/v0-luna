@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { saveCreds } from '@/lib/auth/creds'
+import { setTaboolaEmail } from '@/lib/taboola/identity'
+import { getAttributionForCheckout } from '@/lib/fb/attribution'
+import { readCookie } from '@/lib/fb/track'
 import {
   User,
   Mail,
@@ -224,13 +227,37 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         return
       }
       
-      // Atualizar o perfil com dados adicionais (phone e pix)
+      // Snapshot de atribuicao (first-touch UTMs + fbclid + cookies do pixel).
+      // Salvo NA CONTA para que, mesmo que a usuaria volte dias depois em outra
+      // sessao/PWA (sem o cookie de atribuicao), a compra ainda possa ser
+      // atribuida a campanha de origem. cada campo e limitado a 512 chars.
+      const attr = getAttributionForCheckout()
+      const clip = (v: unknown): string | null => {
+        if (typeof v !== 'string') return null
+        const t = v.trim()
+        return t ? t.slice(0, 512) : null
+      }
+      const attributionSnapshot = {
+        utm_source: clip(attr.utm_source),
+        utm_campaign: clip(attr.utm_campaign),
+        utm_medium: clip(attr.utm_medium),
+        utm_content: clip(attr.utm_content),
+        utm_term: clip(attr.utm_term),
+        fbclid: clip(attr.fbclid),
+        fbp: clip(readCookie('_fbp')),
+        fbc: clip(readCookie('_fbc')),
+        attr_referrer: clip(attr.referrer),
+        attr_landing_url: clip(attr.landing_url),
+      }
+
+      // Atualizar o perfil com dados adicionais (phone, pix e atribuicao)
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           phone: phone.replace(/\D/g, ''),
           pix_type: pixType,
           pix_key: pixKey.trim(),
+          ...attributionSnapshot,
         })
         .eq('id', data.user.id)
       
@@ -270,6 +297,10 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       // Salvar credenciais no dispositivo para o login automatico apos o
       // pagamento do convite (contas com convite pago entram sem digitar nada).
       saveCreds({ email: email.trim(), password })
+
+      // Gera o unified_id do Taboola (SHA-256 do e-mail) ja no cadastro, para
+      // que o page_view do /convite ja carregue com o identificador first-party.
+      void setTaboolaEmail(email.trim())
 
       // "Configurando sua conta..." por >= 2.5s e leva direto para /convite.
       // O aviso de "conta criada" fica so no /convite (WelcomePopup), sem duplicar aqui.

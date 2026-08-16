@@ -141,6 +141,80 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient()
 
+    // ── Recuperacao de atribuicao (fix de atribuicao de campanha) ────────────
+    // Quando a compra vem SEM sinal de campanha no cookie (ex.: usuaria que ja
+    // tinha conta e voltou dias depois pelo app/PWA para comprar chat, boost,
+    // presente ou verificacao), o cookie de atribuicao pode nao existir mais.
+    // Nesses casos recuperamos o first-touch salvo (a) no perfil (no cadastro)
+    // ou (b) no invite mais antigo do mesmo email/usuario que tenha UTMs, para
+    // que o Purchase (Conversions API) e a Utmify recebam a origem correta.
+    const hasCampaignSignal = Boolean(
+      marketingAttribution.utm_source ||
+        marketingAttribution.utm_campaign ||
+        marketingAttribution.fbclid,
+    )
+    const missingPixelIds = !fbAttribution.fbp || !fbAttribution.fbc
+
+    if (!hasCampaignSignal || missingPixelIds) {
+      // Fonte 1: perfil da conta (snapshot salvo no cadastro).
+      let recovered: Record<string, string | null> | null = null
+      if (userId) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select(
+            'utm_source,utm_campaign,utm_medium,utm_content,utm_term,fbclid,fbp,fbc,attr_referrer,attr_landing_url',
+          )
+          .eq('id', userId)
+          .maybeSingle()
+        if (prof && (prof.utm_source || prof.utm_campaign || prof.fbclid || prof.fbp || prof.fbc)) {
+          recovered = {
+            utm_source: prof.utm_source ?? null,
+            utm_campaign: prof.utm_campaign ?? null,
+            utm_medium: prof.utm_medium ?? null,
+            utm_content: prof.utm_content ?? null,
+            utm_term: prof.utm_term ?? null,
+            fbclid: prof.fbclid ?? null,
+            fbp: prof.fbp ?? null,
+            fbc: prof.fbc ?? null,
+            referrer: prof.attr_referrer ?? null,
+            landing_url: prof.attr_landing_url ?? null,
+          }
+        }
+      }
+
+      // Fonte 2: invite mais antigo do mesmo email que ja tenha atribuicao.
+      if (!recovered) {
+        const { data: prior } = await supabase
+          .from('invites')
+          .select(
+            'utm_source,utm_campaign,utm_medium,utm_content,utm_term,fbclid,fbp,fbc,referrer,landing_url',
+          )
+          .eq('email', email)
+          .not('utm_source', 'is', null)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+        if (prior) recovered = prior as Record<string, string | null>
+      }
+
+      if (recovered) {
+        // So preenche o que estiver faltando (nao sobrescreve o que veio agora).
+        if (!hasCampaignSignal) {
+          marketingAttribution.utm_source ||= recovered.utm_source
+          marketingAttribution.utm_campaign ||= recovered.utm_campaign
+          marketingAttribution.utm_medium ||= recovered.utm_medium
+          marketingAttribution.utm_content ||= recovered.utm_content
+          marketingAttribution.utm_term ||= recovered.utm_term
+          marketingAttribution.fbclid ||= recovered.fbclid
+          marketingAttribution.referrer ||= recovered.referrer
+          marketingAttribution.landing_url ||= recovered.landing_url
+        }
+        fbAttribution.fbp ||= recovered.fbp
+        fbAttribution.fbc ||= recovered.fbc
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Verificar se já existe um pagamento pendente do mesmo tipo para este email
     const { data: existingInvite } = await supabase
       .from('invites')

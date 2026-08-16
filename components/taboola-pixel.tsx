@@ -2,9 +2,18 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { getTaboolaUnifiedId } from '@/lib/taboola/identity'
 
 interface PublicTaboolaPixel {
   account_id: string
+}
+
+/** page_view com unified_id (quando ja conhecido) para match first-party. */
+function pageViewPayload(id: string): Record<string, unknown> {
+  const unifiedId = getTaboolaUnifiedId()
+  const base: Record<string, unknown> = { notify: 'event', name: 'page_view', id: Number(id) }
+  if (unifiedId) base.unified_id = unifiedId
+  return base
 }
 
 /**
@@ -59,7 +68,7 @@ export function TaboolaPixel() {
 
     // page_view inicial + carregamento do script por account.
     for (const id of accounts) {
-      window._tfa.push({ notify: 'event', name: 'page_view', id: Number(id) })
+      window._tfa.push(pageViewPayload(id))
       const scriptId = `tb_tfa_script_${id}`
       if (!document.getElementById(scriptId)) {
         const t = document.createElement('script')
@@ -96,7 +105,7 @@ export function TaboolaPixel() {
     }
     if (!Array.isArray(window._tfa)) return
     for (const id of accounts) {
-      window._tfa.push({ notify: 'event', name: 'page_view', id: Number(id) })
+      window._tfa.push(pageViewPayload(id))
     }
   }, [pathname, accounts])
 
