@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { saveCreds } from '@/lib/auth/creds'
 import { setTaboolaEmail } from '@/lib/taboola/identity'
+import { getAttributionForCheckout } from '@/lib/fb/attribution'
+import { readCookie } from '@/lib/fb/track'
 import {
   User,
   Mail,
@@ -225,13 +227,37 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         return
       }
       
-      // Atualizar o perfil com dados adicionais (phone e pix)
+      // Snapshot de atribuicao (first-touch UTMs + fbclid + cookies do pixel).
+      // Salvo NA CONTA para que, mesmo que a usuaria volte dias depois em outra
+      // sessao/PWA (sem o cookie de atribuicao), a compra ainda possa ser
+      // atribuida a campanha de origem. cada campo e limitado a 512 chars.
+      const attr = getAttributionForCheckout()
+      const clip = (v: unknown): string | null => {
+        if (typeof v !== 'string') return null
+        const t = v.trim()
+        return t ? t.slice(0, 512) : null
+      }
+      const attributionSnapshot = {
+        utm_source: clip(attr.utm_source),
+        utm_campaign: clip(attr.utm_campaign),
+        utm_medium: clip(attr.utm_medium),
+        utm_content: clip(attr.utm_content),
+        utm_term: clip(attr.utm_term),
+        fbclid: clip(attr.fbclid),
+        fbp: clip(readCookie('_fbp')),
+        fbc: clip(readCookie('_fbc')),
+        attr_referrer: clip(attr.referrer),
+        attr_landing_url: clip(attr.landing_url),
+      }
+
+      // Atualizar o perfil com dados adicionais (phone, pix e atribuicao)
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           phone: phone.replace(/\D/g, ''),
           pix_type: pixType,
           pix_key: pixKey.trim(),
+          ...attributionSnapshot,
         })
         .eq('id', data.user.id)
       
