@@ -116,7 +116,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
             </div>
 
             <h2 className="relative mt-4 text-balance text-lg font-bold leading-tight text-foreground">
-              Parabéns! Ainda há convites disponíveis
+              Restam poucos convites disponíveis!
             </h2>
             <p className="relative mt-2.5 text-pretty text-[0.8rem] leading-relaxed text-muted-foreground">
               Existem convites para serem resgatados com uma{' '}
