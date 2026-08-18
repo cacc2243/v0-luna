@@ -3,6 +3,8 @@ import { createHorsepayPixCharge } from '@/lib/horsepay/client'
 import { createPixupPixCharge } from '@/lib/pixup/client'
 import { createDiretopayPixCharge } from '@/lib/diretopay/client'
 import { createMisticpayPixCharge, isMisticpayConfigured } from '@/lib/misticpay/client'
+import { createBspayPixCharge } from '@/lib/bspay/client'
+import { createBuckpayPixCharge } from '@/lib/buckpay/client'
 
 const BYNET_API_URL = 'https://api-gateway.techbynet.com'
 
@@ -531,6 +533,119 @@ const misticpayGateway: CashinGateway = {
 }
 
 /**
+ * Gateway BSPay (cash-in). Mesma API da PixUp: OAuth2 client_credentials
+ * (Basic -> Bearer), sem HMAC no cash-in. O QR Code volta em
+ * `data.payment_info.qrcode` e o webhook chega como `cashin.confirmed`.
+ */
+const bspayGateway: CashinGateway = {
+  id: 'bspay',
+  label: 'BSPay',
+  description: 'Geração de PIX (cash-in) via BSPay.',
+  isConfigured: () =>
+    Boolean(process.env.BSPAY_CLIENT_ID && process.env.BSPAY_CLIENT_SECRET),
+  create: async (input) => {
+    const safeName =
+      input.client.name && input.client.name.trim().length >= 3
+        ? input.client.name.trim()
+        : FALLBACK_NAMES[0]
+    const cleanDoc = (input.client.document || '').replace(/\D/g, '')
+
+    try {
+      const result = await createBspayPixCharge({
+        externalId: input.identifier,
+        amount: input.amount,
+        postbackUrl: input.callbackUrl,
+        client: {
+          name: safeName,
+          email: input.client.email,
+          document: isValidCPF(cleanDoc) ? cleanDoc : undefined,
+        },
+      })
+
+      return {
+        ok: result.ok,
+        status: result.status,
+        transactionId: result.transactionId,
+        pixCode: result.pixCode,
+        errorMessage: result.errorMessage,
+        raw: result.raw,
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao contatar a BSPay'
+      console.error('[v0] Erro no gateway BSPay (cash-in):', msg)
+      return {
+        ok: false,
+        status: 502,
+        transactionId: null,
+        pixCode: null,
+        errorMessage: msg,
+        raw: null,
+      }
+    }
+  },
+}
+
+/**
+ * Gateway BuckPay. Autenticacao por Bearer token + User-Agent especifico.
+ * Trabalha com valores em centavos (min R$ 6,00). O CPF nao e obrigatorio;
+ * enviamos os dados reais do pagador quando disponiveis.
+ */
+const buckpayGateway: CashinGateway = {
+  id: 'buckpay',
+  label: 'BuckPay',
+  description: 'Geração de PIX (cash-in) via BuckPay.',
+  isConfigured: () => Boolean(process.env.BUCKPAY_API_TOKEN),
+  create: async (input) => {
+    const cleanDoc = (input.client.document || '').replace(/\D/g, '')
+    const cleanPhone = (input.client.phone || '').replace(/\D/g, '')
+    const safeName =
+      input.client.name && input.client.name.trim().length >= 3
+        ? input.client.name.trim()
+        : FALLBACK_NAMES[0]
+
+    // A BuckPay nao exige CPF, mas quando o recebido for invalido geramos um
+    // valido para maximizar aprovacao e manter consistencia com os demais.
+    const document = isValidCPF(cleanDoc) ? cleanDoc : generateValidCPF()
+    const phone = cleanPhone.length >= 10 ? cleanPhone : '11999999999'
+
+    try {
+      const result = await createBuckpayPixCharge({
+        identifier: input.identifier,
+        amount: input.amount,
+        itemTitle: input.itemTitle,
+        client: {
+          name: safeName,
+          email: input.client.email,
+          phone,
+          document,
+        },
+        callbackUrl: input.callbackUrl,
+      })
+
+      return {
+        ok: result.ok,
+        status: result.status,
+        transactionId: result.transactionId,
+        pixCode: result.pixCode,
+        errorMessage: result.errorMessage,
+        raw: result.raw,
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao contatar a BuckPay'
+      console.error('[v0] Erro no gateway BuckPay (cash-in):', msg)
+      return {
+        ok: false,
+        status: 502,
+        transactionId: null,
+        pixCode: null,
+        errorMessage: msg,
+        raw: null,
+      }
+    }
+  },
+}
+
+/**
  * Registro central de gateways de cash-in. Para adicionar um novo gateway,
  * implemente CashinGateway e registre-o aqui — ele aparece automaticamente
  * no painel de configuracoes.
@@ -542,6 +657,8 @@ const GATEWAYS: CashinGateway[] = [
   pixupGateway,
   diretopayGateway,
   misticpayGateway,
+  bspayGateway,
+  buckpayGateway,
 ]
 
 export function listCashinGateways(): CashinGateway[] {

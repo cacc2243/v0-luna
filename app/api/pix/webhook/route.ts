@@ -195,13 +195,22 @@ export async function POST(request: NextRequest) {
     // Mapear status do gateway para nosso status.
     // SigiloPay usa `event` (TRANSACTION_PAID/CANCELED/REFUNDED) e status COMPLETED.
     let newStatus = invite.status
-    const paidEvent = event === 'TRANSACTION_PAID' || event === 'CASHIN.CONFIRMED'
+    // BuckPay: `transaction.processed` = pago, `transaction.created` = pendente.
+    const paidEvent =
+      event === 'TRANSACTION_PAID' ||
+      event === 'CASHIN.CONFIRMED' ||
+      event === 'TRANSACTION.PROCESSED'
     const canceledEvent =
       event === 'TRANSACTION_CANCELED' ||
       event === 'TRANSACTION_CANCELLED' ||
       event === 'CASHIN.EXPIRED' ||
-      event === 'CASHIN.FAILED'
-    const refundedEvent = event === 'TRANSACTION_REFUNDED' || event === 'CASHIN.REFUNDED'
+      event === 'CASHIN.FAILED' ||
+      event === 'TRANSACTION.CANCELED' ||
+      event === 'TRANSACTION.CANCELLED'
+    const refundedEvent =
+      event === 'TRANSACTION_REFUNDED' ||
+      event === 'CASHIN.REFUNDED' ||
+      event === 'TRANSACTION.REFUNDED'
 
     // MisticPay envia status em portugues: COMPLETO/FALHA/PENDENTE/CANCELADO.
     if (
