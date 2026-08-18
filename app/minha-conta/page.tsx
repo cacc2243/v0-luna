@@ -1711,141 +1711,133 @@ function AppDashboard() {
       )}
 
       {showCreate && (
-        <div className="absolute inset-0 z-[55] flex items-start justify-center px-4 pb-40 pt-6">
-          <div
-            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={() => !publishing && setShowCreate(false)}
-            aria-hidden="true"
-          />
-          <div className="animate-pop relative flex max-h-full w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
-            {/* Cabeçalho fixo */}
-            <div className="shrink-0 border-b border-border/60 px-5 pb-4 pt-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                    <Package className="size-4.5 text-primary" aria-hidden="true" />
-                  </span>
-                  <div className="leading-tight">
-                    <h2 className="text-base font-bold text-foreground">Criar Pack</h2>
-                    <p className="text-xs text-muted-foreground">Monte sua vitrine de conteúdo</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => !publishing && setShowCreate(false)}
-                  className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary active:scale-95"
-                  aria-label="Fechar"
-                >
-                  <X className="size-5" aria-hidden="true" />
-                </button>
+        <div className="absolute inset-0 z-[55] flex flex-col bg-background">
+          {/* Cabeçalho */}
+          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 pb-3 pt-4">
+            <button
+              type="button"
+              onClick={() => !publishing && setShowCreate(false)}
+              className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary active:scale-95"
+              aria-label="Voltar"
+            >
+              <ArrowLeft className="size-5" aria-hidden="true" />
+            </button>
+            <div className="flex items-center gap-2 leading-tight">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                <Package className="size-4 text-primary" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-foreground">Criar Pack</h2>
+                <p className="text-[0.7rem] text-muted-foreground">Monte sua vitrine de conteúdo</p>
               </div>
             </div>
+            <span className="size-9" aria-hidden="true" />
+          </header>
 
-            {/* Conteúdo rolável */}
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3">
-                <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                <p className="text-pretty text-xs leading-relaxed text-foreground">
-                  O número ideal de fotos por pack é de 2 a 4 fotos.{' '}
-                  <span className="font-bold">Mínimo de 2 fotos por pack.</span>
-                </p>
-              </div>
+          {/* Conteúdo rolável */}
+          <div className="mx-auto flex w-full max-w-xl flex-1 flex-col overflow-y-auto px-4 pb-32 pt-4">
+            {/* Fotos — seção principal, em destaque */}
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-base font-bold text-foreground">Fotos do pack</span>
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  packPhotos.length > 0
+                    ? 'bg-positive/15 text-positive'
+                    : 'bg-secondary text-muted-foreground'
+                }`}
+              >
+                {packPhotos.length} adicionadas
+              </span>
+            </div>
+            <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/10 px-3.5 py-3">
+              <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <p className="text-pretty text-xs leading-relaxed text-foreground">
+                O número ideal de fotos por pack é de 2 a 4 fotos.{' '}
+                <span className="font-bold">Mínimo de 2 fotos por pack.</span>
+              </p>
+            </div>
 
-              <label htmlFor="pack-name" className="mb-1.5 block text-sm font-semibold text-foreground">
-                Nome do pack
-              </label>
-              <input
-                id="pack-name"
-                value={packName}
-                onChange={(e) => setPackName(e.target.value)}
-                placeholder="Ex: Ensaio Casual"
-                className="mb-5 w-full rounded-xl border border-border bg-secondary px-3.5 py-3.5 text-base text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
-              />
-
-              <label htmlFor="pack-price" className="mb-1.5 block text-sm font-semibold text-foreground">
-                Preço (R$)
-              </label>
-              <div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
-                <span className="text-base font-medium text-muted-foreground">R$</span>
-                <input
-                  id="pack-price"
-                  value={packPrice}
-                  onChange={(e) => setPackPrice(e.target.value)}
-                  inputMode="decimal"
-                  className="w-full bg-transparent text-base text-foreground outline-none"
-                />
-              </div>
-              <div className="mb-5 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2.5">
-                <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-                  Usuárias novas costumam vender mais rápido com valores entre{' '}
-                  <strong className="font-semibold text-foreground">R$ 20,00</strong> e{' '}
-                  <strong className="font-semibold text-foreground">R$ 70,00</strong>. Mas você é
-                  livre para cobrar o valor que desejar!
-                </p>
-              </div>
-
-              <label htmlFor="pack-desc" className="mb-1.5 block text-sm font-semibold text-foreground">
-                Descrição <span className="font-normal text-muted-foreground">(opcional)</span>
-              </label>
-              <textarea
-                id="pack-desc"
-                value={packDesc}
-                onChange={(e) => setPackDesc(e.target.value)}
-                rows={3}
-                placeholder="Descreva o conteúdo do pack..."
-                className="mb-5 w-full resize-none rounded-xl border border-border bg-secondary px-3.5 py-3.5 text-base text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
-              />
-
-              <div className="mb-2.5 flex items-center justify-between">
-                <span className="text-sm font-semibold text-foreground">Fotos</span>
-                <span className="rounded-full bg-positive/15 px-2.5 py-1 text-xs font-semibold text-positive">
-                  {packPhotos.length} adicionadas
-                </span>
-              </div>
-              {packPhotos.length > 0 && (
-                <div className="mb-3 grid grid-cols-3 gap-2.5">
-                  {packPhotos.map((src, i) => (
-                    <div
-                      key={src}
-                      className="relative aspect-square overflow-hidden rounded-xl border border-border"
+            {packPhotos.length > 0 ? (
+              <div className="mb-3 grid grid-cols-2 gap-2.5">
+                {packPhotos.map((src, i) => (
+                  <div
+                    key={src}
+                    className={`relative overflow-hidden rounded-2xl border border-border ${
+                      i === 0 ? 'col-span-2 aspect-video' : 'aspect-square'
+                    }`}
+                  >
+                    <img
+                      src={src || '/placeholder.svg'}
+                      alt={`Foto ${i + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    {i === 0 && (
+                      <span className="absolute left-2 top-2 rounded-full bg-background/80 px-2 py-0.5 text-[0.65rem] font-semibold text-foreground backdrop-blur-sm">
+                        Capa
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removePackPhoto(src)}
+                      className="absolute right-2 top-2 flex size-6 items-center justify-center rounded-full bg-destructive text-white shadow"
+                      aria-label="Remover foto"
                     >
-                      <img
-                        src={src || '/placeholder.svg'}
-                        alt={`Foto ${i + 1}`}
-                        className="h-full w-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removePackPhoto(src)}
-                        className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-destructive text-white shadow"
-                        aria-label="Remover foto"
-                      >
-                        <X className="size-3" aria-hidden="true" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                      <X className="size-3.5" aria-hidden="true" />
+                    </button>
+                  </div>
+                ))}
+                {/* Tile de adicionar mais */}
+                <label
+                  className={`flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/5 text-primary transition active:scale-[0.98] ${
+                    uploadingPhoto ? 'pointer-events-none opacity-70' : ''
+                  }`}
+                >
+                  {uploadingPhoto ? (
+                    <Loader2 className="size-6 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <ImagePlus className="size-6" aria-hidden="true" />
+                  )}
+                  <span className="text-xs font-semibold">
+                    {uploadingPhoto ? 'Enviando...' : 'Adicionar'}
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={uploadingPhoto}
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? [])
+                      if (files.length) handleAddPackPhoto(files)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+              </div>
+            ) : (
+              /* Zona de upload grande e destacada quando não há fotos */
               <label
-                className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 py-3.5 text-sm font-semibold text-primary transition active:scale-[0.99] ${
+                className={`mb-3 flex min-h-52 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-primary/50 bg-primary/5 px-6 py-8 text-center transition active:scale-[0.99] ${
                   uploadingPhoto ? 'pointer-events-none opacity-70' : ''
                 }`}
               >
-                {uploadingPhoto ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <ImagePlus className="size-4" aria-hidden="true" />
-                    Adicionar fotos
-                  </>
-                )}
+                <span className="flex size-16 items-center justify-center rounded-full bg-primary/15">
+                  {uploadingPhoto ? (
+                    <Loader2 className="size-8 animate-spin text-primary" aria-hidden="true" />
+                  ) : (
+                    <ImagePlus className="size-8 text-primary" aria-hidden="true" />
+                  )}
+                </span>
+                <span className="text-base font-bold text-foreground">
+                  {uploadingPhoto ? 'Enviando fotos...' : 'Adicionar fotos'}
+                </span>
+                <span className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                  Toque para escolher da galeria. A primeira foto vira a capa do seu pack.
+                </span>
                 <input
                   type="file"
                   multiple
+                  accept="image/*"
                   className="sr-only"
                   disabled={uploadingPhoto}
                   onChange={(e) => {
@@ -1855,14 +1847,63 @@ function AppDashboard() {
                   }}
                 />
               </label>
+            )}
 
-              {packError && (
-                <p className="mt-3 text-center text-xs font-medium text-destructive">{packError}</p>
-              )}
+            {/* Detalhes do pack */}
+            <label htmlFor="pack-name" className="mb-1.5 mt-4 block text-sm font-semibold text-foreground">
+              Nome do pack
+            </label>
+            <input
+              id="pack-name"
+              value={packName}
+              onChange={(e) => setPackName(e.target.value)}
+              placeholder="Ex: Ensaio Casual"
+              className="mb-5 w-full rounded-xl border border-border bg-secondary px-3.5 py-3.5 text-base text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+            />
+
+            <label htmlFor="pack-price" className="mb-1.5 block text-sm font-semibold text-foreground">
+              Preço (R$)
+            </label>
+            <div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary px-3.5 py-3.5 transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+              <span className="text-base font-medium text-muted-foreground">R$</span>
+              <input
+                id="pack-price"
+                value={packPrice}
+                onChange={(e) => setPackPrice(e.target.value)}
+                inputMode="decimal"
+                className="w-full bg-transparent text-base text-foreground outline-none"
+              />
+            </div>
+            <div className="mb-5 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2.5">
+              <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
+                Usuárias novas costumam vender mais rápido com valores entre{' '}
+                <strong className="font-semibold text-foreground">R$ 20,00</strong> e{' '}
+                <strong className="font-semibold text-foreground">R$ 70,00</strong>. Mas você é
+                livre para cobrar o valor que desejar!
+              </p>
             </div>
 
-            {/* Rodapé fixo */}
-            <div className="shrink-0 border-t border-border/60 bg-card px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3.5">
+            <label htmlFor="pack-desc" className="mb-1.5 block text-sm font-semibold text-foreground">
+              Descrição <span className="font-normal text-muted-foreground">(opcional)</span>
+            </label>
+            <textarea
+              id="pack-desc"
+              value={packDesc}
+              onChange={(e) => setPackDesc(e.target.value)}
+              rows={3}
+              placeholder="Descreva o conteúdo do pack..."
+              className="w-full resize-none rounded-xl border border-border bg-secondary px-3.5 py-3.5 text-base text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+            />
+
+            {packError && (
+              <p className="mt-3 text-center text-xs font-medium text-destructive">{packError}</p>
+            )}
+          </div>
+
+          {/* Rodapé fixo */}
+          <div className="shrink-0 border-t border-border/60 bg-background px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3.5">
+            <div className="mx-auto w-full max-w-xl">
               <button
                 type="button"
                 onClick={publishPack}

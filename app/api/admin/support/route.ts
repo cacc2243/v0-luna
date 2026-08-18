@@ -10,6 +10,9 @@ export interface AdminSupportMessage {
   user_id: string
   is_from_support: boolean
   content: string
+  attachment_url: string | null
+  attachment_type: string | null
+  attachment_name: string | null
   created_at: string
 }
 

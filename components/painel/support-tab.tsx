@@ -12,6 +12,8 @@ import {
   RotateCcw,
   Clock,
   Mail,
+  FileText,
+  Download,
 } from 'lucide-react'
 import type { AdminSupportTicket, AdminSupportMessage } from '@/app/api/admin/support/route'
 import { cn } from '@/lib/utils'
@@ -74,9 +76,9 @@ export function SupportTab() {
   const activeTicket = tickets.find((t) => t.id === activeId) || null
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-[calc(100dvh-8.5rem)] min-h-[28rem] flex-col gap-4">
       {/* Cabeçalho com contadores */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-3">
         <div className="rounded-2xl border border-border bg-card px-4 py-3">
           <p className="text-xs text-muted-foreground">Tickets em aberto</p>
           <p className="text-xl font-bold text-foreground">{data?.openCount ?? 0}</p>
@@ -93,22 +95,22 @@ export function SupportTab() {
       </div>
 
       {isLoading && !data ? (
-        <div className="flex items-center justify-center py-16">
+        <div className="flex flex-1 items-center justify-center">
           <Loader2 className="size-6 animate-spin text-primary" />
         </div>
       ) : error ? (
         <p className="py-10 text-center text-sm text-destructive">Erro ao carregar os tickets.</p>
       ) : tickets.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border py-16 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-center">
           <Headphones className="size-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Nenhum ticket de suporte ainda.</p>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_1fr]">
-          {/* Lista de tickets */}
+        <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,22rem)_1fr]">
+          {/* Lista de tickets (rolagem própria) */}
           <div
             className={cn(
-              'flex-col gap-2',
+              'min-h-0 flex-col gap-2 overflow-y-auto pr-1',
               activeTicket ? 'hidden lg:flex' : 'flex',
             )}
           >
@@ -155,7 +157,7 @@ export function SupportTab() {
           </div>
 
           {/* Conversa */}
-          <div className={cn(activeTicket ? 'block' : 'hidden lg:block')}>
+          <div className={cn('min-h-0', activeTicket ? 'block' : 'hidden lg:block')}>
             {activeTicket ? (
               <TicketConversation
                 ticket={activeTicket}
@@ -163,7 +165,7 @@ export function SupportTab() {
                 onChanged={() => mutate()}
               />
             ) : (
-              <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-center">
+              <div className="flex h-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-center">
                 <Headphones className="size-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   Selecione um ticket para ver a conversa e responder.
@@ -249,9 +251,9 @@ function TicketConversation({
   )
 
   return (
-    <div className="flex h-[calc(100dvh-16rem)] min-h-[26rem] flex-col overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card">
       {/* Cabeçalho da conversa */}
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
         <button
           onClick={onBack}
           className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary lg:hidden"
@@ -321,9 +323,19 @@ function TicketConversation({
                       : 'rounded-tl-sm bg-secondary text-foreground',
                   )}
                 >
-                  <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-                    {m.content}
-                  </p>
+                  {m.attachment_url && (
+                    <AdminAttachment
+                      url={m.attachment_url}
+                      type={m.attachment_type}
+                      name={m.attachment_name}
+                      fromSupport={m.is_from_support}
+                    />
+                  )}
+                  {m.content && (
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                      {m.content}
+                    </p>
+                  )}
                   <p
                     className={cn(
                       'mt-1 flex items-center justify-end gap-1 text-[0.6rem]',
@@ -341,7 +353,7 @@ function TicketConversation({
       </div>
 
       {/* Resposta */}
-      <div className="border-t border-border px-3 py-3">
+      <div className="shrink-0 border-t border-border px-3 py-3">
         {errorMsg && (
           <p className="mb-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {errorMsg}
@@ -372,5 +384,64 @@ function TicketConversation({
         </div>
       </div>
     </div>
+  )
+}
+
+function isImageAttachment(type: string | null, url: string) {
+  if (type && type.startsWith('image/')) return true
+  return /\.(png|jpe?g|gif|webp|avif|heic)$/i.test(url)
+}
+
+// Exibe o anexo enviado pelo usuário: imagem clicável ou card de arquivo.
+function AdminAttachment({
+  url,
+  type,
+  name,
+  fromSupport,
+}: {
+  url: string
+  type: string | null
+  name: string | null
+  fromSupport: boolean
+}) {
+  const label = name || 'arquivo'
+  if (isImageAttachment(type, url)) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="mb-2 block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url || '/placeholder.svg'}
+          alt={label}
+          className="max-h-64 w-full rounded-xl object-cover"
+        />
+      </a>
+    )
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        'mb-2 flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition',
+        fromSupport
+          ? 'bg-primary-foreground/15 hover:bg-primary-foreground/25'
+          : 'bg-background/60 hover:bg-background',
+      )}
+    >
+      <span
+        className={cn(
+          'flex size-9 shrink-0 items-center justify-center rounded-lg',
+          fromSupport ? 'bg-primary-foreground/20' : 'bg-secondary',
+        )}
+      >
+        <FileText className="size-4.5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-xs font-medium">{label}</span>
+        <span className="text-[0.6rem] opacity-70">Abrir anexo</span>
+      </span>
+      <Download className="size-4 shrink-0 opacity-70" />
+    </a>
   )
 }
