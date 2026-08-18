@@ -11,6 +11,9 @@ import {
   Headphones,
   CheckCircle2,
   Clock,
+  Paperclip,
+  FileText,
+  Download,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -31,7 +34,17 @@ export type SupportMessage = {
   user_id: string
   is_from_support: boolean
   content: string
+  attachment_url: string | null
+  attachment_type: string | null
+  attachment_name: string | null
   created_at: string
+}
+
+// Anexo já enviado ao Storage, pronto para ser gravado na mensagem.
+export type UploadedAttachment = {
+  url: string
+  type: string
+  name: string
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,7 +85,11 @@ async function getSupportMessages(ticketId: string): Promise<SupportMessage[]> {
   return (data || []) as SupportMessage[]
 }
 
-async function createSupportTicket(subject: string, message: string) {
+async function createSupportTicket(
+  subject: string,
+  message: string,
+  attachment?: UploadedAttachment | null,
+) {
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
   const user = session?.user
@@ -80,7 +97,9 @@ async function createSupportTicket(subject: string, message: string) {
 
   const cleanSubject = subject.trim() || 'Atendimento'
   const cleanMessage = message.trim()
-  if (!cleanMessage) return { error: 'Escreva uma mensagem.' }
+  if (!cleanMessage && !attachment) return { error: 'Escreva uma mensagem ou anexe um arquivo.' }
+
+  const preview = cleanMessage || (attachment ? `📎 ${attachment.name}` : '')
 
   const { data: ticket, error: ticketError } = await supabase
     .from('support_tickets')
@@ -88,7 +107,7 @@ async function createSupportTicket(subject: string, message: string) {
       user_id: user.id,
       subject: cleanSubject,
       status: 'open',
-      last_message: cleanMessage,
+      last_message: preview,
       last_message_at: new Date().toISOString(),
     })
     .select('*')
@@ -103,6 +122,9 @@ async function createSupportTicket(subject: string, message: string) {
     user_id: user.id,
     is_from_support: false,
     content: cleanMessage,
+    attachment_url: attachment?.url ?? null,
+    attachment_type: attachment?.type ?? null,
+    attachment_name: attachment?.name ?? null,
   })
 
   if (msgError) return { error: msgError.message }
@@ -110,14 +132,18 @@ async function createSupportTicket(subject: string, message: string) {
   return { success: true as const, ticket: ticket as SupportTicket }
 }
 
-async function sendSupportMessage(ticketId: string, message: string) {
+async function sendSupportMessage(
+  ticketId: string,
+  message: string,
+  attachment?: UploadedAttachment | null,
+) {
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
   const user = session?.user
   if (!user) return { error: 'Você precisa estar logado.' }
 
   const cleanMessage = message.trim()
-  if (!cleanMessage) return { error: 'Escreva uma mensagem.' }
+  if (!cleanMessage && !attachment) return { error: 'Escreva uma mensagem ou anexe um arquivo.' }
 
   const { data: inserted, error: msgError } = await supabase
     .from('support_messages')
@@ -126,16 +152,20 @@ async function sendSupportMessage(ticketId: string, message: string) {
       user_id: user.id,
       is_from_support: false,
       content: cleanMessage,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
+      attachment_name: attachment?.name ?? null,
     })
     .select('*')
     .single()
 
   if (msgError) return { error: msgError.message }
 
+  const preview = cleanMessage || (attachment ? `📎 ${attachment.name}` : '')
   await supabase
     .from('support_tickets')
     .update({
-      last_message: cleanMessage,
+      last_message: preview,
       last_message_at: new Date().toISOString(),
       status: 'open',
     })
@@ -143,6 +173,34 @@ async function sendSupportMessage(ticketId: string, message: string) {
     .eq('user_id', user.id)
 
   return { success: true as const, message: inserted as SupportMessage }
+}
+
+// Faz upload do anexo para o bucket `media` (mesmo padrão do resto do app).
+async function uploadSupportAttachment(
+  file: File,
+  ticketId: string,
+): Promise<UploadedAttachment | null> {
+  try {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
+    if (!user) return null
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
+    const rand = Math.random().toString(36).slice(2)
+    const path = `${user.id}/support/${ticketId}/${Date.now()}-${rand}.${ext}`
+    const { error } = await supabase.storage
+      .from('media')
+      .upload(path, file, { upsert: true, contentType: file.type || undefined })
+    if (error) {
+      console.error('[v0] uploadSupportAttachment error:', error.message)
+      return null
+    }
+    const { data: pub } = supabase.storage.from('media').getPublicUrl(path)
+    return { url: pub.publicUrl, type: file.type || 'application/octet-stream', name: file.name }
+  } catch (err) {
+    console.error('[v0] uploadSupportAttachment exception:', err)
+    return null
+  }
 }
 
 function formatTime(iso: string) {
@@ -177,8 +235,24 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [sending, setSending] = useState(false)
   const [isNewTicket, setIsNewTicket] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const MAX_ATTACHMENT_MB = 15
+
+  const handlePickFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // permite reselecionar o mesmo arquivo
+    if (!file) return
+    if (file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
+      setErrorMsg(`O arquivo excede o limite de ${MAX_ATTACHMENT_MB} MB.`)
+      return
+    }
+    setErrorMsg(null)
+    setPendingFile(file)
+  }, [])
 
   const loadTickets = useCallback(async () => {
     setLoadingTickets(true)
@@ -223,16 +297,27 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
   const handleSend = useCallback(async () => {
     const content = draft.trim()
-    if (!content || sending) return
+    if ((!content && !pendingFile) || sending) return
     setSending(true)
     setErrorMsg(null)
 
     if (isNewTicket && !activeTicket) {
+      // Cria o ticket primeiro (para ter o id no caminho do upload), depois
+      // anexa o arquivo à primeira mensagem, se houver.
       const res = await createSupportTicket(subject, content)
       if ('success' in res && res.success) {
         setActiveTicket(res.ticket)
         setIsNewTicket(false)
         setDraft('')
+        if (pendingFile) {
+          const uploaded = await uploadSupportAttachment(pendingFile, res.ticket.id)
+          if (uploaded) {
+            await sendSupportMessage(res.ticket.id, '', uploaded)
+          } else {
+            setErrorMsg('Não foi possível enviar o anexo. Tente novamente.')
+          }
+          setPendingFile(null)
+        }
         const data = await getSupportMessages(res.ticket.id)
         setMessages(data)
         loadTickets()
@@ -240,17 +325,27 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         setErrorMsg('error' in res ? res.error : 'Não foi possível abrir o ticket.')
       }
     } else if (activeTicket) {
-      const res = await sendSupportMessage(activeTicket.id, content)
+      let uploaded: UploadedAttachment | null = null
+      if (pendingFile) {
+        uploaded = await uploadSupportAttachment(pendingFile, activeTicket.id)
+        if (!uploaded) {
+          setErrorMsg('Não foi possível enviar o anexo. Tente novamente.')
+          setSending(false)
+          return
+        }
+      }
+      const res = await sendSupportMessage(activeTicket.id, content, uploaded)
       if ('success' in res && res.success) {
         setMessages((prev) => [...prev, res.message])
         setDraft('')
+        setPendingFile(null)
         loadTickets()
       } else {
         setErrorMsg('error' in res ? res.error : 'Não foi possível enviar a mensagem.')
       }
     }
     setSending(false)
-  }, [draft, sending, isNewTicket, activeTicket, subject, loadTickets])
+  }, [draft, pendingFile, sending, isNewTicket, activeTicket, subject, loadTickets])
 
   if (!isOpen || !mounted) return null
 
@@ -432,9 +527,19 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                             : 'rounded-tr-sm bg-primary text-primary-foreground'
                         }`}
                       >
-                        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-                          {m.content}
-                        </p>
+                        {m.attachment_url && (
+                          <AttachmentPreview
+                            url={m.attachment_url}
+                            type={m.attachment_type}
+                            name={m.attachment_name}
+                            fromSupport={m.is_from_support}
+                          />
+                        )}
+                        {m.content && (
+                          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                            {m.content}
+                          </p>
+                        )}
                         <p
                           className={`mt-1 text-right text-[0.6rem] ${
                             m.is_from_support ? 'text-muted-foreground' : 'text-primary-foreground/70'
@@ -456,12 +561,35 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                   {errorMsg}
                 </p>
               )}
+
+              {/* Preview do anexo selecionado */}
+              {pendingFile && (
+                <PendingAttachmentChip file={pendingFile} onRemove={() => setPendingFile(null)} />
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf,.pdf,.doc,.docx,.txt"
+                onChange={handlePickFile}
+                className="hidden"
+              />
+
               <div className="flex items-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={sending}
+                  className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary active:scale-95 disabled:opacity-40"
+                  aria-label="Anexar arquivo"
+                >
+                  <Paperclip className="size-5" />
+                </button>
                 <textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                       e.preventDefault()
                       handleSend()
                     }
@@ -474,7 +602,7 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                   <button
                     type="button"
                     onClick={handleSend}
-                    disabled={!draft.trim() || sending}
+                    disabled={(!draft.trim() && !pendingFile) || sending}
                     className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-95 disabled:opacity-40"
                     aria-label="Enviar"
                   >
@@ -491,7 +619,7 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 <button
                   type="button"
                   onClick={handleSend}
-                  disabled={!draft.trim() || sending}
+                  disabled={(!draft.trim() && !pendingFile) || sending}
                   className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground transition active:scale-[0.98] disabled:opacity-40"
                 >
                   {sending ? (
@@ -513,6 +641,90 @@ export function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       </div>
     </div>,
     document.body,
+  )
+}
+
+function isImageAttachment(type: string | null, url: string) {
+  if (type && type.startsWith('image/')) return true
+  return /\.(png|jpe?g|gif|webp|avif|heic)$/i.test(url)
+}
+
+// Renderiza o anexo dentro da bolha: imagem em miniatura clicável ou card de
+// arquivo (PDF/documento) com botão de download.
+function AttachmentPreview({
+  url,
+  type,
+  name,
+  fromSupport,
+}: {
+  url: string
+  type: string | null
+  name: string | null
+  fromSupport: boolean
+}) {
+  const label = name || 'arquivo'
+  if (isImageAttachment(type, url)) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="mb-2 block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url || '/placeholder.svg'}
+          alt={label}
+          className="max-h-56 w-full rounded-xl object-cover"
+        />
+      </a>
+    )
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`mb-2 flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition ${
+        fromSupport ? 'bg-background/60 hover:bg-background' : 'bg-primary-foreground/15 hover:bg-primary-foreground/25'
+      }`}
+    >
+      <span
+        className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${
+          fromSupport ? 'bg-secondary' : 'bg-primary-foreground/20'
+        }`}
+      >
+        <FileText className="size-4.5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-xs font-medium">{label}</span>
+        <span className="text-[0.6rem] opacity-70">Toque para abrir</span>
+      </span>
+      <Download className="size-4 shrink-0 opacity-70" />
+    </a>
+  )
+}
+
+// Chip de pré-visualização do arquivo selecionado, antes do envio.
+function PendingAttachmentChip({ file, onRemove }: { file: File; onRemove: () => void }) {
+  const isImage = file.type.startsWith('image/')
+  const sizeKb = file.size / 1024
+  const sizeLabel = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${Math.round(sizeKb)} KB`
+  return (
+    <div className="mb-2 flex items-center gap-2.5 rounded-xl border border-border bg-background/60 px-3 py-2">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground">
+        <FileText className="size-4.5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-xs font-medium text-foreground">{file.name}</span>
+        <span className="text-[0.6rem] text-muted-foreground">
+          {isImage ? 'Imagem' : 'Arquivo'} · {sizeLabel}
+        </span>
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary active:scale-95"
+        aria-label="Remover anexo"
+      >
+        <X className="size-4" />
+      </button>
+    </div>
   )
 }
 

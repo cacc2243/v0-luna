@@ -12,6 +12,8 @@ import {
   RotateCcw,
   Clock,
   Mail,
+  FileText,
+  Download,
 } from 'lucide-react'
 import type { AdminSupportTicket, AdminSupportMessage } from '@/app/api/admin/support/route'
 import { cn } from '@/lib/utils'
@@ -321,9 +323,19 @@ function TicketConversation({
                       : 'rounded-tl-sm bg-secondary text-foreground',
                   )}
                 >
-                  <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-                    {m.content}
-                  </p>
+                  {m.attachment_url && (
+                    <AdminAttachment
+                      url={m.attachment_url}
+                      type={m.attachment_type}
+                      name={m.attachment_name}
+                      fromSupport={m.is_from_support}
+                    />
+                  )}
+                  {m.content && (
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                      {m.content}
+                    </p>
+                  )}
                   <p
                     className={cn(
                       'mt-1 flex items-center justify-end gap-1 text-[0.6rem]',
@@ -372,5 +384,64 @@ function TicketConversation({
         </div>
       </div>
     </div>
+  )
+}
+
+function isImageAttachment(type: string | null, url: string) {
+  if (type && type.startsWith('image/')) return true
+  return /\.(png|jpe?g|gif|webp|avif|heic)$/i.test(url)
+}
+
+// Exibe o anexo enviado pelo usuário: imagem clicável ou card de arquivo.
+function AdminAttachment({
+  url,
+  type,
+  name,
+  fromSupport,
+}: {
+  url: string
+  type: string | null
+  name: string | null
+  fromSupport: boolean
+}) {
+  const label = name || 'arquivo'
+  if (isImageAttachment(type, url)) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="mb-2 block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url || '/placeholder.svg'}
+          alt={label}
+          className="max-h-64 w-full rounded-xl object-cover"
+        />
+      </a>
+    )
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        'mb-2 flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition',
+        fromSupport
+          ? 'bg-primary-foreground/15 hover:bg-primary-foreground/25'
+          : 'bg-background/60 hover:bg-background',
+      )}
+    >
+      <span
+        className={cn(
+          'flex size-9 shrink-0 items-center justify-center rounded-lg',
+          fromSupport ? 'bg-primary-foreground/20' : 'bg-secondary',
+        )}
+      >
+        <FileText className="size-4.5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-xs font-medium">{label}</span>
+        <span className="text-[0.6rem] opacity-70">Abrir anexo</span>
+      </span>
+      <Download className="size-4 shrink-0 opacity-70" />
+    </a>
   )
 }
