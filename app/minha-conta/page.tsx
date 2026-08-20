@@ -3721,7 +3721,7 @@ function WalletScreen({
 
   const statusLabel: Record<string, string> = {
     completed: 'Concluido',
-    processing: 'Em análise',
+    processing: 'Processando',
     pending: 'Pendente',
     failed: 'Recusado',
   }
@@ -4051,7 +4051,7 @@ function WalletScreen({
                           <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-500/10 px-3 py-2.5">
                             <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-amber-500" aria-hidden="true" />
                             <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-                              Nossa equipe interna está analisando sua solicitação. A análise pode levar até
+                              Estamos processando sua solicitação de saque. O processamento pode levar até
                               24 horas.
                             </p>
                           </div>
@@ -4421,7 +4421,7 @@ function WalletScreen({
                     </span>
                     <h4 className="mt-4 text-lg font-bold text-foreground">Saque solicitado!</h4>
                     <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-                      Nossa equipe interna está analisando sua solicitação. A análise pode levar até 24
+                      Estamos processando sua solicitação de saque. O processamento pode levar até 24
                       horas. Você poderá acompanhar o status na aba <span className="font-semibold text-foreground">Saques</span>.
                     </p>
                   </div>
