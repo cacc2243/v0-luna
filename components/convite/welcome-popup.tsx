@@ -27,10 +27,10 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
     }
   }, [open])
 
-  // Etapa 2: animação de "Preparando seu convite..." por 1.5s e avança para o resgate.
+  // Etapa 2: animação de "Preparando seu convite..." por 2.8s e avança para o resgate.
   useEffect(() => {
     if (phase !== 'loading') return
-    const t = setTimeout(() => setPhase('reward'), 1500)
+    const t = setTimeout(() => setPhase('reward'), 2800)
     return () => clearTimeout(t)
   }, [phase])
 
