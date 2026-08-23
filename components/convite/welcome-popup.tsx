@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, Loader2, Gift, ShieldCheck } from 'lucide-react'
+import { Lock, Loader2, Gift, ShieldCheck } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 
 type Phase = 'success' | 'loading' | 'reward'
@@ -66,7 +66,7 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
             <div className="relative mx-auto mt-5 flex size-16 items-center justify-center">
               <span className="absolute inset-0 rounded-full border border-primary/30" aria-hidden="true" />
               <span className="absolute inset-1.5 rounded-full bg-primary/10" aria-hidden="true" />
-              <CheckCircle2 className="relative size-8 text-primary" aria-hidden="true" />
+              <Lock className="relative size-7 text-primary" aria-hidden="true" />
             </div>
 
             <h2

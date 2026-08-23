@@ -118,11 +118,15 @@ export function SupportCommunity() {
 
           <div className="flex min-w-0 flex-1 flex-col">
             <p className="flex items-center gap-1 text-sm font-semibold leading-none text-foreground">
-              @luna.prive
+              {/* Usuário ilegível: o @ real só é revelado depois do convite ativo. */}
+              <span className="select-none blur-[4px]" aria-hidden="true">
+                @luna.prive
+              </span>
+              <span className="sr-only">Perfil privado no Instagram</span>
               <BadgeCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
             </p>
             <p className="mt-1.5 text-[0.7rem] leading-none text-muted-foreground">
-              <span className="text-base font-bold text-foreground">8.024</span> seguidores
+              <span className="text-base font-bold text-foreground">64k</span> seguidores
             </p>
             <p className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[0.62rem] font-semibold text-primary">
               <Lock className="size-2.5 shrink-0" aria-hidden="true" />
