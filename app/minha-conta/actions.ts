@@ -1411,8 +1411,11 @@ export async function generatePackActivity(opts?: { initial?: boolean; maxOrders
       }
     }
 
-    // Pedidos de venda pendentes (menos frequentes para nao acumular demais)
-    const orders = initial ? randInt(1, 2) : randInt(0, 1)
+    // Pedidos de venda pendentes. Nos ciclos seguintes ao primeiro, sai pedido
+    // em ~75% das vezes (antes era 50%), para as vendas aparecerem com um pouco
+    // mais de frequencia sem virar enxurrada. O teto de 1 por ciclo continua
+    // valendo via `maxOrders`, entao eles seguem chegando um a um.
+    const orders = initial ? randInt(1, 2) : Math.random() < 0.75 ? 1 : 0
     for (let i = 0; i < orders; i++) {
       // Respeita o limite global de pedidos por chamada.
       if (newOrders >= maxOrders) break
