@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Lock, MessageCircleHeart, ShieldCheck, X, MessagesSquare, Zap, Flame, Eye, DollarSign, Star, MessageSquare, AlertTriangle, Loader2 } from 'lucide-react'
+import { Lock, MessageCircleHeart, ShieldCheck, X, MessagesSquare, Zap, Flame, Eye, DollarSign, Star, MessageSquare, Loader2 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal 1: Nova Venda! — pedido recebido (aceitar exige Chat Exclusivo)
@@ -277,18 +277,8 @@ export function UnlockChatModal({
             )}
           </div>
 
-          {/* Aviso promocional */}
-          <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-primary" />
-            <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
-              Valor promocional <span className="font-semibold text-primary">válido apenas para novos
-              usuários no primeiro dia</span> de criação da conta. Após isso, o valor volta para{' '}
-              {brl(fullPrice)}.
-            </p>
-          </div>
-
           {/* Quanto cada fã paga */}
-          <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-positive/25 bg-positive/5 p-4">
+          <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-positive/25 bg-positive/5 p-4">
             <DollarSign className="mt-0.5 size-4 shrink-0 text-positive" />
             <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
               Cada fan paga <span className="font-semibold text-positive">{brl(perFanPrice)} para
@@ -325,7 +315,7 @@ export function UnlockChatModal({
   )
 }
 
-// ──────────────────��──────────────────────────────────────────────────────────
+// ───────────────��──��──────────────────────────────────────────────────────────
 // Modal 3: Conta bombando — pedidos aguardando (leva à aba de Chats)
 // ��───────────────────────────��────────────────────────────────────────────────
 
