@@ -10,6 +10,8 @@ declare global {
     fbq?: (...args: unknown[]) => void
     __fbqReady?: boolean
     __fbqQueue?: Array<() => void>
+    /** Autoriza um evento a passar pela guarda anti-evento-fantasma. */
+    __fbAllow?: (eventName: string) => void
   }
 }
 
@@ -37,6 +39,9 @@ export function fbTrack(
 ): void {
   try {
     if (typeof window === 'undefined' || typeof window.fbq !== 'function') return
+    // Autoriza este evento na guarda anti-fantasma do FbPixel. Sem isso o
+    // envio e bloqueado na rede (ver components/fb-pixel.tsx).
+    window.__fbAllow?.(eventName)
     if (eventId) {
       window.fbq('track', eventName, params || {}, { eventID: eventId })
     } else {
@@ -105,6 +110,7 @@ export function fbTrackCustom(
 ): void {
   try {
     if (typeof window === 'undefined' || typeof window.fbq !== 'function') return
+    window.__fbAllow?.(eventName)
     if (eventId) {
       window.fbq('trackCustom', eventName, params || {}, { eventID: eventId })
     } else {
