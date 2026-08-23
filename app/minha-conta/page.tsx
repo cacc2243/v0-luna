@@ -2579,6 +2579,13 @@ function HomeScreen({
     s => Date.now() - new Date(s.created_at).getTime() < RECENT_SALE_TTL_MS,
   )
 
+  // Pedidos pendentes que EXIGEM o Chat Exclusivo (os diretos podem ser aceitos
+  // sem ele). Enquanto o chat esta bloqueado esses pedidos ficam travados, entao
+  // o card de saldo pendente vira um CTA de desbloqueio.
+  const chatLockedPending = profile?.chat_unlocked
+    ? []
+    : pendingSales.filter(s => !s.is_direct)
+
   function handleAccept(id: string) {
     // Trava: enquanto um pedido esta sendo aceito, nenhum outro pode ser aceito.
     // Evita "aceitar tudo" em sequencia e da tempo do saldo (total e do dia) atualizar.
@@ -2619,22 +2626,57 @@ function HomeScreen({
       </div>
 
       {/* Saldo pendente — soma dos pedidos ainda nao aceitos */}
-      {pendingSales.length > 0 && (
-        <div className="luna-border mt-2.5 flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-            <Clock className="size-4 text-primary" aria-hidden="true" />
-          </span>
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className="text-[0.7rem] text-muted-foreground">Saldo pendente</p>
-            <p className="text-lg font-bold text-primary">
-              {brl(pendingSales.reduce((sum, s) => sum + Number(s.amount), 0))}
-            </p>
+      {pendingSales.length > 0 &&
+        (chatLockedPending.length > 0 ? (
+          /* Chat bloqueado: os pedidos com chat nao podem ser aceitos ainda.
+             O CTA reaproveita `onAccept` com um pedido que exige chat, entao o
+             gate do handleAcceptSale abre exatamente o mesmo fluxo de modais do
+             botao "Aceitar venda" (PersonalizedSale -> ChatLocked -> Unlock). */
+          <div className="luna-border animate-coach-glow mt-2.5 rounded-2xl bg-card px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                <Lock className="size-4 text-primary" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1 leading-tight">
+                <p className="text-[0.7rem] text-muted-foreground">Saldo pendente</p>
+                <p className="text-lg font-bold text-primary">
+                  {brl(pendingSales.reduce((sum, s) => sum + Number(s.amount), 0))}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[0.7rem] font-semibold text-primary">
+                {pendingSales.length === 1 ? '1 pedido' : `${pendingSales.length} pedidos`}
+              </span>
+            </div>
+            <div className="mt-2.5 flex items-center gap-2.5 border-t border-border/50 pt-2.5">
+              <p className="min-w-0 flex-1 text-pretty text-[0.7rem] leading-snug text-muted-foreground">
+                Desbloqueie o chat para aceitar os pedidos pendentes
+              </p>
+              <button
+                type="button"
+                onClick={() => onAccept(chatLockedPending[0].id)}
+                className="luna-gradient animate-cta-pulse flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[0.7rem] font-bold text-primary-foreground transition active:scale-[0.97]"
+              >
+                <Lock className="size-3.5" aria-hidden="true" />
+                Desbloquear chat
+              </button>
+            </div>
           </div>
-          <span className="shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[0.7rem] font-semibold text-primary">
-            {pendingSales.length === 1 ? '1 pedido' : `${pendingSales.length} pedidos`}
-          </span>
-        </div>
-      )}
+        ) : (
+          <div className="luna-border mt-2.5 flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+              <Clock className="size-4 text-primary" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="text-[0.7rem] text-muted-foreground">Saldo pendente</p>
+              <p className="text-lg font-bold text-primary">
+                {brl(pendingSales.reduce((sum, s) => sum + Number(s.amount), 0))}
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[0.7rem] font-semibold text-primary">
+              {pendingSales.length === 1 ? '1 pedido' : `${pendingSales.length} pedidos`}
+            </span>
+          </div>
+        ))}
 
       {/* Visualizações recentes */}
       <div className="mt-5">
