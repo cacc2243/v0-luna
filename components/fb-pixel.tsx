@@ -122,6 +122,69 @@ export function FbPixel() {
       strategy="afterInteractive"
       dangerouslySetInnerHTML={{
         __html: `
+          /* ------------------------------------------------------------------
+           * GUARDA ANTI-EVENTO-FANTASMA (roda ANTES do fbevents.js)
+           *
+           * O Meta entrega, por pixel, regras que disparam eventos sozinhas
+           * (Event Setup Tool / ESTRuleEngine, InferredEvents, SmartSetup).
+           * Elas rodam dentro do fbevents.js e NAO sao desligaveis por
+           * autoConfig=false, por isso a home disparava InitiateCheckout ao
+           * avancar etapas e a simulacao do app disparava Purchase ao
+           * "aceitar" vendas ficticias.
+           *
+           * Aqui invertemos o controle: interceptamos o envio na REDE e so
+           * deixamos passar eventos que o nosso proprio codigo autorizou via
+           * window.__fbAllow(). Tudo que a Meta inferir sozinha e descartado.
+           * ------------------------------------------------------------------ */
+          !function(w){
+            if (w.__fbGuard) return;
+            w.__fbGuard = true;
+            var allow = {};
+            /* Autoriza um evento por uma janela curta (o fbq envia 1 request
+             * por pixel inicializado, entao a janela cobre todos eles). */
+            w.__fbAllow = function(ev){ if(ev) allow[ev] = Date.now() + 8000; };
+            /* PageView e sempre nosso: disparado no init e em cada rota. */
+            var ALWAYS = { PageView: 1 };
+            function blocked(url){
+              try {
+                var s = String(url || '');
+                if (s.indexOf('facebook.com/tr') === -1) return false;
+                var ev = new URL(s, location.href).searchParams.get('ev');
+                if (!ev) return false;            /* formato desconhecido: nao bloqueia */
+                if (ALWAYS[ev]) return false;
+                if (allow[ev] && allow[ev] > Date.now()) return false;
+                console.log('[v0] Evento fantasma do pixel bloqueado:', ev);
+                return true;
+              } catch (e) { return false; }
+            }
+            var sb = w.navigator.sendBeacon;
+            if (sb) w.navigator.sendBeacon = function(u){
+              if (blocked(u)) return true;
+              return sb.apply(w.navigator, arguments);
+            };
+            var of = w.fetch;
+            if (of) w.fetch = function(u){
+              var t = (typeof u === 'string') ? u : (u && u.url);
+              if (blocked(t)) return Promise.resolve(new Response('', { status: 204 }));
+              return of.apply(this, arguments);
+            };
+            var xo = w.XMLHttpRequest.prototype.open;
+            var xs = w.XMLHttpRequest.prototype.send;
+            w.XMLHttpRequest.prototype.open = function(m, u){
+              this.__fbBlocked = blocked(u);
+              return xo.apply(this, arguments);
+            };
+            w.XMLHttpRequest.prototype.send = function(){
+              if (this.__fbBlocked) return;
+              return xs.apply(this, arguments);
+            };
+            var d = Object.getOwnPropertyDescriptor(w.HTMLImageElement.prototype, 'src');
+            if (d && d.set) Object.defineProperty(w.HTMLImageElement.prototype, 'src', {
+              configurable: true, enumerable: d.enumerable, get: d.get,
+              set: function(v){ if (blocked(v)) return; return d.set.call(this, v); }
+            });
+          }(window);
+
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
           n.callMethod.apply(n,arguments):n.queue.push(arguments)};
