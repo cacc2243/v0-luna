@@ -60,6 +60,19 @@ export function FbPixel() {
         const uniqueIds = Array.from(new Set(pixels.map((p) => p.pixel_id)))
         for (const id of uniqueIds) {
           if (w.__fbqInitialized.has(id)) continue
+          // Desativa a "configuracao automatica" do Meta ANTES do init.
+          //
+          // Sem isso, o fbevents.js varre a pagina e INFERE eventos padrao a
+          // partir de cliques em botoes e de textos que parecem preco. Era a
+          // causa dos eventos fantasma: a home disparava InitiateCheckout ao
+          // avancar os passos e a simulacao de vendas disparava Purchase antes
+          // mesmo de a conta existir. Como e uma configuracao por pixel no
+          // Gerenciador de Eventos, afetava apenas um dos pixels.
+          //
+          // Com autoConfig=false, SOMENTE os eventos disparados
+          // explicitamente no codigo (fbTrack/fbTrackCustom) sao enviados:
+          // InitiateCheckout em /convite e Purchase no pagamento confirmado.
+          fbq('set', 'autoConfig', false, id)
           fbq('init', id)
           w.__fbqInitialized.add(id)
         }
