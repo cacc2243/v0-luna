@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, Loader2, Gift, ShieldCheck } from 'lucide-react'
+import { Lock, Loader2, Gift, ShieldCheck } from 'lucide-react'
 import { CtaButton } from '@/components/cta-button'
 
 type Phase = 'success' | 'loading' | 'reward'
@@ -27,10 +27,10 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
     }
   }, [open])
 
-  // Etapa 2: animação de "Preparando seu convite..." por 1.5s e avança para o resgate.
+  // Etapa 2: animação de "Preparando seu convite..." por 2.8s e avança para o resgate.
   useEffect(() => {
     if (phase !== 'loading') return
-    const t = setTimeout(() => setPhase('reward'), 1500)
+    const t = setTimeout(() => setPhase('reward'), 2800)
     return () => clearTimeout(t)
   }, [phase])
 
@@ -66,24 +66,45 @@ export function WelcomePopup({ onClose }: { onClose?: () => void }) {
             <div className="relative mx-auto mt-5 flex size-16 items-center justify-center">
               <span className="absolute inset-0 rounded-full border border-primary/30" aria-hidden="true" />
               <span className="absolute inset-1.5 rounded-full bg-primary/10" aria-hidden="true" />
-              <CheckCircle2 className="relative size-8 text-primary" aria-hidden="true" />
+              <Lock className="relative size-7 text-primary" aria-hidden="true" />
             </div>
 
             <h2
               id="invite-modal-title"
               className="relative mt-4 text-balance text-lg font-bold leading-tight text-foreground"
             >
-              Resgate seu Convite ao Luna Privé!
+              Código de Convite
             </h2>
             <p className="relative mt-2.5 text-pretty text-[0.8rem] leading-relaxed text-muted-foreground">
-              Para desfrutar de todos os benefícios do{' '}
-              <span className="font-semibold text-foreground">Luna Privé</span>, por questões de
-              privacidade e segurança, é necessário ter um{' '}
-              <span className="font-semibold text-primary">convite válido</span> para entrar aqui.
+              Apenas usuárias convidadas podem se inscrever na plataforma. Digite seu código abaixo
+              para ativar sua conta.
             </p>
 
-            <div className="relative mt-5">
-              <CtaButton onClick={() => setPhase('loading')}>Resgatar Convite Luna</CtaButton>
+            {/* Campo desativado — o código só é liberado pelo botão de resgate */}
+            <label htmlFor="invite-code-input" className="sr-only">
+              Código de convite
+            </label>
+            <input
+              id="invite-code-input"
+              type="text"
+              disabled
+              placeholder="DIGITE SEU CÓDIGO"
+              className="relative mt-4 w-full cursor-not-allowed rounded-xl border border-border bg-background px-3.5 py-3 text-center text-sm font-semibold tracking-[0.2em] text-foreground placeholder:text-muted-foreground/45"
+            />
+
+            <p className="relative mt-3 text-pretty text-[0.75rem] font-medium leading-relaxed text-primary">
+              Os códigos grátis estão desativados no momento, desbloqueie seu código no botão abaixo:
+            </p>
+
+            <p className="relative mt-3 rounded-xl border border-border bg-background px-3.5 py-2.5 text-[0.8rem] text-muted-foreground">
+              Restam apenas <span className="font-bold text-primary">08</span> códigos hoje
+            </p>
+
+            <div className="relative mt-4">
+              <CtaButton onClick={() => setPhase('loading')} className="animate-cta-pulse">
+                <Gift className="size-4" aria-hidden="true" />
+                Resgatar meu convite
+              </CtaButton>
             </div>
           </div>
         )}
