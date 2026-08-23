@@ -143,7 +143,7 @@ export function PriceCard({
         >
           {priceReady && <Gift className="size-5 shrink-0" aria-hidden="true" />}
           <span className="whitespace-nowrap">
-            {priceReady ? 'GERAR PIX DO CONVITE!' : 'Carregando valor...'}
+            {priceReady ? 'Resgatar meu Convite' : 'Carregando valor...'}
           </span>
         </button>
       </div>
