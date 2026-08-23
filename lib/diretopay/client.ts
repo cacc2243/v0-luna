@@ -1,3 +1,5 @@
+import { buildAnonymousPayer } from '@/lib/diretopay/anonymize'
+
 const DIRETOPAY_API_URL = 'https://api.diretopay.com.br/payment/v1'
 
 export interface DiretopayClient {
@@ -16,7 +18,12 @@ export interface DiretopayReceiveInput {
   amount: number
   /** Titulo do item exibido na cobranca. */
   itemTitle: string
-  client: DiretopayClient
+  /**
+   * @deprecated IGNORADO. Por privacidade, a DiretoPay nunca recebe dados
+   * reais do pagador: a identidade enviada e sempre sintetica, derivada de
+   * `identifier`. O campo segue aqui apenas para compatibilidade da chamada.
+   */
+  client?: DiretopayClient
   callbackUrl?: string
 }
 
@@ -72,8 +79,18 @@ export async function createDiretopayPixCharge(
     }
   }
 
-  const { firstName, lastName } = splitName(input.client.name)
-  const phone = (input.client.phone || '').replace(/\D/g, '') || '11999999999'
+  // ---------------------------------------------------------------------
+  // BARREIRA DE PRIVACIDADE (exclusiva da DiretoPay)
+  //
+  // O pagador enviado e SEMPRE sintetico, derivado do identificador interno
+  // da transacao. `input.client` e deliberadamente ignorado aqui, para que
+  // nenhum caller (atual ou futuro) consiga vazar dado real do cliente para a
+  // DiretoPay por descuido. Os dados reais seguem no nosso banco.
+  //
+  // A conciliacao usa o `id` retornado pela DiretoPay, nao dado pessoal.
+  // ---------------------------------------------------------------------
+  const anon = buildAnonymousPayer(input.identifier)
+  const { firstName, lastName } = splitName(anon.name)
 
   const body: Record<string, unknown> = {
     amount: input.amount,
@@ -82,10 +99,10 @@ export async function createDiretopayPixCharge(
     paymentDetails: {
       firstName,
       lastName,
-      email: input.client.email,
-      phoneNumber: phone,
-      document: input.client.document,
-      documentType: input.client.documentType || 'cpf',
+      email: anon.email,
+      phoneNumber: anon.phone,
+      document: anon.document,
+      documentType: 'cpf',
     },
     items: [
       {

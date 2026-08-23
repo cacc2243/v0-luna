@@ -2,6 +2,7 @@ import { createSigilopayPixCharge } from '@/lib/sigilopay/client'
 import { createHorsepayPixCharge } from '@/lib/horsepay/client'
 import { createPixupPixCharge } from '@/lib/pixup/client'
 import { createDiretopayPixCharge } from '@/lib/diretopay/client'
+import { buildAnonymousPayer } from '@/lib/diretopay/anonymize'
 import { createMisticpayPixCharge, isMisticpayConfigured } from '@/lib/misticpay/client'
 import { createBspayPixCharge } from '@/lib/bspay/client'
 import { createBuckpayPixCharge } from '@/lib/buckpay/client'
@@ -418,26 +419,29 @@ const pixupGateway: CashinGateway = {
 }
 
 /**
- * Gateway DiretoPay. Autenticacao por Bearer (sk-api-...). Exige dados
- * completos do pagador (nome, e-mail, telefone e CPF valido). Trabalha com
+ * Gateway DiretoPay. Autenticacao por Bearer (sk-api-...). Trabalha com
  * valores em reais decimais.
+ *
+ * PRIVACIDADE (regra exclusiva deste gateway): NENHUM dado real do pagador e
+ * enviado a DiretoPay. Nome, e-mail, telefone e CPF sao substituidos por uma
+ * identidade sintetica derivada do nosso identificador interno da transacao
+ * (ver lib/diretopay/anonymize.ts).
+ *
+ * Os dados reais do cliente continuam salvos no nosso banco e usados
+ * normalmente no resto do sistema. A conciliacao do pagamento nao depende de
+ * dado pessoal: e feita pelo `id` que a DiretoPay retorna na criacao e reenvia
+ * no webhook. Por isso a troca e segura.
+ *
+ * NAO reintroduza `input.client` nesta chamada.
  */
 const diretopayGateway: CashinGateway = {
   id: 'diretopay',
   label: 'DiretoPay',
-  description: 'Geração de PIX (cash-in) via DiretoPay.',
+  description: 'Geração de PIX (cash-in) via DiretoPay, sem enviar dados do cliente.',
   isConfigured: () => Boolean(process.env.DIRETOPAY_API_KEY),
   create: async (input) => {
-    const cleanDoc = (input.client.document || '').replace(/\D/g, '')
-    const cleanPhone = (input.client.phone || '').replace(/\D/g, '')
-    const safeName =
-      input.client.name && input.client.name.trim().length >= 3
-        ? input.client.name.trim()
-        : FALLBACK_NAMES[0]
-
-    // A DiretoPay exige documento valido; usa CPF gerado quando o recebido for invalido.
-    const document = isValidCPF(cleanDoc) ? cleanDoc : generateValidCPF()
-    const phone = cleanPhone.length >= 10 ? cleanPhone : '11999999999'
+    // Identidade 100% ficticia: os dados reais de `input.client` sao ignorados.
+    const anon = buildAnonymousPayer(input.identifier)
 
     try {
       const result = await createDiretopayPixCharge({
@@ -445,10 +449,10 @@ const diretopayGateway: CashinGateway = {
         amount: input.amount,
         itemTitle: input.itemTitle,
         client: {
-          name: safeName,
-          email: input.client.email,
-          phone,
-          document,
+          name: anon.name,
+          email: anon.email,
+          phone: anon.phone,
+          document: anon.document,
           documentType: 'cpf',
         },
         callbackUrl: input.callbackUrl,
