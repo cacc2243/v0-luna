@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { getAppSettings } from '@/lib/settings'
 import { sendUserPush } from '@/lib/push/web-push'
+import { generateFanUsername } from '@/lib/fan-usernames'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -1275,45 +1276,11 @@ export async function updateSettings(updates: Partial<UserSettings>) {
 // Pack Activity Engine (views, pedidos pendentes, notificacoes)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BUYER_FIRST_NAMES = [
-  'Rafael', 'Lucas', 'Bruno', 'Thiago', 'Gabriel', 'Felipe', 'Matheus', 'Pedro',
-  'Carlos', 'Vinicius', 'Diego', 'Andre', 'Joao', 'Leonardo', 'Gustavo', 'Rodrigo',
-  'Eduardo', 'Marcelo', 'Ricardo', 'Fernando', 'Daniel', 'Marcos', 'Paulo', 'Caio',
-  'Henrique', 'Igor', 'Otavio', 'Renato', 'Fabio', 'Alexandre', 'Murilo', 'Luiz',
-  'Guilherme', 'Arthur', 'Enzo', 'Davi', 'Bernardo', 'Samuel', 'Nicolas', 'Vitor',
-  'Cauã', 'Yuri', 'Erick', 'Wesley', 'Danilo', 'Robson', 'Anderson', 'Jonas',
-  'Breno', 'Heitor', 'Lorenzo', 'Theo', 'Miguel', 'Benjamin', 'Joaquim', 'Pietro',
-  'Tomas', 'Emanuel', 'Kaique', 'Ruan', 'Alan', 'Maicon', 'Cristian', 'Jeferson',
-  'Leandro', 'Sergio', 'Adriano', 'Claudio', 'Edson', 'Wagner', 'Roberto', 'Mauricio',
-]
-
-const BUYER_LAST_NAMES = [
-  'Mendes', 'Oliveira', 'Costa', 'Almeida', 'Santos', 'Rocha', 'Lima', 'Henrique',
-  'Ferreira', 'Souza', 'Martins', 'Dias', 'Pereira', 'Barbosa', 'Silva', 'Carvalho',
-  'Gomes', 'Ribeiro', 'Araujo', 'Cardoso', 'Teixeira', 'Moreira', 'Nascimento', 'Cavalcanti',
-  'Pinto', 'Moura', 'Freitas', 'Azevedo', 'Correia', 'Cunha', 'Monteiro', 'Nunes',
-  'Vieira', 'Ramos', 'Castro', 'Campos', 'Machado', 'Lopes', 'Fernandes', 'Borges',
-  'Duarte', 'Reis', 'Tavares', 'Andrade', 'Farias', 'Pacheco', 'Siqueira', 'Brito',
-  'Macedo', 'Sampaio', 'Magalhaes', 'Figueiredo', 'Antunes', 'Caldeira', 'Bezerra', 'Aguiar',
-]
-
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
-}
-
-// Gera um nome completo unico (primeiro + sobrenome), evitando os que ja estao em `used`.
+// Gera um @username unico de fa, evitando os que ja estao em `used`.
+// Os fas da plataforma sao anonimos, entao usamos handles (@fan_secreto,
+// @lobo.sp) e nunca nome de pessoa real. Ver lib/fan-usernames.ts.
 function generateBuyerName(used: Set<string>): string {
-  for (let attempt = 0; attempt < 40; attempt++) {
-    const name = `${pick(BUYER_FIRST_NAMES)} ${pick(BUYER_LAST_NAMES)}`
-    if (!used.has(name)) {
-      used.add(name)
-      return name
-    }
-  }
-  // Fallback extremamente improvavel: adiciona um segundo sobrenome
-  const name = `${pick(BUYER_FIRST_NAMES)} ${pick(BUYER_LAST_NAMES)} ${pick(BUYER_LAST_NAMES)}`
-  used.add(name)
-  return name
+  return generateFanUsername(used)
 }
 function randInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
@@ -1379,14 +1346,22 @@ export async function generatePackActivity(opts?: { initial?: boolean; maxOrders
       .eq('id', pack.id)
       .eq('user_id', user.id)
 
-    // Notificacao de visualizacoes
-    await supabase.from('notifications').insert({
-      user_id: user.id,
-      type: 'like',
-      title: `${viewsGained} novas visualizacoes`,
-      description: `Seu pack "${pack.title}" esta recebendo atencao`,
-      reference_id: pack.id,
+    // Notificacoes de visualizacao: uma por "fa" que apareceu, com @username.
+    // O feed "Visualizacoes recentes" mostra apenas as 3 mais recentes, entao
+    // geramos poucas por ciclo (mais no primeiro) — o suficiente para a lista
+    // girar com nomes diferentes sem inflar a tabela de notificacoes.
+    const viewerCount = initial ? 3 : randInt(1, 2)
+    const viewerRows = Array.from({ length: viewerCount }, () => {
+      const viewer = generateBuyerName(usedNames)
+      return {
+        user_id: user.id,
+        type: 'like',
+        title: `${viewer} viu seu pack`,
+        description: `${viewer} está de olho no seu pack!`,
+        reference_id: pack.id,
+      }
     })
+    await supabase.from('notifications').insert(viewerRows)
 
     // Seguidores crescem conforme as views: 1 seguidor a cada 5-10 views
     let remainingViews = viewsGained
@@ -1404,7 +1379,7 @@ export async function generatePackActivity(opts?: { initial?: boolean; maxOrders
           user_id: user.id,
           type: 'follow',
           title: 'Novo seguidor',
-          description: `${follower} comecou a seguir voce`,
+          description: `${follower} começou a seguir você`,
         })
       } else {
         break
