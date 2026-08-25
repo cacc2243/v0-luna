@@ -152,7 +152,7 @@ export default function Page() {
             >
               {/* text-balance distribui as linhas sozinho, evitando palavra orfa
                   em telas estreitas. O valor nunca quebra no meio. */}
-              <h1 className="text-balance font-sans text-[1.4rem] font-bold leading-tight tracking-tight text-foreground sm:text-[1.6rem]">
+              <h1 className="text-balance font-sans text-[1.6rem] font-bold leading-tight tracking-tight text-foreground sm:text-[1.8rem]">
                 Mais de <span className="whitespace-nowrap text-primary">R$ 20.000,00</span> todos
                 os meses, apenas com seus pés!
               </h1>
