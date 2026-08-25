@@ -150,9 +150,12 @@ export default function Page() {
               className={`mt-7 text-center ${verified ? 'animate-item' : ''}`}
               style={{ animationDelay: '60ms' }}
             >
-              <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
-                Aqui, seus Pés podem te dar uma{' '}
-                <span className="text-primary">vida de Rainha!</span>
+              <h1 className="font-sans text-[1.6rem] font-bold leading-tight tracking-tight text-foreground">
+                {/* Quebra fixa em 2 linhas, conforme a copy definida */}
+                <span className="block">
+                  Mais de <span className="text-primary">R$ 20.000,00</span> todos
+                </span>
+                <span className="block">os meses, apenas com seus pés!</span>
               </h1>
               <p className="mt-2.5 text-pretty text-sm leading-relaxed text-muted-foreground">
                 Aqui seus Pés te fazem Rainha. Você posta, vende na hora e
