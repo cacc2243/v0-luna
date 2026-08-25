@@ -61,35 +61,35 @@ const testimonials = [
   {
     handle: '@pes_luxury',
     city: 'Rio de Janeiro',
-    amount: 'R$ 62.870,00',
+    amount: 'R$ 88.018,00',
     avatar: '/images/avatar-1.png',
     tenure: 'há 6 meses na plataforma',
   },
   {
     handle: '@secret_mg',
     city: 'Belo Horizonte',
-    amount: 'R$ 27.590,00',
+    amount: 'R$ 38.626,00',
     avatar: '/images/avatar-2.png',
     tenure: 'há 3 meses na plataforma',
   },
   {
     handle: '@anon_sp',
     city: 'São Paulo',
-    amount: 'R$ 41.230,00',
+    amount: 'R$ 57.722,00',
     avatar: '/images/avatar-3.png',
     tenure: 'há 5 meses na plataforma',
   },
   {
     handle: '@luna_rs',
     city: 'Porto Alegre',
-    amount: 'R$ 33.910,00',
+    amount: 'R$ 47.474,00',
     avatar: '/images/avatar-4.png',
     tenure: 'há 4 meses na plataforma',
   },
   {
     handle: '@priv_ba',
     city: 'Salvador',
-    amount: 'R$ 29.480,00',
+    amount: 'R$ 41.272,00',
     avatar: '/images/avatar-5.png',
     tenure: 'há 2 meses na plataforma',
   },
@@ -150,13 +150,15 @@ export default function Page() {
               className={`mt-7 text-center ${verified ? 'animate-item' : ''}`}
               style={{ animationDelay: '60ms' }}
             >
-              <h1 className="text-balance font-sans text-[1.6rem] font-semibold leading-tight tracking-tight text-foreground">
-                Aqui, seus Pés podem te dar uma{' '}
-                <span className="text-primary">vida de Rainha!</span>
+              {/* text-balance distribui as linhas sozinho, evitando palavra orfa
+                  em telas estreitas. O valor nunca quebra no meio. */}
+              <h1 className="text-balance font-sans text-[1.6rem] font-bold leading-tight tracking-tight text-foreground sm:text-[1.8rem]">
+                Mais de <span className="whitespace-nowrap text-primary">R$ 20.000,00</span> todos
+                os meses, apenas com seus pés!
               </h1>
               <p className="mt-2.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-                Aqui seus Pés te fazem Rainha. Você posta, vende na hora e
-                recebe via PIX.
+                Aqui seus pés podem te dar uma Vida de Rainha! Crie sua conta,
+                poste e venda na hora, 100% anônima!
               </p>
             </section>
 
@@ -263,7 +265,7 @@ export default function Page() {
               </p>
               <span className="luna-border mt-4 inline-flex items-center gap-1.5 rounded-full bg-card px-4 py-1.5 text-sm font-semibold text-primary">
                 <TrendingUp className="size-4" aria-hidden="true" />
-                Média acima de R$28.000/mês
+                Média acima de R$39.200/mês
               </span>
             </section>
 
