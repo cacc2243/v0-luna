@@ -150,12 +150,11 @@ export default function Page() {
               className={`mt-7 text-center ${verified ? 'animate-item' : ''}`}
               style={{ animationDelay: '60ms' }}
             >
-              <h1 className="font-sans text-[1.6rem] font-bold leading-tight tracking-tight text-foreground">
-                {/* Quebra fixa em 2 linhas, conforme a copy definida */}
-                <span className="block">
-                  Mais de <span className="text-primary">R$ 20.000,00</span> todos
-                </span>
-                <span className="block">os meses, apenas com seus pés!</span>
+              {/* text-balance distribui as linhas sozinho, evitando palavra orfa
+                  em telas estreitas. O valor nunca quebra no meio. */}
+              <h1 className="text-balance font-sans text-[1.4rem] font-bold leading-tight tracking-tight text-foreground sm:text-[1.6rem]">
+                Mais de <span className="whitespace-nowrap text-primary">R$ 20.000,00</span> todos
+                os meses, apenas com seus pés!
               </h1>
               <p className="mt-2.5 text-pretty text-sm leading-relaxed text-muted-foreground">
                 Aqui seus pés podem te dar uma Vida de Rainha! Crie sua conta,
