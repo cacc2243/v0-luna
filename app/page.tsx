@@ -158,8 +158,8 @@ export default function Page() {
                 <span className="block">os meses, apenas com seus pés!</span>
               </h1>
               <p className="mt-2.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-                Aqui seus Pés te fazem Rainha. Você posta, vende na hora e
-                recebe via PIX.
+                Aqui seus pés podem te dar uma Vida de Rainha! Crie sua conta,
+                poste e venda na hora, 100% anônima!
               </p>
             </section>
 
