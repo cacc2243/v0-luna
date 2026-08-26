@@ -5,6 +5,7 @@ import Script from 'next/script'
 import { Suspense } from 'react'
 import { FbPixel } from '@/components/fb-pixel'
 import { TaboolaPixel } from '@/components/taboola-pixel'
+import { TiktokPixel } from '@/components/tiktok-pixel'
 import { AttributionTracker } from '@/components/attribution-tracker'
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register'
 import './globals.css'
@@ -113,6 +114,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <FbPixel />
           <TaboolaPixel />
+          <TiktokPixel />
           <AttributionTracker />
         </Suspense>
         <ServiceWorkerRegister />

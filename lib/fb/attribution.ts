@@ -36,6 +36,8 @@ export interface Attribution {
   utm_content?: string | null
   utm_term?: string | null
   fbclid?: string | null
+  /** Click ID do TikTok (?ttclid=...) injetado no link do anuncio. */
+  ttclid?: string | null
   referrer?: string | null
   landing_url?: string | null
 }
@@ -48,9 +50,12 @@ const UTM_KEYS = [
   'utm_term',
 ] as const
 
-/** Um registro so tem valor de campanha se tiver source, campaign ou fbclid. */
+/**
+ * Um registro so tem valor de campanha se tiver source, campaign ou um click
+ * id de plataforma (fbclid do Facebook ou ttclid do TikTok).
+ */
 function hasCampaignSignal(a: Attribution | null | undefined): boolean {
-  return Boolean(a && (a.utm_source || a.utm_campaign || a.fbclid))
+  return Boolean(a && (a.utm_source || a.utm_campaign || a.fbclid || a.ttclid))
 }
 
 function isEmpty(a: Attribution): boolean {
@@ -109,6 +114,8 @@ export function readAttributionFromUrl(): Attribution {
   }
   const fbclid = params.get('fbclid')
   if (fbclid) attribution.fbclid = fbclid
+  const ttclid = params.get('ttclid')
+  if (ttclid) attribution.ttclid = ttclid
   return attribution
 }
 
@@ -195,6 +202,7 @@ export function getAttributionForCheckout(): Attribution {
     utm_content: pick('utm_content'),
     utm_term: pick('utm_term'),
     fbclid: pick('fbclid'),
+    ttclid: pick('ttclid'),
     // landing_url/referrer do first-touch sao mais relevantes p/ relatorio.
     landing_url: (stored.landing_url as string) || fromUrl.landing_url || null,
     referrer: (stored.referrer as string) || fromUrl.referrer || null,

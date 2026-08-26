@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { maybeSendPurchase } from '@/lib/fb/purchase'
+import { maybeSendTiktokPurchase } from '@/lib/tiktok/purchase'
 import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
 import { sendUtmifyOrder } from '@/lib/utmify/orders'
 import { notifyAdminSale } from '@/lib/push/notify-sale'
@@ -51,6 +52,12 @@ export async function GET(request: NextRequest) {
     // webhook nao enviou o evento, envia aqui. Idempotente via fb_purchase_sent.
     if (paidInvite) {
       await maybeSendPurchase(paidInvite)
+    }
+
+    // TikTok CompletePayment (safety net): mesmo padrao do Facebook.
+    // Idempotente via tt_purchase_sent.
+    if (paidInvite) {
+      await maybeSendTiktokPurchase(paidInvite)
     }
 
     // Notificacao push para o admin (safety net): dispara se o webhook nao o fez.

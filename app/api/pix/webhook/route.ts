@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse, after } from 'next/server'
 import { maybeSendPurchase } from '@/lib/fb/purchase'
+import { maybeSendTiktokPurchase } from '@/lib/tiktok/purchase'
 import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
 import { sendUtmifyOrder } from '@/lib/utmify/orders'
 import { notifyAdminSale } from '@/lib/push/notify-sale'
@@ -282,6 +283,12 @@ export async function POST(request: NextRequest) {
     // nao envia Purchase (tratado dentro do helper).
     if (newStatus === 'paid') {
       await maybeSendPurchase({ ...invite, status: 'paid' })
+    }
+
+    // TikTok CompletePayment (server-side / Events API) quando o pagamento e
+    // confirmado. Idempotente via flag tt_purchase_sent.
+    if (newStatus === 'paid') {
+      await maybeSendTiktokPurchase({ ...invite, status: 'paid' })
     }
 
     // Notificacao push para o admin (PWA) quando uma venda e aprovada.
