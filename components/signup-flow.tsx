@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { saveCreds } from '@/lib/auth/creds'
 import { setTaboolaEmail } from '@/lib/taboola/identity'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
-import { readCookie, fbTrack } from '@/lib/fb/track'
+import { readCookie, fbTrackWhenReady, newEventId } from '@/lib/fb/track'
 import {
   User,
   Mail,
@@ -303,10 +303,40 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
       void setTaboolaEmail(email.trim())
 
       // Evento padrao do Facebook: cadastro concluido com sucesso.
-      fbTrack('CompleteRegistration', {
-        content_name: 'Cadastro Luna Privé',
-        status: true,
-      })
+      //
+      // Dispara pelo pixel E pela Conversions API com o MESMO event_id, para o
+      // Facebook deduplicar e contar uma unica vez. O envio duplo importa aqui
+      // porque logo abaixo o app navega para /convite: o request do pixel pode
+      // ser cancelado no meio (por isso keepalive na chamada da CAPI).
+      const crEventId = newEventId('cr')
+      fbTrackWhenReady(
+        'CompleteRegistration',
+        {
+          content_name: 'Cadastro Luna Privé',
+          status: true,
+        },
+        crEventId,
+      )
+
+      const crName = username.trim()
+      const crParts = crName ? crName.split(/\s+/) : []
+      void fetch('/api/fb/complete-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({
+          eventId: crEventId,
+          eventSourceUrl: typeof window !== 'undefined' ? window.location.href : null,
+          fbp: readCookie('_fbp'),
+          fbc: readCookie('_fbc'),
+          email: email.trim() || null,
+          name: crName || null,
+          firstName: crParts.length > 0 ? crParts[0] : null,
+          lastName: crParts.length > 1 ? crParts.slice(1).join(' ') : null,
+          phone: phone.replace(/\D/g, '') || null,
+          attribution: attr,
+        }),
+      }).catch((e) => console.error('[v0] Falha no CompleteRegistration (CAPI):', e))
 
       // "Configurando sua conta..." por >= 2.5s e leva direto para /convite.
       // O aviso de "conta criada" fica so no /convite (WelcomePopup), sem duplicar aqui.
