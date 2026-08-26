@@ -11,6 +11,11 @@ create table if not exists tiktok_pixels (
   created_at timestamptz not null default now()
 );
 
+-- Todo acesso a esta tabela acontece pelo service role (rotas /api/admin e os
+-- helpers server-side), que ignora RLS. Habilitar RLS sem nenhuma policy faz
+-- com que a chave anon do navegador nao consiga ler o access_token.
+alter table tiktok_pixels enable row level security;
+
 -- Sinais de atribuicao do TikTok persistidos por transacao (invite), usados
 -- para enviar o evento CompletePayment via Events API server-side.
 --   ttclid -> click id que o TikTok injeta na URL do anuncio
