@@ -92,6 +92,14 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error) {
+      // 23505 = unique_violation: o pixel_id ja esta cadastrado. Cada linha
+      // ativa recebe uma copia do evento, entao duplicar contaria em dobro.
+      if (error.code === '23505') {
+        return NextResponse.json(
+          { error: 'Este Pixel ID já está cadastrado.' },
+          { status: 409 },
+        )
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     return NextResponse.json({ success: true, id: data.id })
@@ -143,6 +151,12 @@ export async function PATCH(req: NextRequest) {
     const supabase = createAdminClient()
     const { error } = await supabase.from('tiktok_pixels').update(update).eq('id', id)
     if (error) {
+      if (error.code === '23505') {
+        return NextResponse.json(
+          { error: 'Este Pixel ID já está cadastrado em outro registro.' },
+          { status: 409 },
+        )
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     return NextResponse.json({ success: true })

@@ -11,6 +11,10 @@ create table if not exists tiktok_pixels (
   created_at timestamptz not null default now()
 );
 
+-- O mesmo pixel_id nao pode ser cadastrado duas vezes: cada linha ativa recebe
+-- uma copia de cada evento, entao uma duplicata contaria a conversao em dobro.
+create unique index if not exists tiktok_pixels_pixel_id_key on tiktok_pixels (pixel_id);
+
 -- Todo acesso a esta tabela acontece pelo service role (rotas /api/admin e os
 -- helpers server-side), que ignora RLS. Habilitar RLS sem nenhuma policy faz
 -- com que a chave anon do navegador nao consiga ler o access_token.
