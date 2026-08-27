@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Check, ArrowRight, Sparkles, ShieldCheck, Mail, AlertTriangle } from 'lucide-react'
 import { InstallAppGuide } from './install-app-guide'
 import { tfaTrackWhenReady } from '@/lib/taboola/track'
+import { ttqTrackWhenReady } from '@/lib/tiktok/track'
 
 export function ConfirmationContent() {
   const [mounted, setMounted] = useState(false)
@@ -13,8 +14,8 @@ export function ConfirmationContent() {
     setMounted(true)
   }, [])
 
-  // Taboola: dispara make_purchase (compra concluída) uma única vez ao chegar
-  // na confirmação. Lê os dados salvos no checkout e usa o orderid para
+  // Taboola + TikTok: dispara a compra concluída uma única vez ao chegar na
+  // confirmação. Lê os dados salvos no checkout e usa o orderid para
   // deduplicação — remove a chave para não refazer o disparo em um refresh.
   useEffect(() => {
     try {
@@ -22,11 +23,36 @@ export function ConfirmationContent() {
       if (!raw) return
       sessionStorage.removeItem('luna_purchase')
       const { orderId, value } = JSON.parse(raw) as { orderId?: string; value?: number }
+      const amount = typeof value === 'number' ? value : 0
+      const order = orderId || `luna_${Date.now()}`
+
       tfaTrackWhenReady('make_purchase', {
-        revenue: typeof value === 'number' ? value : 0,
+        revenue: amount,
         currency: 'BRL',
-        orderid: orderId || `luna_${Date.now()}`,
+        orderid: order,
       })
+
+      // TikTok: CompletePayment com o MESMO event_id usado pela Events API
+      // server-side (tt_purchase_<invite id>), para o TikTok deduplicar a
+      // conversão contada pelo navegador e pelo servidor.
+      ttqTrackWhenReady(
+        'CompletePayment',
+        {
+          content_type: 'product',
+          content_id: order,
+          currency: 'BRL',
+          value: amount,
+          contents: [
+            {
+              content_id: order,
+              content_type: 'product',
+              price: amount,
+              quantity: 1,
+            },
+          ],
+        },
+        `tt_purchase_${order}`,
+      )
     } catch {
       // nunca quebrar a tela por causa do pixel
     }

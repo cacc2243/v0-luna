@@ -60,6 +60,15 @@ export async function POST(request: NextRequest) {
       landing_url: cleanAttr(att.landing_url),
     }
 
+    // Sinais de atribuicao do TikTok para o CompletePayment (Events API).
+    //   ttclid -> vem da URL do anuncio, guardado no cookie de atribuicao
+    //   ttp    -> cookie first-party _ttp criado pelo pixel; como ele e do
+    //             nosso dominio, chega direto nos headers da requisicao
+    const ttAttribution = {
+      ttclid: cleanAttr(att.ttclid),
+      ttp: cleanAttr(request.cookies.get('_ttp')?.value),
+    }
+
     // CPF/nome informados pelo comprador (quando o pré-checkout exige CPF).
     // Ficam salvos como identificação inicial do pagador; o webhook pode
     // sobrescrever com os dados reais retornados pelo adquirente.
@@ -151,9 +160,11 @@ export async function POST(request: NextRequest) {
     const hasCampaignSignal = Boolean(
       marketingAttribution.utm_source ||
         marketingAttribution.utm_campaign ||
-        marketingAttribution.fbclid,
+        marketingAttribution.fbclid ||
+        ttAttribution.ttclid,
     )
-    const missingPixelIds = !fbAttribution.fbp || !fbAttribution.fbc
+    const missingPixelIds =
+      !fbAttribution.fbp || !fbAttribution.fbc || !ttAttribution.ttclid || !ttAttribution.ttp
 
     if (!hasCampaignSignal || missingPixelIds) {
       // Fonte 1: perfil da conta (snapshot salvo no cadastro).
@@ -162,11 +173,20 @@ export async function POST(request: NextRequest) {
         const { data: prof } = await supabase
           .from('profiles')
           .select(
-            'utm_source,utm_campaign,utm_medium,utm_content,utm_term,fbclid,fbp,fbc,attr_referrer,attr_landing_url',
+            'utm_source,utm_campaign,utm_medium,utm_content,utm_term,fbclid,fbp,fbc,ttclid,ttp,attr_referrer,attr_landing_url',
           )
           .eq('id', userId)
           .maybeSingle()
-        if (prof && (prof.utm_source || prof.utm_campaign || prof.fbclid || prof.fbp || prof.fbc)) {
+        if (
+          prof &&
+          (prof.utm_source ||
+            prof.utm_campaign ||
+            prof.fbclid ||
+            prof.fbp ||
+            prof.fbc ||
+            prof.ttclid ||
+            prof.ttp)
+        ) {
           recovered = {
             utm_source: prof.utm_source ?? null,
             utm_campaign: prof.utm_campaign ?? null,
@@ -176,6 +196,8 @@ export async function POST(request: NextRequest) {
             fbclid: prof.fbclid ?? null,
             fbp: prof.fbp ?? null,
             fbc: prof.fbc ?? null,
+            ttclid: prof.ttclid ?? null,
+            ttp: prof.ttp ?? null,
             referrer: prof.attr_referrer ?? null,
             landing_url: prof.attr_landing_url ?? null,
           }
@@ -187,7 +209,7 @@ export async function POST(request: NextRequest) {
         const { data: prior } = await supabase
           .from('invites')
           .select(
-            'utm_source,utm_campaign,utm_medium,utm_content,utm_term,fbclid,fbp,fbc,referrer,landing_url',
+            'utm_source,utm_campaign,utm_medium,utm_content,utm_term,fbclid,fbp,fbc,ttclid,ttp,referrer,landing_url',
           )
           .eq('email', email)
           .not('utm_source', 'is', null)
@@ -211,6 +233,8 @@ export async function POST(request: NextRequest) {
         }
         fbAttribution.fbp ||= recovered.fbp
         fbAttribution.fbc ||= recovered.fbc
+        ttAttribution.ttclid ||= recovered.ttclid
+        ttAttribution.ttp ||= recovered.ttp
       }
     }
     // ─────────────────────────────────────────────────────────────────────────
@@ -306,6 +330,7 @@ export async function POST(request: NextRequest) {
           pix_expiration: pixExpirationDate.toISOString(),
           ...fbAttribution,
           ...marketingAttribution,
+          ...ttAttribution,
           ...payerIdentity,
         })
         .eq('id', existingInvite.id)
@@ -334,6 +359,7 @@ export async function POST(request: NextRequest) {
           pix_expiration: pixExpirationDate.toISOString(),
           ...fbAttribution,
           ...marketingAttribution,
+          ...ttAttribution,
           ...payerIdentity,
         })
         .select()

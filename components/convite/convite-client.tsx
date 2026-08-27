@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
   import { readCookie, newEventId, fbTrackWhenReady } from '@/lib/fb/track'
   import { tfaTrackWhenReady } from '@/lib/taboola/track'
+import { ttqTrackWhenReady, ttqIdentify } from '@/lib/tiktok/track'
   import { setTaboolaEmail } from '@/lib/taboola/identity'
 import { getAttributionForCheckout } from '@/lib/fb/attribution'
 import { Mail } from 'lucide-react'
@@ -200,6 +201,21 @@ export function ConviteClient({
       // Taboola: evento padrao de inicio de checkout (mesmo momento do
       // InitiateCheckout do Facebook), com receita e moeda.
       tfaTrackWhenReady('start_checkout', { revenue: value, currency: 'BRL' })
+
+      // TikTok: identifica a usuaria (o proprio pixel faz o hash no navegador)
+      // e dispara InitiateCheckout no mesmo momento do evento do Facebook.
+      ttqIdentify({ email: data.email || null, phone: data.phone || null })
+      ttqTrackWhenReady(
+        'InitiateCheckout',
+        {
+          content_type: 'product',
+          content_id: 'invite',
+          content_name: 'Convite Luna Privé',
+          currency: 'BRL',
+          value,
+        },
+        icEventId,
+      )
 
       const trimmedName = (data.username || '').trim()
       const parts = trimmedName ? trimmedName.split(/\s+/) : []

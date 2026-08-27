@@ -246,6 +246,9 @@ export function SignupFlow({ onComplete }: SignupFlowProps) {
         fbclid: clip(attr.fbclid),
         fbp: clip(readCookie('_fbp')),
         fbc: clip(readCookie('_fbc')),
+        // TikTok: ttclid vem da URL do anuncio e _ttp e o cookie do pixel.
+        ttclid: clip(attr.ttclid),
+        ttp: clip(readCookie('_ttp')),
         attr_referrer: clip(attr.referrer),
         attr_landing_url: clip(attr.landing_url),
       }
