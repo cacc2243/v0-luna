@@ -6,6 +6,7 @@ import { buildAnonymousPayer } from '@/lib/diretopay/anonymize'
 import { createMisticpayPixCharge, isMisticpayConfigured } from '@/lib/misticpay/client'
 import { createBspayPixCharge } from '@/lib/bspay/client'
 import { createBuckpayPixCharge } from '@/lib/buckpay/client'
+import { createBravopayPixCharge } from '@/lib/bravopay/client'
 
 const BYNET_API_URL = 'https://api-gateway.techbynet.com'
 
@@ -650,6 +651,71 @@ const buckpayGateway: CashinGateway = {
 }
 
 /**
+ * Gateway BravoPay. Autenticacao por Bearer (chave bp_live_...). Trabalha com
+ * valores em centavos (min R$ 5,00) e usa `Idempotency-Key` para evitar
+ * cobranca duplicada em retentativas.
+ *
+ * Diferente dos outros gateways, o webhook da BravoPay NAO e enviado por
+ * transacao: e uma URL unica cadastrada no painel dela (Dashboard ->
+ * Integracoes). Por isso o callbackUrl e ignorado aqui.
+ *
+ * O CPF e opcional na BravoPay, entao — ao contrario do Bynet/BuckPay, que
+ * exigem o campo — enviamos apenas quando o comprador informou um CPF valido.
+ * Nunca geramos CPF ficticio: manda menos dado para a adquirente e evita
+ * enviar informacao falsa numa checagem antifraude.
+ */
+const bravopayGateway: CashinGateway = {
+  id: 'bravopay',
+  label: 'BravoPay',
+  description: 'Geração de PIX (cash-in) via BravoPay.',
+  isConfigured: () => Boolean(process.env.BRAVOPAY_API_KEY),
+  create: async (input) => {
+    const cleanDoc = (input.client.document || '').replace(/\D/g, '')
+    const cleanPhone = (input.client.phone || '').replace(/\D/g, '')
+    const safeName =
+      input.client.name && input.client.name.trim().length >= 3
+        ? input.client.name.trim()
+        : FALLBACK_NAMES[0]
+
+    try {
+      const result = await createBravopayPixCharge({
+        identifier: input.identifier,
+        amount: input.amount,
+        itemTitle: input.itemTitle,
+        client: {
+          name: safeName,
+          email: input.client.email,
+          phone: cleanPhone.length >= 10 ? cleanPhone : '',
+          // Só envia o CPF quando for realmente válido (campo opcional na API).
+          document: isValidCPF(cleanDoc) ? cleanDoc : '',
+        },
+        callbackUrl: input.callbackUrl,
+      })
+
+      return {
+        ok: result.ok,
+        status: result.status,
+        transactionId: result.transactionId,
+        pixCode: result.pixCode,
+        errorMessage: result.errorMessage,
+        raw: result.raw,
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao contatar a BravoPay'
+      console.error('[v0] Erro no gateway BravoPay (cash-in):', msg)
+      return {
+        ok: false,
+        status: 502,
+        transactionId: null,
+        pixCode: null,
+        errorMessage: msg,
+        raw: null,
+      }
+    }
+  },
+}
+
+/**
  * Registro central de gateways de cash-in. Para adicionar um novo gateway,
  * implemente CashinGateway e registre-o aqui — ele aparece automaticamente
  * no painel de configuracoes.
@@ -663,6 +729,7 @@ const GATEWAYS: CashinGateway[] = [
   misticpayGateway,
   bspayGateway,
   buckpayGateway,
+  bravopayGateway,
 ]
 
 export function listCashinGateways(): CashinGateway[] {

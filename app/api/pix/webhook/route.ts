@@ -5,6 +5,10 @@ import { maybeSendTiktokPurchase } from '@/lib/tiktok/purchase'
 import { sendInvitePaidEmailOnce } from '@/lib/email/notify-paid'
 import { sendUtmifyOrder } from '@/lib/utmify/orders'
 import { notifyAdminSale } from '@/lib/push/notify-sale'
+import {
+  getBravopaySignatureHeader,
+  verifyBravopayWebhook,
+} from '@/lib/bravopay/webhook'
 
 /** Primeiro valor string não-vazio dentre os candidatos. */
 function pickString(...vals: unknown[]): string | null {
@@ -77,8 +81,46 @@ function extractPaymentIdentity(
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    
+    // Lemos o corpo CRU (nao request.json()) porque a BravoPay assina
+    // `${timestamp}.${rawBody}`: re-serializar o JSON muda a string e
+    // invalidaria a assinatura. Os demais gateways nao se importam.
+    const rawBody = await request.text()
+
+    let body: Record<string, any>
+    try {
+      body = rawBody ? JSON.parse(rawBody) : {}
+    } catch {
+      console.log('[v0] Webhook PIX com corpo não-JSON — ignorando.')
+      return NextResponse.json(
+        { received: true, matched: false, reason: 'invalid_json' },
+        { status: 200 }
+      )
+    }
+
+    // Assinatura HMAC da BravoPay (unico gateway do nosso set que assina).
+    // Só validamos quando o header esta presente, para nao afetar os outros.
+    const bravopaySignature = getBravopaySignatureHeader(request.headers)
+    if (bravopaySignature) {
+      const secret = process.env.BRAVOPAY_WEBHOOK_SECRET
+      if (!secret) {
+        // Sem o secret nao ha como validar. Seguimos processando (o evento
+        // ainda precisa casar com um convite nosso), mas registramos o alerta.
+        console.warn(
+          '[v0] Webhook BravoPay recebido sem BRAVOPAY_WEBHOOK_SECRET configurado — assinatura NÃO validada.'
+        )
+      } else {
+        const check = verifyBravopayWebhook(rawBody, bravopaySignature, secret)
+        if (!check.verified) {
+          console.error('[v0] Webhook BravoPay com assinatura inválida:', check.reason)
+          return NextResponse.json(
+            { error: 'Assinatura inválida' },
+            { status: 401 }
+          )
+        }
+        console.log('[v0] Webhook BravoPay: assinatura validada.')
+      }
+    }
+
     console.log('[v0] Webhook PIX recebido:', JSON.stringify(body, null, 2))
 
     // O formato do webhook varia por gateway:
@@ -96,9 +138,14 @@ export async function POST(request: NextRequest) {
     //   criacao, salvo como transaction_id), `data.status` ("pending",
     //   "approved", "cancelled", "refund", "chargeback", "expired") e a data
     //   de pagamento em `data.paidAt`. O envelope traz `type: "transaction"`.
+    // - BravoPay: envelope { id: "evt_...", type: "transaction.paid", created,
+    //   data: {...} }. O tipo vem em `type` (nao em `event`), o id da transacao
+    //   em `data.id` (salvo como transaction_id) e o nosso identifier em
+    //   `data.external_reference`. Status em MAIUSCULAS (PAID, EXPIRED,
+    //   REFUNDED, CHARGEBACK) e pagamento em `data.paid_at`.
     const tx = body.transaction || {}
     const data = body.data || {}
-    const event = String(body.event || '').toUpperCase()
+    const event = String(body.event || body.type || '').toUpperCase()
 
     // Detecta callbacks de infracao da HorsePay (contem infraction_status).
     // Nao alteram o status de pagamento — apenas registramos e respondemos 200.
@@ -122,6 +169,9 @@ export async function POST(request: NextRequest) {
       data.transaction_id,
       data.external_id,
       data.id,
+      // BravoPay: o nosso identifier volta em external_reference.
+      data.external_reference,
+      body.external_reference,
     ]
       .filter((v) => v !== undefined && v !== null && String(v).length > 0)
       .map((v) => String(v))
@@ -197,21 +247,28 @@ export async function POST(request: NextRequest) {
     // SigiloPay usa `event` (TRANSACTION_PAID/CANCELED/REFUNDED) e status COMPLETED.
     let newStatus = invite.status
     // BuckPay: `transaction.processed` = pago, `transaction.created` = pendente.
+    // BravoPay: `transaction.paid` = pago, `transaction.expired`/`.failed` =
+    // encerrado sem pagamento, `transaction.chargeback` = estorno.
+    // `transaction.created` e `transaction.receipt_uploaded` nao alteram status.
     const paidEvent =
       event === 'TRANSACTION_PAID' ||
       event === 'CASHIN.CONFIRMED' ||
-      event === 'TRANSACTION.PROCESSED'
+      event === 'TRANSACTION.PROCESSED' ||
+      event === 'TRANSACTION.PAID'
     const canceledEvent =
       event === 'TRANSACTION_CANCELED' ||
       event === 'TRANSACTION_CANCELLED' ||
       event === 'CASHIN.EXPIRED' ||
       event === 'CASHIN.FAILED' ||
       event === 'TRANSACTION.CANCELED' ||
-      event === 'TRANSACTION.CANCELLED'
+      event === 'TRANSACTION.CANCELLED' ||
+      event === 'TRANSACTION.EXPIRED' ||
+      event === 'TRANSACTION.FAILED'
     const refundedEvent =
       event === 'TRANSACTION_REFUNDED' ||
       event === 'CASHIN.REFUNDED' ||
-      event === 'TRANSACTION.REFUNDED'
+      event === 'TRANSACTION.REFUNDED' ||
+      event === 'TRANSACTION.CHARGEBACK'
 
     // MisticPay envia status em portugues: COMPLETO/FALHA/PENDENTE/CANCELADO.
     if (
