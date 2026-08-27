@@ -19,7 +19,11 @@ export function SaleNotification({ title, time, amount }: SaleNotificationProps)
         <p className="text-[0.7rem] text-muted-foreground">{time}</p>
       </div>
 
-      <p className="shrink-0 text-xs font-bold text-primary">{amount}</p>
+      {/* Valor em verde com um neon bem suave: dois halos curtos e de baixa
+          opacidade, derivados do proprio token --positive. */}
+      <p className="shrink-0 text-xs font-bold text-positive [text-shadow:0_0_4px_color-mix(in_oklch,var(--positive)_45%,transparent),0_0_10px_color-mix(in_oklch,var(--positive)_25%,transparent)]">
+        {amount}
+      </p>
     </div>
   )
 }
