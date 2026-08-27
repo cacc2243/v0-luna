@@ -153,12 +153,11 @@ export default function Page() {
               {/* text-balance distribui as linhas sozinho, evitando palavra orfa
                   em telas estreitas. O valor nunca quebra no meio. */}
               <h1 className="text-balance font-sans text-[1.6rem] font-bold leading-tight tracking-tight text-foreground sm:text-[1.8rem]">
-                Mais de <span className="whitespace-nowrap text-primary">R$ 20.000,00</span> todos
-                os meses, apenas com seus pés!
+                Seus <span className="text-primary">Pés</span> podem te dar uma{' '}
+                <span className="whitespace-nowrap text-primary">Vida de Rainha!</span>
               </h1>
               <p className="mt-2.5 text-pretty text-sm leading-relaxed text-muted-foreground">
-                Aqui seus pés podem te dar uma Vida de Rainha! Crie sua conta,
-                poste e venda na hora, 100% anônima!
+                100% Anônimo, sem mostrar seu rosto ou identidade real!
               </p>
             </section>
 
