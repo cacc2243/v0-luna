@@ -7,7 +7,7 @@ import { Check, Gift, Clock, X, AlertTriangle, Flame } from 'lucide-react'
 const benefits = [
   'Código de Convite Luna Prive',
   'Comece a vender agora mesmo',
-  'Suporte 100% sigiloso',
+  'Garantia de anonimato',
   'Acesso imediato por E-mail',
 ]
 
