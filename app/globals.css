@@ -1029,3 +1029,57 @@
 .luna-logo-ring {
   animation: luna-logo-ring 1.6s ease-out infinite;
 }
+
+/* Carregamento do PIX / convite */
+@keyframes pix-loader-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+@keyframes pix-loader-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes pix-loader-swap {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.pix-loader-bar {
+  animation: pix-loader-bar 1.4s ease-in-out infinite;
+}
+
+.pix-loader-dot {
+  animation: pix-loader-dot 1.2s ease-in-out infinite;
+}
+
+.pix-loader-swap {
+  animation: pix-loader-swap 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pix-loader-bar,
+  .pix-loader-dot,
+  .pix-loader-swap {
+    animation: none;
+  }
+}

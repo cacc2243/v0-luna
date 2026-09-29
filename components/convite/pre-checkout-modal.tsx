@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { Loader2, ShieldCheck, Ticket, Lock } from 'lucide-react'
+import { QrCode, ShieldCheck, Ticket, Lock } from 'lucide-react'
 
 interface PreCheckoutModalProps {
   isOpen: boolean
@@ -138,19 +138,79 @@ export function PreCheckoutModal({
   // Fases de carregamento: overlay discreto, apenas escurece a tela e mostra
   // spinner + texto (sem card/fundo), num visual mais leve e menor.
   if (phase === 'loading' || phase === 'finalizing') {
+    const isFinalizing = phase === 'finalizing'
+    const currentIndex = Math.min(activeStep, STEPS.length - 1)
+    const CurrentIcon = isFinalizing ? QrCode : STEPS[currentIndex].icon
+    const iconKey = isFinalizing ? 'pix' : `step-${currentIndex}`
+    const statusLabel = isFinalizing ? 'Finalizando seu pagamento' : STEPS[currentIndex].label
+
     return createPortal(
       <div
-        className="fixed inset-0 z-[110] flex flex-col items-center justify-center gap-4 bg-black/80 px-6 backdrop-blur-sm animate-in fade-in duration-300"
+        className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-black/80 px-6 backdrop-blur-sm animate-in fade-in duration-300"
         role="status"
         aria-live="polite"
       >
-        <Loader2 className="size-9 animate-spin text-primary" aria-hidden="true" />
-        <p className="text-[0.7rem] font-semibold uppercase tracking-widest text-primary">Aguarde</p>
-        <p className="text-balance text-center text-base font-bold leading-snug text-white">
-          {phase === 'finalizing'
-            ? 'Gerando seu PIX Luna Privé!'
-            : 'Gerando seu convite Luna Privé!'}
+        <div className="relative flex size-24 items-center justify-center" aria-hidden="true">
+          <span className="luna-logo-ring absolute inset-2 rounded-full border border-primary/60" />
+          <span
+            className="luna-logo-ring absolute inset-2 rounded-full border border-primary/40"
+            style={{ animationDelay: '0.8s' }}
+          />
+          <span
+            className="absolute inset-0 animate-spin rounded-full"
+            style={{
+              animationDuration: '1.1s',
+              background:
+                'conic-gradient(from 0deg, transparent 0deg, color-mix(in oklab, var(--primary) 20%, transparent) 120deg, var(--primary) 340deg, transparent 360deg)',
+              WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))',
+              mask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))',
+            }}
+          />
+          <span className="luna-logo-breathe relative flex size-14 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/40 shadow-lg shadow-primary/30">
+            <CurrentIcon key={iconKey} className="pix-loader-swap size-6 text-primary" />
+          </span>
+        </div>
+
+        <p className="mt-6 flex items-center gap-1 text-[0.7rem] font-semibold uppercase tracking-widest text-primary">
+          Aguarde
+          <span className="flex items-center gap-0.5" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="pix-loader-dot inline-block size-1 rounded-full bg-primary"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </span>
         </p>
+
+        <p className="mt-2 text-balance text-center text-lg font-bold leading-snug text-white">
+          {isFinalizing ? 'Gerando seu PIX Luna Privé!' : 'Gerando seu convite Luna Privé!'}
+        </p>
+
+        <p
+          key={statusLabel}
+          className="pix-loader-swap mt-1.5 text-center text-sm text-white/60"
+        >
+          {statusLabel}
+        </p>
+
+        <div className="mt-5 flex w-48 items-center gap-1.5" aria-hidden="true">
+          {isFinalizing ? (
+            <div className="relative h-1 w-full overflow-hidden rounded-full bg-white/10">
+              <span className="pix-loader-bar absolute inset-y-0 left-0 w-2/5 rounded-full bg-primary" />
+            </div>
+          ) : (
+            STEPS.map((_, i) => (
+              <div key={i} className="relative h-1 flex-1 overflow-hidden rounded-full bg-white/10">
+                <span
+                  className="absolute inset-y-0 left-0 rounded-full bg-primary transition-all duration-700 ease-out"
+                  style={{ width: i < activeStep ? '100%' : i === activeStep ? '45%' : '0%' }}
+                />
+              </div>
+            ))
+          )}
+        </div>
       </div>,
       document.body,
     )
