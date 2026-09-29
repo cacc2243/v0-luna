@@ -202,7 +202,11 @@ export function PriceCard({
                 <span className="text-lg font-extrabold text-primary">
                   R${formatCents(amountCents)}
                 </span>{' '}
-                do seu convite é válido apenas agora!
+                está garantido apenas agora!
+              </p>
+              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                O convite reservado para sua conta e o Pix gerado são válidos somente nesta sessão. Se sair
+                desta página, eles expiram e o valor volta ao normal.
               </p>
 
               {/* Contador regressivo — compacto */}
