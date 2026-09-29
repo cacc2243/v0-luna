@@ -1,15 +1,20 @@
-import { ShieldCheck, RotateCcw, Zap } from 'lucide-react'
+import { ShieldCheck, Sparkles, RotateCcw, Zap } from 'lucide-react'
 
 const STEPS = [
   {
+    icon: Sparkles,
+    title: 'Use à vontade por 7 dias',
+    desc: 'Acesse tudo, teste e conheça a Luna Prive sem compromisso.',
+  },
+  {
     icon: RotateCcw,
-    title: 'Botão de reembolso no site',
-    desc: 'Solicite em poucos cliques, sem falar com o suporte.',
+    title: 'Não gostou ou quer parar?',
+    desc: 'Clique no botão de reembolso no site, sem precisar explicar o motivo.',
   },
   {
     icon: Zap,
-    title: 'Devolução via Pix',
-    desc: 'O valor volta para você de forma rápida e prática.',
+    title: 'Receba 100% de volta via Pix',
+    desc: 'O valor integral volta para você de forma rápida e prática.',
   },
 ] as const
 
@@ -25,24 +30,25 @@ export function RefundGuarantee() {
         </span>
         <div className="min-w-0">
           <span className="inline-flex w-fit items-center rounded-full bg-primary/10 px-2 py-0.5 text-[0.62rem] font-bold uppercase tracking-wider text-primary">
-            Risco zero
+            Garantia de 7 dias
           </span>
           <h2
             id="garantia-reembolso"
             className="mt-1 text-balance text-sm font-bold leading-tight text-foreground"
           >
-            7 dias de garantia incondicional
+            Use e seja reembolsado se não gostar
           </h2>
         </div>
       </div>
 
       <p className="mt-3 text-pretty text-xs leading-relaxed text-muted-foreground">
-        Não gostou por qualquer motivo? Você tem 7 dias para pedir seu dinheiro
-        de volta. Simples, rápido e sem burocracia — o risco é todo nosso.
+        Durante os primeiros 7 dias você usa normalmente. Se não gostar ou
+        simplesmente não quiser continuar, devolvemos todo o seu dinheiro —
+        sem perguntas e sem burocracia.
       </p>
 
-      <ul className="mt-3 flex flex-col gap-2">
-        {STEPS.map(({ icon: Icon, title, desc }) => (
+      <ol className="mt-3 flex flex-col gap-2">
+        {STEPS.map(({ icon: Icon, title, desc }, index) => (
           <li
             key={title}
             className="flex items-start gap-2.5 rounded-xl border border-border/40 bg-background/40 px-3 py-2.5"
@@ -52,6 +58,7 @@ export function RefundGuarantee() {
             </span>
             <span className="min-w-0">
               <span className="block text-[0.82rem] font-semibold leading-tight text-foreground">
+                <span className="sr-only">{`Passo ${index + 1}: `}</span>
                 {title}
               </span>
               <span className="block text-pretty text-[0.72rem] leading-snug text-muted-foreground">
@@ -60,7 +67,11 @@ export function RefundGuarantee() {
             </span>
           </li>
         ))}
-      </ul>
+      </ol>
+
+      <p className="mt-3 text-center text-[0.7rem] leading-snug text-muted-foreground">
+        O risco é todo nosso: você só fica se realmente gostar.
+      </p>
     </section>
   )
 }

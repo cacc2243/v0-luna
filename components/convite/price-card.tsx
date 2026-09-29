@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, Gift, Clock, X, AlertTriangle, Flame } from 'lucide-react'
+import { Check, Gift, Clock, X, AlertTriangle } from 'lucide-react'
 
 const benefits = [
   'Código de Convite Luna Prive',
   'Comece a vender agora mesmo',
-  'Suporte 100% sigiloso',
+  'Garantia de anonimato',
   'Acesso imediato por E-mail',
 ]
 
@@ -28,9 +28,9 @@ export function PriceCard({
   amountCents?: number
   priceReady?: boolean
 }) {
-  // Preco "de" (ancora) fixo em R$ 109,00. O desconto e calculado a partir do
+  // Preco "de" (ancora) fixo em R$ 98,80. O desconto e calculado a partir do
   // preco atual em relacao a esse valor ancora.
-  const originalCents = 10900
+  const originalCents = 9880
   const discountPercent = Math.max(0, Math.round((1 - amountCents / originalCents) * 100))
 
   // Popup de confirmacao com aviso de urgencia (10 min) antes de gerar o PIX.
@@ -202,7 +202,10 @@ export function PriceCard({
                 <span className="text-lg font-extrabold text-primary">
                   R${formatCents(amountCents)}
                 </span>{' '}
-                do seu convite é válido apenas agora!
+                está garantido apenas agora!
+              </p>
+              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+Convite e Pix válidos só nesta sessão.
               </p>
 
               {/* Contador regressivo — compacto */}
@@ -214,11 +217,6 @@ export function PriceCard({
                 </span>
               </div>
 
-              {/* Escassez — reforça urgência */}
-              <p className="mt-3 flex items-center justify-center gap-1.5 text-[0.72rem] font-semibold text-muted-foreground">
-                <Flame className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
-                Restam apenas <span className="font-bold text-primary">4 convites</span> disponíveis
-              </p>
 
               <button
                 type="button"
